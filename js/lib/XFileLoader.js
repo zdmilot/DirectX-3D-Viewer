@@ -1643,31 +1643,121 @@
         if (this._currentMesh && Object.keys(this._currentMesh).length > 0) {
           var geometry = new THREE.BufferGeometry();
 
-          // ── Fan-triangulate polygons and build per-triangle material index ──
+          // ── Helper: earcut-triangulate a polygon in 3D ──
+          // Projects polygon vertices onto the polygon's plane, then uses
+          // THREE.ShapeUtils.triangulateShape (earcut) for correct concave support.
+          var meshVerts = this._currentMesh.vertices;
+          function triangulatePoly(faceIndices) {
+            var n = faceIndices.length;
+            // Triangles pass through directly
+            if (n === 3) return [[faceIndices[0], faceIndices[1], faceIndices[2]]];
+            // Gather 3-D positions
+            var pts = [];
+            for (var i = 0; i < n; i++) {
+              var v = meshVerts[faceIndices[i]];
+              pts.push(v ? {x: v.x, y: v.y, z: v.z} : {x:0, y:0, z:0});
+            }
+            // Newell normal
+            var nx = 0, ny = 0, nz = 0;
+            for (var i = 0; i < n; i++) {
+              var c = pts[i], ne = pts[(i + 1) % n];
+              nx += (c.y - ne.y) * (c.z + ne.z);
+              ny += (c.z - ne.z) * (c.x + ne.x);
+              nz += (c.x - ne.x) * (c.y + ne.y);
+            }
+            var len = Math.sqrt(nx*nx + ny*ny + nz*nz);
+            if (len < 1e-10) {
+              // Degenerate — fall back to fan
+              var out = [];
+              for (var t = 1; t < n - 1; t++) out.push([faceIndices[0], faceIndices[t], faceIndices[t+1]]);
+              return out;
+            }
+            nx /= len; ny /= len; nz /= len;
+            // Build tangent basis u, v
+            var ax = Math.abs(nx), ay = Math.abs(ny), az = Math.abs(nz);
+            var upx, upy, upz;
+            if (ax <= ay && ax <= az) { upx=1; upy=0; upz=0; }
+            else if (ay <= az)        { upx=0; upy=1; upz=0; }
+            else                      { upx=0; upy=0; upz=1; }
+            // u = normalize(cross(up, normal))
+            var ux = upy*nz - upz*ny, uy = upz*nx - upx*nz, uz = upx*ny - upy*nx;
+            var ul = Math.sqrt(ux*ux + uy*uy + uz*uz);
+            ux /= ul; uy /= ul; uz /= ul;
+            // v = cross(normal, u)
+            var vx = ny*uz - nz*uy, vy = nz*ux - nx*uz, vz = nx*uy - ny*ux;
+            // Project to 2-D
+            var contour = [];
+            for (var i = 0; i < n; i++) {
+              contour.push(new THREE.Vector2(
+                pts[i].x*ux + pts[i].y*uy + pts[i].z*uz,
+                pts[i].x*vx + pts[i].y*vy + pts[i].z*vz
+              ));
+            }
+            var tris;
+            try {
+              tris = THREE.ShapeUtils.triangulateShape(contour, []);
+            } catch (e) {
+              // Fallback to fan if earcut fails
+              var out = [];
+              for (var t = 1; t < n - 1; t++) out.push([faceIndices[0], faceIndices[t], faceIndices[t+1]]);
+              return out;
+            }
+            // Map earcut local indices back to original vertex indices
+            var result = [];
+            for (var i = 0; i < tris.length; i++) {
+              var tri = tris[i];
+              result.push([faceIndices[tri[0]], faceIndices[tri[1]], faceIndices[tri[2]]]);
+            }
+            return result;
+          }
+
+          // ── Triangulate polygons and build per-triangle material index ──
           var indices = [];
           var triMatIndices = [];  // material index per output triangle
           var faceMats = this._currentMesh.faceMaterials;
           var hasFaceMats = faceMats && faceMats.length > 0;
+          // Store per-face triangulation order so normals can reuse it
+          var faceTriOrders = [];
 
           this._currentMesh.vertexFaces.forEach(function (face, fi) {
             var matIdx = hasFaceMats ? (faceMats[fi] || 0) : 0;
-            for (var t = 1; t < face.indices.length - 1; t++) {
-              indices.push(face.indices[0], face.indices[t], face.indices[t + 1]);
+            var tris = triangulatePoly(face.indices);
+            // Save the LOCAL indices (within the face) for normal reuse
+            var localOrder = [];
+            for (var t = 0; t < tris.length; t++) {
+              indices.push(tris[t][0], tris[t][1], tris[t][2]);
               triMatIndices.push(matIdx);
+              // Compute local indices within the face for normal mapping
+              var li = [];
+              for (var k = 0; k < 3; k++) {
+                li.push(face.indices.indexOf(tris[t][k]));
+              }
+              localOrder.push(li);
             }
+            faceTriOrders.push(localOrder);
           });
 
           // set vertices
           var vertices = this._vector3sToFloat32Array(this._currentMesh.vertices, indices);
           geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
 
-          // set normals (fan-triangulated)
+          // set normals (using same triangulation order as vertices)
           if (this._currentMesh.normals && this._currentMesh.normals.length > 0 &&
               this._currentMesh.normalFaces && this._currentMesh.normalFaces.length > 0) {
             var indicesN = [];
-            this._currentMesh.normalFaces.forEach(function (face) {
-              for (var t = 1; t < face.indices.length - 1; t++) {
-                indicesN.push(face.indices[0], face.indices[t], face.indices[t + 1]);
+            this._currentMesh.normalFaces.forEach(function (face, fi) {
+              var order = faceTriOrders[fi];
+              if (order) {
+                for (var t = 0; t < order.length; t++) {
+                  for (var k = 0; k < 3; k++) {
+                    indicesN.push(face.indices[order[t][k]]);
+                  }
+                }
+              } else {
+                // Fallback: fan
+                for (var t = 1; t < face.indices.length - 1; t++) {
+                  indicesN.push(face.indices[0], face.indices[t], face.indices[t + 1]);
+                }
               }
             });
             var normals = this._vector3sToFloat32Array(this._currentMesh.normals, indicesN);
@@ -1694,16 +1784,13 @@
                 }
               });
             }
+            var matIndex = materials.length;  // unique index for this material
             var mpMat = new THREE.MeshPhongMaterial();
             mpMat.name = material.name;
             mpMat.color = new THREE.Color(material.color.r, material.color.g, material.color.b);
             mpMat.shininess = material.shininess;
             mpMat.specular = new THREE.Color(material.specular.r, material.specular.g, material.specular.b);
             mpMat.emissive = new THREE.Color(material.emissive.r, material.emissive.g, material.emissive.b);
-            // Prevent z-fighting on coplanar faces
-            mpMat.polygonOffset = true;
-            mpMat.polygonOffsetFactor = 1;
-            mpMat.polygonOffsetUnits = 1;
             if (material.map) {
               mpMat.map = _this4.texloader.load(material.map);
             }

@@ -9,6 +9,8 @@
 
     const dom = {
         btnTheme: $('#btn-theme'),
+        btnSidebarToggle: $('#btn-sidebar-toggle'),
+        sidebarNav: $('#sidebar-nav'),
     };
 
     const state = {
@@ -64,7 +66,7 @@
 
     function initViewer() {
         const canvas  = $('#viewer-canvas');
-        const card    = $('#viewer-card');
+        const card    = $('#viewer-host');
         const loading = $('#viewer-loading');
         const errorEl = $('#viewer-error');
 
@@ -90,8 +92,7 @@
         // ── Renderer ─────────────────────────────────────────
         renderer = new THREE.WebGLRenderer({
             canvas: canvas,
-            antialias: true,
-            logarithmicDepthBuffer: true   // prevents z-fighting on large models
+            antialias: true
         });
         renderer.setPixelRatio(window.devicePixelRatio);
         renderer.setSize(w, h);
@@ -118,6 +119,8 @@
         const gridColor = state.isDark ? DARK_GRID : LIGHT_GRID;
         const grid = new THREE.GridHelper(200, 20, gridColor, gridColor);
         grid.name = '__grid__';
+        grid.renderOrder = -1;
+        grid.material.depthWrite = false;
         scene.add(grid);
 
         // ── Resize handler ───────────────────────────────────
@@ -196,12 +199,22 @@
 
             for (let i = 0; i < object.models.length; i++) {
                 const model = object.models[i];
-                // Ensure material is double-sided for visibility
+                // Assign unique renderOrder per mesh to eliminate z-fighting
+                // between overlapping meshes from different frames
+                model.renderOrder = i;
+
+                // Apply per-mesh polygon offset so coplanar faces from
+                // different meshes get depth-separated
                 if (model.material) {
+                    const applyOffset = (m, meshIdx) => {
+                        m.polygonOffset = true;
+                        m.polygonOffsetFactor = 1 + meshIdx * 0.5;
+                        m.polygonOffsetUnits  = 1 + meshIdx;
+                    };
                     if (Array.isArray(model.material)) {
-                        model.material.forEach(m => { m.side = THREE.DoubleSide; });
+                        model.material.forEach(m => applyOffset(m, i));
                     } else {
-                        model.material.side = THREE.DoubleSide;
+                        applyOffset(model.material, i);
                     }
                 }
                 group.add(model);
@@ -222,7 +235,7 @@
                 // Position camera to see the whole model
                 const fitDist = maxDim * 1.8;
                 camera.position.set(fitDist * 0.6, fitDist * 0.4, fitDist);
-                camera.near = maxDim * 0.01;
+                camera.near = maxDim * 0.05;
                 camera.far = maxDim * 20;
                 camera.updateProjectionMatrix();
 
@@ -239,8 +252,12 @@
                 const gColor = state.isDark ? DARK_GRID : LIGHT_GRID;
                 const newGrid = new THREE.GridHelper(gridSize, gridDiv, gColor, gColor);
                 newGrid.name = '__grid__';
-                // Position grid at bottom of model
-                newGrid.position.y = -size.y / 2;
+                // Render grid behind everything & disable depth write
+                // so grid lines never z-fight with model surfaces
+                newGrid.renderOrder = -1;
+                newGrid.material.depthWrite = false;
+                // Position grid slightly below model bottom to avoid z-fighting
+                newGrid.position.y = -size.y / 2 - maxDim * 0.002;
                 scene.add(newGrid);
             }
 
@@ -300,6 +317,11 @@
         applyTheme();
 
         dom.btnTheme.addEventListener('click', toggleTheme);
+
+        // Sidebar toggle – overlay style, no layout shift
+        dom.btnSidebarToggle.addEventListener('click', () => {
+            dom.sidebarNav.classList.toggle('collapsed');
+        });
 
         initSplash();
     }
