@@ -9,12 +9,14 @@
 
     const dom = {
         btnTheme: $('#btn-theme'),
+        btnGrid: $('#btn-grid'),
         btnSidebarToggle: $('#btn-sidebar-toggle'),
         sidebarNav: $('#sidebar-nav'),
     };
 
     const state = {
         isDark: false,
+        gridVisible: true,
     };
 
     // -- Splash Screen -----------------------------------------------
@@ -49,6 +51,18 @@
             dom.btnTheme.querySelector('i').className = 'fas fa-moon';
         }
         try { localStorage.setItem('dilution-dark-mode', state.isDark ? '1' : '0'); } catch(e) {}
+    }
+
+    // -- Grid Toggle ------------------------------------------------
+    function toggleGrid() {
+        state.gridVisible = !state.gridVisible;
+        dom.btnGrid.classList.toggle('grid-off', !state.gridVisible);
+        dom.btnGrid.setAttribute('data-tooltip', state.gridVisible ? 'Hide bottom gridlines' : 'Show bottom gridlines');
+        dom.btnGrid.setAttribute('aria-label', state.gridVisible ? 'Hide bottom gridlines' : 'Show bottom gridlines');
+        if (scene) {
+            const grid = scene.getObjectByName('__grid__');
+            if (grid) grid.visible = state.gridVisible;
+        }
     }
 
     // ================================================================
@@ -121,6 +135,7 @@
         grid.name = '__grid__';
         grid.renderOrder = -1;
         grid.material.depthWrite = false;
+        grid.visible = state.gridVisible;
         scene.add(grid);
 
         // ── Resize handler ───────────────────────────────────
@@ -262,6 +277,7 @@
                 // so grid lines never z-fight with model surfaces
                 newGrid.renderOrder = -1;
                 newGrid.material.depthWrite = false;
+                newGrid.visible = state.gridVisible;
                 // Position grid slightly below model bottom to avoid z-fighting
                 newGrid.position.y = -size.y / 2 - maxDim * 0.002;
                 scene.add(newGrid);
@@ -323,6 +339,7 @@
         applyTheme();
 
         dom.btnTheme.addEventListener('click', toggleTheme);
+        dom.btnGrid.addEventListener('click', toggleGrid);
 
         // Sidebar toggle – overlay style, no layout shift
         dom.btnSidebarToggle.addEventListener('click', () => {
