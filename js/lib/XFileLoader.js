@@ -1656,16 +1656,21 @@
           var vertices = this._vector3sToFloat32Array(this._currentMesh.vertices, indices);
           geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
           // set faces aka indices for normals
-          var indicesN = [];
-          this._currentMesh.normalFaces.forEach(function (face) {
-            indicesN.push(face.indices[0], face.indices[1], face.indices[2]);
-          });
-          // set normals
-          var normals = this._vector3sToFloat32Array(this._currentMesh.normals, indicesN);
-          geometry.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
+          if (this._currentMesh.normals && this._currentMesh.normals.length > 0 &&
+              this._currentMesh.normalFaces && this._currentMesh.normalFaces.length > 0) {
+            var indicesN = [];
+            this._currentMesh.normalFaces.forEach(function (face) {
+              indicesN.push(face.indices[0], face.indices[1], face.indices[2]);
+            });
+            // set normals
+            var normals = this._vector3sToFloat32Array(this._currentMesh.normals, indicesN);
+            geometry.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
+          }
           //geometry.setIndex(indices);
-          var uvs = this._vector2sToFloat32Array(this._currentMesh.texCoords, indices);
-          geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+          if (this._currentMesh.texCoords && this._currentMesh.texCoords.length > 0) {
+            var uvs = this._vector2sToFloat32Array(this._currentMesh.texCoords, indices);
+            geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+          }
           // set materials
           var materials = [];
           this._currentMesh.materials.forEach(function (currentMaterial) {
@@ -1915,9 +1920,13 @@
         var floatArray = [];
         indices.forEach(function (index) {
           var vector = vectors[index];
-          floatArray.push(vector.x);
-          floatArray.push(vector.y);
-          floatArray.push(vector.z);
+          if (vector) {
+            floatArray.push(vector.x);
+            floatArray.push(vector.y);
+            floatArray.push(vector.z);
+          } else {
+            floatArray.push(0, 0, 0);
+          }
         });
         return new Float32Array(floatArray);
       }
@@ -1927,8 +1936,12 @@
         var floatArray = [];
         indices.forEach(function (index) {
           var vector = vectors[index];
-          floatArray.push(vector.x);
-          floatArray.push(1 - vector.y);
+          if (vector) {
+            floatArray.push(vector.x);
+            floatArray.push(1 - vector.y);
+          } else {
+            floatArray.push(0, 0);
+          }
         });
         return new Float32Array(floatArray);
       }
