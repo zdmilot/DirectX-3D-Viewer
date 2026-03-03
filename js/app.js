@@ -38,6 +38,7 @@
         isPerspective: true,
         isPanning: false,
         toolbarCollapsed: false,
+        activeView: 'viewer',
     };
 
     // -- Splash Screen -----------------------------------------------
@@ -460,6 +461,37 @@
             grid.material.color.copy(c);
             if (grid.material.uniforms) grid.material.uniforms.diffuse.value.copy(c);
         }
+        // Also update converter theme
+        if (window.ConverterModule) window.ConverterModule.updateTheme();
+    }
+
+    // ================================================================
+    //  Sidebar View Switching
+    // ================================================================
+    function switchView(viewName) {
+        if (state.activeView === viewName) return;
+        state.activeView = viewName;
+
+        // Update sidebar active states
+        document.querySelectorAll('.sidebar-nav-item').forEach(btn => {
+            btn.classList.toggle('is-active', btn.dataset.view === viewName);
+        });
+
+        // Switch visible panel
+        document.querySelectorAll('.view-panel').forEach(panel => {
+            panel.classList.toggle('is-active', panel.dataset.viewPanel === viewName);
+        });
+
+        // Initialize converter on first switch
+        if (viewName === 'converter' && window.ConverterModule) {
+            // Small delay to ensure panel has dimensions
+            setTimeout(() => window.ConverterModule.init(), 50);
+        }
+
+        // Auto-collapse sidebar on mobile
+        if (window.innerWidth < 900 && dom.sidebarNav) {
+            dom.sidebarNav.classList.add('collapsed');
+        }
     }
 
     // ================================================================
@@ -586,7 +618,7 @@
         if (!dom.gizmoCanvas || !camera) return;
         const ctx = dom.gizmoCanvas.getContext('2d');
         const dpr = window.devicePixelRatio || 1;
-        const size = 90;
+        const size = 44;
         dom.gizmoCanvas.width = size * dpr;
         dom.gizmoCanvas.height = size * dpr;
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -594,7 +626,7 @@
 
         const cx = size / 2;
         const cy = size / 2;
-        const len = 28;
+        const len = 14;
 
         // Get camera direction to compute axis projections
         const camDir = new THREE.Vector3();
@@ -630,17 +662,17 @@
             ctx.moveTo(cx, cy);
             ctx.lineTo(ex, ey);
             ctx.strokeStyle = isBehind ? 'rgba(120,130,145,0.25)' : p.color;
-            ctx.lineWidth = isBehind ? 1.5 : 2.5;
+            ctx.lineWidth = isBehind ? 1 : 2;
             ctx.stroke();
 
             // Draw endpoint circle
-            const r = isBehind ? 5 : 8;
+            const r = isBehind ? 3 : 5;
             ctx.beginPath();
             ctx.arc(ex, ey, r, 0, Math.PI * 2);
             if (isBehind) {
                 ctx.fillStyle = 'rgba(120,130,145,0.2)';
                 ctx.strokeStyle = 'rgba(120,130,145,0.35)';
-                ctx.lineWidth = 1.5;
+                ctx.lineWidth = 1;
                 ctx.fill();
                 ctx.stroke();
             } else {
@@ -648,7 +680,7 @@
                 ctx.fill();
                 // Label
                 ctx.fillStyle = '#fff';
-                ctx.font = 'bold 9px Inter, sans-serif';
+                ctx.font = 'bold 7px Inter, sans-serif';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
                 ctx.fillText(p.label, ex, ey + 0.5);
@@ -657,7 +689,7 @@
 
         // Center dot
         ctx.beginPath();
-        ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+        ctx.arc(cx, cy, 2, 0, Math.PI * 2);
         ctx.fillStyle = 'rgba(180,190,200,0.5)';
         ctx.fill();
     }
@@ -676,6 +708,13 @@
         // Sidebar toggle – overlay style, no layout shift
         dom.btnSidebarToggle.addEventListener('click', () => {
             dom.sidebarNav.classList.toggle('collapsed');
+        });
+
+        // Sidebar view switching
+        document.querySelectorAll('.sidebar-nav-item').forEach(btn => {
+            btn.addEventListener('click', () => {
+                switchView(btn.dataset.view);
+            });
         });
 
         // Floating toolbar events

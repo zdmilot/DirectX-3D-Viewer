@@ -699,23 +699,26 @@ body {
    ============================================================ */
 .viewer-toolbar {
     position: absolute;
-    top: 12px;
+    top: 0;
     right: 0;
+    bottom: 0;
     z-index: 18;
-    pointer-events: auto;
+    pointer-events: none;
+    display: flex;
+    align-items: flex-start;
 }
 
 .vt-toggle {
     position: absolute;
-    top: 8px;
-    left: -36px;
-    width: 28px;
-    height: 28px;
+    top: 20px;
+    right: 14px;
+    width: 32px;
+    height: 32px;
     border: none;
     border-radius: 50%;
     background: rgba(40, 44, 52, 0.85);
     color: #ccd6e0;
-    font-size: 0.7rem;
+    font-size: 0.75rem;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -723,18 +726,22 @@ body {
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-    transition: background var(--t-fast), transform var(--t-fast), left var(--t-med) ease;
-    flex-shrink: 0;
-    z-index: 2;
+    transition: background var(--t-fast), right var(--t-med) ease;
+    z-index: 20;
+    pointer-events: auto;
 }
 
 .vt-toggle:hover {
     background: rgba(60, 66, 78, 0.95);
-    transform: scale(1.1);
 }
 
 .vt-toggle i {
     transition: transform var(--t-med) ease;
+}
+
+/* When expanded, push toggle to the left of the panel */
+.viewer-toolbar:not(.collapsed) .vt-toggle {
+    right: calc(56px + 14px);
 }
 
 .viewer-toolbar.collapsed .vt-toggle i {
@@ -742,24 +749,29 @@ body {
 }
 
 .vt-body {
+    position: absolute;
+    top: 8px;
+    right: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 6px;
-    padding: 10px 10px 10px 10px;
+    gap: 2px;
+    padding: 8px 6px;
     background: rgba(40, 44, 52, 0.82);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
-    border-radius: 16px 0 0 16px;
+    border-radius: 14px 0 0 14px;
     box-shadow: -4px 4px 24px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.06) inset;
     transition: transform var(--t-med) ease, opacity var(--t-med) ease;
     transform-origin: top right;
     transform: translateX(0);
     overflow: visible;
+    pointer-events: auto;
+    width: 56px;
 }
 
 .viewer-toolbar.collapsed .vt-body {
-    transform: translateX(calc(100% + 4px));
+    transform: translateX(100%);
     opacity: 0;
     pointer-events: none;
 }
@@ -776,23 +788,23 @@ body {
 
 /* Axis gizmo */
 .vt-gizmo {
-    width: 90px;
-    height: 90px;
+    width: 44px;
+    height: 44px;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 2px;
+    margin-bottom: 0;
 }
 
 #gizmo-canvas {
-    width: 90px;
-    height: 90px;
-    border-radius: 8px;
+    width: 44px;
+    height: 44px;
+    border-radius: 6px;
 }
 
 /* Separator */
 .vt-separator {
-    width: 36px;
+    width: 28px;
     height: 1px;
     background: rgba(255, 255, 255, 0.1);
     margin: 2px 0;
@@ -800,13 +812,13 @@ body {
 
 /* Toolbar buttons */
 .vt-btn {
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
     border: none;
-    border-radius: 8px;
+    border-radius: 10px;
     background: transparent;
     color: #9ca8b8;
-    font-size: 0.92rem;
+    font-size: 1.05rem;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -833,9 +845,9 @@ body {
 /* Round variant (zoom/pan) */
 .vt-btn-round {
     border-radius: 50%;
-    width: 34px;
-    height: 34px;
-    font-size: 0.8rem;
+    width: 38px;
+    height: 38px;
+    font-size: 0.9rem;
 }
 
 /* Tooltip for toolbar buttons — positioned to the LEFT of the panel */
@@ -866,4 +878,270 @@ body {
 .vt-btn:hover::before {
     opacity: 1;
     transform: translateY(-50%) translateX(0);
+}
+
+/* ============================================================
+   File Converter Panel Styles
+   ============================================================ */
+
+/* -- Layout -------------------------------------------------- */
+.cv-layout {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    gap: 0;
+    overflow: hidden;
+}
+
+.cv-main-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.cv-main-viewport {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    background: var(--body-bg);
+}
+
+.cv-main-viewport canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+/* -- Format Badge -------------------------------------------- */
+.cv-format-badge {
+    position: absolute;
+    bottom: 12px;
+    right: 12px;
+    background: rgba(40, 44, 52, 0.85);
+    color: #8bc34a;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    z-index: 5;
+    pointer-events: none;
+    font-family: 'Menlo', 'Consolas', monospace;
+}
+
+[data-theme="dark"] .cv-format-badge {
+    background: rgba(20, 26, 36, 0.9);
+}
+
+/* -- Controls Bar -------------------------------------------- */
+.cv-controls-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    background:
+        linear-gradient(180deg, rgba(var(--medium-rgb), 0.06) 0%, rgba(var(--medium-rgb), 0.02) 100%),
+        var(--card-bg);
+    border-top: 1px solid var(--card-border);
+    flex-shrink: 0;
+    flex-wrap: wrap;
+    min-height: 48px;
+}
+
+.cv-ctrl-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 12px;
+    border: 1px solid var(--card-border);
+    border-radius: var(--r-sm);
+    background: var(--card-bg);
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background var(--t-fast), border-color var(--t-fast), transform 80ms;
+    white-space: nowrap;
+}
+
+.cv-ctrl-btn:hover {
+    background: rgba(var(--medium-rgb), 0.08);
+    border-color: var(--medium);
+}
+
+.cv-ctrl-btn:active {
+    transform: scale(0.96);
+}
+
+.cv-ctrl-btn:disabled {
+    opacity: 0.4;
+    pointer-events: none;
+}
+
+.cv-ctrl-btn i {
+    font-size: 0.85rem;
+    opacity: 0.7;
+}
+
+.cv-ctrl-btn-muted {
+    color: var(--text-secondary);
+}
+
+.cv-ctrl-btn-accent {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+}
+
+.cv-ctrl-btn-accent:hover {
+    background: var(--accent-hover);
+    border-color: var(--accent-hover);
+}
+
+.cv-ctrl-divider {
+    width: 1px;
+    height: 24px;
+    background: var(--card-border);
+    margin: 0 4px;
+}
+
+.cv-rot-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.cv-rot-label {
+    font-size: 0.76rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-right: 2px;
+    white-space: nowrap;
+}
+
+.cv-rot-btn {
+    padding: 4px 8px;
+    border: 1px solid var(--card-border);
+    border-radius: var(--r-xs);
+    background: var(--card-bg);
+    color: var(--text-primary);
+    font-family: 'Menlo', 'Consolas', monospace;
+    font-size: 0.7rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background var(--t-fast), border-color var(--t-fast), transform 80ms;
+    white-space: nowrap;
+}
+
+.cv-rot-btn:hover {
+    background: rgba(var(--medium-rgb), 0.1);
+    border-color: var(--medium);
+}
+
+.cv-rot-btn:active {
+    transform: scale(0.93);
+}
+
+.cv-rotation-display {
+    font-size: 0.72rem;
+    font-family: 'Menlo', 'Consolas', monospace;
+    color: var(--text-muted);
+    padding: 4px 8px;
+    background: rgba(0,0,0,0.04);
+    border-radius: var(--r-xs);
+    white-space: nowrap;
+}
+
+[data-theme="dark"] .cv-rotation-display {
+    background: rgba(255,255,255,0.04);
+}
+
+.cv-ctrl-spacer {
+    flex: 1;
+}
+
+/* -- Six Views Column ---------------------------------------- */
+.cv-views-col {
+    width: 320px;
+    flex-shrink: 0;
+    border-left: 1px solid var(--card-border);
+    background:
+        linear-gradient(180deg, rgba(var(--medium-rgb), 0.04) 0%, rgba(var(--medium-rgb), 0.01) 100%),
+        var(--card-bg);
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.cv-views-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    padding: 8px;
+}
+
+.cv-view-card {
+    position: relative;
+    border-radius: var(--r-sm);
+    overflow: hidden;
+    border: 1px solid var(--card-border);
+    background: var(--body-bg);
+    aspect-ratio: 1 / 1;
+}
+
+.cv-view-card canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.cv-view-label {
+    position: absolute;
+    top: 4px;
+    left: 6px;
+    font-size: 0.62rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    z-index: 2;
+    pointer-events: none;
+    background: rgba(var(--medium-rgb), 0.08);
+    padding: 1px 5px;
+    border-radius: 3px;
+}
+
+/* -- Responsive ---------------------------------------------- */
+@media (max-width: 900px) {
+    .cv-layout {
+        flex-direction: column;
+    }
+    .cv-views-col {
+        width: 100%;
+        border-left: none;
+        border-top: 1px solid var(--card-border);
+        max-height: 260px;
+    }
+    .cv-views-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 600px) {
+    .cv-controls-bar {
+        gap: 4px;
+        padding: 6px 8px;
+    }
+    .cv-rot-btn {
+        padding: 3px 5px;
+        font-size: 0.62rem;
+    }
+    .cv-views-grid {
+        grid-template-columns: 1fr 1fr;
+    }
 }

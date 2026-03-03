@@ -6,7 +6,7 @@
     <title>Direct3D Tools</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1F9EA;</text></svg>">
     <link rel="stylesheet" href="css/fontawesome.min.css">
-    <link rel="stylesheet" href="css/main.css?v=20260303i">
+    <link rel="stylesheet" href="css/main.css?v=20260303j">
 </head>
 <body>
 
@@ -93,13 +93,9 @@
                         <i class="fas fa-cube"></i>
                         <span>3D Viewer</span>
                     </button>
-                    <button class="sidebar-nav-item" data-view="test1">
-                        <i class="fas fa-flask-vial"></i>
-                        <span>Test1</span>
-                    </button>
-                    <button class="sidebar-nav-item" data-view="test2">
-                        <i class="fas fa-vial"></i>
-                        <span>Test2</span>
+                    <button class="sidebar-nav-item" data-view="converter">
+                        <i class="fas fa-exchange-alt"></i>
+                        <span>File Converter</span>
                     </button>
                 </div>
             </aside>
@@ -126,7 +122,7 @@
                     <div class="vt-body" id="vt-body">
                         <!-- Axis gizmo -->
                         <div class="vt-gizmo" id="vt-gizmo">
-                            <canvas id="gizmo-canvas" width="90" height="90"></canvas>
+                            <canvas id="gizmo-canvas" width="44" height="44"></canvas>
                         </div>
 
                         <div class="vt-separator"></div>
@@ -169,16 +165,86 @@
                     </div>
                 </div>
             </div>
-            <div class="view-panel" data-view-panel="test1">
-                <div class="view-placeholder">
-                    <i class="fas fa-flask-vial"></i>
-                    <span>Test1</span>
-                </div>
-            </div>
-            <div class="view-panel" data-view-panel="test2">
-                <div class="view-placeholder">
-                    <i class="fas fa-vial"></i>
-                    <span>Test2</span>
+            <!-- ====== FILE CONVERTER VIEW ====== -->
+            <div class="view-panel" data-view-panel="converter">
+                <div class="cv-layout">
+                    <!-- Left: Main 3D viewport -->
+                    <div class="cv-main-col">
+                        <div class="cv-main-viewport" id="converter-main-viewport">
+                            <canvas id="cv-main-canvas"></canvas>
+                            <div class="viewer-loading viewer-hidden" id="cv-loading">
+                                <div class="viewer-spinner"></div>
+                                <span>Loading…</span>
+                            </div>
+                            <div class="viewer-error viewer-hidden" id="cv-error">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <span id="cv-error-msg">Error</span>
+                            </div>
+                            <div class="cv-format-badge" id="cv-format-badge" style="display:none">.OBJ</div>
+                            <div class="viewer-dropzone viewer-hidden" id="cv-dropzone">
+                                <div class="dropzone-content">
+                                    <i class="fas fa-file-import"></i>
+                                    <span>Drop 3D file here</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Rotation Controls -->
+                        <div class="cv-controls-bar">
+                            <input type="file" id="cv-file-input" accept=".obj,.mtl,.stl,.glb,.gltf,.x,.png,.jpg,.jpeg,.bmp" multiple style="display:none">
+                            <button class="cv-ctrl-btn" id="cv-open-btn" title="Open 3D file">
+                                <i class="fas fa-folder-open"></i> Open
+                            </button>
+                            <div class="cv-ctrl-divider"></div>
+                            <div class="cv-rot-group">
+                                <span class="cv-rot-label">Rotate:</span>
+                                <button class="cv-rot-btn" data-axis="x" data-deg="90" title="Rotate +90° around X">X+90</button>
+                                <button class="cv-rot-btn" data-axis="x" data-deg="-90" title="Rotate −90° around X">X−90</button>
+                                <button class="cv-rot-btn" data-axis="y" data-deg="90" title="Rotate +90° around Y">Y+90</button>
+                                <button class="cv-rot-btn" data-axis="y" data-deg="-90" title="Rotate −90° around Y">Y−90</button>
+                                <button class="cv-rot-btn" data-axis="z" data-deg="90" title="Rotate +90° around Z">Z+90</button>
+                                <button class="cv-rot-btn" data-axis="z" data-deg="-90" title="Rotate −90° around Z">Z−90</button>
+                            </div>
+                            <button class="cv-ctrl-btn cv-ctrl-btn-muted" id="cv-reset-rot" title="Reset orientation">
+                                <i class="fas fa-undo"></i> Reset
+                            </button>
+                            <span class="cv-rotation-display" id="cv-rotation-display">X: 0°  Y: 0°  Z: 0°</span>
+                            <div class="cv-ctrl-spacer"></div>
+                            <button class="cv-ctrl-btn cv-ctrl-btn-accent" id="cv-export-btn" disabled title="Export as .x file">
+                                <i class="fas fa-download"></i> Export .x
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Right: Six orthographic views -->
+                    <div class="cv-views-col">
+                        <div class="cv-views-grid">
+                            <div class="cv-view-card">
+                                <div class="cv-view-label">Top</div>
+                                <canvas id="cv-view-top"></canvas>
+                            </div>
+                            <div class="cv-view-card">
+                                <div class="cv-view-label">Front</div>
+                                <canvas id="cv-view-front"></canvas>
+                            </div>
+                            <div class="cv-view-card">
+                                <div class="cv-view-label">Right</div>
+                                <canvas id="cv-view-right"></canvas>
+                            </div>
+                            <div class="cv-view-card">
+                                <div class="cv-view-label">Bottom</div>
+                                <canvas id="cv-view-bottom"></canvas>
+                            </div>
+                            <div class="cv-view-card">
+                                <div class="cv-view-label">Back</div>
+                                <canvas id="cv-view-back"></canvas>
+                            </div>
+                            <div class="cv-view-card">
+                                <div class="cv-view-label">Left</div>
+                                <canvas id="cv-view-left"></canvas>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -187,6 +253,11 @@
     <script src="js/lib/three.min.js"></script>
     <script src="js/lib/OrbitControls.js"></script>
     <script src="js/lib/XFileLoader.js?v=20260303i"></script>
-    <script src="js/app.js?v=20260303d"></script>
+    <script src="js/lib/OBJLoader.js"></script>
+    <script src="js/lib/MTLLoader.js"></script>
+    <script src="js/lib/GLTFLoader.js"></script>
+    <script src="js/lib/STLLoader.js"></script>
+    <script src="js/converter.js?v=20260303a"></script>
+    <script src="js/app.js?v=20260303f"></script>
 </body>
 </html>
