@@ -415,7 +415,7 @@
                 const pct = Math.round((xhr.loaded / xhr.total) * 100);
                 const span = loadingEl.querySelector('span');
                 if (span) span.textContent = pct < 100
-                    ? 'Downloading… ' + pct + '%'
+                    ? 'Processing… ' + pct + '%'
                     : 'Parsing 3D Model…';
             }
         }, function (err) {
