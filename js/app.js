@@ -488,8 +488,8 @@
             setTimeout(() => window.ConverterModule.init(), 50);
         }
 
-        // Auto-collapse sidebar on mobile
-        if (window.innerWidth < 900 && dom.sidebarNav) {
+        // Auto-collapse sidebar after navigation
+        if (dom.sidebarNav) {
             dom.sidebarNav.classList.add('collapsed');
         }
     }
