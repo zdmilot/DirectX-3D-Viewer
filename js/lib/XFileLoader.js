@@ -1647,10 +1647,12 @@
           geometry.colorsNeedUpdate = true;
           geometry.uvsNeedUpdate = true;
           geometry.groupsNeedUpdate = true;
-          // set faces aka indices
+          // set faces aka indices — fan-triangulate polygons (quads, n-gons)
           var indices = [];
           this._currentMesh.vertexFaces.forEach(function (face) {
-            indices.push(face.indices[0], face.indices[1], face.indices[2]);
+            for (var t = 1; t < face.indices.length - 1; t++) {
+              indices.push(face.indices[0], face.indices[t], face.indices[t + 1]);
+            }
           });
           // set vertices
           var vertices = this._vector3sToFloat32Array(this._currentMesh.vertices, indices);
@@ -1660,7 +1662,9 @@
               this._currentMesh.normalFaces && this._currentMesh.normalFaces.length > 0) {
             var indicesN = [];
             this._currentMesh.normalFaces.forEach(function (face) {
-              indicesN.push(face.indices[0], face.indices[1], face.indices[2]);
+              for (var t = 1; t < face.indices.length - 1; t++) {
+                indicesN.push(face.indices[0], face.indices[t], face.indices[t + 1]);
+              }
             });
             // set normals
             var normals = this._vector3sToFloat32Array(this._currentMesh.normals, indicesN);
