@@ -118,10 +118,10 @@
     }
 
     function setFilenameDisplay(name) {
-        // Update the navbar subtitle to show current file
+        // Update the navbar subtitle to show current file, matching splash screen style
         const subtitle = document.querySelector('.navbar-subtitle');
         if (subtitle) {
-            subtitle.innerHTML = '<i class="fas fa-cube" style="font-size:0.6rem;opacity:0.5"></i> ' + name;
+            subtitle.textContent = 'FOR ' + name.toUpperCase();
         }
     }
 
