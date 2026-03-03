@@ -41,6 +41,8 @@
         activeView: 'viewer',
     };
 
+    const DEFAULT_X_FILENAME = 'test.x';
+
     // -- Splash Screen -----------------------------------------------
     function initSplash() {
         const splash = $('#splash-screen');
@@ -294,8 +296,8 @@
 
         // ── Load the default .x model ────────────────────────
         console.log('[Viewer] Starting loadXFile...');
-        setFilenameDisplay('test.x');
-        loadXFile('test.x', loading, errorEl);
+        setFilenameDisplay(DEFAULT_X_FILENAME);
+        loadXFile(DEFAULT_X_FILENAME, loading, errorEl);
     }
 
     /**
@@ -304,6 +306,9 @@
      */
     function loadXFile(url, loadingEl, errorEl) {
         console.log('[Viewer] loadXFile called with:', url);
+        const finalUrl = (typeof url === 'string' && !/^blob:|^data:/i.test(url))
+            ? url + (url.includes('?') ? '&' : '?') + '_ts=' + Date.now()
+            : url;
         const manager = new THREE.LoadingManager();
         // Resolve texture paths relative to the model location
         const basePath = url.substring(0, url.lastIndexOf('/') + 1);
@@ -322,7 +327,7 @@
             if (span) span.textContent = 'Loading 3D Model…';
         }
 
-        loader.load(url, function (object) {
+        loader.load(finalUrl, function (object) {
             // Hide loading spinner
             if (loadingEl) loadingEl.classList.add('viewer-hidden');
 
