@@ -88,7 +88,11 @@
         camera.up.set(0, 1, 0);
 
         // ── Renderer ─────────────────────────────────────────
-        renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+        renderer = new THREE.WebGLRenderer({
+            canvas: canvas,
+            antialias: true,
+            logarithmicDepthBuffer: true   // prevents z-fighting on large models
+        });
         renderer.setPixelRatio(window.devicePixelRatio);
         renderer.setSize(w, h);
 
@@ -218,8 +222,8 @@
                 // Position camera to see the whole model
                 const fitDist = maxDim * 1.8;
                 camera.position.set(fitDist * 0.6, fitDist * 0.4, fitDist);
-                camera.near = maxDim * 0.001;
-                camera.far = maxDim * 100;
+                camera.near = maxDim * 0.01;
+                camera.far = maxDim * 20;
                 camera.updateProjectionMatrix();
 
                 controls.target.set(0, 0, 0);

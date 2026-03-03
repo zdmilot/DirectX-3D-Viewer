@@ -1642,22 +1642,26 @@
         var _this4 = this;
         if (this._currentMesh && Object.keys(this._currentMesh).length > 0) {
           var geometry = new THREE.BufferGeometry();
-          geometry.verticesNeedUpdate = true;
-          geometry.normalsNeedUpdate = true;
-          geometry.colorsNeedUpdate = true;
-          geometry.uvsNeedUpdate = true;
-          geometry.groupsNeedUpdate = true;
-          // set faces aka indices — fan-triangulate polygons (quads, n-gons)
+
+          // ── Fan-triangulate polygons and build per-triangle material index ──
           var indices = [];
-          this._currentMesh.vertexFaces.forEach(function (face) {
+          var triMatIndices = [];  // material index per output triangle
+          var faceMats = this._currentMesh.faceMaterials;
+          var hasFaceMats = faceMats && faceMats.length > 0;
+
+          this._currentMesh.vertexFaces.forEach(function (face, fi) {
+            var matIdx = hasFaceMats ? (faceMats[fi] || 0) : 0;
             for (var t = 1; t < face.indices.length - 1; t++) {
               indices.push(face.indices[0], face.indices[t], face.indices[t + 1]);
+              triMatIndices.push(matIdx);
             }
           });
+
           // set vertices
           var vertices = this._vector3sToFloat32Array(this._currentMesh.vertices, indices);
           geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
-          // set faces aka indices for normals
+
+          // set normals (fan-triangulated)
           if (this._currentMesh.normals && this._currentMesh.normals.length > 0 &&
               this._currentMesh.normalFaces && this._currentMesh.normalFaces.length > 0) {
             var indicesN = [];
@@ -1666,19 +1670,22 @@
                 indicesN.push(face.indices[0], face.indices[t], face.indices[t + 1]);
               }
             });
-            // set normals
             var normals = this._vector3sToFloat32Array(this._currentMesh.normals, indicesN);
             geometry.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
+          } else {
+            // Auto-compute normals when none are provided
+            geometry.computeVertexNormals();
           }
-          //geometry.setIndex(indices);
+
+          // set UVs
           if (this._currentMesh.texCoords && this._currentMesh.texCoords.length > 0) {
             var uvs = this._vector2sToFloat32Array(this._currentMesh.texCoords, indices);
             geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
           }
-          // set materials
+
+          // ── Build materials array ──────────────────────────────────────────
           var materials = [];
           this._currentMesh.materials.forEach(function (currentMaterial) {
-            // if the material is referenced by name, get the material from the scene
             var material = currentMaterial;
             if (material.isReference) {
               _this4._exportScene.materials.forEach(function (currentSceneMaterial) {
@@ -1693,19 +1700,22 @@
             mpMat.shininess = material.shininess;
             mpMat.specular = new THREE.Color(material.specular.r, material.specular.g, material.specular.b);
             mpMat.emissive = new THREE.Color(material.emissive.r, material.emissive.g, material.emissive.b);
+            // Prevent z-fighting on coplanar faces
+            mpMat.polygonOffset = true;
+            mpMat.polygonOffsetFactor = 1;
+            mpMat.polygonOffsetUnits = 1;
             if (material.map) {
               mpMat.map = _this4.texloader.load(material.map);
             }
             if (material.bumpMap) {
               mpMat.bumpMap = _this4.texloader.load(material.bumpMap);
-              // The original xLoader sets the bumpScale to 0.05 by default.
-              // In my case it defaults to 1 (see Material type constructor or materialNode parser),
-              // as it is the default value for this property (according to the threejs docs).
               mpMat.bumpScale = material.bumpScale;
             }
             if (material.normalMap) {
               mpMat.normalMap = _this4.texloader.load(material.normalMap);
-              mpMat.normalScale = new THREE.Vector2(material.normalScale.x, material.normalScale.y);
+              if (material.normalScale) {
+                mpMat.normalScale = new THREE.Vector2(material.normalScale.x, material.normalScale.y);
+              }
             }
             if (material.emissiveMap) {
               mpMat.emissiveMap = _this4.texloader.load(material.emissiveMap);
@@ -1715,10 +1725,68 @@
             }
             materials.push(mpMat);
           });
+
+          // ── Set up material groups for multi-material meshes ────────────────
+          if (materials.length > 1 && triMatIndices.length > 0) {
+            // Sort triangles by material index for efficient grouping
+            // Build re-ordered index array grouped by material
+            var triCount = triMatIndices.length;
+            var sortedTriOrder = [];
+            for (var si = 0; si < triCount; si++) sortedTriOrder.push(si);
+            sortedTriOrder.sort(function(a, b) { return triMatIndices[a] - triMatIndices[b]; });
+
+            // Re-order position, normal, uv buffers by sorted triangle order
+            var posAttr = geometry.getAttribute('position');
+            var normAttr = geometry.getAttribute('normal');
+            var uvAttr = geometry.getAttribute('uv');
+
+            var newPos = new Float32Array(triCount * 9);
+            var newNorm = normAttr ? new Float32Array(triCount * 9) : null;
+            var newUv = uvAttr ? new Float32Array(triCount * 6) : null;
+
+            for (var ti = 0; ti < triCount; ti++) {
+              var srcTri = sortedTriOrder[ti];
+              for (var vi = 0; vi < 3; vi++) {
+                var srcIdx = srcTri * 3 + vi;
+                var dstIdx = ti * 3 + vi;
+                newPos[dstIdx * 3]     = posAttr.array[srcIdx * 3];
+                newPos[dstIdx * 3 + 1] = posAttr.array[srcIdx * 3 + 1];
+                newPos[dstIdx * 3 + 2] = posAttr.array[srcIdx * 3 + 2];
+                if (newNorm) {
+                  newNorm[dstIdx * 3]     = normAttr.array[srcIdx * 3];
+                  newNorm[dstIdx * 3 + 1] = normAttr.array[srcIdx * 3 + 1];
+                  newNorm[dstIdx * 3 + 2] = normAttr.array[srcIdx * 3 + 2];
+                }
+                if (newUv) {
+                  newUv[dstIdx * 2]     = uvAttr.array[srcIdx * 2];
+                  newUv[dstIdx * 2 + 1] = uvAttr.array[srcIdx * 2 + 1];
+                }
+              }
+            }
+
+            geometry.setAttribute('position', new THREE.BufferAttribute(newPos, 3));
+            if (newNorm) geometry.setAttribute('normal', new THREE.BufferAttribute(newNorm, 3));
+            if (newUv)   geometry.setAttribute('uv', new THREE.BufferAttribute(newUv, 2));
+
+            // Build addGroup calls from sorted order
+            var currentMatIdx = triMatIndices[sortedTriOrder[0]];
+            var groupStart = 0;
+            for (var gi = 1; gi < triCount; gi++) {
+              var mi = triMatIndices[sortedTriOrder[gi]];
+              if (mi !== currentMatIdx) {
+                geometry.addGroup(groupStart * 3, (gi - groupStart) * 3, currentMatIdx);
+                groupStart = gi;
+                currentMatIdx = mi;
+              }
+            }
+            geometry.addGroup(groupStart * 3, (triCount - groupStart) * 3, currentMatIdx);
+          } else if (materials.length === 1) {
+            // Single material — cover all vertices
+            geometry.addGroup(0, indices.length, 0);
+          }
+
           var mesh = null;
           if (this._currentMesh.bones.length > 0) {
-            // define the bones based on the xLoader solution.
-            // make bones from the current root node.
             var bones = [];
             var tempBoneCountData = [];
             var tempBoneWeightData = [];
@@ -1766,20 +1834,23 @@
             mesh = new THREE.Mesh(geometry, materials.length === 1 ? materials[0] : materials);
           }
           mesh.name = this._currentMesh.name;
-          var worldBaseMx = new THREE.Matrix4();
-          if (currentObject) {
-            var currentMxFrame = currentObject.putBone;
-            if (currentMxFrame && currentMxFrame.parent) {
-              while (true) {
-                currentMxFrame = currentMxFrame.parent;
-                if (currentMxFrame) {
-                  worldBaseMx.multiply(currentMxFrame.FrameTransformMatrix);
-                } else {
-                  break;
-                }
+          // Apply the full Frame transformation hierarchy to position the mesh correctly
+          if (currentObject && currentObject.transformation) {
+            var worldBaseMx = new THREE.Matrix4();
+            // Walk the Frame hierarchy from root to this frame, accumulating transforms
+            var frameChain = [];
+            var walk = currentObject;
+            while (walk) {
+              if (walk.transformation && walk.transformation.length >= 16) {
+                frameChain.push(new THREE.Matrix4().fromArray(walk.transformation));
               }
-              mesh.applyMatrix4(worldBaseMx);
+              walk = walk.parentNode;
             }
+            // Apply from root down (reverse order)
+            for (var fi = frameChain.length - 1; fi >= 0; fi--) {
+              worldBaseMx.multiply(frameChain[fi]);
+            }
+            mesh.applyMatrix4(worldBaseMx);
           }
           this.meshes.push(mesh);
         }
