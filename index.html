@@ -6,7 +6,7 @@
     <title>Direct3D Tools</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1F9EA;</text></svg>">
     <link rel="stylesheet" href="css/fontawesome.min.css">
-    <link rel="stylesheet" href="css/main.css?v=20260303g">
+    <link rel="stylesheet" href="css/main.css?v=20260303h">
 </head>
 <body>
 
@@ -60,12 +60,7 @@
                 <i class="fas fa-bars"></i>
             </button>
             <div class="navbar-actions">
-                <button class="nav-btn" id="btn-open" data-tooltip="Open a .x file" aria-label="Open a .x file">
-                    <i class="fas fa-folder-open"></i>
-                    <span>Open</span>
-                </button>
                 <input type="file" id="file-input" accept=".x" style="display:none">
-                <div class="nav-divider"></div>
                 <button class="nav-btn nav-btn-icon grid-toggle" id="btn-grid" data-tooltip="Hide bottom gridlines" aria-label="Hide bottom gridlines">
                     <i class="fas fa-border-all"></i>
                     <span class="grid-slash" aria-hidden="true"></span>
@@ -120,6 +115,53 @@
                     <span id="viewer-error-msg">Failed to load model.</span>
                 </div>
                 <canvas id="viewer-canvas"></canvas>
+
+                <!-- Floating 3D Toolbar (collapsible) -->
+                <div class="viewer-toolbar" id="viewer-toolbar">
+                    <!-- Collapse/expand toggle -->
+                    <button class="vt-toggle" id="vt-toggle" title="Toggle toolbar">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+
+                    <div class="vt-body" id="vt-body">
+                        <!-- Axis gizmo -->
+                        <div class="vt-gizmo" id="vt-gizmo">
+                            <canvas id="gizmo-canvas" width="90" height="90"></canvas>
+                        </div>
+
+                        <div class="vt-separator"></div>
+
+                        <!-- Toolbar buttons -->
+                        <button class="vt-btn" id="vt-open" title="Open .x file">
+                            <i class="fas fa-folder-open"></i>
+                        </button>
+                        <button class="vt-btn" id="vt-reset-cam" title="Reset camera">
+                            <i class="fas fa-video"></i>
+                        </button>
+                        <button class="vt-btn" id="vt-zoom-fit" title="Zoom to fit">
+                            <i class="fas fa-expand"></i>
+                        </button>
+                        <button class="vt-btn" id="vt-wireframe" title="Toggle wireframe">
+                            <i class="fas fa-draw-polygon"></i>
+                        </button>
+                        <button class="vt-btn" id="vt-perspective" title="Toggle perspective / orthographic">
+                            <i class="fas fa-cube"></i>
+                        </button>
+
+                        <div class="vt-separator"></div>
+
+                        <button class="vt-btn vt-btn-round" id="vt-zoom-in" title="Zoom in">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                        <button class="vt-btn vt-btn-round" id="vt-zoom-out" title="Zoom out">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                        <button class="vt-btn vt-btn-round" id="vt-pan" title="Pan mode">
+                            <i class="fas fa-hand-paper"></i>
+                        </button>
+                    </div>
+                </div>
+
                 <div class="viewer-dropzone viewer-hidden" id="viewer-dropzone">
                     <div class="dropzone-content">
                         <i class="fas fa-file-import"></i>
@@ -145,6 +187,6 @@
     <script src="js/lib/three.min.js"></script>
     <script src="js/lib/OrbitControls.js"></script>
     <script src="js/lib/XFileLoader.js?v=20260303i"></script>
-    <script src="js/app.js?v=20260303c"></script>
+    <script src="js/app.js?v=20260303d"></script>
 </body>
 </html>

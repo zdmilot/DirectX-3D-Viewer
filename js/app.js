@@ -10,18 +10,34 @@
     const dom = {
         btnTheme: $('#btn-theme'),
         btnGrid: $('#btn-grid'),
-        btnOpen: $('#btn-open'),
         fileInput: $('#file-input'),
         btnSidebarToggle: $('#btn-sidebar-toggle'),
         sidebarNav: $('#sidebar-nav'),
         viewerHost: null,   // set in initViewer
         dropzone: $('#viewer-dropzone'),
         navSubtitle: null,  // set dynamically
+        // Floating toolbar
+        viewerToolbar: $('#viewer-toolbar'),
+        vtToggle: $('#vt-toggle'),
+        vtBody: $('#vt-body'),
+        vtOpen: $('#vt-open'),
+        vtResetCam: $('#vt-reset-cam'),
+        vtZoomFit: $('#vt-zoom-fit'),
+        vtWireframe: $('#vt-wireframe'),
+        vtPerspective: $('#vt-perspective'),
+        vtZoomIn: $('#vt-zoom-in'),
+        vtZoomOut: $('#vt-zoom-out'),
+        vtPan: $('#vt-pan'),
+        gizmoCanvas: $('#gizmo-canvas'),
     };
 
     const state = {
         isDark: false,
         gridVisible: true,
+        wireframe: false,
+        isPerspective: true,
+        isPanning: false,
+        toolbarCollapsed: false,
     };
 
     // -- Splash Screen -----------------------------------------------
@@ -266,6 +282,8 @@
             animMixers.forEach(m => m.update(dt / 1000));
             controls.update();
             renderer.render(scene, camera);
+            // Update orientation gizmo
+            drawGizmo();
         }
         tick();
 
@@ -444,6 +462,206 @@
         }
     }
 
+    // ================================================================
+    //  Floating Toolbar Controls
+    // ================================================================
+
+    function toggleToolbar() {
+        state.toolbarCollapsed = !state.toolbarCollapsed;
+        dom.viewerToolbar.classList.toggle('collapsed', state.toolbarCollapsed);
+    }
+
+    function resetCamera() {
+        if (!camera || !controls) return;
+        const model = scene ? scene.getObjectByName('__xmodel__') : null;
+        if (model) {
+            const box = new THREE.Box3().setFromObject(model);
+            const size = box.getSize(new THREE.Vector3());
+            const maxDim = Math.max(size.x, size.y, size.z);
+            const fitDist = maxDim * 1.8;
+            camera.position.set(fitDist * 0.6, fitDist * 0.4, fitDist);
+            controls.target.set(0, 0, 0);
+            controls.update();
+        } else {
+            camera.position.set(0, 50, 150);
+            controls.target.set(0, 0, 0);
+            controls.update();
+        }
+    }
+
+    function zoomToFit() {
+        if (!camera || !controls || !scene) return;
+        const model = scene.getObjectByName('__xmodel__');
+        if (!model) return;
+        const box = new THREE.Box3().setFromObject(model);
+        const center = box.getCenter(new THREE.Vector3());
+        const size = box.getSize(new THREE.Vector3());
+        const maxDim = Math.max(size.x, size.y, size.z);
+        if (maxDim <= 0) return;
+        const fitDist = maxDim * 1.5;
+        // Animate-like quick snap
+        const dir = camera.position.clone().sub(controls.target).normalize();
+        camera.position.copy(dir.multiplyScalar(fitDist));
+        controls.target.set(0, 0, 0);
+        camera.updateProjectionMatrix();
+        controls.update();
+    }
+
+    function toggleWireframe() {
+        state.wireframe = !state.wireframe;
+        dom.vtWireframe.classList.toggle('is-active', state.wireframe);
+        if (!scene) return;
+        const model = scene.getObjectByName('__xmodel__');
+        if (!model) return;
+        model.traverse(function (child) {
+            if (child.material) {
+                const mats = Array.isArray(child.material) ? child.material : [child.material];
+                mats.forEach(function (m) {
+                    m.wireframe = state.wireframe;
+                });
+            }
+        });
+    }
+
+    function togglePerspective() {
+        if (!camera || !controls) return;
+        const card = $('#viewer-host');
+        const w = card.clientWidth || 800;
+        const h = card.clientHeight || 600;
+        state.isPerspective = !state.isPerspective;
+        dom.vtPerspective.classList.toggle('is-active', !state.isPerspective);
+
+        const pos = camera.position.clone();
+        const target = controls.target.clone();
+
+        if (state.isPerspective) {
+            camera = new THREE.PerspectiveCamera(45, w / h, 0.1, 10000);
+            dom.vtPerspective.querySelector('i').className = 'fas fa-cube';
+        } else {
+            const dist = pos.distanceTo(target);
+            const frustumSize = dist * Math.tan(THREE.MathUtils.degToRad(22.5));
+            camera = new THREE.OrthographicCamera(
+                -frustumSize * (w / h), frustumSize * (w / h),
+                frustumSize, -frustumSize,
+                0.1, 10000
+            );
+            dom.vtPerspective.querySelector('i').className = 'fas fa-vector-square';
+        }
+
+        camera.position.copy(pos);
+        camera.up.set(0, 1, 0);
+        camera.lookAt(target);
+
+        controls.dispose();
+        controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.12;
+        controls.target.copy(target);
+        controls.update();
+    }
+
+    function doZoom(factor) {
+        if (!camera || !controls) return;
+        const dir = camera.position.clone().sub(controls.target);
+        dir.multiplyScalar(factor);
+        camera.position.copy(controls.target.clone().add(dir));
+        controls.update();
+    }
+
+    function togglePanMode() {
+        state.isPanning = !state.isPanning;
+        dom.vtPan.classList.toggle('is-active', state.isPanning);
+        if (controls) {
+            // In pan mode, left mouse = pan; otherwise left mouse = orbit
+            controls.mouseButtons.LEFT = state.isPanning
+                ? THREE.MOUSE.PAN
+                : THREE.MOUSE.ROTATE;
+        }
+    }
+
+    // ================================================================
+    //  Axis Orientation Gizmo
+    // ================================================================
+    function drawGizmo() {
+        if (!dom.gizmoCanvas || !camera) return;
+        const ctx = dom.gizmoCanvas.getContext('2d');
+        const dpr = window.devicePixelRatio || 1;
+        const size = 90;
+        dom.gizmoCanvas.width = size * dpr;
+        dom.gizmoCanvas.height = size * dpr;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.clearRect(0, 0, size, size);
+
+        const cx = size / 2;
+        const cy = size / 2;
+        const len = 28;
+
+        // Get camera direction to compute axis projections
+        const camDir = new THREE.Vector3();
+        camera.getWorldDirection(camDir);
+        const camUp = camera.up.clone().normalize();
+        const camRight = new THREE.Vector3().crossVectors(camDir, camUp).normalize();
+        const camActualUp = new THREE.Vector3().crossVectors(camRight, camDir).normalize();
+
+        const axes = [
+            { label: 'X', color: '#e74c6f', dir: new THREE.Vector3(1, 0, 0) },
+            { label: 'Y', color: '#8bc34a', dir: new THREE.Vector3(0, 1, 0) },
+            { label: 'Z', color: '#4a90d9', dir: new THREE.Vector3(0, 0, 1) },
+        ];
+
+        // Project each axis onto screen-space
+        const projected = axes.map(function (a) {
+            const x2d = a.dir.dot(camRight);
+            const y2d = -a.dir.dot(camActualUp);
+            const depth = a.dir.dot(camDir);
+            return { label: a.label, color: a.color, x: x2d, y: y2d, depth: depth };
+        });
+
+        // Sort by depth so farthest axes draw first
+        projected.sort(function (a, b) { return b.depth - a.depth; });
+
+        projected.forEach(function (p) {
+            const ex = cx + p.x * len;
+            const ey = cy + p.y * len;
+            const isBehind = p.depth > 0.3;
+
+            // Draw axis line
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.lineTo(ex, ey);
+            ctx.strokeStyle = isBehind ? 'rgba(120,130,145,0.25)' : p.color;
+            ctx.lineWidth = isBehind ? 1.5 : 2.5;
+            ctx.stroke();
+
+            // Draw endpoint circle
+            const r = isBehind ? 5 : 8;
+            ctx.beginPath();
+            ctx.arc(ex, ey, r, 0, Math.PI * 2);
+            if (isBehind) {
+                ctx.fillStyle = 'rgba(120,130,145,0.2)';
+                ctx.strokeStyle = 'rgba(120,130,145,0.35)';
+                ctx.lineWidth = 1.5;
+                ctx.fill();
+                ctx.stroke();
+            } else {
+                ctx.fillStyle = p.color;
+                ctx.fill();
+                // Label
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 9px Inter, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(p.label, ex, ey + 0.5);
+            }
+        });
+
+        // Center dot
+        ctx.beginPath();
+        ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(180,190,200,0.5)';
+        ctx.fill();
+    }
+
     // -- Init --------------------------------------------------------
     function init() {
         try {
@@ -453,13 +671,23 @@
 
         dom.btnTheme.addEventListener('click', toggleTheme);
         dom.btnGrid.addEventListener('click', toggleGrid);
-        dom.btnOpen.addEventListener('click', openFileDialog);
         dom.fileInput.addEventListener('change', handleFileSelected);
 
         // Sidebar toggle – overlay style, no layout shift
         dom.btnSidebarToggle.addEventListener('click', () => {
             dom.sidebarNav.classList.toggle('collapsed');
         });
+
+        // Floating toolbar events
+        if (dom.vtToggle) dom.vtToggle.addEventListener('click', toggleToolbar);
+        if (dom.vtOpen) dom.vtOpen.addEventListener('click', openFileDialog);
+        if (dom.vtResetCam) dom.vtResetCam.addEventListener('click', resetCamera);
+        if (dom.vtZoomFit) dom.vtZoomFit.addEventListener('click', zoomToFit);
+        if (dom.vtWireframe) dom.vtWireframe.addEventListener('click', toggleWireframe);
+        if (dom.vtPerspective) dom.vtPerspective.addEventListener('click', togglePerspective);
+        if (dom.vtZoomIn) dom.vtZoomIn.addEventListener('click', () => doZoom(0.75));
+        if (dom.vtZoomOut) dom.vtZoomOut.addEventListener('click', () => doZoom(1.35));
+        if (dom.vtPan) dom.vtPan.addEventListener('click', togglePanMode);
 
         initSplash();
     }
