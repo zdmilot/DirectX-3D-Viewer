@@ -1786,6 +1786,7 @@
             }
             var matIndex = materials.length;  // unique index for this material
             var mpMat = new THREE.MeshPhongMaterial();
+            mpMat.side = THREE.DoubleSide;
             mpMat.name = material.name;
             mpMat.color = new THREE.Color(material.color.r, material.color.g, material.color.b);
             mpMat.shininess = material.shininess;

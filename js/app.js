@@ -203,13 +203,19 @@
                 // between overlapping meshes from different frames
                 model.renderOrder = i;
 
-                // Apply per-mesh polygon offset so coplanar faces from
-                // different meshes get depth-separated
+                // Apply polygon offset to prevent z-fighting between
+                // overlapping meshes.  Mesh 0 (outer shell) gets zero
+                // offset; later meshes are pushed progressively behind
+                // so the outer shell always wins at coplanar surfaces.
+                // This is symmetric — the same GPU polygonOffset math
+                // applies identically regardless of viewing direction.
                 if (model.material) {
                     const applyOffset = (m, meshIdx) => {
-                        m.polygonOffset = true;
-                        m.polygonOffsetFactor = 1 + meshIdx * 0.5;
-                        m.polygonOffsetUnits  = 1 + meshIdx;
+                        if (meshIdx > 0) {
+                            m.polygonOffset = true;
+                            m.polygonOffsetFactor = meshIdx;
+                            m.polygonOffsetUnits  = meshIdx * 4;
+                        }
                     };
                     if (Array.isArray(model.material)) {
                         model.material.forEach(m => applyOffset(m, i));
