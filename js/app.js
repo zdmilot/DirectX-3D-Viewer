@@ -59,7 +59,7 @@
     let animMixers = [];
     let lastTime = Date.now();
 
-    const LIGHT_BG  = 0xe9eef2;
+    const LIGHT_BG  = 0xf0f0f0;
     const DARK_BG   = 0x1b2838;
     const LIGHT_GRID = 0xcccccc;
     const DARK_GRID  = 0x2a3a4a;
