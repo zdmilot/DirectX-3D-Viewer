@@ -632,6 +632,63 @@ body {
     display: none !important;
 }
 
+/* Drag-and-drop overlay */
+.viewer-dropzone {
+    position: absolute;
+    inset: 0;
+    z-index: 15;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(2, 117, 216, 0.12);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border: 3px dashed var(--accent);
+    border-radius: var(--r-md);
+    margin: 12px;
+    transition: opacity var(--t-fast) ease;
+}
+
+.dropzone-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    color: var(--accent);
+    font-size: 1.1rem;
+    font-weight: 600;
+    pointer-events: none;
+}
+
+.dropzone-content i {
+    font-size: 2.5rem;
+    opacity: 0.8;
+}
+
+/* Active file name pill in navbar */
+.navbar-filename {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: var(--r-xl);
+    background: rgba(255,255,255,0.1);
+    color: rgba(255,255,255,0.7);
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    transition: background var(--t-fast), color var(--t-fast);
+}
+
+.navbar-filename i {
+    font-size: 0.65rem;
+    opacity: 0.6;
+}
+
 /* ---------- Responsive -------------------------------------- */
 @media (max-width: 680px) {
     .navbar-subtitle { display: none; }

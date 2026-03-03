@@ -10,8 +10,13 @@
     const dom = {
         btnTheme: $('#btn-theme'),
         btnGrid: $('#btn-grid'),
+        btnOpen: $('#btn-open'),
+        fileInput: $('#file-input'),
         btnSidebarToggle: $('#btn-sidebar-toggle'),
         sidebarNav: $('#sidebar-nav'),
+        viewerHost: null,   // set in initViewer
+        dropzone: $('#viewer-dropzone'),
+        navSubtitle: null,  // set dynamically
     };
 
     const state = {
@@ -51,6 +56,109 @@
             dom.btnTheme.querySelector('i').className = 'fas fa-moon';
         }
         try { localStorage.setItem('dilution-dark-mode', state.isDark ? '1' : '0'); } catch(e) {}
+    }
+
+    // -- File Open ---------------------------------------------------
+    function openFileDialog() {
+        dom.fileInput.click();
+    }
+
+    function handleFileSelected(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        loadUserFile(file);
+        // Reset input so re-selecting the same file triggers change
+        dom.fileInput.value = '';
+    }
+
+    function loadUserFile(file) {
+        if (!file.name.toLowerCase().endsWith('.x')) {
+            alert('Please select a .x file.');
+            return;
+        }
+        const url = URL.createObjectURL(file);
+        const loading = $('#viewer-loading');
+        const errorEl = $('#viewer-error');
+
+        // Clear previous model
+        clearModel();
+
+        // Show loading
+        if (loading) {
+            loading.classList.remove('viewer-hidden');
+            const span = loading.querySelector('span');
+            if (span) span.textContent = 'Loading ' + file.name + '…';
+        }
+        if (errorEl) errorEl.classList.add('viewer-hidden');
+
+        // Update filename display
+        setFilenameDisplay(file.name);
+
+        loadXFile(url, loading, errorEl);
+    }
+
+    function clearModel() {
+        if (!scene) return;
+        const old = scene.getObjectByName('__xmodel__');
+        if (old) {
+            old.traverse((child) => {
+                if (child.geometry) child.geometry.dispose();
+                if (child.material) {
+                    if (Array.isArray(child.material)) {
+                        child.material.forEach(m => m.dispose());
+                    } else {
+                        child.material.dispose();
+                    }
+                }
+            });
+            scene.remove(old);
+        }
+        // Clear animation mixers
+        animMixers.length = 0;
+    }
+
+    function setFilenameDisplay(name) {
+        // Update the navbar subtitle to show current file
+        const subtitle = document.querySelector('.navbar-subtitle');
+        if (subtitle) {
+            subtitle.innerHTML = '<i class="fas fa-cube" style="font-size:0.6rem;opacity:0.5"></i> ' + name;
+        }
+    }
+
+    // -- Drag & Drop -------------------------------------------------
+    let dragCounter = 0;
+
+    function initDragDrop() {
+        const host = dom.viewerHost;
+        if (!host) return;
+
+        host.addEventListener('dragenter', (e) => {
+            e.preventDefault();
+            dragCounter++;
+            if (dragCounter === 1) dom.dropzone.classList.remove('viewer-hidden');
+        });
+
+        host.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'copy';
+        });
+
+        host.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            dragCounter--;
+            if (dragCounter <= 0) {
+                dragCounter = 0;
+                dom.dropzone.classList.add('viewer-hidden');
+            }
+        });
+
+        host.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dragCounter = 0;
+            dom.dropzone.classList.add('viewer-hidden');
+            const file = e.dataTransfer.files[0];
+            if (file) loadUserFile(file);
+        });
     }
 
     // -- Grid Toggle ------------------------------------------------
@@ -161,8 +269,13 @@
         }
         tick();
 
-        // ── Load the .x model ────────────────────────────────
+        // ── Drag & drop support ──────────────────────────────
+        dom.viewerHost = card;
+        initDragDrop();
+
+        // ── Load the default .x model ────────────────────────
         console.log('[Viewer] Starting loadXFile...');
+        setFilenameDisplay('test.x');
         loadXFile('test.x', loading, errorEl);
     }
 
@@ -340,6 +453,8 @@
 
         dom.btnTheme.addEventListener('click', toggleTheme);
         dom.btnGrid.addEventListener('click', toggleGrid);
+        dom.btnOpen.addEventListener('click', openFileDialog);
+        dom.fileInput.addEventListener('change', handleFileSelected);
 
         // Sidebar toggle – overlay style, no layout shift
         dom.btnSidebarToggle.addEventListener('click', () => {

@@ -60,6 +60,12 @@
                 <i class="fas fa-bars"></i>
             </button>
             <div class="navbar-actions">
+                <button class="nav-btn" id="btn-open" data-tooltip="Open a .x file" aria-label="Open a .x file">
+                    <i class="fas fa-folder-open"></i>
+                    <span>Open</span>
+                </button>
+                <input type="file" id="file-input" accept=".x" style="display:none">
+                <div class="nav-divider"></div>
                 <button class="nav-btn nav-btn-icon grid-toggle" id="btn-grid" data-tooltip="Hide bottom gridlines" aria-label="Hide bottom gridlines">
                     <i class="fas fa-border-all"></i>
                     <span class="grid-slash" aria-hidden="true"></span>
@@ -114,6 +120,12 @@
                     <span id="viewer-error-msg">Failed to load model.</span>
                 </div>
                 <canvas id="viewer-canvas"></canvas>
+                <div class="viewer-dropzone viewer-hidden" id="viewer-dropzone">
+                    <div class="dropzone-content">
+                        <i class="fas fa-file-import"></i>
+                        <span>Drop .x file here</span>
+                    </div>
+                </div>
             </div>
             <div class="view-panel" data-view-panel="test1">
                 <div class="view-placeholder">
