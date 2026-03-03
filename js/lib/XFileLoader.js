@@ -1347,6 +1347,166 @@
     return node;
   }
 
+  // ================================================================
+  //  Binary .x file support — converts binary token stream to text
+  //  that the existing TextParser can consume.
+  // ================================================================
+
+  /**
+   * Format a float value without scientific notation.
+   * Needed because the text parser reads digit-by-digit and
+   * cannot handle 'e+' / 'e-' notation.
+   */
+  function formatBinFloat(v) {
+    if (!isFinite(v) || Math.abs(v) < 1e-38) return '0';
+    var s = v.toPrecision(8);
+    if (s.indexOf('e') === -1 && s.indexOf('E') === -1) return s;
+    // Fall back to fixed-point notation
+    var d = 20;
+    s = v.toFixed(d);
+    // Trim trailing zeros but keep at least one decimal digit
+    s = s.replace(/0+$/, '');
+    if (s.charAt(s.length - 1) === '.') s += '0';
+    return s;
+  }
+
+  /** Read \`len\` ASCII chars from a Uint8Array at \`pos\`. */
+  function readAscii(bytes, pos, len) {
+    var s = '';
+    for (var i = 0; i < len; i++) s += String.fromCharCode(bytes[pos + i]);
+    return s;
+  }
+
+  /**
+   * Skip a binary template definition starting right after the
+   * 0x001f (TEMPLATE) token.  Returns the new byte offset.
+   */
+  function skipBinTemplate(view, bytes, pos, len, fBytes) {
+    // Read tokens until the matching closing brace of the template
+    var depth = 0;
+    while (pos < len - 1) {
+      var t = view.getUint16(pos, true);
+      pos += 2;
+      if (t === 0x000a) {                      // OBRACE
+        depth++;
+      } else if (t === 0x000b) {               // CBRACE
+        depth--;
+        if (depth <= 0) break;
+      } else if (t === 0x0001) {                // NAME
+        var n = view.getUint32(pos, true);
+        pos += 4 + n;
+      } else if (t === 0x0005) {                // GUID
+        pos += 16;
+      } else if (t === 0x0002) {                // STRING
+        var sl = view.getUint32(pos, true);
+        pos += 4 + sl + 2;                     // +2 terminator bytes
+      } else if (t === 0x0003) {                // INTEGER
+        pos += 4;
+      } else if (t === 0x0006) {                // INTEGER_LIST
+        var ic = view.getUint32(pos, true);
+        pos += 4 + ic * 4;
+      } else if (t === 0x0007) {                // FLOAT_LIST
+        var fc = view.getUint32(pos, true);
+        pos += 4 + fc * fBytes;
+      }
+      // All other 2-byte tokens were already advanced.
+    }
+    return pos;
+  }
+
+  /**
+   * Convert a binary .x ArrayBuffer into a text string that the
+   * existing TextParser can parse.  Template definitions are
+   * skipped; data tokens are expanded into their text equivalents.
+   *
+   * @param {ArrayBuffer} arrayBuffer  The raw file bytes.
+   * @param {number}      floatSize   32 or 64 (from header bytes 12-15).
+   * @returns {string}  Equivalent text-format .x content (without header line).
+   */
+  function binaryToText(arrayBuffer, floatSize) {
+    var view = new DataView(arrayBuffer);
+    var bytes = new Uint8Array(arrayBuffer);
+    var len = view.byteLength;
+    var pos = 16;                              // skip 16-byte header
+    var isFloat64 = (floatSize === 64);
+    var fBytes = isFloat64 ? 8 : 4;
+    var parts = [];
+
+    // ── Skip template definitions ──────────────────────────────
+    while (pos < len - 1) {
+      var tok = view.getUint16(pos, true);
+      if (tok !== 0x001f) break;               // not a TEMPLATE token
+      pos = skipBinTemplate(view, bytes, pos + 2, len, fBytes);
+    }
+
+    // ── Convert data tokens to text ────────────────────────────
+    while (pos < len - 1) {
+      var tok = view.getUint16(pos, true);
+      pos += 2;
+      switch (tok) {
+        case 0x0001: {                         // NAME
+          var nlen = view.getUint32(pos, true); pos += 4;
+          parts.push(readAscii(bytes, pos, nlen), ' ');
+          pos += nlen;
+          break;
+        }
+        case 0x0002: {                         // STRING
+          var slen = view.getUint32(pos, true); pos += 4;
+          parts.push('"', readAscii(bytes, pos, slen), '"');
+          pos += slen + 2;                     // +2 terminator bytes
+          break;
+        }
+        case 0x0003: {                         // INTEGER (standalone)
+          parts.push(view.getInt32(pos, true).toString(), ';');
+          pos += 4;
+          break;
+        }
+        case 0x0005:                           // GUID — skip
+          pos += 16;
+          break;
+        case 0x0006: {                         // INTEGER_LIST
+          var icnt = view.getUint32(pos, true); pos += 4;
+          for (var ii = 0; ii < icnt; ii++) {
+            parts.push(view.getInt32(pos, true).toString(), ';');
+            pos += 4;
+          }
+          break;
+        }
+        case 0x0007: {                         // FLOAT_LIST
+          var fcnt = view.getUint32(pos, true); pos += 4;
+          for (var fi = 0; fi < fcnt; fi++) {
+            if (isFloat64) {
+              parts.push(formatBinFloat(view.getFloat64(pos, true)), ';');
+              pos += 8;
+            } else {
+              parts.push(formatBinFloat(view.getFloat32(pos, true)), ';');
+              pos += 4;
+            }
+          }
+          break;
+        }
+        case 0x000a:                           // OBRACE
+          parts.push('{\n');
+          break;
+        case 0x000b:                           // CBRACE
+          parts.push('}\n');
+          break;
+        case 0x0013:                           // COMMA
+          parts.push(',');
+          break;
+        case 0x0014:                           // SEMICOLON
+          parts.push(';');
+          break;
+        case 0x001f:                           // Stray TEMPLATE in data
+          pos = skipBinTemplate(view, bytes, pos, len, fBytes);
+          break;
+        default:                               // Unknown — skip 2-byte token
+          break;
+      }
+    }
+    return parts.join('');
+  }
+
   var TextParser = /*#__PURE__*/function () {
     // It contains the text of the .X file
 
@@ -1567,48 +1727,75 @@
       key: "_parse",
       value: function _parse(data, onLoad) {
         var _this2 = this;
-        // make sure data is a string
-        if (typeof data !== "string") {
-          // Use TextDecoder for fast arraybuffer-to-string (replaces O(n^2) loop)
-          if (typeof TextDecoder !== 'undefined') {
-            data = new TextDecoder('utf-8').decode(new Uint8Array(data));
-          } else {
-            var array_buffer = new Uint8Array(data);
-            var chunks = [];
-            var CHUNK = 8192;
-            for (var i = 0; i < array_buffer.length; i += CHUNK) {
-              chunks.push(String.fromCharCode.apply(null, array_buffer.subarray(i, Math.min(i + CHUNK, array_buffer.length))));
-            }
-            data = chunks.join('');
-          }
-        }
+        // Keep original data for potential binary parsing
+        var rawData = data;
+
         try {
-          var lines = data.split(/\r?\n/);
-          var firstLine = lines[0];
-          this._headerInfo = new HeaderLineParser(firstLine);
-          this.onLoad = onLoad;
-          if (!this._headerInfo._fileCompressed && !this._headerInfo._fileBinary) {
-            var parser = new TextParser(lines.slice(1).join('\n'));
-            this._exportScene = parser.parse();
-            this._initCurrentAnimationAndMesh();
-            this._currentObject = this._exportScene.rootNode;
-            if (this._currentObject) {
-              this._processFrame(this._currentObject);
-            } else {
-              this._exportScene.animations.forEach(function (currentAnim) {
-                _this2._currentAnimation = currentAnim;
-                _this2._makeOutputAnimation();
-              });
-            }
-            setTimeout(function () {
-              _this2.onLoad({
-                models: _this2.meshes,
-                animations: _this2.animations
-              });
-            }, 1);
+          // ── Read header from first 16 bytes ─────────────────────
+          var headerStr;
+          if (typeof data !== 'string') {
+            var hdr = new Uint8Array(data, 0, Math.min(16, data.byteLength));
+            headerStr = '';
+            for (var hi = 0; hi < hdr.length; hi++) headerStr += String.fromCharCode(hdr[hi]);
           } else {
-            throw 'Unsupported file format.';
+            headerStr = data.substring(0, 16);
           }
+
+          this._headerInfo = new HeaderLineParser(headerStr);
+          this.onLoad = onLoad;
+
+          var parser;
+
+          if (!this._headerInfo._fileCompressed && !this._headerInfo._fileBinary) {
+            // ── TEXT FORMAT ──────────────────────────────────────
+            if (typeof data !== 'string') {
+              if (typeof TextDecoder !== 'undefined') {
+                data = new TextDecoder('utf-8').decode(new Uint8Array(data));
+              } else {
+                var array_buffer = new Uint8Array(data);
+                var chunks = [];
+                var CHUNK = 8192;
+                for (var i = 0; i < array_buffer.length; i += CHUNK) {
+                  chunks.push(String.fromCharCode.apply(null, array_buffer.subarray(i, Math.min(i + CHUNK, array_buffer.length))));
+                }
+                data = chunks.join('');
+              }
+            }
+            var lines = data.split(/\r?\n/);
+            parser = new TextParser(lines.slice(1).join('\n'));
+
+          } else if (this._headerInfo._fileBinary && !this._headerInfo._fileCompressed) {
+            // ── BINARY FORMAT ────────────────────────────────────
+            var arrBuf = (typeof rawData === 'string') ? null : rawData;
+            if (!arrBuf) throw 'Binary .x data must be loaded as ArrayBuffer.';
+            var floatSize = parseInt(headerStr.substring(12, 16), 10) || 32;
+            console.log('[XFileLoader] Binary .x detected — converting to text (floatSize=' + floatSize + ')');
+            var textFromBin = binaryToText(arrBuf, floatSize);
+            // Prepend a dummy first line because TextParser skips the first line
+            parser = new TextParser('\n' + textFromBin);
+
+          } else {
+            throw 'Compressed .x files are not yet supported.';
+          }
+
+          // ── Common processing for both text and binary ────────
+          this._exportScene = parser.parse();
+          this._initCurrentAnimationAndMesh();
+          this._currentObject = this._exportScene.rootNode;
+          if (this._currentObject) {
+            this._processFrame(this._currentObject);
+          } else {
+            this._exportScene.animations.forEach(function (currentAnim) {
+              _this2._currentAnimation = currentAnim;
+              _this2._makeOutputAnimation();
+            });
+          }
+          setTimeout(function () {
+            _this2.onLoad({
+              models: _this2.meshes,
+              animations: _this2.animations
+            });
+          }, 1);
         } catch (e) {
           console.error('XFileLoader parse error:', e);
           if (this._onError) {
