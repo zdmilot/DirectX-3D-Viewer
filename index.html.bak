@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Serial Dilution Calculator</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧪</text></svg>">
+    <link rel="stylesheet" href="css/fontawesome.min.css">
+    <link rel="stylesheet" href="css/main.css?v=20260302z4">
+</head>
+<body>
+
+    <!-- Splash Screen -->
+    <div id="splash-screen">
+        <div class="splash-content">
+            <div class="splash-icon-wrap">
+                <svg class="splash-icon" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="splash-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#5f97c5;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#00bcd7;stop-opacity:1" />
+                        </linearGradient>
+                        <linearGradient id="liquid-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" style="stop-color:#00bcd7;stop-opacity:0.65" />
+                            <stop offset="100%" style="stop-color:#0366A0;stop-opacity:0.85" />
+                        </linearGradient>
+                        <clipPath id="tube-clip">
+                            <path d="M 40,16 L 40,63 L 60,106 L 80,63 L 80,16 Z" />
+                        </clipPath>
+                    </defs>
+                    <!-- Pointed-bottom tube outline (no lid) -->
+                    <path d="M 33,15 L 38,15 L 38,63 L 60,108 L 82,63 L 82,15 L 87,15"
+                          fill="none" stroke="url(#splash-grad)" stroke-width="3"
+                          stroke-linecap="round" stroke-linejoin="round"
+                          class="splash-tube-outline"/>
+                    <!-- Liquid fill (clipped to tube interior) -->
+                    <g clip-path="url(#tube-clip)">
+                        <rect x="38" y="16" width="44" height="92" fill="url(#liquid-grad)" class="splash-liquid"/>
+                    </g>
+                    <!-- Measurement marks -->
+                    <line x1="42" y1="38" x2="51" y2="38" stroke="rgba(255,255,255,0.35)" stroke-width="1" class="splash-mark splash-mark-3"/>
+                    <line x1="42" y1="52" x2="49" y2="52" stroke="rgba(255,255,255,0.35)" stroke-width="1" class="splash-mark splash-mark-2"/>
+                    <line x1="43" y1="66" x2="50" y2="66" stroke="rgba(255,255,255,0.35)" stroke-width="1" class="splash-mark splash-mark-1"/>
+                </svg>
+            </div>
+            <div class="splash-title">Serial Dilution Calculator</div>
+            <div class="splash-subtitle">FOR VENUS 6+</div>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="app" class="app-hidden">
+        <!-- Top Navigation Bar -->
+        <nav class="navbar">
+            <button class="nav-btn nav-btn-icon" id="btn-sidebar-toggle" title="Toggle sidebar">
+                <i class="fas fa-bars"></i>
+            </button>
+            <div class="navbar-actions">
+                <button class="nav-btn" id="btn-reset" title="Reset to defaults">
+                    <i class="fas fa-rotate-right"></i>
+                    <span>Reset</span>
+                </button>
+                <button class="nav-btn" id="btn-export" title="Export results">
+                    <i class="fas fa-file-export"></i>
+                    <span>Export</span>
+                </button>
+                <div class="nav-divider"></div>
+                <button class="nav-btn nav-btn-icon" id="btn-theme" title="Toggle theme">
+                    <i class="fas fa-moon"></i>
+                </button>
+                <button class="nav-btn nav-btn-icon" id="btn-config" title="Advanced Configuration">
+                    <i class="fas fa-sliders"></i>
+                </button>
+                <button class="nav-btn nav-btn-icon" id="btn-help" title="Help">
+                    <i class="fas fa-circle-question"></i>
+                </button>
+                <button class="nav-btn nav-btn-icon" id="btn-settings" title="Settings">
+                    <i class="fas fa-cog"></i>
+                </button>
+                <div class="nav-divider"></div>
+                <div class="navbar-brand">
+                    <div class="navbar-logo">
+                        <svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%">
+                            <defs>
+                                <clipPath id="nav-tube-clip">
+                                    <path d="M 40,16 L 40,63 L 60,106 L 80,63 L 80,16 Z" />
+                                </clipPath>
+                            </defs>
+                            <path d="M 33,15 L 38,15 L 38,63 L 60,108 L 82,63 L 82,15 L 87,15"
+                                  fill="none" stroke="#0a2a4a" stroke-width="4"
+                                  stroke-linecap="round" stroke-linejoin="round"/>
+                            <g clip-path="url(#nav-tube-clip)">
+                                <rect x="38" y="46" width="44" height="62" fill="rgba(10,42,74,0.55)"/>
+                            </g>
+                            <line x1="42" y1="38" x2="51" y2="38" stroke="rgba(255,255,255,0.4)" stroke-width="1.5"/>
+                            <line x1="42" y1="52" x2="49" y2="52" stroke="rgba(255,255,255,0.4)" stroke-width="1.5"/>
+                            <line x1="43" y1="66" x2="50" y2="66" stroke="rgba(255,255,255,0.4)" stroke-width="1.5"/>
+                        </svg>
+                    </div>
+                    <div class="navbar-title-group">
+                        <span class="navbar-title">Serial Dilution Calculator</span>
+                        <span class="navbar-subtitle">FOR VENUS 6+</span>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Left Config Panel -->
+            <aside class="config-panel">
+                <div class="config-panel-inner">
+
+
+                    <div class="panel-section">
+                        <div class="panel-section-header with-inline-name">
+                            <span class="config-pill diluent-pill">Diluent</span>
+                            <input type="text" id="diluent-name" class="liquid-name-input section-name-inline" placeholder="Diluent Name...">
+                        </div>
+
+                        <div class="plain-config-rows">
+                            <div class="volume-row">
+                                <span class="volume-label">Liquid Type</span>
+                                <select id="diluent-liquid-type" class="liquid-type-pill"></select>
+                            </div>
+                        </div>
+                        <div class="labware-subsection-header">
+                            <span class="labware-subsection-title">Diluent Labware</span>
+                            <button class="labware-edit-btn" id="btn-diluent-labware" title="Configure diluent labware">
+                                <i class="fas fa-pen"></i>
+                            </button>
+                        </div>
+                        <div class="volume-breakdown">
+                            <div class="volume-row">
+                                <span class="volume-label">Type</span>
+                                <span class="labware-detail-value" id="diluent-lw-type">—</span>
+                            </div>
+                            <div class="volume-row">
+                                <span class="volume-label">Well Number</span>
+                                <span class="labware-detail-value" id="diluent-lw-well">—</span>
+                            </div>
+                        </div>
+                    </div>
+
+
+
+
+                    <div class="panel-section">
+                        <div class="panel-section-header with-inline-name">
+                            <span class="config-pill stock-pill">Stock</span>
+                            <input type="text" id="stock-name" class="liquid-name-input section-name-inline" placeholder="Stock Solution Name...">
+                        </div>
+
+                        <div class="plain-config-rows">
+                            <div class="volume-row">
+                                <span class="volume-label">Liquid Type</span>
+                                <select id="stock-liquid-type" class="liquid-type-pill"></select>
+                            </div>
+                            <div class="volume-row">
+                                <span class="volume-label">Concentration</span>
+                                <div class="conc-pill-input">
+                                    <input type="number" id="stock-concentration" class="conc-pill-number" value="1000" min="0.001" step="any">
+                                    <select id="stock-unit" class="conc-pill-unit">
+                                        <option value="M">M</option>
+                                        <option value="mM" selected>mM</option>
+                                        <option value="µM">µM</option>
+                                        <option value="nM">nM</option>
+                                        <option value="mg/mL">mg/mL</option>
+                                        <option value="µg/mL">µg/mL</option>
+                                        <option value="ng/mL">ng/mL</option>
+                                        <option value="%">%</option>
+                                        <option value="X">X</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="labware-subsection-header">
+                            <span class="labware-subsection-title">Stock Labware</span>
+                            <button class="labware-edit-btn" id="btn-stock-labware" title="Configure stock labware">
+                                <i class="fas fa-pen"></i>
+                            </button>
+                        </div>
+                        <div class="volume-breakdown">
+                            <div class="volume-row">
+                                <span class="volume-label">Type</span>
+                                <span class="labware-detail-value" id="stock-lw-type">—</span>
+                            </div>
+                            <div class="volume-row">
+                                <span class="volume-label">Well Number</span>
+                                <span class="labware-detail-value" id="stock-lw-well">—</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="panel-section">
+                        <div class="panel-section-header">
+                            <i class="fas fa-vials"></i>
+                            <span>Dilutions</span>
+                        </div>
+
+                        <div class="plain-config-rows">
+                            <!-- DEAD CODE: Dilutions Liquid Type is currently unused.
+                                 May be re-enabled if the liquid type cannot be calculated
+                                 from the stock and diluent selections.
+                            <div class="volume-row">
+                                <span class="volume-label">Liquid Type</span>
+                                <select id="dilutions-liquid-type" class="liquid-type-pill"></select>
+                            </div>
+                            -->
+                            <div class="volume-row">
+                                <span class="volume-label">Number of Dilutions</span>
+                                <div class="tube-count-control tube-count-compact">
+                                    <button class="tube-count-btn" id="btn-minus" aria-label="Remove tube">
+                                        <i class="fas fa-minus"></i>
+                                    </button>
+                                    <input type="number" id="num-dilutions" value="8" min="1" max="24">
+                                    <button class="tube-count-btn" id="btn-plus" aria-label="Add tube">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="volume-row" id="dilution-factor-row">
+                                <span class="volume-label">Step Dilution Factor</span>
+                                <span id="dilution-factor" class="conc-pill-number" contenteditable="true" role="textbox" inputmode="decimal">10</span>
+                            </div>
+                            <div class="volume-row toggle-row">
+                                <label class="toggle-switch-label" for="allow-multiple-factors">
+                                    <span>Multiple Dilution Factors</span>
+                                    <div class="toggle-switch">
+                                        <input type="checkbox" id="allow-multiple-factors">
+                                        <span class="toggle-switch-slider"></span>
+                                    </div>
+                                </label>
+                            </div>
+                            <div class="volume-row" id="total-volume-row">
+                                <span class="volume-label">Total Volume per Dilution</span>
+                                <div class="conc-pill-input">
+                                    <input type="number" id="total-volume" class="conc-pill-number" value="1000" min="1" step="any">
+                                    <span class="input-prefix-inline">µL</span>
+                                </div>
+                            </div>
+                            <div class="volume-row toggle-row">
+                                <label class="toggle-switch-label" for="allow-multiple-volumes">
+                                    <span>Multiple Total Volumes</span>
+                                    <div class="toggle-switch">
+                                        <input type="checkbox" id="allow-multiple-volumes">
+                                        <span class="toggle-switch-slider"></span>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="labware-subsection-header">
+                            <span class="labware-subsection-title">Dilutions Labware</span>
+                            <button class="labware-edit-btn" id="btn-dilutions-labware" title="Configure dilutions labware">
+                                <i class="fas fa-pen"></i>
+                            </button>
+                        </div>
+                        <div class="volume-breakdown">
+                            <div class="volume-row">
+                                <span class="volume-label">Type</span>
+                                <span class="labware-detail-value" id="dilutions-lw-type">—</span>
+                            </div>
+                            <div class="volume-row">
+                                <span class="volume-label">Sequence</span>
+                                <span class="labware-detail-value" id="dilutions-lw-seq">—</span>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div class="panel-section">
+                        <div class="panel-section-header">
+                            <i class="fas fa-wand-magic-sparkles"></i>
+                            <span>Animation</span>
+                        </div>
+
+                        <button class="btn-action" id="btn-animate">
+                            <i class="fas fa-play"></i>
+                            <span>Play Dilution Sequence</span>
+                        </button>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Central Visualization Area -->
+            <main class="viz-area">
+                <!-- Transfer connectors are now SVG-drawn inside .tube-rack -->
+
+                <!-- Tube Rack -->
+                <div class="tube-rack-wrapper">
+                    <div class="tube-rack" id="tube-rack">
+                        <!-- Diluent tube -->
+                        <div class="tube-slot diluent-slot tube-configurable" id="diluent-tube-slot" data-labware-target="diluent">
+                            <div class="tube-label-top">Diluent</div>
+                            <div class="tube-container" data-index="-1">
+                                <div class="tube-body">
+                                    <div class="tube-glass">
+                                        <div class="tube-liquid diluent-liquid" style="height: 80%">
+                                            <div class="tube-liquid-surface"></div>
+                                            <div class="tube-bubbles">
+                                                <div class="bubble"></div>
+                                                <div class="bubble"></div>
+                                                <div class="bubble"></div>
+                                            </div>
+                                        </div>
+                                        <div class="tube-graduations">
+                                            <div class="graduation"></div>
+                                            <div class="graduation"></div>
+                                            <div class="graduation"></div>
+                                            <div class="graduation"></div>
+                                        </div>
+                                        <div class="tube-shine"></div>
+                                        <div class="tube-liquid-name" id="diluent-liquid-name"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="tube-label-bottom">
+                                <span class="conc-value diluent-vol-label" id="diluent-vol-label">&nbsp;</span>
+                                <span class="conc-unit" id="diluent-unit-label">&nbsp;</span>
+                            </div>
+                        </div>
+
+                        <!-- Spacer between diluent and stock -->
+                        <div class="diluent-spacer"></div>
+
+                        <!-- Stock tube -->
+                        <div class="tube-slot stock-slot tube-configurable" id="stock-tube-slot" data-labware-target="stock">
+                            <div class="tube-label-top">Stock</div>
+                            <div class="tube-container" data-index="0">
+                                <div class="tube-body">
+                                    <div class="tube-glass">
+                                        <div class="tube-liquid" style="height: 80%">
+                                            <div class="tube-liquid-surface"></div>
+                                            <div class="tube-bubbles">
+                                                <div class="bubble"></div>
+                                                <div class="bubble"></div>
+                                                <div class="bubble"></div>
+                                            </div>
+                                        </div>
+                                        <div class="tube-graduations">
+                                            <div class="graduation"></div>
+                                            <div class="graduation"></div>
+                                            <div class="graduation"></div>
+                                            <div class="graduation"></div>
+                                        </div>
+                                        <div class="tube-shine"></div>
+                                        <div class="tube-liquid-name" id="stock-liquid-name"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="tube-label-bottom">
+                                <span class="conc-value" id="stock-conc-label">1000</span>
+                                <span class="conc-unit" id="stock-unit-label">mM</span>
+                            </div>
+                        </div>
+
+                        <!-- Dilution tubes container -->
+                        <div class="dilution-tubes" id="dilution-tubes">
+                            <!-- Tubes are dynamically generated -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Summary Table -->
+                <div class="summary-panel">
+                    <div class="summary-header">
+                        <div class="summary-title">
+                            <i class="fas fa-table-list"></i>
+                            <span>Dilution Summary</span>
+                        </div>
+                        <div class="summary-actions">
+                            <button class="summary-btn" id="btn-copy-table" title="Copy to clipboard">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="summary-table-wrap">
+                        <table class="summary-table" id="summary-table">
+                            <thead>
+                                <tr>
+                                    <th rowspan="2" class="col-spacer"></th>
+                                    <th rowspan="2">Dilution</th>
+                                    <th rowspan="2" class="col-spacer"></th>
+                                    <th rowspan="2">Concentration</th>
+                                    <th rowspan="2" class="col-spacer"></th>
+                                    <th rowspan="2">Step Dil.</th>
+                                    <th rowspan="2" class="col-spacer"></th>
+                                    <th rowspan="2">Cumulative Dil.</th>
+                                    <th rowspan="2" class="col-spacer"></th>
+                                    <th colspan="2" class="grouped-header">Transfer Vol.</th>
+                                    <th rowspan="2" class="col-spacer"></th>
+                                    <th colspan="2" class="grouped-header">Diluent Vol.</th>
+                                    <th rowspan="2" class="col-spacer"></th>
+                                    <th rowspan="2">Total Vol.</th>
+                                    <th rowspan="2" class="col-spacer"></th>
+                                </tr>
+                                <tr>
+                                    <th class="vol-sub-header">Vol.</th>
+                                    <th class="tip-sub-header">Tip</th>
+                                    <th class="vol-sub-header">Vol.</th>
+                                    <th class="tip-sub-header">Tip</th>
+                                </tr>
+                            </thead>
+                            <tbody id="summary-tbody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Materials Overview -->
+                <div class="materials-panel" id="materials-panel">
+                    <div class="materials-header">
+                        <div class="materials-title">
+                            <i class="fas fa-boxes-stacked"></i>
+                            <span>Materials Overview</span>
+                        </div>
+                    </div>
+                    <div class="materials-cards" id="materials-cards">
+                        <!-- Dynamically populated -->
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Help Modal -->
+    <div class="modal-overlay" id="help-modal">
+        <div class="modal-container">
+            <div class="modal-header-custom">
+                <div class="modal-title">
+                    <i class="fas fa-circle-question"></i>
+                    <span>How to Use</span>
+                </div>
+                <button class="modal-close" id="help-modal-close">&times;</button>
+            </div>
+            <div class="modal-body-custom">
+                <div class="help-section">
+                    <h3><i class="fas fa-flask"></i> What is Serial Dilution?</h3>
+                    <p>Serial dilution is the stepwise dilution of a substance in solution. In each step, a fixed volume of the previous dilution is transferred to a new tube containing diluent, creating a geometric series of concentrations.</p>
+                </div>
+                <div class="help-section">
+                    <h3><i class="fas fa-sliders"></i> Configuration</h3>
+                    <p><strong>Stock Concentration</strong> - The starting concentration of your solution.</p>
+                    <p><strong>Dilution Factor</strong> - The ratio by which each tube is diluted (e.g., 1:10 means each tube is 10x more dilute).</p>
+                    <p><strong>Number of Dilutions</strong> - How many serial dilution steps to perform.</p>
+                </div>
+                <div class="help-section">
+                    <h3><i class="fas fa-droplet"></i> Volumes</h3>
+                    <p><strong>Total Volume</strong> - The final volume in each tube after dilution.</p>
+                    <p>Transfer and diluent volumes are calculated automatically based on the dilution factor.</p>
+                </div>
+                <div class="help-section">
+                    <h3><i class="fas fa-table"></i> Summary Table</h3>
+                    <p><strong>Transfer Volume</strong> — The volume that is <em>incoming</em> to the current tube (aspirated from the previous tube and dispensed here). It is not the volume leaving this tube.</p>
+                    <p><strong>Stock &amp; Diluent Total Vol.</strong> — Shown with a <strong>&gt;</strong> prefix to indicate the <em>minimum</em> volume you must prepare. Overages are expected and acceptable.</p>
+                    <p><strong>Waste Total Vol.</strong> — Shown with a <strong>&gt;</strong> prefix to indicate the approximate volume that will accumulate in the waste container after the run is complete.</p>
+                </div>
+                <div class="help-section">
+                    <h3><i class="fas fa-syringe"></i> Tip Selection</h3>
+                    <p>Each transfer and diluent column shows the automatically selected pipette tip. Click any tip icon to override the selection with a different tip size.</p>
+                    <p>If you select a tip smaller than the required volume, the transfer will be split into <strong>multiple aspirate/dispense cycles</strong>. The volume cell will display the per-cycle volume followed by <strong>&times; N</strong> (e.g. "175.0 µL &times; 2").</p>
+                    <p>Overridden tips are marked with a dashed outline. Select <strong>Auto</strong> in the dropdown to restore automatic tip selection.</p>
+                </div>
+                <div class="help-section">
+                    <h3><i class="fas fa-play"></i> Animation</h3>
+                    <p>Click <strong>"Play Dilution Sequence"</strong> to watch an animated visualization of the entire serial dilution process, showing liquid transfers between tubes.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Advanced Configuration Modal -->
+    <div class="modal-overlay" id="config-modal">
+        <div class="modal-container">
+            <div class="modal-header-custom">
+                <div class="modal-title">
+                    <i class="fas fa-sliders"></i>
+                    <span>Advanced Configuration</span>
+                </div>
+                <button class="modal-close" id="config-modal-close">&times;</button>
+            </div>
+            <div class="modal-body-custom">
+                <div class="settings-section">
+                    <h3><svg class="config-tips-icon" viewBox="0 0 77.274193 125.91413" fill="currentColor" xmlns="http://www.w3.org/2000/svg" style="width:18px;height:18px;vertical-align:middle;margin-right:6px"><g transform="translate(-205.27292,-93.489533)"><path style="fill:currentColor;fill-opacity:1;stroke-width:0.377953" d="m 236.08318,105.73618 c -1.58799,0 -2.86719,1.27724 -2.86719,2.86524 v 19.10546 c 0,1.58799 1.2792,2.86719 2.86719,2.86719 h 0.49609 c -0.0556,0.22359 -0.0859,0.45794 -0.0859,0.69922 v 3.23633 c 0,1.46697 1.09157,2.66895 2.50976,2.84375 -0.007,0.0803 -0.01,0.16201 -0.01,0.24414 v 7.99219 55.26953 c 0,0.0636 0.004,0.1269 0.008,0.18945 l 0.14844,0.74219 3.23632,16.21484 c 0.36753,1.84125 1.07205,1.86665 1.57813,0.0586 l 4.6289,-16.53906 c -0.002,-0.002 -0.007,-0.006 -0.01,-0.008 -0.001,-10e-4 -0.003,-0.003 -0.004,-0.004 0.046,-0.19852 0.0716,-0.40692 0.0742,-0.61914 0.351,-1.64484 0.0813,-3.71349 0,-5.44922 -0.0245,-0.52293 -0.0317,-1.01542 0,-1.45703 v -56.39062 c 0,-0.0766 -0.004,-0.15343 -0.01,-0.22852 1.50209,-0.0937 2.68359,-1.33285 2.68359,-2.85937 v -3.23633 c 0,-0.24128 -0.0284,-0.47563 -0.084,-0.69922 h 0.49611 c 1.58797,0 2.86521,-1.2792 2.86521,-2.86719 v -19.10519 c 0,-1.588 -1.27724,-2.86524 -2.86521,-2.86524 z" /><path style="fill:currentColor;fill-opacity:1;stroke-width:0.377953" d="m 264.02626,93.489533 c -1.58799,0 -2.86719,1.27724 -2.86719,2.86524 v 19.105457 c 0,1.58799 1.2792,2.86719 2.86719,2.86719 h 0.49609 c -0.0556,0.22359 -0.0859,0.45794 -0.0859,0.69922 v 3.23633 c 0,1.46697 1.09157,2.66895 2.50976,2.84375 -0.007,0.0803 -0.01,0.16201 -0.01,0.24414 v 7.99219 55.26953 c 0,0.0636 0.004,0.1269 0.008,0.18945 l 0.14844,0.74219 3.23632,16.21484 c 0.36751,1.84125 1.07205,1.86665 1.57813,0.0586 l 4.6289,-16.53906 c -0.002,-0.002 -0.007,-0.006 -0.01,-0.008 -0.001,-0.001 -0.003,-0.003 -0.004,-0.004 0.046,-0.19852 0.0716,-0.40692 0.0742,-0.61914 0.351,-1.64484 0.0813,-3.71349 0,-5.44922 -0.0245,-0.52293 -0.0317,-1.01542 0,-1.45703 v -56.39062 c 0,-0.0766 -0.004,-0.15343 -0.01,-0.22852 1.50209,-0.0937 2.68359,-1.33285 2.68359,-2.85937 v -3.23633 c 0,-0.24128 -0.0284,-0.47563 -0.084,-0.69922 h 0.49609 c 1.58799,0 2.86523,-1.2792 2.86523,-2.86719 V 96.354773 c 0,-1.588 -1.27724,-2.86524 -2.86523,-2.86524 z" /><path style="fill:currentColor;fill-opacity:1;stroke-width:0.377953" d="m 208.14011,93.489533 c -1.58799,0 -2.86719,1.27724 -2.86719,2.86524 v 19.105467 c 0,1.58799 1.2792,2.86719 2.86719,2.86719 h 0.49609 c -0.0556,0.22359 -0.0859,0.45794 -0.0859,0.69922 v 3.23633 c 0,1.46697 1.09157,2.66895 2.50976,2.84375 -0.007,0.0803 -0.01,0.16201 -0.01,0.24414 v 7.99219 55.26953 c 0,0.0636 0.004,0.1269 0.008,0.18945 l 0.14844,0.74219 3.23632,16.21484 c 0.36751,1.84125 1.07205,1.86665 1.57813,0.0586 l 4.6289,-16.53906 c -0.002,-0.002 -0.007,-0.006 -0.01,-0.008 -0.001,-0.001 -0.003,-0.003 -0.004,-0.004 0.046,-0.19852 0.0716,-0.40692 0.0742,-0.61914 0.351,-1.64484 0.0813,-3.71349 0,-5.44922 -0.0245,-0.52293 -0.0317,-1.01542 0,-1.45703 V 125.3506 c 0,-0.0766 -0.004,-0.15343 -0.01,-0.22852 1.50209,-0.0937 2.68359,-1.33285 2.68359,-2.85937 v -3.23633 c 0,-0.24128 -0.0284,-0.47563 -0.084,-0.69922 h 0.49609 c 1.58799,0 2.86523,-1.2792 2.86523,-2.86719 V 96.354773 c 0,-1.588 -1.27724,-2.86524 -2.86523,-2.86524 z" /></g></svg> Tip Handling</h3>
+                    <p class="config-description">Tips are always changed between sample dilutions. Configure additional tip change behavior below.</p>
+                    <div class="input-group-custom">
+                        <label class="toggle-switch-label" for="config-fresh-tip-diluent">
+                            <span>Change Tips Between Diluent Transfers</span>
+                            <div class="toggle-switch">
+                                <input type="checkbox" id="config-fresh-tip-diluent">
+                                <span class="toggle-switch-slider"></span>
+                            </div>
+                        </label>
+                    </div>
+                    <div class="input-group-custom" style="margin-top:12px">
+                        <label for="config-tip-type">Tip Type</label>
+                        <select id="config-tip-type" class="liquid-type-pill modal-select">
+                            <option value="nested">Nested Tips</option>
+                            <option value="standard">Standard Tips</option>
+                        </select>
+                    </div>
+                    <div id="config-tip-filter-row" class="input-group-custom" style="margin-top:8px;display:none">
+                        <label class="toggle-switch-label" for="config-tip-filter">
+                            <span>Tips Have Filters</span>
+                            <div class="toggle-switch">
+                                <input type="checkbox" id="config-tip-filter">
+                                <span class="toggle-switch-slider"></span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+                <div class="settings-section">
+                    <h3><i class="fas fa-trash-can" style="color:var(--medium);font-size:0.85rem"></i> Waste Handling</h3>
+                    <div class="input-group-custom">
+                        <label class="toggle-switch-label" for="config-discard-excess">
+                            <span>Discard Last Excess to Waste</span>
+                            <div class="toggle-switch">
+                                <input type="checkbox" id="config-discard-excess" checked>
+                                <span class="toggle-switch-slider"></span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+                <div class="settings-section">
+                    <h3><i class="fas fa-rotate" style="color:var(--medium);font-size:0.85rem"></i> Mixing</h3>
+                    <p class="config-description">Perform mix cycles in each dilution tube before transferring sample to the next tube, ensuring thorough mixing prior to each transfer.</p>
+                    <div class="input-group-custom">
+                        <label class="toggle-switch-label" for="config-mix-enabled">
+                            <span>Enable Mix Before Transfer</span>
+                            <div class="toggle-switch">
+                                <input type="checkbox" id="config-mix-enabled">
+                                <span class="toggle-switch-slider"></span>
+                            </div>
+                        </label>
+                    </div>
+                    <div id="config-mix-options" class="mix-options-group mix-options-hidden">
+                        <div class="mix-params-row">
+                            <div class="mix-param">
+                                <label for="config-mix-steps">Mix Steps</label>
+                                <div class="mix-param-input-wrap">
+                                    <input type="number" id="config-mix-steps" class="mix-param-input" value="3" min="1" max="20">
+                                </div>
+                            </div>
+                            <div class="mix-param">
+                                <label for="config-mix-volume">Mix Volume</label>
+                                <div class="mix-param-input-wrap">
+                                    <input type="number" id="config-mix-volume" class="mix-param-input" value="200" min="1" step="any">
+                                    <span class="mix-param-unit">µL</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="settings-section">
+                    <h3><i class="fas fa-flask" style="color:var(--medium);font-size:0.85rem"></i> Dead Volume</h3>
+                    <p class="config-description">The minimum volume that must remain in each source tube and cannot be aspirated. This is added to the required volumes for stock and diluent.</p>
+                    <div class="mix-params-row">
+                        <div class="mix-param">
+                            <label for="config-dead-volume-stock">Stock Dead Volume</label>
+                            <div class="mix-param-input-wrap">
+                                <input type="number" id="config-dead-volume-stock" class="mix-param-input" value="50" min="0" step="any">
+                                <span class="mix-param-unit">µL</span>
+                            </div>
+                        </div>
+                        <div class="mix-param">
+                            <label for="config-dead-volume-diluent">Diluent Dead Volume</label>
+                            <div class="mix-param-input-wrap">
+                                <input type="number" id="config-dead-volume-diluent" class="mix-param-input" value="50" min="0" step="any">
+                                <span class="mix-param-unit">µL</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export Modal -->
+    <div class="modal-overlay" id="export-modal">
+        <div class="modal-container">
+            <div class="modal-header-custom">
+                <div class="modal-title">
+                    <i class="fas fa-file-export"></i>
+                    <span>Export Results</span>
+                </div>
+                <button class="modal-close" id="export-modal-close">&times;</button>
+            </div>
+            <div class="modal-body-custom">
+                <div class="export-options">
+                    <button class="export-option" id="export-csv">
+                        <i class="fas fa-file-csv"></i>
+                        <span>CSV Spreadsheet</span>
+                        <small>Compatible with Excel, Google Sheets</small>
+                    </button>
+                    <button class="export-option" id="export-json">
+                        <i class="fas fa-file-code"></i>
+                        <span>JSON Data</span>
+                        <small>For programmatic use</small>
+                    </button>
+                    <button class="export-option" id="export-text">
+                        <i class="fas fa-file-lines"></i>
+                        <span>Plain Text Protocol</span>
+                        <small>Ready-to-print lab protocol</small>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Warning Modal (red / danger) -->
+    <div class="modal-overlay" id="warning-modal">
+        <div class="modal-container warning-modal-container">
+            <div class="modal-header-custom warning-modal-header">
+                <div class="modal-title">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>Invalid Value</span>
+                </div>
+                <button class="modal-close" id="warning-modal-close">&times;</button>
+            </div>
+            <div class="modal-body-custom">
+                <div class="warning-modal-box">
+                    <p class="warning-modal-message" id="warning-modal-message">
+                        The dilution factor cannot be zero or less than 1.
+                    </p>
+                </div>
+            </div>
+            <div class="warning-modal-footer">
+                <button class="warning-modal-btn" id="warning-modal-dismiss">
+                    <i class="fas fa-check"></i>
+                    <span>OK</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Labware Configuration Modal -->
+    <div class="modal-overlay" id="labware-modal">
+        <div class="modal-container labware-modal-container">
+            <div class="labware-modal-header">
+                <div class="labware-modal-title-row">
+                    <div class="modal-title">
+                        <i class="fas fa-grip"></i>
+                        <span id="labware-modal-title">Configure Labware</span>
+                    </div>
+                    <button class="modal-close" id="labware-modal-close">&times;</button>
+                </div>
+                <div class="labware-step-progress">
+                    <!-- Progress dots rendered dynamically by JS -->
+                </div>
+            </div>
+            <div class="labware-modal-body">
+                <!-- Step 1: Labware Type -->
+                <div class="labware-step" id="labware-step-type">
+                    <div class="labware-type-cards">
+                        <button class="labware-type-card" data-type="tube">
+                            <div class="type-card-icon"><i class="fas fa-vial"></i></div>
+                            <span class="type-card-label">Tubes</span>
+                            <span class="type-card-desc">Individual tube racks</span>
+                        </button>
+                        <button class="labware-type-card" data-type="plate">
+                            <div class="type-card-icon"><i class="fas fa-table-cells"></i></div>
+                            <span class="type-card-label">Plate</span>
+                            <span class="type-card-desc">Multi-well plates</span>
+                        </button>
+                        <button class="labware-type-card" data-type="trough">
+                            <div class="type-card-icon"><i class="fas fa-fill-drip"></i></div>
+                            <span class="type-card-label">Trough</span>
+                            <span class="type-card-desc">Reagent reservoirs</span>
+                        </button>
+                    </div>
+                </div>
+                <!-- Step 2: Size -->
+                <div class="labware-step labware-step-hidden" id="labware-step-size">
+                    <div class="labware-type-cards labware-size-grid" id="labware-size-options">
+                        <!-- Rendered dynamically by JS -->
+                    </div>
+                </div>
+                <!-- Step 3: Holder Format (tubes only) -->
+                <div class="labware-step labware-step-hidden" id="labware-step-holder">
+                    <div class="labware-type-cards" id="labware-holder-options">
+                        <!-- Rendered dynamically by JS -->
+                    </div>
+                </div>
+                <!-- Step 4: Definition -->
+                <div class="labware-step labware-step-hidden" id="labware-step-definition">
+                    <div class="labware-def-options" id="labware-def-options"></div>
+                </div>
+                <!-- Step 3: Position / Well Selection -->
+                <div class="labware-step labware-step-hidden" id="labware-step-position">
+                    <div class="labware-plate-viewport">
+                        <div class="labware-well-grid" id="labware-well-grid"></div>
+                    </div>
+                    <div class="labware-position-display" id="labware-position-display"></div>
+                </div>
+            </div>
+            <div class="labware-modal-footer">
+                <button class="labware-modal-btn labware-btn-back labware-btn-disabled" id="labware-btn-back">
+                    <i class="fas fa-arrow-left"></i> Back
+                </button>
+                <button class="labware-modal-btn labware-btn-confirm labware-btn-disabled" id="labware-btn-confirm">
+                    <i class="fas fa-check"></i> Confirm
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal-overlay" id="settings-modal">
+        <div class="modal-container">
+            <div class="modal-header-custom">
+                <div class="modal-title">
+                    <i class="fas fa-cog"></i>
+                    <span>Settings</span>
+                </div>
+                <button class="modal-close" id="settings-modal-close">&times;</button>
+            </div>
+            <div class="modal-body-custom">
+                <div class="settings-section">
+                    <h3><i class="fas fa-folder-open" style="color:var(--medium);font-size:0.85rem"></i> Labware Directory</h3>
+                    <p class="config-description">Path to the Hamilton VENUS labware folder. This directory contains the <code>.rck</code> and <code>.ctr</code> files used to populate the labware selector.</p>
+                    <div class="input-group-custom">
+                        <label for="settings-labware-dir">Labware Folder Path</label>
+                        <div class="settings-path-input-wrap">
+                            <input type="text" id="settings-labware-dir" class="settings-path-input" placeholder="Labware" value="Labware" spellcheck="false">
+                            <button class="settings-path-btn" id="settings-labware-dir-clear" title="Clear path">
+                                <i class="fas fa-xmark"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="settings-section">
+                    <h3><i class="fas fa-sync-alt" style="color:var(--medium);font-size:0.85rem"></i> Refresh Labware Catalog</h3>
+                    <p class="config-description">Scan the labware directory for <code>.rck</code> and <code>.ctr</code> files and rebuild the labware catalog. This will update all available plates, tubes, and troughs in the labware selector.</p>
+                    <div class="settings-refresh-row">
+                        <button class="settings-refresh-btn" id="settings-refresh-labware">
+                            <i class="fas fa-sync-alt"></i>
+                            <span>Refresh Labware</span>
+                        </button>
+                        <span class="settings-refresh-status" id="settings-refresh-status"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="settings-modal-footer">
+                <button class="settings-save-btn" id="settings-save">
+                    <i class="fas fa-check"></i>
+                    <span>Save</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast container -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <script src="js/app.js?v=20260302z4"></script>
+</body>
+</html>

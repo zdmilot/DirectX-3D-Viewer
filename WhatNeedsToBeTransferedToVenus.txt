@@ -1,5 +1,0 @@
-1) tip nested or normal:
-
- - in the Advanced Configuration i need you to add an option for tip types. they can either be Nested Tips which contain no filters in them, or they can be not nested and either have filters or they can not have filters in them, i need the user to be able to adjust these settings. the setting should DO NOTHING and no indication to the user that this option does nothing
-
-2) mixing parameters
