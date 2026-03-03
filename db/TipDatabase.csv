@@ -1,0 +1,36 @@
+﻿Nominal size in µL,Tip type,Orifice size(s),Sterile,Filter,Packaging,Part #,Barcode label color
+10,Standard,0.3 mm,No,No,Rack,235900,Orange
+10,Standard,0.3 mm,No,Yes,Rack,235901,Orange
+10,Standard,0.3 mm,Yes,No,Rack,235935,Orange
+10,Standard,0.3 mm,Yes,Yes,Rack,235936,Orange
+10,Standard,0.3 mm,No,No,Nested,235949,Orange
+10,Standard,0.3 mm,Yes,No,Nested,235983,Orange
+50,Standard,0.4 mm,No,No,Rack,235966,Light Red
+50,Standard,0.4 mm,No,Yes,Rack,235948,Light Red
+50,Standard,0.4 mm,Yes,No,Rack,235978,Light Red
+50,Standard,0.4 mm,Yes,Yes,Rack,235979,Light Red
+50,Standard,0.4 mm,No,No,Nested,235947,Light Red
+50,Standard,0.4 mm,Yes,No,Nested,235987,Light Red
+300,Standard,0.4 mm,No,No,Rack,235902,Yellow
+300,Standard,0.4 mm,No,Yes,Rack,235903,Yellow
+300,Standard,0.4 mm,Yes,No,Rack,235937,Yellow
+300,Standard,0.4 mm,Yes,Yes,Rack,235938,Yellow
+300,Standard,0.4 mm,No,No,Nested,235950,Yellow
+300,Standard,0.4 mm,Yes,No,Nested,235985,Yellow
+300,Wide Bore,0.71 mm,No,Yes,Rack,235452,Yellow
+300,Wide Bore,1.55 mm,No,Yes,Rack,235449,Yellow
+1000,Standard,0.7 mm,No,No,Rack,235904,White
+1000,Standard,0.7 mm,No,Yes,Rack,235905,White
+1000,Standard,0.7 mm,Yes,No,Rack,235939,White
+1000,Standard,0.7 mm,Yes,Yes,Rack,235940,White
+1000,Wide Bore,1.2 mm,No,Yes,Rack,235678,White
+1000,Wide Bore,1.2 mm,Yes,Yes,Rack,235677,White
+1000,Wide Bore,3.2 mm,No,Yes,Rack,235541,White
+1000,Wide Bore,3.2 mm,Yes,Yes,Rack,235842,White
+50,384 Multi-Probe Head nested conductive tips,0.4 mm,No,No,Nested,235989,Light Red
+50,384 Multi-Probe Head nested conductive tips,0.4 mm,No,Yes,Nested,235843,Light Red
+50,384 Multi-Probe Head nested conductive tips,0.4 mm,Yes,Yes,Nested,235844,Light Red
+50,384 Multi-Probe Head nested conductive tips,0.4 mm,No,Yes,Nested,235845,Light Red
+50,384 Multi-Probe Head nested conductive tips,0.4 mm,Yes,Yes,Nested,235846,Light Red
+5000,Large volume,1.05 mm,(varies),(varies),Rack,184020,Green
+5000,Large volume,1.05 mm,(varies),(varies),Rack,194050,Green

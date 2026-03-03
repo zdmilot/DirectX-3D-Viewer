@@ -1,0 +1,38 @@
+
+then by the volume range it has (<50uL, 50-1000uL, 1000uL, 1000-3000uL, 3001-5000uL >5000uL), bottom shape (U-Bottom/Round Bottom, F-Bottom/Flat Bottom, or V-Bottom), then by the manufacturer, then it will list the avalible labware definitions from the manufacturer. place 
+
+
+
+Yeah — those buckets don’t really map to how people actually pick “micro/microwell” plates. The big breakpoint users intuitively understand is usually plate format (1536/384/96/24/6) and whether it’s standard vs deep-well, because those imply very different typical working volumes.
+
+For reference, vendors commonly publish recommended working volumes like:
+	•	1536-well: about 4–12 µL (often “up to ~8 µL” recommended)  ￼
+	•	384-well: commonly ~10–90 µL (varies with plate type)  ￼
+	•	96-well (standard assay plates): commonly ~80–350 µL working range (varies)  ￼
+	•	24-well: commonly ~0.5–2.39 mL working range  ￼
+	•	96 deep-well: often ~0.5–2.0 mL per well class (depends on product)  ￼
+
+Better “buckets” users can actually choose from (by working volume)
+
+These are designed to align with common plate families and keep the decision simple:
+	1.	Nano / Ultra-low volume (≤ 10–15 µL)
+	•	Typical picks: 1536-well (ultra miniaturized assays)
+	2.	Low volume (15–100 µL)
+	•	Typical picks: 384-well (most assay 384 plates live here)
+	3.	Standard assay volume (100–350 µL)
+	•	Typical picks: 96-well “standard” assay plates (ELISA, absorbance/fluorescence)
+	4.	Mid-volume (350–1000 µL)
+	•	Typical picks: 48-well / some 24-well low-fill use
+	•	Also covers “96-well high-volume” oddballs, but less common than just moving to 24-well
+	5.	Deep-well / collection (1–2.2 mL)
+	•	Typical picks: 96 deep-well plates (sample prep, serial dilutions, storage)  ￼
+	6.	Macro / culture (2–5 mL)
+	•	Typical picks: 24-well (upper end) and sometimes 12-well
+	7.	Very large (> 5 mL)
+	•	Typical picks: 6-well (and larger well-plates)
+
+Why your original buckets feel “off”
+	•	1000–3000 µL and 3001–5000 µL are real volumes, but they’re not “microplate-native” in the same way. Users typically switch formats (96 deep-well → 24/12/6-well) rather than think in 1 mL increments.
+	•	Users also care about minimum practical volume (dead volume, mixing behavior, evaporation risk) as much as max capacity—format buckets hint at those automatically.
+
+If you want, I can turn this into UI copy like: “Pick your typical dispense volume per well” + a short one-liner under each bucket (e.g., “384-well assays”, “96-well ELISA”, “96 deep-well sample prep”, etc.).

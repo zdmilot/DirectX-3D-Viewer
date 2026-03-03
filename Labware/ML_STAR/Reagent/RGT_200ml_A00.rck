@@ -1,0 +1,57 @@
+HxCfgFile,3;
+
+ConfigIsValid,Y;
+
+DataDef,RECTRACK,3,default,
+{
+BackgrndClr, "16777215",
+Barcode.Unique, "0",
+Barcode.Value, "",
+Bitmap, "Bitmaps\\RGT_200ml.bmp",
+BitmapRel, "..\\..\\Bitmaps\\RGT_200ml.bmp",
+BndryX, "18.75",
+BndryY, "16.75",
+CategoryCnt, "0",
+Cntr.1.base, "1.3",
+Cntr.1.file, "ml_star\\reagent\\rgt_200ml_a00.ctr",
+Cntr.1.fileRel, ".\\rgt_200ml_a00.ctr",
+Cntr.1.offsetx, "0",
+Cntr.1.offsety, "0",
+Columns, "1",
+ConnectedCtr, "1",
+DataType, "2",
+Description, "Reagent Container for RGT_CAR_4R200",
+Dim.Dx, "37.5",
+Dim.Dy, "117.5",
+Dim.Dz, "110",
+Dx, "0",
+Dy, "12",
+GrpCnt, "0",
+Hole.Shape, "0",
+Hole.X, "32",
+Hole.Y, "32",
+Hole.Z, "33",
+IX.First, "1",
+IX.Inc, "1",
+IX.Index, "0",
+IX.Start, "0",
+Options, "0",
+ReadOnly, "1",
+Rows, "8",
+SegmentCount_x, "0",
+SegmentCount_y, "0",
+Shape, "1",
+SingleCntr, "1",
+StackHt, "0",
+Stagger, "0",
+UseBndry, "1",
+ViewName, "Reagent Container 200ml",
+Visible, "0"
+};
+
+DataDef,HxPars,3,AuditTrailData,
+[
+")"
+];
+
+* $$author=ContainerAdministrator$$valid=1$$time=2025-06-21 16:41$$checksum=c052e2e4$$length=098$$
