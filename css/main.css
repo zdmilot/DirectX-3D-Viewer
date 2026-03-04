@@ -1524,7 +1524,10 @@ body {
     width: 64px;
     height: 64px;
     margin-bottom: 12px;
-    transform: scaleY(-1);
+    transform: scaleY(-1) rotate(0deg);
+    transition: transform 0.45s cubic-bezier(.4,2,.6,1);
+    cursor: pointer;
+    user-select: none;
 }
 
 .about-title {

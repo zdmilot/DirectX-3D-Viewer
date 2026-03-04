@@ -10,9 +10,9 @@
     const dom = {
         btnTheme: $('#btn-theme'),
         btnAbout: $('#btn-about'),
-        btnDebug: $('#btn-debug'),
         aboutOverlay: $('#about-overlay'),
         aboutClose: $('#about-close'),
+        aboutLogo: null,   // set after DOM query
         btnGrid: $('#btn-grid'),
         fileInput: $('#file-input'),
         btnSidebarToggle: $('#btn-sidebar-toggle'),
@@ -38,6 +38,7 @@
     const state = {
         isDark: false,
         debugVisible: false,
+        teapotClicks: 0,    // 0-3, each click = 90°; 2 = upside-down = debug ON
         gridVisible: true,
         wireframe: false,
         isPerspective: true,
@@ -66,13 +67,30 @@
     }
 
     // -- Debug Panel -------------------------------------------------
-    function toggleDebug() {
-        state.debugVisible = !state.debugVisible;
+    function setDebug(on) {
+        state.debugVisible = on;
         document.querySelectorAll('.debug-panel').forEach(p => {
-            p.classList.toggle('is-visible', state.debugVisible);
+            p.classList.toggle('is-visible', on);
         });
-        if (dom.btnDebug) {
-            dom.btnDebug.classList.toggle('is-active', state.debugVisible);
+    }
+
+    function handleTeapotClick() {
+        state.teapotClicks = (state.teapotClicks + 1) % 4;
+        var deg = state.teapotClicks * 90;
+        if (dom.aboutLogo) {
+            dom.aboutLogo.style.transform = 'scaleY(-1) rotate(' + deg + 'deg)';
+        }
+        // Debug ON only when teapot is fully upside-down (180° from baseline)
+        setDebug(state.teapotClicks === 2);
+    }
+
+    function resetTeapot() {
+        if (state.teapotClicks !== 2) {
+            state.teapotClicks = 0;
+            if (dom.aboutLogo) {
+                dom.aboutLogo.style.transform = 'scaleY(-1) rotate(0deg)';
+            }
+            setDebug(false);
         }
     }
 
@@ -1363,18 +1381,22 @@
         dom.btnTheme.addEventListener('click', toggleTheme);
         dom.btnGrid.addEventListener('click', toggleGrid);
 
-        // Debug panel toggle
-        if (dom.btnDebug) dom.btnDebug.addEventListener('click', toggleDebug);
-
         // About modal
+        dom.aboutLogo = document.querySelector('.about-logo');
+        if (dom.aboutLogo) dom.aboutLogo.addEventListener('click', handleTeapotClick);
+
         if (dom.btnAbout) dom.btnAbout.addEventListener('click', () => {
             if (dom.aboutOverlay) dom.aboutOverlay.classList.add('is-open');
         });
         if (dom.aboutClose) dom.aboutClose.addEventListener('click', () => {
             if (dom.aboutOverlay) dom.aboutOverlay.classList.remove('is-open');
+            resetTeapot();
         });
         if (dom.aboutOverlay) dom.aboutOverlay.addEventListener('click', (e) => {
-            if (e.target === dom.aboutOverlay) dom.aboutOverlay.classList.remove('is-open');
+            if (e.target === dom.aboutOverlay) {
+                dom.aboutOverlay.classList.remove('is-open');
+                resetTeapot();
+            }
         });
         dom.fileInput.addEventListener('change', handleFileSelected);
 
