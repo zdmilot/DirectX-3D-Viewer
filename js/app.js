@@ -1470,9 +1470,11 @@
 
     function initDraggablePanels() {
         // Floating 3D toolbar — drag via grab handle
+        // Snap to edges of the viewer host so left-snap works too
+        const viewerHost = document.getElementById('viewer-host');
         const vtBody = document.getElementById('vt-body');
         if (vtBody) {
-            makeDraggable(vtBody, '#vt-grab-handle');
+            makeDraggable(vtBody, '#vt-grab-handle', viewerHost);
 
             // Double-click grab handle to snap toolbar back to default position
             const grabHandle = vtBody.querySelector('#vt-grab-handle');
@@ -1484,6 +1486,7 @@
                     vtBody.style.bottom = '';
                     vtBody.style.right = '';
                     vtBody.style.margin = '';
+                    vtBody.classList.remove('pp-snapped-left', 'pp-snapped-right');
                 });
             }
         }

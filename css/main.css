@@ -796,6 +796,14 @@ body {
     border-radius: 14px;
 }
 
+/* Snap overrides – flat side flush with page edge, round side faces inward */
+.vt-body.pp-snapped-right[style*="position: fixed"] {
+    border-radius: 14px 0 0 14px;
+}
+.vt-body.pp-snapped-left[style*="position: fixed"] {
+    border-radius: 0 14px 14px 0;
+}
+
 /* Dark theme adjustments */
 [data-theme="dark"] .vt-body {
     background: rgba(20, 26, 36, 0.88);
@@ -1647,14 +1655,12 @@ body {
     background: rgba(2,117,216,0.12);
 }
 
-/* Edge-snap subtle indicator */
+/* Edge-snap – flat side flush with page edge, rounded side faces inward */
 .pp-snapped-left {
-    border-top-left-radius: 0 !important;
-    border-bottom-left-radius: 0 !important;
+    border-radius: 0 var(--r-md) var(--r-md) 0 !important;
 }
 .pp-snapped-right {
-    border-top-right-radius: 0 !important;
-    border-bottom-right-radius: 0 !important;
+    border-radius: var(--r-md) 0 0 var(--r-md) !important;
 }
 
 /* ---------- About Modal ------------------------------------- */
