@@ -122,6 +122,31 @@
 
         // -- Wire controls --
         wireConverterControls();
+
+        // -- Load default teapot example --
+        loadDefaultConverterModel();
+    }
+
+    function loadDefaultConverterModel() {
+        const url = 'test.x';
+        cvState.originalFileName = 'test';
+        cvState.fileExtension = 'x';
+        showConverterLoading(true, 'Loading teapot…');
+        updateFormatBadge('x');
+
+        const loader = new THREE.XFileLoader();
+        loader.load(url, function (object) {
+            if (object.error || !object.models || object.models.length === 0) {
+                showConverterLoading(false);
+                return;
+            }
+            const group = new THREE.Group();
+            object.models.forEach(m => group.add(m));
+            addModelToScene(group);
+        }, undefined, function (err) {
+            showConverterLoading(false);
+            console.warn('[Converter] Default model load failed:', err);
+        });
     }
 
     // ================================================================

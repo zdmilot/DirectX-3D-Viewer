@@ -98,6 +98,29 @@
         animate();
 
         wireExporterControls();
+
+        // -- Load default teapot example --
+        loadDefaultExporterModel();
+    }
+
+    function loadDefaultExporterModel() {
+        const url = 'test.x';
+        exState.originalFileName = 'test';
+        showExporterLoading(true, 'Loading teapot…');
+
+        const loader = new THREE.XFileLoader();
+        loader.load(url, function (object) {
+            if (object.error || !object.models || object.models.length === 0) {
+                showExporterLoading(false);
+                return;
+            }
+            const group = new THREE.Group();
+            object.models.forEach(m => group.add(m));
+            addModelToExporter(group);
+        }, undefined, function (err) {
+            showExporterLoading(false);
+            console.warn('[Exporter] Default model load failed:', err);
+        });
     }
 
     function handleResize() {
