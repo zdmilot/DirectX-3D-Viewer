@@ -9,6 +9,9 @@
 
     const dom = {
         btnTheme: $('#btn-theme'),
+        btnAbout: $('#btn-about'),
+        aboutOverlay: $('#about-overlay'),
+        aboutClose: $('#about-close'),
         btnGrid: $('#btn-grid'),
         fileInput: $('#file-input'),
         btnSidebarToggle: $('#btn-sidebar-toggle'),
@@ -1351,6 +1354,17 @@
 
         dom.btnTheme.addEventListener('click', toggleTheme);
         dom.btnGrid.addEventListener('click', toggleGrid);
+
+        // About modal
+        if (dom.btnAbout) dom.btnAbout.addEventListener('click', () => {
+            if (dom.aboutOverlay) dom.aboutOverlay.classList.add('is-open');
+        });
+        if (dom.aboutClose) dom.aboutClose.addEventListener('click', () => {
+            if (dom.aboutOverlay) dom.aboutOverlay.classList.remove('is-open');
+        });
+        if (dom.aboutOverlay) dom.aboutOverlay.addEventListener('click', (e) => {
+            if (e.target === dom.aboutOverlay) dom.aboutOverlay.classList.remove('is-open');
+        });
         dom.fileInput.addEventListener('change', handleFileSelected);
 
         // Sidebar toggle – overlay style, no layout shift
