@@ -272,6 +272,7 @@ body {
 .navbar-brand {
     display: flex; align-items: center; gap: 12px;
     padding-left: 4px;
+    margin-right: auto;
 }
 
 .navbar-logo {
@@ -307,7 +308,6 @@ body {
 }
 
 .navbar-actions {
-    margin-left: auto;
     display: flex; align-items: center; gap: 4px;
 }
 
