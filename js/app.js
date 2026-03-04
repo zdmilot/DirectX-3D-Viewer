@@ -111,7 +111,7 @@
         if (errorEl) errorEl.classList.add('viewer-hidden');
 
         // Update filename display
-        setFilenameDisplay(file.name);
+        setFilenameDisplay();
 
         loadXFile(url, loading, errorEl);
     }
@@ -136,11 +136,11 @@
         animMixers.length = 0;
     }
 
-    function setFilenameDisplay(name) {
-        // Update the navbar subtitle to show current file, matching splash screen style
+    function setFilenameDisplay() {
+        // Keep navbar subtitle fixed for this app
         const subtitle = document.querySelector('.navbar-subtitle');
         if (subtitle) {
-            subtitle.textContent = 'FOR ' + name.toUpperCase();
+            subtitle.textContent = 'FOR .X FILES';
         }
     }
 
@@ -296,7 +296,7 @@
 
         // ── Load the default .x model ────────────────────────
         console.log('[Viewer] Starting loadXFile...');
-        setFilenameDisplay(DEFAULT_X_FILENAME);
+        setFilenameDisplay();
         loadXFile(DEFAULT_X_FILENAME, loading, errorEl);
     }
 
