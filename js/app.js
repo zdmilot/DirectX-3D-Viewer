@@ -352,6 +352,39 @@
 
             console.log('XFileLoader: loaded', object.models.length, 'model(s)');
 
+            // ── Temporary on-screen diagnostic ──
+            (function debugOverlay() {
+                var d = document.createElement('div');
+                d.id = '__debug_overlay__';
+                d.style.cssText = 'position:fixed;top:8px;left:8px;z-index:99999;background:rgba(0,0,0,0.85);color:#0f0;font:11px/1.5 monospace;padding:8px 12px;border-radius:6px;max-width:50vw;white-space:pre-wrap;pointer-events:none;';
+                var info = [];
+                info.push('Models: ' + object.models.length);
+                info.push('Animations: ' + (object.animations ? object.animations.length : 0));
+                if (object.error) info.push('ERROR: ' + object.error);
+                for (var mi = 0; mi < Math.min(object.models.length, 5); mi++) {
+                    var m = object.models[mi];
+                    var g = m.geometry;
+                    var posAttr = g ? g.getAttribute('position') : null;
+                    info.push('  mesh[' + mi + '] name="' + (m.name||'') + '" verts=' + (posAttr ? posAttr.count : 'none'));
+                    if (posAttr && posAttr.count > 0) {
+                        info.push('    v[0]=(' + posAttr.array[0].toFixed(3) + ',' + posAttr.array[1].toFixed(3) + ',' + posAttr.array[2].toFixed(3) + ')');
+                        // Check for NaN
+                        var nanCount = 0;
+                        for (var vi = 0; vi < Math.min(posAttr.array.length, 300); vi++) {
+                            if (isNaN(posAttr.array[vi])) nanCount++;
+                        }
+                        if (nanCount > 0) info.push('    ⚠ NaN count in first 100 verts: ' + nanCount);
+                    }
+                    var mat = m.material;
+                    if (Array.isArray(mat)) mat = mat[0];
+                    if (mat) info.push('    mat: color=' + (mat.color ? mat.color.getHexString() : '?') + ' side=' + mat.side + ' visible=' + mat.visible);
+                }
+                d.textContent = info.join('\n');
+                document.body.appendChild(d);
+                // Auto-remove after 30s
+                setTimeout(function() { if (d.parentNode) d.parentNode.removeChild(d); }, 30000);
+            })();
+
             // Wrap all models in a group for easy manipulation
             const group = new THREE.Group();
             group.name = '__xmodel__';
@@ -392,6 +425,20 @@
             const center = box.getCenter(new THREE.Vector3());
             const size = box.getSize(new THREE.Vector3());
             const maxDim = Math.max(size.x, size.y, size.z);
+
+            // ── Append bbox info to debug overlay ──
+            (function() {
+                var d = document.getElementById('__debug_overlay__');
+                if (d) {
+                    d.textContent += '\n--- Bounding Box ---';
+                    d.textContent += '\nmin: (' + box.min.x.toFixed(2) + ', ' + box.min.y.toFixed(2) + ', ' + box.min.z.toFixed(2) + ')';
+                    d.textContent += '\nmax: (' + box.max.x.toFixed(2) + ', ' + box.max.y.toFixed(2) + ', ' + box.max.z.toFixed(2) + ')';
+                    d.textContent += '\nsize: (' + size.x.toFixed(2) + ', ' + size.y.toFixed(2) + ', ' + size.z.toFixed(2) + ')';
+                    d.textContent += '\nmaxDim: ' + maxDim.toFixed(2);
+                    d.textContent += '\nchildren in group: ' + group.children.length;
+                    d.textContent += '\nscene children: ' + scene.children.length;
+                }
+            })();
 
             if (maxDim > 0) {
                 // Center the group

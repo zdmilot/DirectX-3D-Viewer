@@ -92,6 +92,10 @@
                         <i class="fas fa-exchange-alt"></i>
                         <span>Convert to .x</span>
                     </button>
+                    <button class="sidebar-nav-item" data-view="placer">
+                        <i class="fas fa-th"></i>
+                        <span>Plate Placer</span>
+                    </button>
                 </div>
             </aside>
 
@@ -324,12 +328,150 @@
                 </div>
             </div>
 
+            <!-- ====== PLATE PLACER VIEW ====== -->
+            <div class="view-panel" data-view-panel="placer" id="placer-host">
+                <div class="viewer-loading viewer-hidden" id="pp-loading">
+                    <div class="viewer-spinner"></div>
+                    <span>Loading 3D Model…</span>
+                </div>
+                <div class="viewer-error viewer-hidden" id="pp-error">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span id="pp-error-msg">Failed to load model.</span>
+                </div>
+                <canvas id="pp-canvas"></canvas>
+
+                <!-- Floating 3D Toolbar -->
+                <div class="viewer-toolbar" id="pp-toolbar">
+                    <button class="vt-toggle" id="pp-vt-toggle" title="Toggle toolbar">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                    <div class="vt-body" id="pp-vt-body">
+                        <div class="vt-gizmo" id="pp-vt-gizmo">
+                            <canvas id="pp-gizmo-canvas" width="44" height="44"></canvas>
+                        </div>
+                        <div class="vt-separator"></div>
+                        <button class="vt-btn" id="pp-vt-reset-cam" title="Reset camera">
+                            <i class="fas fa-video"></i>
+                        </button>
+                        <button class="vt-btn" id="pp-vt-zoom-fit" title="Zoom to fit">
+                            <i class="fas fa-expand"></i>
+                        </button>
+                        <button class="vt-btn" id="pp-vt-wireframe" title="Toggle wireframe">
+                            <i class="fas fa-draw-polygon"></i>
+                        </button>
+                        <button class="vt-btn" id="pp-vt-perspective" title="Toggle perspective / orthographic">
+                            <i class="fas fa-cube"></i>
+                        </button>
+                        <button class="vt-btn grid-toggle" id="pp-btn-grid" title="Toggle gridlines">
+                            <i class="fas fa-border-all"></i>
+                            <span class="grid-slash" aria-hidden="true"></span>
+                        </button>
+                        <div class="vt-separator"></div>
+                        <button class="vt-btn vt-btn-round" id="pp-vt-zoom-in" title="Zoom in">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                        <button class="vt-btn vt-btn-round" id="pp-vt-zoom-out" title="Zoom out">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                        <button class="vt-btn vt-btn-round" id="pp-vt-pan" title="Pan mode">
+                            <i class="fas fa-hand-paper"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Offset Overlay (bottom right) -->
+                <div class="pp-offset-overlay" id="pp-offset-overlay">
+                    <div class="pp-offset-header">
+                        <i class="fas fa-arrows-alt"></i> Placement Offsets
+                    </div>
+                    <div class="pp-offset-body">
+                        <div class="pp-offset-section">
+                            <div class="pp-offset-section-title">Model Position</div>
+                            <div class="pp-offset-row">
+                                <label>X</label>
+                                <input type="number" id="pp-model-x" value="0" step="0.1">
+                                <span class="pp-unit">mm</span>
+                            </div>
+                            <div class="pp-offset-row">
+                                <label>Y</label>
+                                <input type="number" id="pp-model-y" value="0" step="0.1">
+                                <span class="pp-unit">mm</span>
+                            </div>
+                            <div class="pp-offset-row">
+                                <label>Z</label>
+                                <input type="number" id="pp-model-z" value="0" step="0.1">
+                                <span class="pp-unit">mm</span>
+                            </div>
+                        </div>
+                        <div class="pp-offset-divider"></div>
+                        <div class="pp-offset-section">
+                            <div class="pp-offset-section-title">Plate Position</div>
+                            <div class="pp-offset-row">
+                                <label>X</label>
+                                <input type="number" id="pp-plate-x" value="0" step="0.1">
+                                <span class="pp-unit">mm</span>
+                            </div>
+                            <div class="pp-offset-row">
+                                <label>Y</label>
+                                <input type="number" id="pp-plate-y" value="0" step="0.1">
+                                <span class="pp-unit">mm</span>
+                            </div>
+                            <div class="pp-offset-row">
+                                <label>Z</label>
+                                <input type="number" id="pp-plate-z" value="0" step="0.1">
+                                <span class="pp-unit">mm</span>
+                            </div>
+                        </div>
+                        <div class="pp-offset-divider"></div>
+                        <div class="pp-offset-section pp-offset-result">
+                            <div class="pp-offset-section-title">Calculated Offset</div>
+                            <div class="pp-offset-row">
+                                <label>ΔX</label>
+                                <span class="pp-offset-val" id="pp-delta-x">0.0</span>
+                                <span class="pp-unit">mm</span>
+                            </div>
+                            <div class="pp-offset-row">
+                                <label>ΔY</label>
+                                <span class="pp-offset-val" id="pp-delta-y">0.0</span>
+                                <span class="pp-unit">mm</span>
+                            </div>
+                            <div class="pp-offset-row">
+                                <label>ΔZ</label>
+                                <span class="pp-offset-val" id="pp-delta-z">0.0</span>
+                                <span class="pp-unit">mm</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bottom Controls Bar -->
+                <div class="viewer-controls-bar" id="pp-controls-bar">
+                    <input type="file" id="pp-file-input" accept=".x" style="display:none">
+                    <button class="cv-ctrl-btn" id="pp-open" title="Open .x file">
+                        <i class="fas fa-folder-open"></i> Open
+                    </button>
+                    <div class="cv-ctrl-divider"></div>
+                    <button class="cv-ctrl-btn" id="pp-reset-positions" title="Reset all positions to zero">
+                        <i class="fas fa-undo"></i> Reset Positions
+                    </button>
+                    <div class="cv-ctrl-spacer"></div>
+                    <span class="viewer-cam-display" id="pp-cam-display">X: 0.0  Y: 0.0  Z: 0.0</span>
+                </div>
+
+                <div class="viewer-dropzone viewer-hidden" id="pp-dropzone">
+                    <div class="dropzone-content">
+                        <i class="fas fa-file-import"></i>
+                        <span>Drop .x file here</span>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
 
     <script src="js/lib/three.min.js"></script>
     <script src="js/lib/OrbitControls.js"></script>
-    <script src="js/lib/XFileLoader.js?v=20260303i"></script>
+    <script src="js/lib/XFileLoader.js?v=20260303j"></script>
     <script src="js/lib/OBJLoader.js"></script>
     <script src="js/lib/MTLLoader.js"></script>
     <script src="js/lib/GLTFLoader.js"></script>
