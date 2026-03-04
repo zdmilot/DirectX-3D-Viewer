@@ -1484,6 +1484,28 @@ body {
     width: 24px;
 }
 
+/* Scale row */
+.pp-scale-row {
+    margin-top: 4px;
+    padding-top: 4px;
+    border-top: 1px dashed var(--card-border);
+}
+
+.pp-scale-icon {
+    font-size: 0.65rem;
+    color: var(--accent);
+}
+
+.pp-scale-pct {
+    font-size: 0.7rem;
+    font-family: 'Menlo', 'Consolas', monospace;
+    font-weight: 600;
+    color: var(--accent);
+    flex-shrink: 0;
+    width: 36px;
+    text-align: right;
+}
+
 .pp-offset-divider {
     height: 1px;
     background: var(--card-border);

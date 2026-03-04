@@ -26,6 +26,8 @@
 
         modelPos: { x: 0, y: 0, z: 0 },
         platePos: { x: 0, y: 0, z: 0 },
+        modelScale: 1.0,
+        plateScale: 1.0,
 
         animId: null,
         loadedFileName: '',
@@ -194,7 +196,12 @@
 
             ppState.plate = group;
             ppState._plateCenter = center.clone();
+            ppState._plateNativeSize = box.getSize(new THREE.Vector3()).clone();
             ppState.scene.add(group);
+
+            // Auto-scale plate to match model if model is already loaded
+            autoScalePlateToModel();
+            applyScales();
 
             console.log('[PlatePlacer] Plate loaded successfully');
         }, null, function (err) {
@@ -220,6 +227,8 @@
             });
             ppState.scene.remove(ppState.model);
             ppState.model = null;
+            ppState._modelNativeSize = null;
+            ppState._autoScaled = false; // allow re-auto-scale for new model
         }
 
         if (loadingEl) {
@@ -321,6 +330,11 @@
             ppState.model = group;
             // Store the centering offset for position input zeroing
             ppState._modelCenter = center.clone();
+            ppState._modelNativeSize = size.clone();
+
+            // Auto-scale plate to match model if plate is already loaded
+            autoScalePlateToModel();
+            applyScales();
 
             // Update offset display
             updateOffsets();
@@ -344,6 +358,53 @@
         el.classList.remove('viewer-hidden');
         const msgEl = el.querySelector('#pp-error-msg');
         if (msgEl) msgEl.textContent = msg;
+    }
+
+    // ================================================================
+    //  Scale Management
+    // ================================================================
+
+    /**
+     * Auto-scale the plate so its largest dimension is roughly 40% of
+     * the model's largest dimension.  Only runs once per model load.
+     */
+    function autoScalePlateToModel() {
+        if (!ppState._modelNativeSize || !ppState._plateNativeSize) return;
+        if (ppState._autoScaled) return;  // only auto-scale once
+        ppState._autoScaled = true;
+
+        const modelMax = Math.max(
+            ppState._modelNativeSize.x,
+            ppState._modelNativeSize.y,
+            ppState._modelNativeSize.z
+        );
+        const plateMax = Math.max(
+            ppState._plateNativeSize.x,
+            ppState._plateNativeSize.y,
+            ppState._plateNativeSize.z
+        );
+        if (plateMax <= 0 || modelMax <= 0) return;
+
+        // Target: plate sits on top of or beside the model at ~40% size
+        const targetRatio = 0.4;
+        const autoScale = (modelMax * targetRatio) / plateMax;
+
+        ppState.plateScale = parseFloat(autoScale.toFixed(4));
+
+        // Update the scale input field
+        const el = $('#pp-plate-scale');
+        if (el) el.value = ppState.plateScale;
+        const pctEl = $('#pp-plate-scale-pct');
+        if (pctEl) pctEl.textContent = (ppState.plateScale * 100).toFixed(0) + '%';
+    }
+
+    function applyScales() {
+        if (ppState.model) {
+            ppState.model.scale.setScalar(ppState.modelScale);
+        }
+        if (ppState.plate) {
+            ppState.plate.scale.setScalar(ppState.plateScale);
+        }
     }
 
     // ================================================================
@@ -402,16 +463,51 @@
             });
         });
 
+        // Scale inputs
+        const modelScaleEl = $('#pp-model-scale');
+        const plateScaleEl = $('#pp-plate-scale');
+
+        if (modelScaleEl) {
+            modelScaleEl.addEventListener('input', () => {
+                ppState.modelScale = parseFloat(modelScaleEl.value) || 1;
+                const pctEl = $('#pp-model-scale-pct');
+                if (pctEl) pctEl.textContent = (ppState.modelScale * 100).toFixed(0) + '%';
+                applyScales();
+                updateOffsets();
+            });
+        }
+        if (plateScaleEl) {
+            plateScaleEl.addEventListener('input', () => {
+                ppState.plateScale = parseFloat(plateScaleEl.value) || 1;
+                const pctEl = $('#pp-plate-scale-pct');
+                if (pctEl) pctEl.textContent = (ppState.plateScale * 100).toFixed(0) + '%';
+                applyScales();
+                updateOffsets();
+            });
+        }
+
         // Reset button
         const resetBtn = $('#pp-reset-positions');
         if (resetBtn) {
             resetBtn.addEventListener('click', () => {
                 ppState.modelPos = { x: 0, y: 0, z: 0 };
                 ppState.platePos = { x: 0, y: 0, z: 0 };
+                ppState.modelScale = 1.0;
+                ppState.plateScale = 1.0;
+                ppState._autoScaled = false;
                 fields.forEach(f => {
                     const el = $('#' + f.id);
                     if (el) el.value = '0';
                 });
+                if (modelScaleEl) modelScaleEl.value = '1';
+                if (plateScaleEl) plateScaleEl.value = '1';
+                const mPct = $('#pp-model-scale-pct');
+                const pPct = $('#pp-plate-scale-pct');
+                if (mPct) mPct.textContent = '100%';
+                if (pPct) pPct.textContent = '100%';
+                applyScales();
+                autoScalePlateToModel();
+                applyScales();
                 updateOffsets();
             });
         }
