@@ -42,7 +42,7 @@
         loadedFileName: 'test',
     };
 
-    const DEFAULT_X_FILENAME = 'teapot_simple.x';
+    const DEFAULT_X_FILENAME = 'test.x';
 
     // -- Splash Screen -----------------------------------------------
     function initSplash() {
@@ -193,13 +193,6 @@
         if (scene) {
             const grid = scene.getObjectByName('__grid__');
             if (grid) grid.visible = state.gridVisible;
-        }
-        // Propagate to other applets
-        if (window.ConverterModule && window.ConverterModule.setGridVisible) {
-            window.ConverterModule.setGridVisible(state.gridVisible);
-        }
-        if (window.ExporterModule && window.ExporterModule.setGridVisible) {
-            window.ExporterModule.setGridVisible(state.gridVisible);
         }
     }
 
@@ -639,6 +632,163 @@
     // ================================================================
     //  Screenshot Export
     // ================================================================
+
+    /**
+     * Project the current 3D scene into a true vector SVG.
+     * Each visible triangle is projected through the camera, depth-sorted
+     * (painter's algorithm), and emitted as a filled <polygon>.
+     * Grid helpers and non-mesh objects are excluded.
+     */
+    function exportVectorSVG() {
+        if (!scene || !camera) return '';
+
+        const w = renderer.domElement.width;
+        const h = renderer.domElement.height;
+
+        // Ensure world matrices are current
+        scene.updateMatrixWorld(true);
+        camera.updateMatrixWorld(true);
+
+        // Build the combined view-projection matrix
+        const viewMatrix = camera.matrixWorldInverse.clone();
+        const projMatrix = camera.projectionMatrix.clone();
+        const vpMatrix   = new THREE.Matrix4().multiplyMatrices(projMatrix, viewMatrix);
+
+        // Collect projected triangles
+        const tris = [];
+
+        scene.traverse(function (obj) {
+            if (!obj.isMesh) return;
+            // Skip grid helpers
+            if (obj.name === '__grid__' || obj.name === '__exgrid__') return;
+            // Walk up to check if any ancestor is a grid
+            let skip = false;
+            let p = obj.parent;
+            while (p) {
+                if (p.isGridHelper || p.name === '__grid__' || p.name === '__exgrid__') { skip = true; break; }
+                p = p.parent;
+            }
+            if (skip) return;
+
+            const geom = obj.geometry;
+            if (!geom || !geom.attributes || !geom.attributes.position) return;
+
+            const worldMatrix = obj.matrixWorld;
+            const mvp = new THREE.Matrix4().multiplyMatrices(vpMatrix, worldMatrix);
+
+            // Compute normal matrix for back-face culling
+            const normalMatrix = new THREE.Matrix3().getNormalMatrix(worldMatrix);
+
+            const pos  = geom.attributes.position;
+            const norm = geom.attributes.normal;
+
+            // Resolve face colour
+            const mat  = obj.material;
+            const mats = Array.isArray(mat) ? mat : [mat];
+            const m    = mats[0];
+            let baseR = 0.7, baseG = 0.7, baseB = 0.7, baseA = 1.0;
+            if (m && m.color) { baseR = m.color.r; baseG = m.color.g; baseB = m.color.b; }
+            if (m && m.opacity !== undefined) baseA = m.opacity;
+
+            // Build index array (handle both indexed and non-indexed geometry)
+            let indices;
+            if (geom.index) {
+                indices = geom.index;
+            } else {
+                // Non-indexed: every 3 verts is a face
+                const arr = [];
+                for (let i = 0; i < pos.count; i++) arr.push(i);
+                geom.setIndex(arr);
+                indices = geom.index;
+            }
+
+            const faceCount = indices.count / 3;
+            const v3a = new THREE.Vector3();
+            const v3b = new THREE.Vector3();
+            const v3c = new THREE.Vector3();
+
+            for (let f = 0; f < faceCount; f++) {
+                const i0 = indices.getX(f * 3);
+                const i1 = indices.getX(f * 3 + 1);
+                const i2 = indices.getX(f * 3 + 2);
+
+                // World-space vertices
+                v3a.set(pos.getX(i0), pos.getY(i0), pos.getZ(i0)).applyMatrix4(worldMatrix);
+                v3b.set(pos.getX(i1), pos.getY(i1), pos.getZ(i1)).applyMatrix4(worldMatrix);
+                v3c.set(pos.getX(i2), pos.getY(i2), pos.getZ(i2)).applyMatrix4(worldMatrix);
+
+                // Compute face normal in world space for back-face culling
+                const edge1 = new THREE.Vector3().subVectors(v3b, v3a);
+                const edge2 = new THREE.Vector3().subVectors(v3c, v3a);
+                const faceNormal = new THREE.Vector3().crossVectors(edge1, edge2).normalize();
+
+                // View direction (from face centroid toward camera)
+                const centroidWorld = new THREE.Vector3().addVectors(v3a, v3b).add(v3c).multiplyScalar(1 / 3);
+                const viewDir = new THREE.Vector3().subVectors(camera.position, centroidWorld).normalize();
+
+                // Back-face cull
+                if (faceNormal.dot(viewDir) < 0) continue;
+
+                // Project to NDC
+                const p0 = new THREE.Vector3(pos.getX(i0), pos.getY(i0), pos.getZ(i0)).applyMatrix4(mvp);
+                const p1 = new THREE.Vector3(pos.getX(i1), pos.getY(i1), pos.getZ(i1)).applyMatrix4(mvp);
+                const p2 = new THREE.Vector3(pos.getX(i2), pos.getY(i2), pos.getZ(i2)).applyMatrix4(mvp);
+
+                // Clip: skip if any vertex is behind camera (z < -1 in NDC)
+                if (p0.z < -1 || p1.z < -1 || p2.z < -1) continue;
+                if (p0.z >  1 || p1.z >  1 || p2.z >  1) continue;
+
+                // NDC → screen
+                const sx0 = ( p0.x * 0.5 + 0.5) * w;
+                const sy0 = (-p0.y * 0.5 + 0.5) * h;
+                const sx1 = ( p1.x * 0.5 + 0.5) * w;
+                const sy1 = (-p1.y * 0.5 + 0.5) * h;
+                const sx2 = ( p2.x * 0.5 + 0.5) * w;
+                const sy2 = (-p2.y * 0.5 + 0.5) * h;
+
+                // Simple directional-light shading: use the face normal
+                // Light direction from camera (simple headlight model)
+                const shade = Math.max(0.15, faceNormal.dot(viewDir));
+                const cr = Math.min(255, Math.round(baseR * shade * 255));
+                const cg = Math.min(255, Math.round(baseG * shade * 255));
+                const cb = Math.min(255, Math.round(baseB * shade * 255));
+
+                // Average depth for painter's sort
+                const avgZ = (p0.z + p1.z + p2.z) / 3;
+
+                tris.push({
+                    points: sx0.toFixed(2) + ',' + sy0.toFixed(2) + ' ' +
+                            sx1.toFixed(2) + ',' + sy1.toFixed(2) + ' ' +
+                            sx2.toFixed(2) + ',' + sy2.toFixed(2),
+                    fill: 'rgb(' + cr + ',' + cg + ',' + cb + ')',
+                    opacity: baseA,
+                    depth: avgZ,
+                });
+            }
+        });
+
+        // Painter's algorithm: sort far-to-near (largest depth first)
+        tris.sort(function (a, b) { return b.depth - a.depth; });
+
+        // Build the SVG document
+        const bgColor = state.isDark ? '#1b2838' : '#f0f0f0';
+        const parts = [];
+        parts.push('<?xml version="1.0" encoding="UTF-8" standalone="no"?>');
+        parts.push('<svg xmlns="http://www.w3.org/2000/svg" width="' + w + '" height="' + h +
+                   '" viewBox="0 0 ' + w + ' ' + h + '" shape-rendering="crispEdges">');
+        parts.push('<rect width="100%" height="100%" fill="' + bgColor + '"/>');
+
+        for (let i = 0; i < tris.length; i++) {
+            const t = tris[i];
+            parts.push('<polygon points="' + t.points + '" fill="' + t.fill + '"' +
+                       (t.opacity < 1 ? ' opacity="' + t.opacity.toFixed(3) + '"' : '') +
+                       ' stroke="' + t.fill + '" stroke-width="0.5"/>');
+        }
+
+        parts.push('</svg>');
+        return parts.join('\n');
+    }
+
     function saveScreenshot(format) {
         if (!renderer || !scene || !camera) return;
 
@@ -649,16 +799,8 @@
         const fileName = (state.loadedFileName || 'screenshot').replace(/\.[^.]+$/, '');
 
         if (format === 'svg') {
-            // SVG: embed the raster as a base64 image inside an SVG wrapper
-            const dataURL = canvas.toDataURL('image/png');
-            const w = canvas.width;
-            const h = canvas.height;
-            const svgContent =
-                '<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n' +
-                '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" ' +
-                'width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '">\n' +
-                '  <image width="' + w + '" height="' + h + '" xlink:href="' + dataURL + '"/>\n' +
-                '</svg>';
+            // True vector SVG: project geometry through the camera
+            const svgContent = exportVectorSVG();
             const blob = new Blob([svgContent], { type: 'image/svg+xml' });
             downloadBlob(blob, fileName + '.svg');
         } else if (format === 'jpg') {

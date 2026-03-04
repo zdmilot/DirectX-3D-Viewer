@@ -122,29 +122,6 @@
 
         // -- Wire controls --
         wireConverterControls();
-
-        // -- Load default teapot example --
-        loadDefaultConverterModel();
-    }
-
-    function loadDefaultConverterModel() {
-        cvState.originalFileName = 'test';
-        cvState.fileExtension = 'x';
-        updateFormatBadge('x');
-        showConverterLoading(true, 'Loading teapot…');
-
-        const loader = new THREE.XFileLoader();
-        loader.load('teapot_simple.x', function (object) {
-            if (object.error || !object.models || object.models.length === 0) {
-                showConverterLoading(false);
-                return;
-            }
-            const group = new THREE.Group();
-            object.models.forEach(function(m) { group.add(m); });
-            addModelToScene(group);
-        }, undefined, function (err) {
-            showConverterLoading(false);
-        });
     }
 
     // ================================================================
