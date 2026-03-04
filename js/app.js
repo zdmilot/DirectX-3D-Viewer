@@ -287,6 +287,8 @@
             renderer.render(scene, camera);
             // Update orientation gizmo
             drawGizmo();
+            // Update camera position/angle display
+            updateCamDisplay();
         }
         tick();
 
@@ -620,6 +622,29 @@
                 ? THREE.MOUSE.PAN
                 : THREE.MOUSE.ROTATE;
         }
+    }
+
+    // ================================================================
+    //  Camera Position / Angle Display
+    // ================================================================
+    function updateCamDisplay() {
+        if (!camera) return;
+        const el = $('#viewer-cam-display');
+        if (!el) return;
+        const p = camera.position;
+        // Compute pitch (elevation) and yaw (azimuth) from camera direction
+        const dir = new THREE.Vector3();
+        camera.getWorldDirection(dir);
+        const pitch = THREE.MathUtils.radToDeg(Math.asin(dir.y));
+        const yaw = THREE.MathUtils.radToDeg(Math.atan2(dir.x, dir.z));
+        const roll = THREE.MathUtils.radToDeg(camera.rotation.z);
+        el.textContent =
+            'X: ' + p.x.toFixed(1) +
+            '  Y: ' + p.y.toFixed(1) +
+            '  Z: ' + p.z.toFixed(1) +
+            '  |  Pitch: ' + pitch.toFixed(1) + '\u00b0' +
+            '  Yaw: ' + yaw.toFixed(1) + '\u00b0' +
+            '  Roll: ' + roll.toFixed(1) + '\u00b0';
     }
 
     // ================================================================
