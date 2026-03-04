@@ -201,6 +201,7 @@
             // Auto-scale plate to match model if model is already loaded
             autoScalePlateToModel();
             applyScales();
+            updateOffsets();   // apply the computed position to the plate group
 
             console.log('[PlatePlacer] Plate loaded successfully');
         }, null, function (err) {
@@ -302,22 +303,25 @@
                 group.position.y += ppState.modelPos.y;
                 group.position.z += ppState.modelPos.z;
 
-                // Fit camera
-                const fitDist = Math.max(maxDim, 150) * 1.8;
+                // Fit camera — match the main viewer exactly
+                const fitDist = maxDim * 1.8;
                 ppState.camera.position.set(fitDist * 0.6, fitDist * 0.4, fitDist);
-                ppState.camera.near = 0.1;
-                ppState.camera.far = fitDist * 20;
+                ppState.camera.near = maxDim * 0.05;
+                ppState.camera.far  = maxDim * 20;
                 ppState.camera.updateProjectionMatrix();
 
                 ppState.controls.target.set(0, 0, 0);
+                ppState.controls.minDistance = maxDim * 0.1;
+                ppState.controls.maxDistance = maxDim * 10;
                 ppState.controls.update();
 
-                // Resize grid
+                // Resize grid — same formula as main viewer
                 const oldGrid = ppState.scene.getObjectByName('__ppgrid__');
                 if (oldGrid) ppState.scene.remove(oldGrid);
-                const gridSize = Math.max(maxDim * 3, 400);
+                const gridSize = maxDim * 3;
+                const gridDiv  = 20;
                 const gColor = ppState.isDark ? DARK_GRID : LIGHT_GRID;
-                const newGrid = new THREE.GridHelper(gridSize, 40, gColor, gColor);
+                const newGrid = new THREE.GridHelper(gridSize, gridDiv, gColor, gColor);
                 newGrid.name = '__ppgrid__';
                 newGrid.renderOrder = -1;
                 newGrid.material.depthWrite = false;
@@ -399,9 +403,9 @@
         if (pctEl) pctEl.textContent = (ppState.plateScale * 100).toFixed(0) + '%';
 
         // ── Offset the plate so it sits at least 1 grid square away ──
-        // Grid: gridSize / 40 divisions = 1 square width
-        const gridSize = Math.max(modelMax * 3, 400);
-        const gridSquare = gridSize / 40;
+        // Grid: gridSize / 20 divisions = 1 square width (matches main viewer)
+        const gridSize = modelMax * 3;
+        const gridSquare = gridSize / 20;
 
         // Half-widths along X at their respective scales
         const modelHalfX = ppState._modelNativeSize.x / 2;

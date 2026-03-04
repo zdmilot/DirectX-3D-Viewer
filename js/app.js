@@ -1379,10 +1379,12 @@
     function makeDraggable(panel, handleSelector, snapContainer) {
         const handle = handleSelector ? panel.querySelector(handleSelector) : panel;
         if (!handle) return;
-        let isDragging = false, startX, startY, origLeft, origTop;
+        let isDragging = false, startX, startY, origLeft, origTop, panelW, panelH;
         const SNAP_THRESHOLD = 24; // px from edge to snap
 
         handle.classList.add('draggable-handle');
+
+        function clamp(v, lo, hi) { return Math.max(lo, Math.min(v, hi)); }
 
         function onPointerDown(e) {
             // ignore interactions on inputs, buttons, etc.
@@ -1393,6 +1395,9 @@
             startY = e.clientY;
             origLeft = rect.left;
             origTop = rect.top;
+            // Capture panel size once at drag-start (content+padding+border)
+            panelW = panel.offsetWidth;
+            panelH = panel.offsetHeight;
             // switch to fixed positioning so it can move freely
             panel.style.position = 'fixed';
             panel.style.left = origLeft + 'px';
@@ -1406,29 +1411,15 @@
             e.preventDefault();
         }
 
-        function clampToViewport(left, top) {
-            const rect = panel.getBoundingClientRect();
-            const pw = rect.width;
-            const ph = rect.height;
-            const vw = window.innerWidth;
-            const vh = window.innerHeight;
-            // Keep the entire panel within the viewport
-            const clampedLeft = Math.max(0, Math.min(left, vw - pw));
-            const clampedTop  = Math.max(0, Math.min(top,  vh - ph));
-            return { left: clampedLeft, top: clampedTop };
-        }
-
         function onPointerMove(e) {
             if (!isDragging) return;
             const dx = e.clientX - startX;
             const dy = e.clientY - startY;
-            // Apply position first so getBoundingClientRect returns current size
-            panel.style.left = (origLeft + dx) + 'px';
-            panel.style.top  = (origTop  + dy) + 'px';
-            // Now clamp
-            const clamped = clampToViewport(origLeft + dx, origTop + dy);
-            panel.style.left = clamped.left + 'px';
-            panel.style.top  = clamped.top  + 'px';
+            const vw = window.innerWidth;
+            const vh = window.innerHeight;
+            // Clamp so the ENTIRE panel stays within the viewport
+            panel.style.left = clamp(origLeft + dx, 0, vw - panelW) + 'px';
+            panel.style.top  = clamp(origTop  + dy, 0, vh - panelH) + 'px';
         }
 
         function onPointerUp() {
@@ -1437,34 +1428,33 @@
             handle.style.cursor = '';
             document.body.style.userSelect = '';
 
+            // Re-measure in case content changed size during drag
+            const vw = window.innerWidth;
+            const vh = window.innerHeight;
+            const pw = panel.offsetWidth;
+            const ph = panel.offsetHeight;
+            const r  = panel.getBoundingClientRect();
+
             // Final clamp
-            const r = panel.getBoundingClientRect();
-            const clamped = clampToViewport(r.left, r.top);
-            panel.style.left = clamped.left + 'px';
-            panel.style.top  = clamped.top  + 'px';
+            panel.style.left = clamp(r.left, 0, vw - pw) + 'px';
+            panel.style.top  = clamp(r.top,  0, vh - ph) + 'px';
 
             // Edge-snap: if within SNAP_THRESHOLD of the host's left/right edge,
-            // stick flush to that edge but never exceed viewport.
+            // stick flush to that edge — but always clamped to viewport.
             const host = snapContainer || panel.parentElement;
             if (host) {
                 const hr = host.getBoundingClientRect();
                 const pr = panel.getBoundingClientRect();
-                const pw = pr.width;
-                const vw = window.innerWidth;
 
-                // Distance from panel left edge to host left edge
                 const distLeft  = pr.left - hr.left;
-                // Distance from panel right edge to host right edge
                 const distRight = hr.right - pr.right;
 
                 if (distLeft <= SNAP_THRESHOLD) {
-                    panel.style.left = Math.max(0, hr.left) + 'px';
+                    panel.style.left = clamp(hr.left, 0, vw - pw) + 'px';
                     panel.classList.add('pp-snapped-left');
                     panel.classList.remove('pp-snapped-right');
                 } else if (distRight <= SNAP_THRESHOLD) {
-                    // Snap to right edge but never go off-screen
-                    const snapLeft = Math.min(hr.right - pw, vw - pw);
-                    panel.style.left = Math.max(0, snapLeft) + 'px';
+                    panel.style.left = clamp(hr.right - pw, 0, vw - pw) + 'px';
                     panel.classList.add('pp-snapped-right');
                     panel.classList.remove('pp-snapped-left');
                 } else {
