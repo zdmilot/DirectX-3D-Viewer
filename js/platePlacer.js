@@ -36,21 +36,7 @@
     const LIGHT_GRID = 0xcccccc;
     const DARK_GRID  = 0x2a3a4a;
 
-    // Standard SBS microwell plate dimensions (mm)
-    const PLATE = {
-        length: 127.76,
-        width:  85.48,
-        height: 14.35,
-        wallThickness: 1.0,
-        wellDepth: 10.5,
-        rows: 8,
-        cols: 12,
-        wellDiameter: 6.96,
-        wellSpacing: 9.0,   // center-to-center
-        cornerRadius: 3.18,
-        a1OffsetX: 14.38,   // distance from left edge to center of A1
-        a1OffsetY: 11.24,   // distance from top edge to center of A1
-    };
+    const PLATE_X_FILENAME = '96WellPlate.x';
 
     // ================================================================
     //  Initialization
@@ -116,8 +102,8 @@
         grid.visible = ppState.gridVisible;
         ppState.scene.add(grid);
 
-        // -- Create the microwell plate --
-        createMicrowellPlate();
+        // -- Create the microwell plate (load from .x file) --
+        loadPlateModel();
 
         // -- Resize observer --
         const ro = new ResizeObserver(() => {
@@ -146,95 +132,60 @@
     }
 
     // ================================================================
-    //  Microwell Plate Builder  (96-well SBS standard)
+    //  Load 96-well plate from .x file
     // ================================================================
-    function createMicrowellPlate() {
-        const group = new THREE.Group();
-        group.name = '__plate__';
+    function loadPlateModel() {
+        const url = PLATE_X_FILENAME + '?_ts=' + Date.now();
+        const manager = new THREE.LoadingManager();
+        const loader = new THREE.XFileLoader(manager);
 
-        const plateMat = new THREE.MeshPhongMaterial({
-            color: 0xe8e8e8,
-            transparent: true,
-            opacity: 0.85,
-            side: THREE.DoubleSide,
-        });
-
-        const plateMatDark = new THREE.MeshPhongMaterial({
-            color: 0xcccccc,
-            transparent: true,
-            opacity: 0.6,
-            side: THREE.DoubleSide,
-        });
-
-        // Base plate body (hollow box)
-        const outerGeo = new THREE.BoxGeometry(PLATE.length, PLATE.height, PLATE.width);
-        const outerMesh = new THREE.Mesh(outerGeo, plateMat);
-        outerMesh.position.set(PLATE.length / 2, PLATE.height / 2, PLATE.width / 2);
-        group.add(outerMesh);
-
-        // Plate rim / lip at the top
-        const rimHeight = 1.2;
-        const rimGeo = new THREE.BoxGeometry(
-            PLATE.length + 2,
-            rimHeight,
-            PLATE.width + 2
-        );
-        const rimMesh = new THREE.Mesh(rimGeo, plateMatDark);
-        rimMesh.position.set(PLATE.length / 2, PLATE.height + rimHeight / 2, PLATE.width / 2);
-        group.add(rimMesh);
-
-        // Wells (cylindrical indentations = just cylinder meshes on top)
-        const wellGeo = new THREE.CylinderGeometry(
-            PLATE.wellDiameter / 2,
-            PLATE.wellDiameter / 2,
-            PLATE.wellDepth,
-            16
-        );
-        const wellMat = new THREE.MeshPhongMaterial({
-            color: 0xffffff,
-            transparent: true,
-            opacity: 0.5,
-            side: THREE.DoubleSide,
-        });
-
-        // Bottom of each well
-        const wellBottomGeo = new THREE.CircleGeometry(PLATE.wellDiameter / 2 - 0.3, 16);
-        const wellBottomMat = new THREE.MeshPhongMaterial({
-            color: 0xd0d0d0,
-            side: THREE.DoubleSide,
-        });
-
-        for (let row = 0; row < PLATE.rows; row++) {
-            for (let col = 0; col < PLATE.cols; col++) {
-                const cx = PLATE.a1OffsetX + col * PLATE.wellSpacing;
-                const cz = PLATE.a1OffsetY + row * PLATE.wellSpacing;
-                const cy = PLATE.height - PLATE.wellDepth / 2 + 0.5;
-
-                // Well cylinder
-                const well = new THREE.Mesh(wellGeo, wellMat);
-                well.position.set(cx, cy, cz);
-                group.add(well);
-
-                // Well bottom
-                const bottom = new THREE.Mesh(wellBottomGeo, wellBottomMat);
-                bottom.rotation.x = -Math.PI / 2;
-                bottom.position.set(cx, PLATE.height - PLATE.wellDepth + 0.6, cz);
-                group.add(bottom);
+        loader.load(url, function (object) {
+            if (object.error || !object.models || object.models.length === 0) {
+                console.error('[PlatePlacer] Failed to load plate model:', object.error || 'no meshes');
+                return;
             }
-        }
 
-        // Well labels on the rim
-        // We'll skip canvas-based labels for performance — the grid pattern makes it clear
+            const group = new THREE.Group();
+            group.name = '__plate__';
 
-        // Position plate so its center is near origin
-        group.position.set(
-            -PLATE.length / 2 + ppState.platePos.x,
-            ppState.platePos.y,
-            -PLATE.width / 2 + ppState.platePos.z
-        );
+            for (let i = 0; i < object.models.length; i++) {
+                const model = object.models[i];
+                model.renderOrder = i + 100; // offset to avoid z-fighting with main model
+                if (model.material) {
+                    const applyOffset = (m, idx) => {
+                        if (idx > 0) {
+                            m.polygonOffset = true;
+                            m.polygonOffsetFactor = idx;
+                            m.polygonOffsetUnits  = idx * 4;
+                        }
+                    };
+                    if (Array.isArray(model.material)) {
+                        model.material.forEach(m => applyOffset(m, i));
+                    } else {
+                        applyOffset(model.material, i);
+                    }
+                }
+                group.add(model);
+            }
 
-        ppState.plate = group;
-        ppState.scene.add(group);
+            // Center the plate
+            const box = new THREE.Box3().setFromObject(group);
+            const center = box.getCenter(new THREE.Vector3());
+            group.position.sub(center);
+
+            // Apply stored plate offset
+            group.position.x += ppState.platePos.x;
+            group.position.y += ppState.platePos.y;
+            group.position.z += ppState.platePos.z;
+
+            ppState.plate = group;
+            ppState._plateCenter = center.clone();
+            ppState.scene.add(group);
+
+            console.log('[PlatePlacer] Plate loaded successfully');
+        }, null, function (err) {
+            console.error('[PlatePlacer] Error loading plate .x file:', err);
+        });
     }
 
     // ================================================================
@@ -408,10 +359,11 @@
 
         // Move plate in scene
         if (ppState.plate) {
+            const c = ppState._plateCenter || new THREE.Vector3();
             ppState.plate.position.set(
-                -PLATE.length / 2 + ppState.platePos.x,
-                ppState.platePos.y,
-                -PLATE.width / 2 + ppState.platePos.z
+                -c.x + ppState.platePos.x,
+                -c.y + ppState.platePos.y,
+                -c.z + ppState.platePos.z
             );
         }
     }
