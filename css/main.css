@@ -1509,6 +1509,7 @@ body {
     width: 64px;
     height: 64px;
     margin-bottom: 12px;
+    transform: scaleY(-1);
 }
 
 .about-title {
