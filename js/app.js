@@ -46,6 +46,7 @@
         toolbarCollapsed: false,
         activeView: 'viewer',
         loadedFileName: 'test',
+        lastLoadedUrl: null,   // URL of the last loaded .x file (for passing to placer)
     };
 
     const DEFAULT_X_FILENAME = 'test.x';
@@ -175,6 +176,7 @@
 
         // Track loaded file name for screenshot naming
         state.loadedFileName = file.name;
+        state.lastLoadedUrl = url;  // Store for placer auto-load
 
         // Clear previous model
         clearModel();
@@ -377,6 +379,7 @@
         // ── Load the default .x model ────────────────────────
         console.log('[Viewer] Starting loadXFile...');
         setFilenameDisplay();
+        state.lastLoadedUrl = DEFAULT_X_FILENAME;
         loadXFile(DEFAULT_X_FILENAME, loading, errorEl);
     }
 
@@ -581,7 +584,7 @@
 
         // Initialize plate placer on first switch
         if (viewName === 'placer' && window.PlacerModule) {
-            setTimeout(() => window.PlacerModule.init(), 50);
+            setTimeout(() => window.PlacerModule.init(state.lastLoadedUrl, state.loadedFileName), 50);
         }
 
         // Auto-collapse sidebar after navigation

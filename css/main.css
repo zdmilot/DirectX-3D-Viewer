@@ -809,10 +809,21 @@ body {
     margin-bottom: 0;
 }
 
+.vt-gizmo.pp-gizmo-sm {
+    width: 28px;
+    height: 28px;
+}
+
 #gizmo-canvas {
     width: 44px;
     height: 44px;
     border-radius: 6px;
+}
+
+#pp-gizmo-canvas {
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
 }
 
 /* Separator */

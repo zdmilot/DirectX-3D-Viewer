@@ -43,11 +43,17 @@
     // ================================================================
     let initialized = false;
 
-    function initPlacer() {
+    function initPlacer(autoLoadUrl, autoLoadName) {
         ppState.isDark = document.documentElement.hasAttribute('data-theme');
 
         if (initialized) {
             updatePlacerTheme();
+            // If a new file was loaded in the main viewer, auto-load it
+            if (autoLoadUrl && autoLoadUrl !== ppState._lastAutoUrl) {
+                ppState._lastAutoUrl = autoLoadUrl;
+                if (autoLoadName) ppState.loadedFileName = autoLoadName;
+                loadXFilePlacer(autoLoadUrl);
+            }
             return;
         }
         initialized = true;
@@ -130,6 +136,13 @@
         wirePlacerToolbar();
         wireScreenshotExport();
         wireOffsetInputs();
+
+        // Auto-load file from main viewer if provided
+        if (autoLoadUrl) {
+            ppState._lastAutoUrl = autoLoadUrl;
+            if (autoLoadName) ppState.loadedFileName = autoLoadName;
+            loadXFilePlacer(autoLoadUrl);
+        }
     }
 
     // ================================================================
@@ -627,13 +640,13 @@
         if (!canvas || !ppState.camera) return;
         const ctx = canvas.getContext('2d');
         const dpr = window.devicePixelRatio || 1;
-        const size = 44;
+        const size = 28;
         canvas.width = size * dpr;
         canvas.height = size * dpr;
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         ctx.clearRect(0, 0, size, size);
 
-        const cx = size / 2, cy = size / 2, len = 14;
+        const cx = size / 2, cy = size / 2, len = 9;
 
         const camDir = new THREE.Vector3();
         ppState.camera.getWorldDirection(camDir);
@@ -667,7 +680,7 @@
             ctx.lineWidth = isBehind ? 1 : 2;
             ctx.stroke();
 
-            const r = isBehind ? 3 : 5;
+            const r = isBehind ? 2 : 3.5;
             ctx.beginPath();
             ctx.arc(ex, ey, r, 0, Math.PI * 2);
             if (isBehind) {
@@ -680,7 +693,7 @@
                 ctx.fillStyle = p.color;
                 ctx.fill();
                 ctx.fillStyle = '#fff';
-                ctx.font = 'bold 7px Inter, sans-serif';
+                ctx.font = 'bold 5px Inter, sans-serif';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
                 ctx.fillText(p.label, ex, ey + 0.5);
