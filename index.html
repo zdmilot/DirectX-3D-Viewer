@@ -6,7 +6,7 @@
     <title>3D File Tools</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1F9EA;</text></svg>">
     <link rel="stylesheet" href="css/fontawesome.min.css">
-    <link rel="stylesheet" href="css/main.css?v=20260303j">
+    <link rel="stylesheet" href="css/main.css?v=20260303k">
 </head>
 <body>
 
@@ -116,50 +116,41 @@
                 </div>
                 <canvas id="viewer-canvas"></canvas>
 
-                <!-- Floating 3D Toolbar (collapsible) -->
-                <div class="viewer-toolbar" id="viewer-toolbar">
-                    <!-- Collapse/expand toggle -->
-                    <button class="vt-toggle" id="vt-toggle" title="Toggle toolbar">
-                        <i class="fas fa-chevron-right"></i>
+                <!-- Axis Gizmo (floating, top-right) -->
+                <div class="vt-gizmo-float" id="vt-gizmo">
+                    <canvas id="gizmo-canvas" width="44" height="44"></canvas>
+                </div>
+
+                <!-- Bottom Controls Bar -->
+                <div class="viewer-controls-bar" id="viewer-controls-bar">
+                    <button class="cv-ctrl-btn" id="vt-open" title="Open .x file">
+                        <i class="fas fa-folder-open"></i> Open
                     </button>
-
-                    <div class="vt-body" id="vt-body">
-                        <!-- Axis gizmo -->
-                        <div class="vt-gizmo" id="vt-gizmo">
-                            <canvas id="gizmo-canvas" width="44" height="44"></canvas>
-                        </div>
-
-                        <div class="vt-separator"></div>
-
-                        <!-- Toolbar buttons -->
-                        <button class="vt-btn" id="vt-open" title="Open .x file">
-                            <i class="fas fa-folder-open"></i>
-                        </button>
-                        <button class="vt-btn" id="vt-reset-cam" title="Reset camera">
-                            <i class="fas fa-video"></i>
-                        </button>
-                        <button class="vt-btn" id="vt-zoom-fit" title="Zoom to fit">
-                            <i class="fas fa-expand"></i>
-                        </button>
-                        <button class="vt-btn" id="vt-wireframe" title="Toggle wireframe">
-                            <i class="fas fa-draw-polygon"></i>
-                        </button>
-                        <button class="vt-btn" id="vt-perspective" title="Toggle perspective / orthographic">
-                            <i class="fas fa-cube"></i>
-                        </button>
-
-                        <div class="vt-separator"></div>
-
-                        <button class="vt-btn vt-btn-round" id="vt-zoom-in" title="Zoom in">
-                            <i class="fas fa-plus"></i>
-                        </button>
-                        <button class="vt-btn vt-btn-round" id="vt-zoom-out" title="Zoom out">
-                            <i class="fas fa-minus"></i>
-                        </button>
-                        <button class="vt-btn vt-btn-round" id="vt-pan" title="Pan mode">
-                            <i class="fas fa-hand-paper"></i>
-                        </button>
-                    </div>
+                    <div class="cv-ctrl-divider"></div>
+                    <button class="cv-ctrl-btn" id="vt-reset-cam" title="Reset camera">
+                        <i class="fas fa-video"></i>
+                    </button>
+                    <button class="cv-ctrl-btn" id="vt-zoom-fit" title="Zoom to fit">
+                        <i class="fas fa-expand"></i>
+                    </button>
+                    <button class="cv-ctrl-btn" id="vt-wireframe" title="Toggle wireframe">
+                        <i class="fas fa-draw-polygon"></i>
+                    </button>
+                    <button class="cv-ctrl-btn" id="vt-perspective" title="Toggle perspective / orthographic">
+                        <i class="fas fa-cube"></i>
+                    </button>
+                    <div class="cv-ctrl-divider"></div>
+                    <button class="cv-ctrl-btn" id="vt-zoom-in" title="Zoom in">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                    <button class="cv-ctrl-btn" id="vt-zoom-out" title="Zoom out">
+                        <i class="fas fa-minus"></i>
+                    </button>
+                    <button class="cv-ctrl-btn" id="vt-pan" title="Pan mode">
+                        <i class="fas fa-hand-paper"></i>
+                    </button>
+                    <div class="cv-ctrl-divider"></div>
+                    <span class="viewer-cam-display" id="viewer-cam-display">X: 0.0  Y: 0.0  Z: 0.0  |  Pitch: 0.0°  Yaw: 0.0°  Roll: 0.0°</span>
                 </div>
 
                 <div class="viewer-dropzone viewer-hidden" id="viewer-dropzone">
@@ -305,6 +296,6 @@
     <script src="js/lib/STLLoader.js"></script>
     <script src="js/converter.js?v=20260303a"></script>
     <script src="js/exporter.js?v=20260303a"></script>
-    <script src="js/app.js?v=20260303f"></script>
+    <script src="js/app.js?v=20260303g"></script>
 </body>
 </html>
