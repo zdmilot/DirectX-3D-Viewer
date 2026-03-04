@@ -1372,6 +1372,74 @@
     }
 
     // -- Init --------------------------------------------------------
+    /* ── Draggable Panels ──────────────────────────────────── */
+    function makeDraggable(panel, handleSelector) {
+        const handle = handleSelector ? panel.querySelector(handleSelector) : panel;
+        if (!handle) return;
+        let isDragging = false, startX, startY, origLeft, origTop;
+
+        handle.classList.add('draggable-handle');
+
+        function onPointerDown(e) {
+            // ignore interactions on inputs, buttons, etc.
+            if (e.target.closest('input, button, select, textarea')) return;
+            isDragging = true;
+            const rect = panel.getBoundingClientRect();
+            startX = e.clientX;
+            startY = e.clientY;
+            origLeft = rect.left;
+            origTop = rect.top;
+            // switch to fixed positioning so it can move freely
+            panel.style.position = 'fixed';
+            panel.style.left = origLeft + 'px';
+            panel.style.top = origTop + 'px';
+            panel.style.bottom = 'auto';
+            panel.style.right = 'auto';
+            panel.style.margin = '0';
+            handle.style.cursor = 'grabbing';
+            document.body.style.userSelect = 'none';
+            e.preventDefault();
+        }
+
+        function onPointerMove(e) {
+            if (!isDragging) return;
+            const dx = e.clientX - startX;
+            const dy = e.clientY - startY;
+            panel.style.left = (origLeft + dx) + 'px';
+            panel.style.top  = (origTop  + dy) + 'px';
+        }
+
+        function onPointerUp() {
+            if (!isDragging) return;
+            isDragging = false;
+            handle.style.cursor = '';
+            document.body.style.userSelect = '';
+            // clamp to viewport so it doesn't get lost
+            const r = panel.getBoundingClientRect();
+            const maxL = window.innerWidth  - 40;
+            const maxT = window.innerHeight - 40;
+            if (r.left < 0)    panel.style.left = '0px';
+            if (r.top  < 0)    panel.style.top  = '0px';
+            if (r.left > maxL) panel.style.left = maxL + 'px';
+            if (r.top  > maxT) panel.style.top  = maxT + 'px';
+        }
+
+        handle.addEventListener('pointerdown', onPointerDown);
+        document.addEventListener('pointermove', onPointerMove);
+        document.addEventListener('pointerup', onPointerUp);
+    }
+
+    function initDraggablePanels() {
+        // Placement offsets overlay
+        const offsetOverlay = document.getElementById('pp-offset-overlay');
+        if (offsetOverlay) makeDraggable(offsetOverlay, '.pp-offset-header');
+
+        // Debug panels
+        document.querySelectorAll('.debug-panel').forEach(panel => {
+            makeDraggable(panel, '.debug-panel-header');
+        });
+    }
+
     function init() {
         try {
             state.isDark = localStorage.getItem('dilution-dark-mode') === '1';
@@ -1468,6 +1536,7 @@
         }
 
         initSplash();
+        initDraggablePanels();
     }
 
     if (document.readyState === 'loading') {

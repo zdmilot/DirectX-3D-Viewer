@@ -1333,6 +1333,16 @@ body {
 /* ============================================================
    Plate Placer — Offset Overlay
    ============================================================ */
+/* ── Draggable handle cursor ─────────────────────────── */
+.draggable-handle {
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+}
+.draggable-handle:active {
+    cursor: grabbing;
+}
+
 .pp-offset-overlay {
     position: absolute;
     bottom: 60px;
