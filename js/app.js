@@ -522,6 +522,8 @@
         }
         // Also update converter theme
         if (window.ConverterModule) window.ConverterModule.updateTheme();
+        // Also update placer theme
+        if (window.PlacerModule) window.PlacerModule.updateTheme();
 
     }
 
@@ -546,6 +548,11 @@
         if (viewName === 'converter' && window.ConverterModule) {
             // Small delay to ensure panel has dimensions
             setTimeout(() => window.ConverterModule.init(), 50);
+        }
+
+        // Initialize plate placer on first switch
+        if (viewName === 'placer' && window.PlacerModule) {
+            setTimeout(() => window.PlacerModule.init(), 50);
         }
 
         // Auto-collapse sidebar after navigation

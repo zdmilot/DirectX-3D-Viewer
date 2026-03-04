@@ -1315,4 +1315,145 @@ body {
     }
 }
 
+/* ============================================================
+   Plate Placer — Offset Overlay
+   ============================================================ */
+.pp-offset-overlay {
+    position: absolute;
+    bottom: 60px;
+    right: 12px;
+    width: 260px;
+    background:
+        linear-gradient(135deg, rgba(255,255,255,0.92), rgba(240,242,245,0.95));
+    border: 1px solid var(--card-border);
+    border-radius: var(--r-md);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    z-index: 20;
+    overflow: hidden;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
 
+[data-theme="dark"] .pp-offset-overlay {
+    background:
+        linear-gradient(135deg, rgba(30,40,55,0.95), rgba(25,35,48,0.97));
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+}
+
+.pp-offset-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background: rgba(0,0,0,0.04);
+    border-bottom: 1px solid var(--card-border);
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    letter-spacing: 0.3px;
+}
+
+[data-theme="dark"] .pp-offset-header {
+    background: rgba(255,255,255,0.04);
+}
+
+.pp-offset-header i {
+    color: var(--accent);
+    font-size: 0.85rem;
+}
+
+.pp-offset-body {
+    padding: 10px 14px;
+}
+
+.pp-offset-section {
+    margin-bottom: 6px;
+}
+
+.pp-offset-section:last-child {
+    margin-bottom: 0;
+}
+
+.pp-offset-section-title {
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+}
+
+.pp-offset-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 4px;
+}
+
+.pp-offset-row:last-child {
+    margin-bottom: 0;
+}
+
+.pp-offset-row label {
+    width: 22px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-align: right;
+    flex-shrink: 0;
+}
+
+.pp-offset-row input[type="number"] {
+    flex: 1;
+    padding: 4px 8px;
+    font-size: 0.75rem;
+    font-family: 'Menlo', 'Consolas', monospace;
+    border: 1px solid var(--card-border);
+    border-radius: var(--r-xs);
+    background: var(--card-bg);
+    color: var(--text-primary);
+    outline: none;
+    transition: border-color var(--t-fast);
+    -moz-appearance: textfield;
+}
+
+.pp-offset-row input[type="number"]::-webkit-inner-spin-button,
+.pp-offset-row input[type="number"]::-webkit-outer-spin-button {
+    opacity: 1;
+}
+
+.pp-offset-row input[type="number"]:focus {
+    border-color: var(--accent);
+}
+
+.pp-offset-val {
+    flex: 1;
+    font-size: 0.82rem;
+    font-family: 'Menlo', 'Consolas', monospace;
+    font-weight: 600;
+    color: var(--accent);
+    padding: 3px 8px;
+    background: rgba(2, 117, 216, 0.08);
+    border-radius: var(--r-xs);
+}
+
+[data-theme="dark"] .pp-offset-val {
+    background: rgba(2, 117, 216, 0.15);
+}
+
+.pp-unit {
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    flex-shrink: 0;
+    width: 24px;
+}
+
+.pp-offset-divider {
+    height: 1px;
+    background: var(--card-border);
+    margin: 8px 0;
+}
+
+.pp-offset-result .pp-offset-section-title {
+    color: var(--accent);
+}
