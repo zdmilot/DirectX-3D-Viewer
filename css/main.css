@@ -784,9 +784,6 @@ body {
     -webkit-backdrop-filter: blur(16px);
     border-radius: 14px 0 0 14px;
     box-shadow: -4px 4px 24px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.06) inset;
-    transition: transform var(--t-med) ease, opacity var(--t-med) ease;
-    transform-origin: top right;
-    transform: translateX(0);
     overflow: visible;
     pointer-events: auto;
     width: 56px;

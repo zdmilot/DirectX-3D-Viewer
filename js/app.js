@@ -1407,8 +1407,9 @@
         }
 
         function clampToViewport(left, top) {
-            const pw = panel.offsetWidth;
-            const ph = panel.offsetHeight;
+            const rect = panel.getBoundingClientRect();
+            const pw = rect.width;
+            const ph = rect.height;
             const vw = window.innerWidth;
             const vh = window.innerHeight;
             // Keep the entire panel within the viewport
@@ -1421,6 +1422,10 @@
             if (!isDragging) return;
             const dx = e.clientX - startX;
             const dy = e.clientY - startY;
+            // Apply position first so getBoundingClientRect returns current size
+            panel.style.left = (origLeft + dx) + 'px';
+            panel.style.top  = (origTop  + dy) + 'px';
+            // Now clamp
             const clamped = clampToViewport(origLeft + dx, origTop + dy);
             panel.style.left = clamped.left + 'px';
             panel.style.top  = clamped.top  + 'px';
@@ -1432,19 +1437,20 @@
             handle.style.cursor = '';
             document.body.style.userSelect = '';
 
-            // Final clamp (covers window resize edge cases)
+            // Final clamp
             const r = panel.getBoundingClientRect();
             const clamped = clampToViewport(r.left, r.top);
             panel.style.left = clamped.left + 'px';
             panel.style.top  = clamped.top  + 'px';
 
             // Edge-snap: if within SNAP_THRESHOLD of the host's left/right edge,
-            // stick flush to that edge.
+            // stick flush to that edge but never exceed viewport.
             const host = snapContainer || panel.parentElement;
             if (host) {
                 const hr = host.getBoundingClientRect();
                 const pr = panel.getBoundingClientRect();
                 const pw = pr.width;
+                const vw = window.innerWidth;
 
                 // Distance from panel left edge to host left edge
                 const distLeft  = pr.left - hr.left;
@@ -1452,11 +1458,13 @@
                 const distRight = hr.right - pr.right;
 
                 if (distLeft <= SNAP_THRESHOLD) {
-                    panel.style.left = hr.left + 'px';
+                    panel.style.left = Math.max(0, hr.left) + 'px';
                     panel.classList.add('pp-snapped-left');
                     panel.classList.remove('pp-snapped-right');
                 } else if (distRight <= SNAP_THRESHOLD) {
-                    panel.style.left = (hr.right - pw) + 'px';
+                    // Snap to right edge but never go off-screen
+                    const snapLeft = Math.min(hr.right - pw, vw - pw);
+                    panel.style.left = Math.max(0, snapLeft) + 'px';
                     panel.classList.add('pp-snapped-right');
                     panel.classList.remove('pp-snapped-left');
                 } else {
