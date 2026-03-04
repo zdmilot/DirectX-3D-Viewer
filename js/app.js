@@ -1406,12 +1406,24 @@
             e.preventDefault();
         }
 
+        function clampToViewport(left, top) {
+            const pw = panel.offsetWidth;
+            const ph = panel.offsetHeight;
+            const vw = window.innerWidth;
+            const vh = window.innerHeight;
+            // Keep the entire panel within the viewport
+            const clampedLeft = Math.max(0, Math.min(left, vw - pw));
+            const clampedTop  = Math.max(0, Math.min(top,  vh - ph));
+            return { left: clampedLeft, top: clampedTop };
+        }
+
         function onPointerMove(e) {
             if (!isDragging) return;
             const dx = e.clientX - startX;
             const dy = e.clientY - startY;
-            panel.style.left = (origLeft + dx) + 'px';
-            panel.style.top  = (origTop  + dy) + 'px';
+            const clamped = clampToViewport(origLeft + dx, origTop + dy);
+            panel.style.left = clamped.left + 'px';
+            panel.style.top  = clamped.top  + 'px';
         }
 
         function onPointerUp() {
@@ -1420,15 +1432,11 @@
             handle.style.cursor = '';
             document.body.style.userSelect = '';
 
+            // Final clamp (covers window resize edge cases)
             const r = panel.getBoundingClientRect();
-            const maxL = window.innerWidth  - 40;
-            const maxT = window.innerHeight - 40;
-
-            // Clamp to viewport
-            if (r.left < 0)    panel.style.left = '0px';
-            if (r.top  < 0)    panel.style.top  = '0px';
-            if (r.left > maxL) panel.style.left = maxL + 'px';
-            if (r.top  > maxT) panel.style.top  = maxT + 'px';
+            const clamped = clampToViewport(r.left, r.top);
+            panel.style.left = clamped.left + 'px';
+            panel.style.top  = clamped.top  + 'px';
 
             // Edge-snap: if within SNAP_THRESHOLD of the host's left/right edge,
             // stick flush to that edge.
