@@ -1626,3 +1626,62 @@ body {
 .about-close-btn:hover {
     background: var(--accent-hover);
 }
+
+/* ---------- Debug Panel ------------------------------------- */
+.debug-panel {
+    display: none;
+    position: absolute;
+    bottom: 52px;
+    right: 12px;
+    z-index: 100;
+    background: rgba(0, 0, 0, 0.88);
+    color: #0f0;
+    font: 11px/1.5 'Menlo', 'Consolas', monospace;
+    padding: 0;
+    border-radius: var(--r-sm);
+    max-width: 420px;
+    min-width: 240px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+    overflow: hidden;
+    pointer-events: auto;
+}
+
+.debug-panel.is-visible {
+    display: block;
+}
+
+.debug-panel-header {
+    padding: 6px 12px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #0f0;
+    background: rgba(0, 255, 0, 0.08);
+    border-bottom: 1px solid rgba(0, 255, 0, 0.15);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.debug-panel-content {
+    padding: 8px 12px;
+    margin: 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 300px;
+    overflow-y: auto;
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+.debug-panel-content::-webkit-scrollbar {
+    width: 6px;
+}
+.debug-panel-content::-webkit-scrollbar-track {
+    background: transparent;
+}
+.debug-panel-content::-webkit-scrollbar-thumb {
+    background: rgba(0, 255, 0, 0.2);
+    border-radius: 3px;
+}

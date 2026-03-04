@@ -411,6 +411,14 @@
         // Enable export button
         const exportBtn = $('#cv-export-btn');
         if (exportBtn) exportBtn.disabled = false;
+
+        // Update debug panel
+        if (window._updateDebugPanel) {
+            const meshes = [];
+            group.traverse(c => { if (c.isMesh) meshes.push(c); });
+            const fakeObj = { models: meshes, animations: [] };
+            window._updateDebugPanel('debug-content-converter', fakeObj, group, box, size, cvState.modelMaxDim, cvState.scene.children.length);
+        }
     }
 
     function clearConverterModel() {
