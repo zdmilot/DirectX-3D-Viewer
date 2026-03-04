@@ -710,13 +710,114 @@ body {
 }
 
 /* Floating 3D Toolbar */
-/* ── Legacy viewer-toolbar container (no longer used, kept for safety) ── */
-/* All three applets now use .pp-tools-overlay card style */
+.viewer-toolbar {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 18;
+    pointer-events: none;
+    display: flex;
+    align-items: flex-start;
+}
+
+.vt-toggle {
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.08);
+    color: #ccd6e0;
+    font-size: 0.75rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background var(--t-fast);
+    z-index: 20;
+    pointer-events: auto;
+    flex-shrink: 0;
+}
+
+.vt-toggle:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.vt-toggle i {
+    transition: transform var(--t-med) ease;
+}
+
+/* When collapsed, rotate chevron */
+.vt-body.collapsed .vt-toggle i {
+    transform: rotate(180deg);
+}
+
+/* Collapsible content wrapper */
+.vt-collapsible {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    overflow: hidden;
+    transition: max-height var(--t-med) ease, opacity var(--t-med) ease;
+    max-height: 600px;
+    opacity: 1;
+}
+
+.vt-body.collapsed .vt-collapsible {
+    max-height: 0;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.vt-body {
+    position: absolute;
+    top: 8px;
+    right: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 8px 6px;
+    background: rgba(40, 44, 52, 0.82);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-radius: 14px 0 0 14px;
+    box-shadow: -4px 4px 24px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.06) inset;
+    overflow: visible;
+    pointer-events: auto;
+    width: 56px;
+}
+
+/* When collapsed, just hide the collapsible content (toggle stays visible) */
+
+/* When toolbar has been dragged (position:fixed via JS), round all corners */
+.vt-body[style*="position: fixed"] {
+    border-radius: 14px;
+}
+
+/* Snap overrides – flat side flush with page edge, round side faces inward */
+.vt-body.pp-snapped-right[style*="position: fixed"] {
+    border-radius: 14px 0 0 14px;
+}
+.vt-body.pp-snapped-left[style*="position: fixed"] {
+    border-radius: 0 14px 14px 0;
+}
+
+/* Dark theme adjustments */
+[data-theme="dark"] .vt-body {
+    background: rgba(20, 26, 36, 0.88);
+    box-shadow: -4px 4px 24px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04) inset;
+}
+
+[data-theme="dark"] .vt-toggle {
+    background: rgba(20, 26, 36, 0.88);
+}
 
 /* Axis gizmo */
 .vt-gizmo {
-    width: 28px;
-    height: 28px;
+    width: 44px;
+    height: 44px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -728,12 +829,119 @@ body {
     height: 28px;
 }
 
-#gizmo-canvas,
-#cv-gizmo-canvas,
+#gizmo-canvas {
+    width: 44px;
+    height: 44px;
+    border-radius: 6px;
+}
+
 #pp-gizmo-canvas {
     width: 28px;
     height: 28px;
     border-radius: 4px;
+}
+
+/* Separator */
+.vt-separator {
+    width: 28px;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.1);
+    margin: 2px 0;
+}
+
+/* Grab handle for repositioning toolbar */
+.vt-grab-handle {
+    width: 40px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(156, 168, 184, 0.5);
+    font-size: 0.85rem;
+    cursor: grab;
+    border-radius: 8px;
+    transition: color var(--t-fast), background var(--t-fast);
+    user-select: none;
+}
+
+.vt-grab-handle:hover {
+    color: #e0e8f0;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.vt-grab-handle:active {
+    cursor: grabbing;
+    color: #4da6ff;
+}
+
+/* Toolbar buttons */
+.vt-btn {
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: 10px;
+    background: transparent;
+    color: #9ca8b8;
+    font-size: 1.05rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background var(--t-fast), color var(--t-fast), transform 80ms ease;
+    position: relative;
+}
+
+.vt-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #e0e8f0;
+    transform: scale(1.08);
+}
+
+.vt-btn:active {
+    transform: scale(0.95);
+}
+
+.vt-btn.is-active {
+    background: rgba(2, 117, 216, 0.25);
+    color: #4da6ff;
+}
+
+/* Round variant (zoom/pan) */
+.vt-btn-round {
+    border-radius: 50%;
+    width: 38px;
+    height: 38px;
+    font-size: 0.9rem;
+}
+
+/* Tooltip for toolbar buttons — positioned to the LEFT of the panel */
+.vt-btn[title] {
+    position: relative;
+}
+
+.vt-btn::before {
+    content: attr(title);
+    position: absolute;
+    right: calc(100% + 14px);
+    top: 50%;
+    transform: translateY(-50%) translateX(4px);
+    background: rgba(30, 34, 42, 0.95);
+    color: #dde4ec;
+    padding: 5px 10px;
+    border-radius: 6px;
+    font-size: 0.72rem;
+    font-weight: 500;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 150ms ease, transform 150ms ease;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    z-index: 100;
+}
+
+.vt-btn:hover::before {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0);
 }
 
 /* Bottom controls bar */
@@ -1349,105 +1557,8 @@ body {
 }
 
 /* ============================================================
-   Plate Placer — View Tools Card
+   Edge-snap – flat side flush with page edge, rounded side inward
    ============================================================ */
-.pp-tools-overlay {
-    position: absolute;
-    top: 12px;
-    left: 12px;
-    width: auto;
-    min-width: 140px;
-    background:
-        linear-gradient(135deg, rgba(255,255,255,0.92), rgba(240,242,245,0.95));
-    border: 1px solid var(--card-border);
-    border-radius: var(--r-md);
-    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-    z-index: 20;
-    overflow: hidden;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-}
-
-[data-theme="dark"] .pp-tools-overlay {
-    background:
-        linear-gradient(135deg, rgba(30,40,55,0.95), rgba(25,35,48,0.97));
-    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
-}
-
-.pp-tools-overlay .pp-offset-header {
-    justify-content: space-between;
-}
-
-.pp-collapse-btn {
-    background: none;
-    border: none;
-    color: var(--text-muted);
-    cursor: pointer;
-    font-size: 0.7rem;
-    padding: 2px 4px;
-    border-radius: var(--r-xs);
-    transition: color var(--t-fast), background var(--t-fast);
-}
-.pp-collapse-btn:hover {
-    color: var(--accent);
-    background: rgba(0,0,0,0.06);
-}
-[data-theme="dark"] .pp-collapse-btn:hover {
-    background: rgba(255,255,255,0.08);
-}
-
-.pp-tools-body {
-    padding: 8px 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    transition: max-height 0.25s ease, padding 0.25s ease, opacity 0.2s ease;
-    max-height: 400px;
-    opacity: 1;
-    overflow: hidden;
-}
-
-.pp-tools-body.pp-tools-collapsed {
-    max-height: 0;
-    padding-top: 0;
-    padding-bottom: 0;
-    opacity: 0;
-}
-
-.pp-tools-row {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    justify-content: center;
-}
-
-.pp-tool-btn {
-    width: 32px;
-    height: 32px;
-    border: none;
-    border-radius: var(--r-xs);
-    background: transparent;
-    color: var(--text-secondary);
-    font-size: 0.82rem;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background var(--t-fast), color var(--t-fast);
-}
-.pp-tool-btn:hover {
-    background: rgba(0,0,0,0.08);
-    color: var(--accent);
-}
-[data-theme="dark"] .pp-tool-btn:hover {
-    background: rgba(255,255,255,0.1);
-}
-.pp-tool-btn.active {
-    color: var(--accent);
-    background: rgba(2,117,216,0.12);
-}
-
-/* Edge-snap – flat side flush with page edge, rounded side faces inward */
 .pp-snapped-left {
     border-radius: 0 var(--r-md) var(--r-md) 0 !important;
 }

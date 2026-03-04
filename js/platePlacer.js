@@ -603,12 +603,10 @@
         const panBtn   = $('#pp-vt-pan');
 
         if (toggle && toolbar) {
+            const ppBody = $('#pp-vt-body');
             toggle.addEventListener('click', () => {
                 ppState.toolbarCollapsed = !ppState.toolbarCollapsed;
-                const body = $('#pp-vt-body');
-                if (body) body.classList.toggle('pp-tools-collapsed', ppState.toolbarCollapsed);
-                toggle.querySelector('i').className = ppState.toolbarCollapsed
-                    ? 'fas fa-chevron-down' : 'fas fa-chevron-up';
+                if (ppBody) ppBody.classList.toggle('collapsed', ppState.toolbarCollapsed);
             });
         }
 
