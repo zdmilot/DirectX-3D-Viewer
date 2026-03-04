@@ -97,10 +97,6 @@
                         <i class="fas fa-exchange-alt"></i>
                         <span>Convert to .x</span>
                     </button>
-                    <button class="sidebar-nav-item" data-view="exporter">
-                        <i class="fas fa-file-export"></i>
-                        <span>Export from .x</span>
-                    </button>
                 </div>
             </aside>
 
@@ -290,48 +286,7 @@
                     </div>
                 </div>
             </div>
-            <!-- ====== EXPORT FROM .X VIEW ====== -->
-            <div class="view-panel" data-view-panel="exporter">
-                <div class="ex-layout">
-                    <div class="ex-main-viewport" id="exporter-main-viewport">
-                        <canvas id="ex-main-canvas"></canvas>
-                        <div class="viewer-loading viewer-hidden" id="ex-loading">
-                            <div class="viewer-spinner"></div>
-                            <span>Loading…</span>
-                        </div>
-                        <div class="viewer-error viewer-hidden" id="ex-error">
-                            <i class="fas fa-exclamation-triangle"></i>
-                            <span id="ex-error-msg">Error</span>
-                        </div>
-                        <div class="ex-format-badge" id="ex-format-badge" style="display:none">.X</div>
-                        <div class="viewer-dropzone viewer-hidden" id="ex-dropzone">
-                            <div class="dropzone-content">
-                                <i class="fas fa-file-import"></i>
-                                <span>Drop .x file here</span>
-                            </div>
-                        </div>
-                    </div>
 
-                    <!-- Export Controls -->
-                    <div class="ex-controls-bar">
-                        <input type="file" id="ex-file-input" accept=".x" style="display:none">
-                        <button class="cv-ctrl-btn" id="ex-open-btn" title="Open .x file">
-                            <i class="fas fa-folder-open"></i> Open .x
-                        </button>
-                        <div class="cv-ctrl-divider"></div>
-                        <label class="ex-format-label" for="ex-format-select">Export as:</label>
-                        <select class="ex-format-select" id="ex-format-select">
-                            <option value="obj">OBJ (Wavefront)</option>
-                            <option value="stl">STL (Stereolithography)</option>
-                            <option value="glb">GLB (glTF Binary)</option>
-                        </select>
-                        <div class="cv-ctrl-spacer"></div>
-                        <button class="cv-ctrl-btn cv-ctrl-btn-accent" id="ex-export-btn" disabled title="Export model">
-                            <i class="fas fa-download"></i> Export
-                        </button>
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
 
@@ -343,7 +298,6 @@
     <script src="js/lib/GLTFLoader.js"></script>
     <script src="js/lib/STLLoader.js"></script>
     <script src="js/converter.js?v=20260303a"></script>
-    <script src="js/exporter.js?v=20260303a"></script>
     <script src="js/app.js?v=20260303i"></script>
 </body>
 </html>

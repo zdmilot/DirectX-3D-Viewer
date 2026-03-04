@@ -475,7 +475,7 @@
         }
         // Also update converter theme
         if (window.ConverterModule) window.ConverterModule.updateTheme();
-        if (window.ExporterModule) window.ExporterModule.updateTheme();
+
     }
 
     // ================================================================
@@ -499,11 +499,6 @@
         if (viewName === 'converter' && window.ConverterModule) {
             // Small delay to ensure panel has dimensions
             setTimeout(() => window.ConverterModule.init(), 50);
-        }
-
-        // Initialize exporter on first switch
-        if (viewName === 'exporter' && window.ExporterModule) {
-            setTimeout(() => window.ExporterModule.init(), 50);
         }
 
         // Auto-collapse sidebar after navigation
