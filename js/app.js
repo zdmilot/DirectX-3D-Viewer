@@ -1482,9 +1482,16 @@
             }
         }
 
+        // Placer panels — snap to left/right edges of the host
+        const placerHost = document.getElementById('placer-host');
+
         // Placement offsets overlay
         const offsetOverlay = document.getElementById('pp-offset-overlay');
-        if (offsetOverlay) makeDraggable(offsetOverlay, '.pp-offset-header');
+        if (offsetOverlay) makeDraggable(offsetOverlay, '.pp-offset-header', placerHost);
+
+        // Placer tools panel
+        const ppToolbar = document.getElementById('pp-toolbar');
+        if (ppToolbar) makeDraggable(ppToolbar, '#pp-toolbar-header', placerHost);
 
         // Debug panels
         document.querySelectorAll('.debug-panel').forEach(panel => {

@@ -1551,6 +1551,116 @@ body {
     color: var(--accent);
 }
 
+/* ============================================================
+   Plate Placer — View Tools Card
+   ============================================================ */
+.pp-tools-overlay {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    width: auto;
+    min-width: 140px;
+    background:
+        linear-gradient(135deg, rgba(255,255,255,0.92), rgba(240,242,245,0.95));
+    border: 1px solid var(--card-border);
+    border-radius: var(--r-md);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    z-index: 20;
+    overflow: hidden;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+[data-theme="dark"] .pp-tools-overlay {
+    background:
+        linear-gradient(135deg, rgba(30,40,55,0.95), rgba(25,35,48,0.97));
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+}
+
+.pp-tools-overlay .pp-offset-header {
+    justify-content: space-between;
+}
+
+.pp-collapse-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 0.7rem;
+    padding: 2px 4px;
+    border-radius: var(--r-xs);
+    transition: color var(--t-fast), background var(--t-fast);
+}
+.pp-collapse-btn:hover {
+    color: var(--accent);
+    background: rgba(0,0,0,0.06);
+}
+[data-theme="dark"] .pp-collapse-btn:hover {
+    background: rgba(255,255,255,0.08);
+}
+
+.pp-tools-body {
+    padding: 8px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    transition: max-height 0.25s ease, padding 0.25s ease, opacity 0.2s ease;
+    max-height: 400px;
+    opacity: 1;
+    overflow: hidden;
+}
+
+.pp-tools-body.pp-tools-collapsed {
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    opacity: 0;
+}
+
+.pp-tools-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    justify-content: center;
+}
+
+.pp-tool-btn {
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: var(--r-xs);
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background var(--t-fast), color var(--t-fast);
+}
+.pp-tool-btn:hover {
+    background: rgba(0,0,0,0.08);
+    color: var(--accent);
+}
+[data-theme="dark"] .pp-tool-btn:hover {
+    background: rgba(255,255,255,0.1);
+}
+.pp-tool-btn.is-active,
+.pp-tool-btn.active {
+    color: var(--accent);
+    background: rgba(2,117,216,0.12);
+}
+
+/* Edge-snap subtle indicator */
+.pp-snapped-left {
+    border-top-left-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
+}
+.pp-snapped-right {
+    border-top-right-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+}
+
 /* ---------- About Modal ------------------------------------- */
 .about-overlay {
     display: none;
