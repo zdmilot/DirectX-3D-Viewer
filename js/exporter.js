@@ -104,23 +104,16 @@
     }
 
     function loadDefaultExporterModel() {
-        const url = 'test.x';
-        exState.originalFileName = 'test';
-        showExporterLoading(true, 'Loading teapot…');
-
-        const loader = new THREE.XFileLoader();
-        loader.load(url, function (object) {
-            if (object.error || !object.models || object.models.length === 0) {
+        fetch('test.x?_ts=' + Date.now())
+            .then(r => r.blob())
+            .then(blob => {
+                const file = new File([blob], 'test.x', { type: 'application/octet-stream' });
+                loadXFileExporter(file);
+            })
+            .catch(err => {
                 showExporterLoading(false);
-                return;
-            }
-            const group = new THREE.Group();
-            object.models.forEach(m => group.add(m));
-            addModelToExporter(group);
-        }, undefined, function (err) {
-            showExporterLoading(false);
-            console.warn('[Exporter] Default model load failed:', err);
-        });
+                console.warn('[Exporter] Default model fetch failed:', err);
+            });
     }
 
     function handleResize() {

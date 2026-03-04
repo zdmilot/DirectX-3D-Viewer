@@ -128,25 +128,16 @@
     }
 
     function loadDefaultConverterModel() {
-        const url = 'test.x';
-        cvState.originalFileName = 'test';
-        cvState.fileExtension = 'x';
-        showConverterLoading(true, 'Loading teapot…');
-        updateFormatBadge('x');
-
-        const loader = new THREE.XFileLoader();
-        loader.load(url, function (object) {
-            if (object.error || !object.models || object.models.length === 0) {
+        fetch('test.x?_ts=' + Date.now())
+            .then(r => r.blob())
+            .then(blob => {
+                const file = new File([blob], 'test.x', { type: 'application/octet-stream' });
+                loadFileIntoConverter(file);
+            })
+            .catch(err => {
                 showConverterLoading(false);
-                return;
-            }
-            const group = new THREE.Group();
-            object.models.forEach(m => group.add(m));
-            addModelToScene(group);
-        }, undefined, function (err) {
-            showConverterLoading(false);
-            console.warn('[Converter] Default model load failed:', err);
-        });
+                console.warn('[Converter] Default model fetch failed:', err);
+            });
     }
 
     // ================================================================
