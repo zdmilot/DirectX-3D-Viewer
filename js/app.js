@@ -140,7 +140,7 @@
         // Keep navbar subtitle fixed for this app
         const subtitle = document.querySelector('.navbar-subtitle');
         if (subtitle) {
-            subtitle.textContent = 'FOR .X FILES';
+            subtitle.textContent = 'FOR DIRECT3D FILES';
         }
     }
 
