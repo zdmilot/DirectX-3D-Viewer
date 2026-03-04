@@ -42,7 +42,7 @@
         loadedFileName: 'test',
     };
 
-    const DEFAULT_X_FILENAME = 'test.x';
+    const DEFAULT_X_FILENAME = 'teapot_simple.x';
 
     // -- Splash Screen -----------------------------------------------
     function initSplash() {

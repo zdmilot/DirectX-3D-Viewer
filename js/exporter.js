@@ -104,16 +104,21 @@
     }
 
     function loadDefaultExporterModel() {
-        fetch('test.x?_ts=' + Date.now())
-            .then(r => r.blob())
-            .then(blob => {
-                const file = new File([blob], 'test.x', { type: 'application/octet-stream' });
-                loadXFileExporter(file);
-            })
-            .catch(err => {
+        exState.originalFileName = 'test';
+        showExporterLoading(true, 'Loading teapot…');
+
+        const loader = new THREE.XFileLoader();
+        loader.load('teapot_simple.x', function (object) {
+            if (object.error || !object.models || object.models.length === 0) {
                 showExporterLoading(false);
-                console.warn('[Exporter] Default model fetch failed:', err);
-            });
+                return;
+            }
+            const group = new THREE.Group();
+            object.models.forEach(function(m) { group.add(m); });
+            addModelToExporter(group);
+        }, undefined, function (err) {
+            showExporterLoading(false);
+        });
     }
 
     function handleResize() {
