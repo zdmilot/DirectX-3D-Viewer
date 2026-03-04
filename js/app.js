@@ -827,6 +827,367 @@
     }
 
     // ================================================================
+    //  Model Export  –  OBJ / STL / GLB  (from the main viewer)
+    // ================================================================
+
+    function getViewerModel() {
+        return scene ? scene.getObjectByName('__xmodel__') : null;
+    }
+
+    function viewerFileName() {
+        return (state.loadedFileName || 'model').replace(/\.[^.]+$/, '');
+    }
+
+    // ── OBJ ──────────────────────────────────────────────────────
+    function exportViewerOBJ() {
+        const model = getViewerModel();
+        if (!model) return;
+        const lines = [];
+        const mtlLines = [];
+        const baseName = viewerFileName();
+        const mtlName = baseName + '.mtl';
+        lines.push('# Exported from Direct3D Tools');
+        lines.push('mtllib ' + mtlName);
+        lines.push('');
+
+        let vertOffset = 1;
+        let normOffset = 1;
+        let uvOffset = 1;
+        let meshIdx = 0;
+
+        model.updateMatrixWorld(true);
+
+        model.traverse(function (child) {
+            if (!child.isMesh) return;
+
+            const geom = child.geometry.clone();
+            geom.applyMatrix4(child.matrixWorld);
+
+            if (!geom.index) {
+                const idx = [];
+                for (let i = 0; i < geom.attributes.position.count; i++) idx.push(i);
+                geom.setIndex(idx);
+            }
+
+            const pos  = geom.attributes.position;
+            const norm = geom.attributes.normal;
+            const uv   = geom.attributes.uv;
+            const idx  = geom.index;
+            const faceCount = idx.count / 3;
+
+            const matName = 'Material_' + meshIdx;
+            meshIdx++;
+
+            const mat = child.material || new THREE.MeshStandardMaterial();
+            const mats = Array.isArray(mat) ? mat : [mat];
+            const m = mats[0];
+            const r = m.color ? m.color.r : 0.7;
+            const g = m.color ? m.color.g : 0.7;
+            const b = m.color ? m.color.b : 0.7;
+            mtlLines.push('newmtl ' + matName);
+            mtlLines.push('Kd ' + r.toFixed(6) + ' ' + g.toFixed(6) + ' ' + b.toFixed(6));
+            if (m.specular) {
+                mtlLines.push('Ks ' + m.specular.r.toFixed(6) + ' ' + m.specular.g.toFixed(6) + ' ' + m.specular.b.toFixed(6));
+            }
+            mtlLines.push('d ' + (m.opacity !== undefined ? m.opacity : 1).toFixed(6));
+            mtlLines.push('');
+
+            lines.push('g Mesh_' + (meshIdx - 1));
+            lines.push('usemtl ' + matName);
+
+            for (let i = 0; i < pos.count; i++) {
+                lines.push('v ' + pos.getX(i).toFixed(6) + ' ' + pos.getY(i).toFixed(6) + ' ' + pos.getZ(i).toFixed(6));
+            }
+            if (norm) {
+                for (let i = 0; i < norm.count; i++) {
+                    lines.push('vn ' + norm.getX(i).toFixed(6) + ' ' + norm.getY(i).toFixed(6) + ' ' + norm.getZ(i).toFixed(6));
+                }
+            }
+            if (uv) {
+                for (let i = 0; i < uv.count; i++) {
+                    lines.push('vt ' + uv.getX(i).toFixed(6) + ' ' + uv.getY(i).toFixed(6));
+                }
+            }
+
+            for (let f = 0; f < faceCount; f++) {
+                const i0 = idx.getX(f * 3) + vertOffset;
+                const i1 = idx.getX(f * 3 + 1) + vertOffset;
+                const i2 = idx.getX(f * 3 + 2) + vertOffset;
+
+                if (norm && uv) {
+                    const n0 = idx.getX(f * 3) + normOffset;
+                    const n1 = idx.getX(f * 3 + 1) + normOffset;
+                    const n2 = idx.getX(f * 3 + 2) + normOffset;
+                    const t0 = idx.getX(f * 3) + uvOffset;
+                    const t1 = idx.getX(f * 3 + 1) + uvOffset;
+                    const t2 = idx.getX(f * 3 + 2) + uvOffset;
+                    lines.push('f ' + i0 + '/' + t0 + '/' + n0 + ' ' + i1 + '/' + t1 + '/' + n1 + ' ' + i2 + '/' + t2 + '/' + n2);
+                } else if (norm) {
+                    const n0 = idx.getX(f * 3) + normOffset;
+                    const n1 = idx.getX(f * 3 + 1) + normOffset;
+                    const n2 = idx.getX(f * 3 + 2) + normOffset;
+                    lines.push('f ' + i0 + '//' + n0 + ' ' + i1 + '//' + n1 + ' ' + i2 + '//' + n2);
+                } else {
+                    lines.push('f ' + i0 + ' ' + i1 + ' ' + i2);
+                }
+            }
+
+            vertOffset += pos.count;
+            if (norm) normOffset += norm.count;
+            if (uv) uvOffset += uv.count;
+            lines.push('');
+            geom.dispose();
+        });
+
+        downloadBlob(new Blob([lines.join('\n')], { type: 'text/plain' }), baseName + '.obj');
+        if (mtlLines.length > 0) {
+            downloadBlob(new Blob([mtlLines.join('\n')], { type: 'text/plain' }), baseName + '.mtl');
+        }
+    }
+
+    // ── STL (binary) ─────────────────────────────────────────────
+    function exportViewerSTL() {
+        const model = getViewerModel();
+        if (!model) return;
+        model.updateMatrixWorld(true);
+
+        let totalTris = 0;
+        model.traverse(child => {
+            if (!child.isMesh) return;
+            const g = child.geometry;
+            const count = g.index ? g.index.count : g.attributes.position.count;
+            totalTris += Math.floor(count / 3);
+        });
+
+        const bufLen = 80 + 4 + totalTris * 50;
+        const buffer = new ArrayBuffer(bufLen);
+        const dv = new DataView(buffer);
+
+        const headerStr = 'Exported from Direct3D Tools';
+        for (let i = 0; i < headerStr.length && i < 80; i++) dv.setUint8(i, headerStr.charCodeAt(i));
+        dv.setUint32(80, totalTris, true);
+
+        let offset = 84;
+        model.traverse(child => {
+            if (!child.isMesh) return;
+            const geom = child.geometry.clone();
+            geom.applyMatrix4(child.matrixWorld);
+
+            if (!geom.index) {
+                const indices = [];
+                for (let i = 0; i < geom.attributes.position.count; i++) indices.push(i);
+                geom.setIndex(indices);
+            }
+            if (!geom.attributes.normal) geom.computeVertexNormals();
+
+            const pos = geom.attributes.position;
+            const norm = geom.attributes.normal;
+            const idx = geom.index;
+            const faceCount = idx.count / 3;
+
+            for (let f = 0; f < faceCount; f++) {
+                const i0 = idx.getX(f * 3);
+                const i1 = idx.getX(f * 3 + 1);
+                const i2 = idx.getX(f * 3 + 2);
+
+                const nx = (norm.getX(i0) + norm.getX(i1) + norm.getX(i2)) / 3;
+                const ny = (norm.getY(i0) + norm.getY(i1) + norm.getY(i2)) / 3;
+                const nz = (norm.getZ(i0) + norm.getZ(i1) + norm.getZ(i2)) / 3;
+
+                dv.setFloat32(offset, nx, true); offset += 4;
+                dv.setFloat32(offset, ny, true); offset += 4;
+                dv.setFloat32(offset, nz, true); offset += 4;
+
+                dv.setFloat32(offset, pos.getX(i0), true); offset += 4;
+                dv.setFloat32(offset, pos.getY(i0), true); offset += 4;
+                dv.setFloat32(offset, pos.getZ(i0), true); offset += 4;
+
+                dv.setFloat32(offset, pos.getX(i1), true); offset += 4;
+                dv.setFloat32(offset, pos.getY(i1), true); offset += 4;
+                dv.setFloat32(offset, pos.getZ(i1), true); offset += 4;
+
+                dv.setFloat32(offset, pos.getX(i2), true); offset += 4;
+                dv.setFloat32(offset, pos.getY(i2), true); offset += 4;
+                dv.setFloat32(offset, pos.getZ(i2), true); offset += 4;
+
+                dv.setUint16(offset, 0, true); offset += 2;
+            }
+            geom.dispose();
+        });
+
+        downloadBlob(new Blob([buffer], { type: 'application/octet-stream' }), viewerFileName() + '.stl');
+    }
+
+    // ── GLB ──────────────────────────────────────────────────────
+    function exportViewerGLB() {
+        const model = getViewerModel();
+        if (!model) return;
+        model.updateMatrixWorld(true);
+
+        const meshes = [];
+        model.traverse(child => { if (child.isMesh) meshes.push(child); });
+        if (meshes.length === 0) return;
+
+        const bufferParts = [];
+        let totalBufSize = 0;
+        const accessors = [];
+        const bufferViews = [];
+        const gltfMeshes = [];
+        const gltfNodes = [];
+        const materials = [];
+
+        function padTo4(buf) {
+            const rem = buf.byteLength % 4;
+            if (rem === 0) return buf;
+            const padded = new ArrayBuffer(buf.byteLength + (4 - rem));
+            new Uint8Array(padded).set(new Uint8Array(buf));
+            return padded;
+        }
+
+        meshes.forEach((child, mi) => {
+            const geom = child.geometry.clone();
+            geom.applyMatrix4(child.matrixWorld);
+            if (!geom.index) {
+                const idx = [];
+                for (let i = 0; i < geom.attributes.position.count; i++) idx.push(i);
+                geom.setIndex(idx);
+            }
+
+            const pos  = geom.attributes.position;
+            const norm = geom.attributes.normal;
+            const idx  = geom.index;
+
+            const srcMat = child.material || new THREE.MeshStandardMaterial();
+            const m = Array.isArray(srcMat) ? srcMat[0] : srcMat;
+            const matIdx = materials.length;
+            materials.push({
+                pbrMetallicRoughness: {
+                    baseColorFactor: [
+                        m.color ? m.color.r : 0.7,
+                        m.color ? m.color.g : 0.7,
+                        m.color ? m.color.b : 0.7,
+                        m.opacity !== undefined ? m.opacity : 1.0
+                    ],
+                    metallicFactor: m.metalness !== undefined ? m.metalness : 0.0,
+                    roughnessFactor: m.roughness !== undefined ? m.roughness : 0.8,
+                },
+                name: 'Material_' + mi,
+            });
+
+            // Indices
+            const idxArr = new Uint32Array(idx.count);
+            for (let i = 0; i < idx.count; i++) idxArr[i] = idx.getX(i);
+            const idxBuf = padTo4(idxArr.buffer);
+            const idxBvIdx = bufferViews.length;
+            bufferViews.push({ buffer: 0, byteOffset: totalBufSize, byteLength: idxArr.byteLength, target: 34963 });
+            accessors.push({ bufferView: idxBvIdx, componentType: 5125, count: idx.count, type: 'SCALAR', max: [pos.count - 1], min: [0] });
+            const idxAccIdx = accessors.length - 1;
+            bufferParts.push(idxBuf);
+            totalBufSize += idxBuf.byteLength;
+
+            // Positions
+            const posArr = new Float32Array(pos.count * 3);
+            let pMin = [Infinity, Infinity, Infinity], pMax = [-Infinity, -Infinity, -Infinity];
+            for (let i = 0; i < pos.count; i++) {
+                const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
+                posArr[i * 3] = x; posArr[i * 3 + 1] = y; posArr[i * 3 + 2] = z;
+                pMin[0] = Math.min(pMin[0], x); pMin[1] = Math.min(pMin[1], y); pMin[2] = Math.min(pMin[2], z);
+                pMax[0] = Math.max(pMax[0], x); pMax[1] = Math.max(pMax[1], y); pMax[2] = Math.max(pMax[2], z);
+            }
+            const posBuf = padTo4(posArr.buffer);
+            const posBvIdx = bufferViews.length;
+            bufferViews.push({ buffer: 0, byteOffset: totalBufSize, byteLength: posArr.byteLength, target: 34962, byteStride: 12 });
+            accessors.push({ bufferView: posBvIdx, componentType: 5126, count: pos.count, type: 'VEC3', min: pMin, max: pMax });
+            const posAccIdx = accessors.length - 1;
+            bufferParts.push(posBuf);
+            totalBufSize += posBuf.byteLength;
+
+            // Normals
+            let normAccIdx = undefined;
+            if (norm) {
+                const normArr = new Float32Array(norm.count * 3);
+                for (let i = 0; i < norm.count; i++) {
+                    normArr[i * 3] = norm.getX(i);
+                    normArr[i * 3 + 1] = norm.getY(i);
+                    normArr[i * 3 + 2] = norm.getZ(i);
+                }
+                const normBuf = padTo4(normArr.buffer);
+                const normBvIdx = bufferViews.length;
+                bufferViews.push({ buffer: 0, byteOffset: totalBufSize, byteLength: normArr.byteLength, target: 34962, byteStride: 12 });
+                accessors.push({ bufferView: normBvIdx, componentType: 5126, count: norm.count, type: 'VEC3' });
+                normAccIdx = accessors.length - 1;
+                bufferParts.push(normBuf);
+                totalBufSize += normBuf.byteLength;
+            }
+
+            const attributes = { POSITION: posAccIdx };
+            if (normAccIdx !== undefined) attributes.NORMAL = normAccIdx;
+
+            gltfMeshes.push({ primitives: [{ attributes: attributes, indices: idxAccIdx, material: matIdx }], name: 'Mesh_' + mi });
+            gltfNodes.push({ mesh: mi, name: 'Node_' + mi });
+            geom.dispose();
+        });
+
+        const gltfJson = {
+            asset: { version: '2.0', generator: 'Direct3D Tools Viewer' },
+            scene: 0,
+            scenes: [{ nodes: gltfNodes.map((_, i) => i) }],
+            nodes: gltfNodes,
+            meshes: gltfMeshes,
+            accessors: accessors,
+            bufferViews: bufferViews,
+            buffers: [{ byteLength: totalBufSize }],
+            materials: materials,
+        };
+
+        const jsonStr = JSON.stringify(gltfJson);
+        const jsonBuf = padTo4(new TextEncoder().encode(jsonStr).buffer);
+
+        const binBuf = new ArrayBuffer(totalBufSize);
+        const binView = new Uint8Array(binBuf);
+        let off = 0;
+        bufferParts.forEach(part => { binView.set(new Uint8Array(part), off); off += part.byteLength; });
+        const binPadded = padTo4(binBuf);
+
+        const glbLen = 12 + 8 + jsonBuf.byteLength + 8 + binPadded.byteLength;
+        const glb = new ArrayBuffer(glbLen);
+        const glbDV = new DataView(glb);
+
+        glbDV.setUint32(0, 0x46546C67, true);
+        glbDV.setUint32(4, 2, true);
+        glbDV.setUint32(8, glbLen, true);
+
+        let p = 12;
+        glbDV.setUint32(p, jsonBuf.byteLength, true); p += 4;
+        glbDV.setUint32(p, 0x4E4F534A, true); p += 4;
+        new Uint8Array(glb, p, jsonBuf.byteLength).set(new Uint8Array(jsonBuf));
+        p += jsonBuf.byteLength;
+
+        glbDV.setUint32(p, binPadded.byteLength, true); p += 4;
+        glbDV.setUint32(p, 0x004E4942, true); p += 4;
+        new Uint8Array(glb, p, binPadded.byteLength).set(new Uint8Array(binPadded));
+
+        downloadBlob(new Blob([glb], { type: 'model/gltf-binary' }), viewerFileName() + '.glb');
+    }
+
+    // ── Export dispatcher ────────────────────────────────────────
+    function doViewerExport(fmt) {
+        const model = getViewerModel();
+        if (!model) { alert('No model loaded.'); return; }
+        try {
+            switch (fmt) {
+                case 'obj': exportViewerOBJ(); break;
+                case 'stl': exportViewerSTL(); break;
+                case 'glb': exportViewerGLB(); break;
+                default: alert('Unknown format: ' + fmt);
+            }
+        } catch (err) {
+            console.error('Export error:', err);
+            alert('Export error: ' + err.message);
+        }
+    }
+
+    // ================================================================
     //  Camera Position / Angle Display
     // ================================================================
     function updateCamDisplay() {
@@ -973,13 +1334,39 @@
             ssBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 ssDrop.classList.toggle('is-open');
+                // Close export dropdown if open
+                const exDrop = $('#export-dropdown');
+                if (exDrop) exDrop.classList.remove('is-open');
             });
-            document.addEventListener('click', () => ssDrop.classList.remove('is-open'));
+            document.addEventListener('click', () => {
+                ssDrop.classList.remove('is-open');
+                const exDrop = $('#export-dropdown');
+                if (exDrop) exDrop.classList.remove('is-open');
+            });
             ssDrop.addEventListener('click', (e) => e.stopPropagation());
             ssDrop.querySelectorAll('.screenshot-option').forEach(btn => {
                 btn.addEventListener('click', () => {
                     saveScreenshot(btn.dataset.format);
                     ssDrop.classList.remove('is-open');
+                });
+            });
+        }
+
+        // Export button & dropdown
+        const exBtn = $('#vt-export');
+        const exDrop = $('#export-dropdown');
+        if (exBtn && exDrop) {
+            exBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                exDrop.classList.toggle('is-open');
+                // Close screenshot dropdown if open
+                if (ssDrop) ssDrop.classList.remove('is-open');
+            });
+            exDrop.addEventListener('click', (e) => e.stopPropagation());
+            exDrop.querySelectorAll('.export-option').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    doViewerExport(btn.dataset.format);
+                    exDrop.classList.remove('is-open');
                 });
             });
         }
