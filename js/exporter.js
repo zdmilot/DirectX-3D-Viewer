@@ -27,9 +27,14 @@
 
     // ── Initialise ───────────────────────────────────────────────
     function initExporter() {
+        // Always refresh dark-mode from the live DOM (user may have toggled
+        // the theme while in a different applet).
+        exState.isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+
         if (exState.inited) {
-            // Just re-fire a resize so canvas matches its panel
+            // Re-fire resize + sync colours with current theme
             handleResize();
+            updateExporterTheme();
             return;
         }
         exState.inited = true;

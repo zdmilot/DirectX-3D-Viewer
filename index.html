@@ -116,38 +116,53 @@
                 </div>
                 <canvas id="viewer-canvas"></canvas>
 
-                <!-- Axis Gizmo (floating, top-right) -->
-                <div class="vt-gizmo-float" id="vt-gizmo">
-                    <canvas id="gizmo-canvas" width="44" height="44"></canvas>
+                <!-- Floating 3D Toolbar (collapsible) -->
+                <div class="viewer-toolbar" id="viewer-toolbar">
+                    <!-- Collapse/expand toggle -->
+                    <button class="vt-toggle" id="vt-toggle" title="Toggle toolbar">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+
+                    <div class="vt-body" id="vt-body">
+                        <!-- Axis gizmo -->
+                        <div class="vt-gizmo" id="vt-gizmo">
+                            <canvas id="gizmo-canvas" width="44" height="44"></canvas>
+                        </div>
+
+                        <div class="vt-separator"></div>
+
+                        <!-- Toolbar buttons -->
+                        <button class="vt-btn" id="vt-reset-cam" title="Reset camera">
+                            <i class="fas fa-video"></i>
+                        </button>
+                        <button class="vt-btn" id="vt-zoom-fit" title="Zoom to fit">
+                            <i class="fas fa-expand"></i>
+                        </button>
+                        <button class="vt-btn" id="vt-wireframe" title="Toggle wireframe">
+                            <i class="fas fa-draw-polygon"></i>
+                        </button>
+                        <button class="vt-btn" id="vt-perspective" title="Toggle perspective / orthographic">
+                            <i class="fas fa-cube"></i>
+                        </button>
+
+                        <div class="vt-separator"></div>
+
+                        <button class="vt-btn vt-btn-round" id="vt-zoom-in" title="Zoom in">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                        <button class="vt-btn vt-btn-round" id="vt-zoom-out" title="Zoom out">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                        <button class="vt-btn vt-btn-round" id="vt-pan" title="Pan mode">
+                            <i class="fas fa-hand-paper"></i>
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Bottom Controls Bar -->
                 <div class="viewer-controls-bar" id="viewer-controls-bar">
                     <button class="cv-ctrl-btn" id="vt-open" title="Open .x file">
                         <i class="fas fa-folder-open"></i> Open
-                    </button>
-                    <div class="cv-ctrl-divider"></div>
-                    <button class="cv-ctrl-btn" id="vt-reset-cam" title="Reset camera">
-                        <i class="fas fa-video"></i>
-                    </button>
-                    <button class="cv-ctrl-btn" id="vt-zoom-fit" title="Zoom to fit">
-                        <i class="fas fa-expand"></i>
-                    </button>
-                    <button class="cv-ctrl-btn" id="vt-wireframe" title="Toggle wireframe">
-                        <i class="fas fa-draw-polygon"></i>
-                    </button>
-                    <button class="cv-ctrl-btn" id="vt-perspective" title="Toggle perspective / orthographic">
-                        <i class="fas fa-cube"></i>
-                    </button>
-                    <div class="cv-ctrl-divider"></div>
-                    <button class="cv-ctrl-btn" id="vt-zoom-in" title="Zoom in">
-                        <i class="fas fa-plus"></i>
-                    </button>
-                    <button class="cv-ctrl-btn" id="vt-zoom-out" title="Zoom out">
-                        <i class="fas fa-minus"></i>
-                    </button>
-                    <button class="cv-ctrl-btn" id="vt-pan" title="Pan mode">
-                        <i class="fas fa-hand-paper"></i>
                     </button>
                     <div class="cv-ctrl-divider"></div>
                     <span class="viewer-cam-display" id="viewer-cam-display">X: 0.0  Y: 0.0  Z: 0.0  |  Pitch: 0.0°  Yaw: 0.0°  Roll: 0.0°</span>
