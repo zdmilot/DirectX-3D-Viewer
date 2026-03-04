@@ -1316,6 +1316,21 @@ body {
 }
 
 /* ============================================================
+   Plate Placer — Layout (mirrors #viewer-host)
+   ============================================================ */
+#placer-host.is-active {
+    display: flex;
+    flex-direction: column;
+}
+
+#placer-host canvas#pp-canvas {
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    display: block;
+}
+
+/* ============================================================
    Plate Placer — Offset Overlay
    ============================================================ */
 .pp-offset-overlay {
