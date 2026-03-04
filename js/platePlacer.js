@@ -128,6 +128,7 @@
         // -- Wire controls --
         wirePlacerControls();
         wirePlacerToolbar();
+        wireScreenshotExport();
         wireOffsetInputs();
     }
 
@@ -699,10 +700,379 @@
         const el = $('#pp-cam-display');
         if (!el || !ppState.camera) return;
         const p = ppState.camera.position;
+        const dir = new THREE.Vector3();
+        ppState.camera.getWorldDirection(dir);
+        const pitch = THREE.MathUtils.radToDeg(Math.asin(dir.y));
+        const yaw = THREE.MathUtils.radToDeg(Math.atan2(dir.x, dir.z));
+        const roll = THREE.MathUtils.radToDeg(ppState.camera.rotation.z);
         el.textContent =
             'X: ' + p.x.toFixed(1) +
             '  Y: ' + p.y.toFixed(1) +
-            '  Z: ' + p.z.toFixed(1);
+            '  Z: ' + p.z.toFixed(1) +
+            '  |  Pitch: ' + pitch.toFixed(1) + '\u00b0' +
+            '  Yaw: ' + yaw.toFixed(1) + '\u00b0' +
+            '  Roll: ' + roll.toFixed(1) + '\u00b0';
+    }
+
+    // ================================================================
+    //  Screenshot & Export
+    // ================================================================
+
+    function ppDownloadBlob(blob, filename) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 5000);
+    }
+
+    function ppFileName() {
+        return (ppState.loadedFileName || 'plate-placer').replace(/\.[^.]+$/, '');
+    }
+
+    function ppGetModel() {
+        return ppState.scene ? ppState.scene.getObjectByName('__ppmodel__') : null;
+    }
+
+    /** Vector SVG export – projects every visible triangle through the camera */
+    function ppExportVectorSVG() {
+        if (!ppState.scene || !ppState.camera) return '';
+        const w = ppState.renderer.domElement.width;
+        const h = ppState.renderer.domElement.height;
+        ppState.scene.updateMatrixWorld(true);
+        ppState.camera.updateMatrixWorld(true);
+        const viewMatrix = ppState.camera.matrixWorldInverse.clone();
+        const projMatrix = ppState.camera.projectionMatrix.clone();
+        const vpMatrix = new THREE.Matrix4().multiplyMatrices(projMatrix, viewMatrix);
+        const tris = [];
+
+        ppState.scene.traverse(function (obj) {
+            if (!obj.isMesh) return;
+            if (obj.name === '__ppgrid__' || obj.name === '__exgrid__') return;
+            let skip = false;
+            let par = obj.parent;
+            while (par) {
+                if (par.isGridHelper || par.name === '__ppgrid__' || par.name === '__exgrid__') { skip = true; break; }
+                par = par.parent;
+            }
+            if (skip) return;
+
+            const geom = obj.geometry;
+            if (!geom || !geom.attributes || !geom.attributes.position) return;
+            const worldMatrix = obj.matrixWorld;
+            const mvp = new THREE.Matrix4().multiplyMatrices(vpMatrix, worldMatrix);
+            const pos = geom.attributes.position;
+            const mat = obj.material;
+            const mats = Array.isArray(mat) ? mat : [mat];
+            const m = mats[0];
+            let baseR = 0.7, baseG = 0.7, baseB = 0.7, baseA = 1.0;
+            if (m && m.color) { baseR = m.color.r; baseG = m.color.g; baseB = m.color.b; }
+            if (m && m.opacity !== undefined) baseA = m.opacity;
+
+            let indices = geom.index;
+            if (!indices) {
+                const arr = [];
+                for (let i = 0; i < pos.count; i++) arr.push(i);
+                geom.setIndex(arr);
+                indices = geom.index;
+            }
+            const faceCount = indices.count / 3;
+            const v3a = new THREE.Vector3(), v3b = new THREE.Vector3(), v3c = new THREE.Vector3();
+
+            for (let f = 0; f < faceCount; f++) {
+                const i0 = indices.getX(f * 3), i1 = indices.getX(f * 3 + 1), i2 = indices.getX(f * 3 + 2);
+                v3a.set(pos.getX(i0), pos.getY(i0), pos.getZ(i0)).applyMatrix4(worldMatrix);
+                v3b.set(pos.getX(i1), pos.getY(i1), pos.getZ(i1)).applyMatrix4(worldMatrix);
+                v3c.set(pos.getX(i2), pos.getY(i2), pos.getZ(i2)).applyMatrix4(worldMatrix);
+                const edge1 = new THREE.Vector3().subVectors(v3b, v3a);
+                const edge2 = new THREE.Vector3().subVectors(v3c, v3a);
+                const faceNormal = new THREE.Vector3().crossVectors(edge1, edge2).normalize();
+                const centroidWorld = new THREE.Vector3().addVectors(v3a, v3b).add(v3c).multiplyScalar(1 / 3);
+                const viewDir = new THREE.Vector3().subVectors(ppState.camera.position, centroidWorld).normalize();
+                if (faceNormal.dot(viewDir) < 0) continue;
+                const p0 = new THREE.Vector3(pos.getX(i0), pos.getY(i0), pos.getZ(i0)).applyMatrix4(mvp);
+                const p1 = new THREE.Vector3(pos.getX(i1), pos.getY(i1), pos.getZ(i1)).applyMatrix4(mvp);
+                const p2 = new THREE.Vector3(pos.getX(i2), pos.getY(i2), pos.getZ(i2)).applyMatrix4(mvp);
+                if (p0.z < -1 || p1.z < -1 || p2.z < -1) continue;
+                if (p0.z > 1 || p1.z > 1 || p2.z > 1) continue;
+                const sx0 = (p0.x * 0.5 + 0.5) * w, sy0 = (-p0.y * 0.5 + 0.5) * h;
+                const sx1 = (p1.x * 0.5 + 0.5) * w, sy1 = (-p1.y * 0.5 + 0.5) * h;
+                const sx2 = (p2.x * 0.5 + 0.5) * w, sy2 = (-p2.y * 0.5 + 0.5) * h;
+                const shade = Math.max(0.15, faceNormal.dot(viewDir));
+                const cr = Math.min(255, Math.round(baseR * shade * 255));
+                const cg = Math.min(255, Math.round(baseG * shade * 255));
+                const cb = Math.min(255, Math.round(baseB * shade * 255));
+                tris.push({
+                    points: sx0.toFixed(2) + ',' + sy0.toFixed(2) + ' ' + sx1.toFixed(2) + ',' + sy1.toFixed(2) + ' ' + sx2.toFixed(2) + ',' + sy2.toFixed(2),
+                    fill: 'rgb(' + cr + ',' + cg + ',' + cb + ')',
+                    opacity: baseA,
+                    depth: (p0.z + p1.z + p2.z) / 3,
+                });
+            }
+        });
+
+        tris.sort(function (a, b) { return b.depth - a.depth; });
+        const bgColor = ppState.isDark ? '#1b2838' : '#f0f0f0';
+        const parts = [];
+        parts.push('<?xml version="1.0" encoding="UTF-8" standalone="no"?>');
+        parts.push('<svg xmlns="http://www.w3.org/2000/svg" width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '" shape-rendering="crispEdges">');
+        parts.push('<rect width="100%" height="100%" fill="' + bgColor + '"/>');
+        for (let i = 0; i < tris.length; i++) {
+            const t = tris[i];
+            parts.push('<polygon points="' + t.points + '" fill="' + t.fill + '"' + (t.opacity < 1 ? ' opacity="' + t.opacity.toFixed(3) + '"' : '') + ' stroke="' + t.fill + '" stroke-width="0.5"/>');
+        }
+        parts.push('</svg>');
+        return parts.join('\n');
+    }
+
+    function ppSaveScreenshot(format) {
+        if (!ppState.renderer || !ppState.scene || !ppState.camera) return;
+        ppState.renderer.render(ppState.scene, ppState.camera);
+        const canvas = ppState.renderer.domElement;
+        const fileName = ppFileName();
+        if (format === 'svg') {
+            const svgContent = ppExportVectorSVG();
+            ppDownloadBlob(new Blob([svgContent], { type: 'image/svg+xml' }), fileName + '.svg');
+        } else if (format === 'jpg') {
+            canvas.toBlob(function (blob) { if (blob) ppDownloadBlob(blob, fileName + '.jpg'); }, 'image/jpeg', 0.92);
+        } else {
+            canvas.toBlob(function (blob) { if (blob) ppDownloadBlob(blob, fileName + '.png'); }, 'image/png');
+        }
+    }
+
+    // ── OBJ ──────────────────────────────────────────────────────
+    function ppExportOBJ() {
+        const model = ppGetModel();
+        if (!model) return;
+        const lines = [], mtlLines = [];
+        const baseName = ppFileName();
+        lines.push('# Exported from Direct3D Tools – Plate Placer');
+        lines.push('mtllib ' + baseName + '.mtl');
+        lines.push('');
+        let vertOffset = 1, normOffset = 1, uvOffset = 1, meshIdx = 0;
+        model.updateMatrixWorld(true);
+        model.traverse(function (child) {
+            if (!child.isMesh) return;
+            const geom = child.geometry.clone();
+            geom.applyMatrix4(child.matrixWorld);
+            if (!geom.index) { const idx = []; for (let i = 0; i < geom.attributes.position.count; i++) idx.push(i); geom.setIndex(idx); }
+            const pos = geom.attributes.position, norm = geom.attributes.normal, uv = geom.attributes.uv, idx = geom.index;
+            const faceCount = idx.count / 3;
+            const matName = 'Material_' + meshIdx++;
+            const mat = child.material || new THREE.MeshStandardMaterial();
+            const m = Array.isArray(mat) ? mat[0] : mat;
+            const r = m.color ? m.color.r : 0.7, g = m.color ? m.color.g : 0.7, b = m.color ? m.color.b : 0.7;
+            mtlLines.push('newmtl ' + matName, 'Kd ' + r.toFixed(6) + ' ' + g.toFixed(6) + ' ' + b.toFixed(6));
+            if (m.specular) mtlLines.push('Ks ' + m.specular.r.toFixed(6) + ' ' + m.specular.g.toFixed(6) + ' ' + m.specular.b.toFixed(6));
+            mtlLines.push('d ' + (m.opacity !== undefined ? m.opacity : 1).toFixed(6), '');
+            lines.push('g Mesh_' + (meshIdx - 1), 'usemtl ' + matName);
+            for (let i = 0; i < pos.count; i++) lines.push('v ' + pos.getX(i).toFixed(6) + ' ' + pos.getY(i).toFixed(6) + ' ' + pos.getZ(i).toFixed(6));
+            if (norm) for (let i = 0; i < norm.count; i++) lines.push('vn ' + norm.getX(i).toFixed(6) + ' ' + norm.getY(i).toFixed(6) + ' ' + norm.getZ(i).toFixed(6));
+            if (uv) for (let i = 0; i < uv.count; i++) lines.push('vt ' + uv.getX(i).toFixed(6) + ' ' + uv.getY(i).toFixed(6));
+            for (let f = 0; f < faceCount; f++) {
+                const a = idx.getX(f * 3) + vertOffset, b2 = idx.getX(f * 3 + 1) + vertOffset, c = idx.getX(f * 3 + 2) + vertOffset;
+                if (norm && uv) {
+                    const na = idx.getX(f * 3) + normOffset, nb = idx.getX(f * 3 + 1) + normOffset, nc = idx.getX(f * 3 + 2) + normOffset;
+                    const ta = idx.getX(f * 3) + uvOffset, tb = idx.getX(f * 3 + 1) + uvOffset, tc = idx.getX(f * 3 + 2) + uvOffset;
+                    lines.push('f ' + a + '/' + ta + '/' + na + ' ' + b2 + '/' + tb + '/' + nb + ' ' + c + '/' + tc + '/' + nc);
+                } else if (norm) {
+                    const na = idx.getX(f * 3) + normOffset, nb = idx.getX(f * 3 + 1) + normOffset, nc = idx.getX(f * 3 + 2) + normOffset;
+                    lines.push('f ' + a + '//' + na + ' ' + b2 + '//' + nb + ' ' + c + '//' + nc);
+                } else {
+                    lines.push('f ' + a + ' ' + b2 + ' ' + c);
+                }
+            }
+            vertOffset += pos.count;
+            if (norm) normOffset += norm.count;
+            if (uv) uvOffset += uv.count;
+            lines.push('');
+            geom.dispose();
+        });
+        ppDownloadBlob(new Blob([lines.join('\n')], { type: 'text/plain' }), baseName + '.obj');
+        if (mtlLines.length > 0) ppDownloadBlob(new Blob([mtlLines.join('\n')], { type: 'text/plain' }), baseName + '.mtl');
+    }
+
+    // ── STL (binary) ─────────────────────────────────────────────
+    function ppExportSTL() {
+        const model = ppGetModel();
+        if (!model) return;
+        model.updateMatrixWorld(true);
+        let totalTris = 0;
+        model.traverse(child => { if (!child.isMesh) return; const g = child.geometry; totalTris += Math.floor((g.index ? g.index.count : g.attributes.position.count) / 3); });
+        const bufLen = 80 + 4 + totalTris * 50;
+        const buffer = new ArrayBuffer(bufLen);
+        const dv = new DataView(buffer);
+        const headerStr = 'Exported from Direct3D Tools – Plate Placer';
+        for (let i = 0; i < headerStr.length && i < 80; i++) dv.setUint8(i, headerStr.charCodeAt(i));
+        dv.setUint32(80, totalTris, true);
+        let offset = 84;
+        model.traverse(child => {
+            if (!child.isMesh) return;
+            const geom = child.geometry.clone();
+            geom.applyMatrix4(child.matrixWorld);
+            if (!geom.index) { const indices = []; for (let i = 0; i < geom.attributes.position.count; i++) indices.push(i); geom.setIndex(indices); }
+            if (!geom.attributes.normal) geom.computeVertexNormals();
+            const pos = geom.attributes.position, norm = geom.attributes.normal, idx = geom.index;
+            const faceCount = idx.count / 3;
+            for (let f = 0; f < faceCount; f++) {
+                const i0 = idx.getX(f * 3), i1 = idx.getX(f * 3 + 1), i2 = idx.getX(f * 3 + 2);
+                dv.setFloat32(offset, (norm.getX(i0) + norm.getX(i1) + norm.getX(i2)) / 3, true); offset += 4;
+                dv.setFloat32(offset, (norm.getY(i0) + norm.getY(i1) + norm.getY(i2)) / 3, true); offset += 4;
+                dv.setFloat32(offset, (norm.getZ(i0) + norm.getZ(i1) + norm.getZ(i2)) / 3, true); offset += 4;
+                for (const vi of [i0, i1, i2]) {
+                    dv.setFloat32(offset, pos.getX(vi), true); offset += 4;
+                    dv.setFloat32(offset, pos.getY(vi), true); offset += 4;
+                    dv.setFloat32(offset, pos.getZ(vi), true); offset += 4;
+                }
+                dv.setUint16(offset, 0, true); offset += 2;
+            }
+            geom.dispose();
+        });
+        ppDownloadBlob(new Blob([buffer], { type: 'application/octet-stream' }), ppFileName() + '.stl');
+    }
+
+    // ── GLB ──────────────────────────────────────────────────────
+    function ppExportGLB() {
+        const model = ppGetModel();
+        if (!model) return;
+        model.updateMatrixWorld(true);
+        const meshes = [];
+        model.traverse(child => { if (child.isMesh) meshes.push(child); });
+        if (meshes.length === 0) return;
+        const bufferParts = [];
+        let totalBufSize = 0;
+        const accessors = [], bufferViews = [], gltfMeshes = [], gltfNodes = [], materials = [];
+        function padTo4(buf) { const rem = buf.byteLength % 4; if (rem === 0) return buf; const padded = new ArrayBuffer(buf.byteLength + (4 - rem)); new Uint8Array(padded).set(new Uint8Array(buf)); return padded; }
+        meshes.forEach((child, mi) => {
+            const geom = child.geometry.clone();
+            geom.applyMatrix4(child.matrixWorld);
+            if (!geom.index) { const idx = []; for (let i = 0; i < geom.attributes.position.count; i++) idx.push(i); geom.setIndex(idx); }
+            const pos = geom.attributes.position, norm = geom.attributes.normal, idx = geom.index;
+            const srcMat = child.material || new THREE.MeshStandardMaterial();
+            const m = Array.isArray(srcMat) ? srcMat[0] : srcMat;
+            materials.push({ pbrMetallicRoughness: { baseColorFactor: [m.color ? m.color.r : 0.7, m.color ? m.color.g : 0.7, m.color ? m.color.b : 0.7, m.opacity !== undefined ? m.opacity : 1.0], metallicFactor: m.metalness !== undefined ? m.metalness : 0.0, roughnessFactor: m.roughness !== undefined ? m.roughness : 0.8 }, name: 'Material_' + mi });
+            // Indices
+            const idxArr = new Uint32Array(idx.count);
+            for (let i = 0; i < idx.count; i++) idxArr[i] = idx.getX(i);
+            const idxBuf = padTo4(idxArr.buffer);
+            bufferViews.push({ buffer: 0, byteOffset: totalBufSize, byteLength: idxArr.byteLength, target: 34963 });
+            accessors.push({ bufferView: bufferViews.length - 1, componentType: 5125, count: idx.count, type: 'SCALAR', max: [pos.count - 1], min: [0] });
+            const idxAccIdx = accessors.length - 1;
+            bufferParts.push(idxBuf); totalBufSize += idxBuf.byteLength;
+            // Positions
+            const posArr = new Float32Array(pos.count * 3);
+            let pMin = [Infinity, Infinity, Infinity], pMax = [-Infinity, -Infinity, -Infinity];
+            for (let i = 0; i < pos.count; i++) {
+                const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
+                posArr[i * 3] = x; posArr[i * 3 + 1] = y; posArr[i * 3 + 2] = z;
+                pMin[0] = Math.min(pMin[0], x); pMin[1] = Math.min(pMin[1], y); pMin[2] = Math.min(pMin[2], z);
+                pMax[0] = Math.max(pMax[0], x); pMax[1] = Math.max(pMax[1], y); pMax[2] = Math.max(pMax[2], z);
+            }
+            const posBuf = padTo4(posArr.buffer);
+            bufferViews.push({ buffer: 0, byteOffset: totalBufSize, byteLength: posArr.byteLength, target: 34962, byteStride: 12 });
+            accessors.push({ bufferView: bufferViews.length - 1, componentType: 5126, count: pos.count, type: 'VEC3', min: pMin, max: pMax });
+            const posAccIdx = accessors.length - 1;
+            bufferParts.push(posBuf); totalBufSize += posBuf.byteLength;
+            // Normals
+            let normAccIdx;
+            if (norm) {
+                const normArr = new Float32Array(norm.count * 3);
+                for (let i = 0; i < norm.count; i++) { normArr[i * 3] = norm.getX(i); normArr[i * 3 + 1] = norm.getY(i); normArr[i * 3 + 2] = norm.getZ(i); }
+                const normBuf = padTo4(normArr.buffer);
+                bufferViews.push({ buffer: 0, byteOffset: totalBufSize, byteLength: normArr.byteLength, target: 34962, byteStride: 12 });
+                accessors.push({ bufferView: bufferViews.length - 1, componentType: 5126, count: norm.count, type: 'VEC3' });
+                normAccIdx = accessors.length - 1;
+                bufferParts.push(normBuf); totalBufSize += normBuf.byteLength;
+            }
+            const attributes = { POSITION: posAccIdx };
+            if (normAccIdx !== undefined) attributes.NORMAL = normAccIdx;
+            gltfMeshes.push({ primitives: [{ attributes, indices: idxAccIdx, material: mi }], name: 'Mesh_' + mi });
+            gltfNodes.push({ mesh: mi, name: 'Node_' + mi });
+            geom.dispose();
+        });
+        const gltfJson = { asset: { version: '2.0', generator: 'Direct3D Tools – Plate Placer' }, scene: 0, scenes: [{ nodes: gltfNodes.map((_, i) => i) }], nodes: gltfNodes, meshes: gltfMeshes, accessors, bufferViews, buffers: [{ byteLength: totalBufSize }], materials };
+        const jsonStr = JSON.stringify(gltfJson);
+        const jsonBuf = padTo4(new TextEncoder().encode(jsonStr).buffer);
+        const binBuf = new ArrayBuffer(totalBufSize);
+        const binView = new Uint8Array(binBuf);
+        let off = 0;
+        bufferParts.forEach(part => { binView.set(new Uint8Array(part), off); off += part.byteLength; });
+        const binPadded = padTo4(binBuf);
+        const glbLen = 12 + 8 + jsonBuf.byteLength + 8 + binPadded.byteLength;
+        const glb = new ArrayBuffer(glbLen);
+        const glbDV = new DataView(glb);
+        glbDV.setUint32(0, 0x46546C67, true); glbDV.setUint32(4, 2, true); glbDV.setUint32(8, glbLen, true);
+        let gp = 12;
+        glbDV.setUint32(gp, jsonBuf.byteLength, true); gp += 4;
+        glbDV.setUint32(gp, 0x4E4F534A, true); gp += 4;
+        new Uint8Array(glb, gp, jsonBuf.byteLength).set(new Uint8Array(jsonBuf)); gp += jsonBuf.byteLength;
+        glbDV.setUint32(gp, binPadded.byteLength, true); gp += 4;
+        glbDV.setUint32(gp, 0x004E4942, true); gp += 4;
+        new Uint8Array(glb, gp, binPadded.byteLength).set(new Uint8Array(binPadded));
+        ppDownloadBlob(new Blob([glb], { type: 'model/gltf-binary' }), ppFileName() + '.glb');
+    }
+
+    function ppDoExport(fmt) {
+        const model = ppGetModel();
+        if (!model) { alert('No model loaded.'); return; }
+        try {
+            switch (fmt) {
+                case 'obj': ppExportOBJ(); break;
+                case 'stl': ppExportSTL(); break;
+                case 'glb': ppExportGLB(); break;
+                default: alert('Unknown format: ' + fmt);
+            }
+        } catch (err) {
+            console.error('Placer export error:', err);
+            alert('Export error: ' + err.message);
+        }
+    }
+
+    function wireScreenshotExport() {
+        // Screenshot button & dropdown
+        const ssBtn = $('#pp-screenshot');
+        const ssDrop = $('#pp-screenshot-dropdown');
+        if (ssBtn && ssDrop) {
+            ssBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                ssDrop.classList.toggle('is-open');
+                const exDrop = $('#pp-export-dropdown');
+                if (exDrop) exDrop.classList.remove('is-open');
+            });
+            document.addEventListener('click', () => {
+                ssDrop.classList.remove('is-open');
+                const exDrop = $('#pp-export-dropdown');
+                if (exDrop) exDrop.classList.remove('is-open');
+            });
+            ssDrop.addEventListener('click', (e) => e.stopPropagation());
+            ssDrop.querySelectorAll('.screenshot-option').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    ppSaveScreenshot(btn.dataset.format);
+                    ssDrop.classList.remove('is-open');
+                });
+            });
+        }
+
+        // Export button & dropdown
+        const exBtn = $('#pp-export');
+        const exDrop = $('#pp-export-dropdown');
+        if (exBtn && exDrop) {
+            exBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                exDrop.classList.toggle('is-open');
+                if (ssDrop) ssDrop.classList.remove('is-open');
+            });
+            exDrop.addEventListener('click', (e) => e.stopPropagation());
+            exDrop.querySelectorAll('.export-option').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    ppDoExport(btn.dataset.format);
+                    exDrop.classList.remove('is-open');
+                });
+            });
+        }
     }
 
     // ================================================================
