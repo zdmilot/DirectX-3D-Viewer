@@ -6,7 +6,7 @@
     <title>3D File Tools</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1F9EA;</text></svg>">
     <link rel="stylesheet" href="css/fontawesome.min.css">
-    <link rel="stylesheet" href="css/main.css?v=20260303n">
+    <link rel="stylesheet" href="css/main.css?v=20260303o">
 </head>
 <body>
 
@@ -73,10 +73,6 @@
                 </div>
             <div class="navbar-actions">
                 <input type="file" id="file-input" accept=".x" style="display:none">
-                <button class="nav-btn nav-btn-icon grid-toggle" id="btn-grid" data-tooltip="Hide bottom gridlines" aria-label="Hide bottom gridlines">
-                    <i class="fas fa-border-all"></i>
-                    <span class="grid-slash" aria-hidden="true"></span>
-                </button>
                 <button class="nav-btn nav-btn-icon" id="btn-theme" data-tooltip="Switch to night mode" aria-label="Switch to night mode">
                     <i class="fas fa-moon"></i>
                 </button>
@@ -138,6 +134,10 @@
                         </button>
                         <button class="vt-btn" id="vt-perspective" title="Toggle perspective / orthographic">
                             <i class="fas fa-cube"></i>
+                        </button>
+                        <button class="vt-btn grid-toggle" id="btn-grid" title="Toggle gridlines">
+                            <i class="fas fa-border-all"></i>
+                            <span class="grid-slash" aria-hidden="true"></span>
                         </button>
 
                         <div class="vt-separator"></div>
@@ -209,6 +209,44 @@
                     <!-- Left: Main 3D viewport -->
                     <div class="cv-main-col">
                         <div class="cv-main-viewport" id="converter-main-viewport">
+                            <!-- Floating 3D Toolbar (converter) -->
+                            <div class="viewer-toolbar" id="cv-viewer-toolbar">
+                                <button class="vt-toggle" id="cv-vt-toggle" title="Toggle toolbar">
+                                    <i class="fas fa-chevron-right"></i>
+                                </button>
+                                <div class="vt-body" id="cv-vt-body">
+                                    <div class="vt-gizmo" id="cv-vt-gizmo">
+                                        <canvas id="cv-gizmo-canvas" width="44" height="44"></canvas>
+                                    </div>
+                                    <div class="vt-separator"></div>
+                                    <button class="vt-btn" id="cv-vt-reset-cam" title="Reset camera">
+                                        <i class="fas fa-video"></i>
+                                    </button>
+                                    <button class="vt-btn" id="cv-vt-zoom-fit" title="Zoom to fit">
+                                        <i class="fas fa-expand"></i>
+                                    </button>
+                                    <button class="vt-btn" id="cv-vt-wireframe" title="Toggle wireframe">
+                                        <i class="fas fa-draw-polygon"></i>
+                                    </button>
+                                    <button class="vt-btn" id="cv-vt-perspective" title="Toggle perspective / orthographic">
+                                        <i class="fas fa-cube"></i>
+                                    </button>
+                                    <button class="vt-btn grid-toggle" id="cv-btn-grid" title="Toggle gridlines">
+                                        <i class="fas fa-border-all"></i>
+                                        <span class="grid-slash" aria-hidden="true"></span>
+                                    </button>
+                                    <div class="vt-separator"></div>
+                                    <button class="vt-btn vt-btn-round" id="cv-vt-zoom-in" title="Zoom in">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                    <button class="vt-btn vt-btn-round" id="cv-vt-zoom-out" title="Zoom out">
+                                        <i class="fas fa-minus"></i>
+                                    </button>
+                                    <button class="vt-btn vt-btn-round" id="cv-vt-pan" title="Pan mode">
+                                        <i class="fas fa-hand-paper"></i>
+                                    </button>
+                                </div>
+                            </div>
                             <canvas id="cv-main-canvas"></canvas>
                             <div class="viewer-loading viewer-hidden" id="cv-loading">
                                 <div class="viewer-spinner"></div>
@@ -296,7 +334,7 @@
     <script src="js/lib/MTLLoader.js"></script>
     <script src="js/lib/GLTFLoader.js"></script>
     <script src="js/lib/STLLoader.js"></script>
-    <script src="js/converter.js?v=20260303a"></script>
-    <script src="js/app.js?v=20260303i"></script>
+    <script src="js/converter.js?v=20260303b"></script>
+    <script src="js/app.js?v=20260303j"></script>
 </body>
 </html>

@@ -21,6 +21,10 @@
         modelMaxDim: 1,
         isDark: false,
         gridVisible: true,
+        wireframe: false,
+        isPerspective: true,
+        isPanning: false,
+        toolbarCollapsed: false,
 
         // Six orthographic view renderers
         views: {},             // { top, bottom, left, right, front, back }
@@ -117,11 +121,13 @@
             cvState.mainControls.update();
             cvState.mainRenderer.render(cvState.scene, cvState.mainCamera);
             renderSixViews();
+            drawConverterGizmo();
         }
         tick();
 
         // -- Wire controls --
         wireConverterControls();
+        wireConverterToolbar();
     }
 
     // ================================================================
@@ -882,6 +888,202 @@
                 grid.material.color.copy(c);
             }
         }
+    }
+
+    // ================================================================
+    //  Converter Floating Toolbar
+    // ================================================================
+    function wireConverterToolbar() {
+        const toolbar = $('#cv-viewer-toolbar');
+        const toggle  = $('#cv-vt-toggle');
+        const resetCam = $('#cv-vt-reset-cam');
+        const zoomFit  = $('#cv-vt-zoom-fit');
+        const wireBtn  = $('#cv-vt-wireframe');
+        const perspBtn = $('#cv-vt-perspective');
+        const gridBtn  = $('#cv-btn-grid');
+        const zoomIn   = $('#cv-vt-zoom-in');
+        const zoomOut  = $('#cv-vt-zoom-out');
+        const panBtn   = $('#cv-vt-pan');
+
+        if (toggle && toolbar) {
+            toggle.addEventListener('click', () => {
+                cvState.toolbarCollapsed = !cvState.toolbarCollapsed;
+                toolbar.classList.toggle('collapsed', cvState.toolbarCollapsed);
+            });
+        }
+
+        if (resetCam) {
+            resetCam.addEventListener('click', () => {
+                if (!cvState.mainCamera || !cvState.mainControls) return;
+                if (cvState.model) {
+                    const box = new THREE.Box3().setFromObject(cvState.model);
+                    const size = box.getSize(new THREE.Vector3());
+                    const maxDim = Math.max(size.x, size.y, size.z);
+                    const fitDist = maxDim * 1.8;
+                    cvState.mainCamera.position.set(fitDist * 0.6, fitDist * 0.4, fitDist);
+                    cvState.mainControls.target.set(0, 0, 0);
+                    cvState.mainControls.update();
+                } else {
+                    cvState.mainCamera.position.set(3, 2, 5);
+                    cvState.mainControls.target.set(0, 0, 0);
+                    cvState.mainControls.update();
+                }
+            });
+        }
+
+        if (zoomFit) {
+            zoomFit.addEventListener('click', () => {
+                if (!cvState.mainCamera || !cvState.mainControls || !cvState.model) return;
+                const box = new THREE.Box3().setFromObject(cvState.model);
+                const size = box.getSize(new THREE.Vector3());
+                const maxDim = Math.max(size.x, size.y, size.z);
+                if (maxDim <= 0) return;
+                const fitDist = maxDim * 1.5;
+                const dir = cvState.mainCamera.position.clone().sub(cvState.mainControls.target).normalize();
+                cvState.mainCamera.position.copy(dir.multiplyScalar(fitDist));
+                cvState.mainControls.target.set(0, 0, 0);
+                cvState.mainCamera.updateProjectionMatrix();
+                cvState.mainControls.update();
+            });
+        }
+
+        if (wireBtn) {
+            wireBtn.addEventListener('click', () => {
+                cvState.wireframe = !cvState.wireframe;
+                wireBtn.classList.toggle('is-active', cvState.wireframe);
+                if (!cvState.model) return;
+                cvState.model.traverse(child => {
+                    if (child.material) {
+                        const mats = Array.isArray(child.material) ? child.material : [child.material];
+                        mats.forEach(m => { m.wireframe = cvState.wireframe; });
+                    }
+                });
+            });
+        }
+
+        if (perspBtn) {
+            perspBtn.addEventListener('click', () => {
+                if (!cvState.mainCamera || !cvState.mainControls) return;
+                const host = $('#converter-main-viewport');
+                const w = host.clientWidth || 600;
+                const h = host.clientHeight || 400;
+                cvState.isPerspective = !cvState.isPerspective;
+                perspBtn.classList.toggle('is-active', !cvState.isPerspective);
+
+                const pos = cvState.mainCamera.position.clone();
+                const target = cvState.mainControls.target.clone();
+
+                if (cvState.isPerspective) {
+                    cvState.mainCamera = new THREE.PerspectiveCamera(45, w / h, 0.01, 50000);
+                    perspBtn.querySelector('i').className = 'fas fa-cube';
+                } else {
+                    const dist = pos.distanceTo(target);
+                    const frustumSize = dist * Math.tan(THREE.MathUtils.degToRad(22.5));
+                    cvState.mainCamera = new THREE.OrthographicCamera(
+                        -frustumSize * (w / h), frustumSize * (w / h),
+                        frustumSize, -frustumSize,
+                        0.01, 50000
+                    );
+                    perspBtn.querySelector('i').className = 'fas fa-vector-square';
+                }
+
+                cvState.mainCamera.position.copy(pos);
+                cvState.mainCamera.up.set(0, 1, 0);
+                cvState.mainCamera.lookAt(target);
+
+                cvState.mainControls.dispose();
+                cvState.mainControls = new THREE.OrbitControls(cvState.mainCamera, cvState.mainRenderer.domElement);
+                cvState.mainControls.enableDamping = true;
+                cvState.mainControls.dampingFactor = 0.12;
+                cvState.mainControls.target.copy(target);
+                cvState.mainControls.update();
+            });
+        }
+
+        if (gridBtn) {
+            gridBtn.addEventListener('click', () => {
+                cvState.gridVisible = !cvState.gridVisible;
+                gridBtn.classList.toggle('grid-off', !cvState.gridVisible);
+                if (cvState.scene) {
+                    const grid = cvState.scene.getObjectByName('__cvgrid__');
+                    if (grid) grid.visible = cvState.gridVisible;
+                }
+            });
+        }
+
+        if (zoomIn) {
+            zoomIn.addEventListener('click', () => {
+                if (!cvState.mainCamera || !cvState.mainControls) return;
+                const dir = cvState.mainCamera.position.clone().sub(cvState.mainControls.target);
+                dir.multiplyScalar(0.75);
+                cvState.mainCamera.position.copy(cvState.mainControls.target.clone().add(dir));
+                cvState.mainControls.update();
+            });
+        }
+
+        if (zoomOut) {
+            zoomOut.addEventListener('click', () => {
+                if (!cvState.mainCamera || !cvState.mainControls) return;
+                const dir = cvState.mainCamera.position.clone().sub(cvState.mainControls.target);
+                dir.multiplyScalar(1.35);
+                cvState.mainCamera.position.copy(cvState.mainControls.target.clone().add(dir));
+                cvState.mainControls.update();
+            });
+        }
+
+        if (panBtn) {
+            panBtn.addEventListener('click', () => {
+                cvState.isPanning = !cvState.isPanning;
+                panBtn.classList.toggle('is-active', cvState.isPanning);
+                if (cvState.mainControls) {
+                    cvState.mainControls.mouseButtons.LEFT = cvState.isPanning
+                        ? THREE.MOUSE.PAN
+                        : THREE.MOUSE.ROTATE;
+                }
+            });
+        }
+    }
+
+    // -- Converter Gizmo Drawing --
+    function drawConverterGizmo() {
+        const canvas = $('#cv-gizmo-canvas');
+        if (!canvas || !cvState.mainCamera) return;
+        const ctx = canvas.getContext('2d');
+        const size = 44;
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = size * dpr;
+        canvas.height = size * dpr;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.clearRect(0, 0, size, size);
+
+        const cx = size / 2, cy = size / 2, len = 16;
+        const vm = cvState.mainCamera.matrixWorldInverse;
+
+        const axes = [
+            { dir: [1, 0, 0], color: '#e74c3c', label: 'X' },
+            { dir: [0, 1, 0], color: '#2ecc71', label: 'Y' },
+            { dir: [0, 0, 1], color: '#3498db', label: 'Z' },
+        ];
+
+        const projected = axes.map(a => {
+            const v = new THREE.Vector3(...a.dir).applyMatrix4(vm).normalize();
+            return { x: v.x * len, y: -v.y * len, z: v.z, color: a.color, label: a.label };
+        });
+        projected.sort((a, b) => a.z - b.z);
+
+        projected.forEach(p => {
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.lineTo(cx + p.x, cy + p.y);
+            ctx.strokeStyle = p.color;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.fillStyle = p.color;
+            ctx.font = 'bold 9px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(p.label, cx + p.x * 1.25, cy + p.y * 1.25);
+        });
     }
 
     // ================================================================
