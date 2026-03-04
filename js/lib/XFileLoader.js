@@ -261,22 +261,23 @@
     var countAsSpace = [' ', '\f', '\n', '\r', '\t', '\v'];
     return countAsSpace.indexOf(currChar) > -1;
   }
-  function readInteger(fullText) {
+  function readInteger(fullText, _off) {
+    _off = _off || 0;
     var result = new ExportedNode(0);
     // Skip leading whitespace and comments
-    while (result.valueLength < fullText.length && isSpace(fullText[result.valueLength])) {
+    while (_off + result.valueLength < fullText.length && isSpace(fullText[_off + result.valueLength])) {
       result.valueLength++;
     }
     var isNegative = false;
-    if (fullText[result.valueLength] == '-') {
+    if (fullText[_off + result.valueLength] == '-') {
       isNegative = true;
       ++result.valueLength;
     }
-    if (isNaN(parseInt(fullText[result.valueLength], 10))) {
+    if (isNaN(parseInt(fullText[_off + result.valueLength], 10))) {
       throw 'Number expected.';
     }
-    while (result.valueLength < fullText.length) {
-      var currentDigit = parseInt(fullText[result.valueLength], 10);
+    while (_off + result.valueLength < fullText.length) {
+      var currentDigit = parseInt(fullText[_off + result.valueLength], 10);
       if (isNaN(currentDigit)) {
         break;
       }
@@ -292,33 +293,34 @@
   // The output is an object with the value and the length of the text read.
   // The value is the floating point number.
   // The length is the number of characters read.
-  function readFloat(fullText) {
+  function readFloat(fullText, _off) {
+    _off = _off || 0;
     var result = new ExportedNode(0);
     // Skip leading whitespace and comments
-    while (result.valueLength < fullText.length && isSpace(fullText[result.valueLength])) {
+    while (_off + result.valueLength < fullText.length && isSpace(fullText[_off + result.valueLength])) {
       result.valueLength++;
     }
     var isNegative = false;
-    if (fullText[result.valueLength] == '-') {
+    if (fullText[_off + result.valueLength] == '-') {
       isNegative = true;
       ++result.valueLength;
     }
-    if (isNaN(parseInt(fullText[result.valueLength], 10))) {
+    if (isNaN(parseInt(fullText[_off + result.valueLength], 10))) {
       throw 'Number expected.';
     }
-    while (result.valueLength < fullText.length) {
-      var currentDigit = parseInt(fullText[result.valueLength], 10);
+    while (_off + result.valueLength < fullText.length) {
+      var currentDigit = parseInt(fullText[_off + result.valueLength], 10);
       if (isNaN(currentDigit)) {
         break;
       }
       result.nodeData = result.nodeData * 10 + currentDigit;
       ++result.valueLength;
     }
-    if (fullText[result.valueLength] == '.') {
+    if (fullText[_off + result.valueLength] == '.') {
       ++result.valueLength;
       var decimal = 0.1;
-      while (result.valueLength < fullText.length) {
-        var _currentDigit = parseInt(fullText[result.valueLength], 10);
+      while (_off + result.valueLength < fullText.length) {
+        var _currentDigit = parseInt(fullText[_off + result.valueLength], 10);
         if (isNaN(_currentDigit)) {
           break;
         }
@@ -335,65 +337,68 @@
   // readRGBA function reads 4 floating point numbers from the input.
   // As the THREE.Color only has a constructor that takes 3 floats, the fourth is ignored.
   // The output is an object with the Color and the length of the text read.
-  function readRGBA(fullText) {
+  function readRGBA(fullText, _off) {
+    _off = _off || 0;
     var result = new ExportedNode(new Color());
-    var rColorComponentData = readFloat(fullText);
+    var rColorComponentData = readFloat(fullText, _off);
     // increase the result.valueLength by the length of the read data.
     result.updateExport(rColorComponentData);
     // separator character.
     result.valueLength += 1;
     // read the green component.
-    var gColorComponentData = readFloat(fullText.substring(result.valueLength));
+    var gColorComponentData = readFloat(fullText, _off + result.valueLength);
     // increase the result.valueLength by the length of the read data.
     result.updateExport(gColorComponentData);
     result.valueLength += 1;
     // read the blue component.
-    var bColorComponentData = readFloat(fullText.substring(result.valueLength));
+    var bColorComponentData = readFloat(fullText, _off + result.valueLength);
     // increase the result.valueLength by the length of the read data.
     result.updateExport(bColorComponentData);
     result.valueLength += 1;
     // read the alpha component.
     // increase the result.valueLength by the length of the read data.
-    result.updateExport(readFloat(fullText.substring(result.valueLength)));
+    result.updateExport(readFloat(fullText, _off + result.valueLength));
     // set the color.
     result.nodeData = new Color(rColorComponentData.nodeData, gColorComponentData.nodeData, bColorComponentData.nodeData);
-    result.updateExport(testForSeparator(fullText.substring(result.valueLength)));
+    result.updateExport(testForSeparator(fullText, _off + result.valueLength));
     return result;
   }
   // readRGB function reads 3 floating point numbers from the input.
   // The output is an object with the Color and the length of the text read.
-  function readRGB(fullText) {
+  function readRGB(fullText, _off) {
+    _off = _off || 0;
     var result = new ExportedNode(new Color());
-    var rColorComponentData = readFloat(fullText);
+    var rColorComponentData = readFloat(fullText, _off);
     // increase the result.valueLength by the length of the read data.
     result.updateExport(rColorComponentData);
     // separator character.
     result.valueLength += 1;
     // read the green component.
-    var gColorComponentData = readFloat(fullText.substring(result.valueLength));
+    var gColorComponentData = readFloat(fullText, _off + result.valueLength);
     // increase the result.valueLength by the length of the read data.
     result.updateExport(gColorComponentData);
     result.valueLength += 1;
     // read the blue component.
-    var bColorComponentData = readFloat(fullText.substring(result.valueLength));
+    var bColorComponentData = readFloat(fullText, _off + result.valueLength);
     // increase the result.valueLength by the length of the read data.
     result.updateExport(bColorComponentData);
     result.valueLength += 1;
     // set the color.
     result.nodeData = new Color(rColorComponentData.nodeData, gColorComponentData.nodeData, bColorComponentData.nodeData);
-    result.updateExport(testForSeparator(fullText.substring(result.valueLength)));
+    result.updateExport(testForSeparator(fullText, _off + result.valueLength));
     return result;
   }
   // readString function reads a string from the input. The input has to be prefixed and suffixed with the '"' character.
   // The output is an object with the string and the length of the text read.
-  function readString(fullText) {
+  function readString(fullText, _off) {
+    _off = _off || 0;
     var result = new ExportedNode('');
-    if (fullText[result.valueLength] != '"') {
+    if (fullText[_off + result.valueLength] != '"') {
       throw 'String expected.';
     }
     ++result.valueLength;
-    while (result.valueLength < fullText.length) {
-      var currentChar = fullText[result.valueLength];
+    while (_off + result.valueLength < fullText.length) {
+      var currentChar = fullText[_off + result.valueLength];
       if (currentChar == '"') {
         ++result.valueLength;
         return result;
@@ -405,19 +410,20 @@
   }
   // readVector3 function reads 3 floating point numbers from the input.
   // The output is an object with the Vector3 and the length of the text read.
-  function readVector3(fullText) {
+  function readVector3(fullText, _off) {
+    _off = _off || 0;
     var result = new ExportedNode(new Vector3());
-    var xComponentData = readFloat(fullText);
+    var xComponentData = readFloat(fullText, _off);
     // increase the result.valueLength by the length of the read data.
     result.updateExport(xComponentData);
     result.valueLength += 1;
     result.nodeData.x = xComponentData.nodeData;
-    var yComponentData = readFloat(fullText.substring(result.valueLength));
+    var yComponentData = readFloat(fullText, _off + result.valueLength);
     // increase the result.valueLength by the length of the read data.
     result.updateExport(yComponentData);
     result.valueLength += 1;
     result.nodeData.y = yComponentData.nodeData;
-    var zComponentData = readFloat(fullText.substring(result.valueLength));
+    var zComponentData = readFloat(fullText, _off + result.valueLength);
     result.updateExport(zComponentData);
     result.valueLength += 1;
     result.nodeData.z = zComponentData.nodeData;
@@ -425,14 +431,15 @@
   }
   // readVector2 function reads 2 floating point numbers from the input.
   // The output is an object with the Vector2 and the length of the text read.
-  function readVector2(fullText) {
+  function readVector2(fullText, _off) {
+    _off = _off || 0;
     var result = new ExportedNode(new Vector2());
-    var xComponentData = readFloat(fullText);
+    var xComponentData = readFloat(fullText, _off);
     // increase the result.valueLength by the length of the read data.
     result.updateExport(xComponentData);
     result.valueLength += 1;
     result.nodeData.x = xComponentData.nodeData;
-    var yComponentData = readFloat(fullText.substring(result.valueLength));
+    var yComponentData = readFloat(fullText, _off + result.valueLength);
     // increase the result.valueLength by the length of the read data.
     result.updateExport(yComponentData);
     result.valueLength += 1;
@@ -441,10 +448,11 @@
   }
   // readUntilEndOfLine function reads the input until the end of the line.
   // The output is the number of characters until the end of the line.
-  function readUntilEndOfLine(fullText) {
+  function readUntilEndOfLine(fullText, _off) {
+    _off = _off || 0;
     var result = 0;
-    while (result < fullText.length) {
-      var currentChar = fullText[result];
+    while (_off + result < fullText.length) {
+      var currentChar = fullText[_off + result];
       if (currentChar == '\n' || currentChar == '\r') {
         return ++result;
       }
@@ -454,21 +462,22 @@
   }
   // readUntilNextNonWhitespace function reads the input until the next non-whitespace character.
   // Returns an ExportedNode without any data.
-  function readUntilNextNonWhitespace(fullText) {
+  function readUntilNextNonWhitespace(fullText, _off) {
+    _off = _off || 0;
     var result = new ExportedNode(null);
     while (true) {
-      while (result.valueLength < fullText.length && isSpace(fullText[result.valueLength])) {
-        if (fullText[result.valueLength] == '\n') {
+      while (_off + result.valueLength < fullText.length && isSpace(fullText[_off + result.valueLength])) {
+        if (fullText[_off + result.valueLength] == '\n') {
           result.lines++;
         }
         result.valueLength++;
       }
-      if (result.valueLength >= fullText.length) {
+      if (_off + result.valueLength >= fullText.length) {
         return result;
       }
       // ignore the comments
-      if (fullText[result.valueLength] == '/' && fullText[result.valueLength + 1] == '/' || fullText[result.valueLength] == '#') {
-        result.valueLength += readUntilEndOfLine(fullText.substring(result.valueLength));
+      if (fullText[_off + result.valueLength] == '/' && fullText[_off + result.valueLength + 1] == '/' || fullText[_off + result.valueLength] == '#') {
+        result.valueLength += readUntilEndOfLine(fullText, _off + result.valueLength);
         result.lines++;
       } else {
         break;
@@ -478,30 +487,32 @@
   }
   // getNextToken function reads the input until the end of the next token.
   // Returns an ExportedNode without the token string as nodeData.
-  function getNextToken(fullText) {
+  function getNextToken(fullText, _off) {
+    _off = _off || 0;
     var result = new ExportedNode('');
-    result.updateExport(readUntilNextNonWhitespace(fullText));
-    while (result.valueLength < fullText.length && !isSpace(fullText[result.valueLength])) {
+    result.updateExport(readUntilNextNonWhitespace(fullText, _off));
+    while (_off + result.valueLength < fullText.length && !isSpace(fullText[_off + result.valueLength])) {
       // either keep token delimiters when already holding a token, or return if first valid char
       var delimiters = [';', '}', '{', ','];
-      if (delimiters.indexOf(fullText[result.valueLength]) > -1) {
+      if (delimiters.indexOf(fullText[_off + result.valueLength]) > -1) {
         if (!result.nodeData.length) {
-          result.nodeData = result.nodeData + fullText[result.valueLength];
+          result.nodeData = result.nodeData + fullText[_off + result.valueLength];
           ++result.valueLength;
         }
         break; // stop for delimiter
       }
 
-      result.nodeData = result.nodeData + fullText[result.valueLength];
+      result.nodeData = result.nodeData + fullText[_off + result.valueLength];
       ++result.valueLength;
     }
     return result;
   }
   // tests and possibly consumes a separator char, but does nothing if there was no separator
-  function testForSeparator(fullText) {
+  function testForSeparator(fullText, _off) {
+    _off = _off || 0;
     // ignore the whitespaces
-    var skipped = readUntilNextNonWhitespace(fullText);
-    if (fullText[skipped.valueLength] == ',' || fullText[skipped.valueLength] == ';') {
+    var skipped = readUntilNextNonWhitespace(fullText, _off);
+    if (fullText[_off + skipped.valueLength] == ',' || fullText[_off + skipped.valueLength] == ';') {
       skipped.valueLength++;
     }
     return skipped;
@@ -513,13 +524,14 @@
   // Otherwise, it reads the next token to a variable called openNode
   // if openNode.token is '{', it  increases the headToken.valueLength by the value of openNode.valueLength and
   // increases the headToken.lines by the value of openNode.lines and returns the headToken.
-  function headOfDataObject(fullText) {
-    var headToken = getNextToken(fullText);
+  function headOfDataObject(fullText, _off) {
+    _off = _off || 0;
+    var headToken = getNextToken(fullText, _off);
     if (headToken.nodeData === '{') {
       headToken.nodeData = '';
       return headToken;
     }
-    var openNode = getNextToken(fullText.substring(headToken.valueLength));
+    var openNode = getNextToken(fullText, _off + headToken.valueLength);
     if (openNode.nodeData === '{') {
       headToken.valueLength += openNode.valueLength;
       headToken.lines += openNode.lines;
@@ -532,12 +544,13 @@
   // Then it reads the next token to a variable called guid.
   // It reads the next token until it finds the closing brace.
   // It throws 'Unexpected end of file reached while parsing template definition' if the read token is empty string.
-  function templateNode(fullText) {
+  function templateNode(fullText, _off) {
+    _off = _off || 0;
     var templateNode = new ExportedNode(null);
-    templateNode.updateExport(headOfDataObject(fullText));
-    templateNode.updateExport(getNextToken(fullText.substring(templateNode.valueLength)));
+    templateNode.updateExport(headOfDataObject(fullText, _off));
+    templateNode.updateExport(getNextToken(fullText, _off + templateNode.valueLength));
     while (true) {
-      var token = getNextToken(fullText.substring(templateNode.valueLength));
+      var token = getNextToken(fullText, _off + templateNode.valueLength);
       templateNode.updateExport(token);
       if (token.nodeData === '') {
         throw 'Unexpected end of file reached while parsing template definition.';
@@ -550,29 +563,30 @@
   }
   // Parse a texture filename definition based on the assimp xfile parser logic
   // example content: '{\n"texture/SSR06_Born2_dif.png";\n}'
-  function textureFilenameNode(fullText) {
+  function textureFilenameNode(fullText, _off) {
+    _off = _off || 0;
     var node = new ExportedNode('');
     // ignore the whitespaces
-    node.updateExport(readUntilNextNonWhitespace(fullText));
+    node.updateExport(readUntilNextNonWhitespace(fullText, _off));
     // read the opening brace with the headOfDataObject function
-    node.updateExport(headOfDataObject(fullText.substring(node.valueLength)));
+    node.updateExport(headOfDataObject(fullText, _off + node.valueLength));
     // ignore the whitespaces
-    node.updateExport(readUntilNextNonWhitespace(fullText.substring(node.valueLength)));
+    node.updateExport(readUntilNextNonWhitespace(fullText, _off + node.valueLength));
     // Extract the texture filename from the material definition with the readString StringUtil function
-    var textureFilename = readString(fullText.substring(node.valueLength));
+    var textureFilename = readString(fullText, _off + node.valueLength);
     node.nodeData = textureFilename.nodeData;
     // increase the readUntil counter by the length of the read string
     node.valueLength += textureFilename.valueLength;
     // throw exception if the next character is not a semi-colon.
-    if (fullText[node.valueLength] != ';') {
+    if (fullText[_off + node.valueLength] != ';') {
       throw 'Unexpected token while parsing texture filename.';
     }
     // increase the readUntil counter by the length of the semi-colon
     node.valueLength += 1;
     // ignore the whitespaces
-    node.updateExport(readUntilNextNonWhitespace(fullText.substring(node.valueLength)));
+    node.updateExport(readUntilNextNonWhitespace(fullText, _off + node.valueLength));
     // throw exception if the next token is not a closing brace.
-    var closingBrace = getNextToken(fullText.substring(node.valueLength));
+    var closingBrace = getNextToken(fullText, _off + node.valueLength);
     if (closingBrace.nodeData != '}') {
       throw 'Unexpected token while parsing texture filename.';
     }
@@ -582,66 +596,67 @@
   }
   // Parse a material object definition based on the assimp xfile parser logic
   // The assimp implementation is located in this link: https://github.com/assimp/assimp/blob/master/code/AssetLib/X/XFileParser.cpp#L655-L692
-  function materialNode(fullText) {
+  function materialNode(fullText, _off) {
+    _off = _off || 0;
     var node = new ExportedNode(null);
-    var materialName = headOfDataObject(fullText);
+    var materialName = headOfDataObject(fullText, _off);
     // if the material name is empty, generate a unique name prefixed with the string 'material_'
     if (materialName.nodeData === '') {
-      materialName.nodeData = 'material_' + fullText.substring(materialName.valueLength).length;
+      materialName.nodeData = 'material_' + (fullText.length - (_off + materialName.valueLength));
     }
     node.nodeData = new Material();
     node.nodeData.name = materialName.nodeData;
     node.updateExport(materialName);
 
     // ignore the whitespaces
-    node.updateExport(readUntilNextNonWhitespace(fullText.substring(node.valueLength)));
+    node.updateExport(readUntilNextNonWhitespace(fullText, _off + node.valueLength));
 
     // Extract the diffuse color from the material definition with the readRGBA StringUtil function
-    var diffuseColor = readRGBA(fullText.substring(node.valueLength));
+    var diffuseColor = readRGBA(fullText, _off + node.valueLength);
     // increase the node.valueLength counter by the length of the read RGBA string
     node.updateExport(diffuseColor);
     // Set the diffuse color of the material
     node.nodeData.color = new Color(diffuseColor.nodeData.r, diffuseColor.nodeData.g, diffuseColor.nodeData.b);
     // Remove the white spaces and the separator characters that might be present.
-    node.updateExport(testForSeparator(fullText.substring(node.valueLength)));
+    node.updateExport(testForSeparator(fullText, _off + node.valueLength));
 
     // ignore the whitespaces
-    node.updateExport(readUntilNextNonWhitespace(fullText.substring(node.valueLength)));
+    node.updateExport(readUntilNextNonWhitespace(fullText, _off + node.valueLength));
 
     // Extract the shininess value from the material definition with the readFloat StringUtil function
-    var shininess = readFloat(fullText.substring(node.valueLength));
+    var shininess = readFloat(fullText, _off + node.valueLength);
     // increase the node.valueLength counter by the length of the read float string
     node.updateExport(shininess);
     // Set the shininess value of the material
     node.nodeData.shininess = shininess.nodeData;
     // Remove the white spaces and the separator characters that might be present.
-    node.updateExport(testForSeparator(fullText.substring(node.valueLength)));
+    node.updateExport(testForSeparator(fullText, _off + node.valueLength));
 
     // ignore the whitespaces
-    node.updateExport(readUntilNextNonWhitespace(fullText.substring(node.valueLength)));
+    node.updateExport(readUntilNextNonWhitespace(fullText, _off + node.valueLength));
 
     // Extract the specular color from the material definition with the readRGB StringUtil function
-    var specularColor = readRGB(fullText.substring(node.valueLength));
+    var specularColor = readRGB(fullText, _off + node.valueLength);
     // increase the node.valueLength counter by the length of the read RGBA string
     node.updateExport(specularColor);
     // Set the specular color of the material
     node.nodeData.specular = new Color(specularColor.nodeData.r, specularColor.nodeData.g, specularColor.nodeData.b);
     // Remove the white spaces and the separator characters that might be present.
-    node.updateExport(testForSeparator(fullText.substring(node.valueLength)));
+    node.updateExport(testForSeparator(fullText, _off + node.valueLength));
 
     // ignore the whitespaces
-    node.updateExport(readUntilNextNonWhitespace(fullText.substring(node.valueLength)));
+    node.updateExport(readUntilNextNonWhitespace(fullText, _off + node.valueLength));
 
     // Extract the emissive color from the material definition with the readRGB StringUtil function
-    var emissiveColor = readRGB(fullText.substring(node.valueLength));
+    var emissiveColor = readRGB(fullText, _off + node.valueLength);
     // increase the node.valueLength counter by the length of the read RGBA string
     node.updateExport(emissiveColor);
     // Set the emissive color of the material
     node.nodeData.emissive = new Color(emissiveColor.nodeData.r, emissiveColor.nodeData.g, emissiveColor.nodeData.b);
     // Remove the white spaces and the separator characters that might be present.
-    node.updateExport(testForSeparator(fullText.substring(node.valueLength)));
+    node.updateExport(testForSeparator(fullText, _off + node.valueLength));
     while (true) {
-      var nextToken = getNextToken(fullText.substring(node.valueLength));
+      var nextToken = getNextToken(fullText, _off + node.valueLength);
       node.updateExport(nextToken);
       if (nextToken.nodeData == '') {
         throw 'Unexpected end of file reached while parsing material';
@@ -649,31 +664,31 @@
         break;
         // handle the 'TextureFilename' token. Some exporters write "TextureFileName" instead.
       } else if (nextToken.nodeData == 'TextureFilename' || nextToken.nodeData == 'TextureFileName') {
-        var textureName = textureFilenameNode(fullText.substring(node.valueLength));
+        var textureName = textureFilenameNode(fullText, _off + node.valueLength);
         node.updateExport(textureName);
         node.nodeData.map = textureName.nodeData;
         // handle the 'NormalmapFilename' token. Some exporters write "NormalmapFileName" instead.
       } else if (nextToken.nodeData == 'NormalmapFilename' || nextToken.nodeData == 'NormalmapFileName') {
-        var _textureName = textureFilenameNode(fullText.substring(node.valueLength));
+        var _textureName = textureFilenameNode(fullText, _off + node.valueLength);
         node.updateExport(_textureName);
         node.nodeData.normalMap = _textureName.nodeData;
         // default to normalScale of Vector2(2,2)
         node.nodeData.normalScale = new Vector2(2, 2);
         // handle the 'BumpmapFilename' token. Some exporters write "BumpmapFileName" instead.
       } else if (nextToken.nodeData == 'BumpmapFilename' || nextToken.nodeData == 'BumpmapFileName' || nextToken.nodeData == 'BumpMapFilename') {
-        var _textureName2 = textureFilenameNode(fullText.substring(node.valueLength));
+        var _textureName2 = textureFilenameNode(fullText, _off + node.valueLength);
         node.updateExport(_textureName2);
         node.nodeData.bumpMap = _textureName2.nodeData;
         // default to bumpScale of 1
         node.nodeData.bumpScale = 1;
         // handle the 'EmissiveMapFilename' token. Some exporters write "EmissiveMapFileName" instead.
       } else if (nextToken.nodeData == 'EmissiveMapFilename' || nextToken.nodeData == 'EmissiveMapFileName') {
-        var _textureName3 = textureFilenameNode(fullText.substring(node.valueLength));
+        var _textureName3 = textureFilenameNode(fullText, _off + node.valueLength);
         node.updateExport(_textureName3);
         node.nodeData.emissiveMap = _textureName3.nodeData;
         // handle the 'LightMapFilename' token. Some exporters write "LightMapFileName" instead.
       } else if (nextToken.nodeData == 'LightMapFilename' || nextToken.nodeData == 'LightMapFileName') {
-        var _textureName4 = textureFilenameNode(fullText.substring(node.valueLength));
+        var _textureName4 = textureFilenameNode(fullText, _off + node.valueLength);
         node.updateExport(_textureName4);
         node.nodeData.lightMap = _textureName4.nodeData;
       } else {
@@ -683,57 +698,58 @@
     return node;
   }
   // MeshNormal node parser based on the assimp implementation: https://github.com/assimp/assimp/blob/master/code/AssetLib/X/XFileParser.cpp#L509-L544
-  function meshNormalNode(fullText, mesh) {
+  function meshNormalNode(fullText, _off, mesh) {
+    _off = _off || 0;
     var node = new ExportedNode(mesh);
-    var head = headOfDataObject(fullText);
+    var head = headOfDataObject(fullText, _off);
     node.updateExport(head);
-    node.updateExport(readUntilNextNonWhitespace(fullText.substring(node.valueLength)));
+    node.updateExport(readUntilNextNonWhitespace(fullText, _off + node.valueLength));
     // read the number of normals
-    var count = readInteger(fullText.substring(node.valueLength));
+    var count = readInteger(fullText, _off + node.valueLength);
     node.updateExport(count);
     // Remove the white spaces and the separator characters that might be present.
-    node.updateExport(testForSeparator(fullText.substring(node.valueLength)));
-    node.updateExport(readUntilNextNonWhitespace(fullText.substring(node.valueLength)));
+    node.updateExport(testForSeparator(fullText, _off + node.valueLength));
+    node.updateExport(readUntilNextNonWhitespace(fullText, _off + node.valueLength));
     // read the normals
     for (var i = 0; i < count.nodeData; i++) {
-      var normal = readVector3(fullText.substring(node.valueLength));
+      var normal = readVector3(fullText, _off + node.valueLength);
       node.updateExport(normal);
       node.nodeData.normals.push(normal.nodeData);
       // Remove the white spaces and the separator characters that might be present.
-      node.updateExport(testForSeparator(fullText.substring(node.valueLength)));
-      node.updateExport(readUntilNextNonWhitespace(fullText.substring(node.valueLength)));
+      node.updateExport(testForSeparator(fullText, _off + node.valueLength));
+      node.updateExport(readUntilNextNonWhitespace(fullText, _off + node.valueLength));
     }
     // read the number of faces.
-    var numFaces = readInteger(fullText.substring(node.valueLength));
+    var numFaces = readInteger(fullText, _off + node.valueLength);
     node.updateExport(numFaces);
     if (numFaces.nodeData != node.nodeData.vertexFaces.length) {
       throw 'Normal face count does not match vertex face count.';
     }
     // Remove the white spaces and the separator characters that might be present.
-    node.updateExport(testForSeparator(fullText.substring(node.valueLength)));
-    node.updateExport(readUntilNextNonWhitespace(fullText.substring(node.valueLength)));
+    node.updateExport(testForSeparator(fullText, _off + node.valueLength));
+    node.updateExport(readUntilNextNonWhitespace(fullText, _off + node.valueLength));
     if (numFaces.nodeData > 0) {
       // read the face indices
       for (var _i = 0; _i < numFaces.nodeData; _i++) {
-        var numIndices = readInteger(fullText.substring(node.valueLength));
+        var numIndices = readInteger(fullText, _off + node.valueLength);
         node.updateExport(numIndices);
-        node.updateExport(testForSeparator(fullText.substring(node.valueLength)));
+        node.updateExport(testForSeparator(fullText, _off + node.valueLength));
         node.nodeData.normalFaces.push(new Face());
         for (var j = 0; j < numIndices.nodeData; j++) {
-          var index = readInteger(fullText.substring(node.valueLength));
+          var index = readInteger(fullText, _off + node.valueLength);
           node.updateExport(index);
           node.nodeData.normalFaces[_i].indices.push(index.nodeData);
-          node.updateExport(testForSeparator(fullText.substring(node.valueLength)));
+          node.updateExport(testForSeparator(fullText, _off + node.valueLength));
         }
         // Remove the white spaces and the separator characters that might be present.
-        node.updateExport(testForSeparator(fullText.substring(node.valueLength)));
-        node.updateExport(readUntilNextNonWhitespace(fullText.substring(node.valueLength)));
+        node.updateExport(testForSeparator(fullText, _off + node.valueLength));
+        node.updateExport(readUntilNextNonWhitespace(fullText, _off + node.valueLength));
       }
       // Remove the white spaces and the separator characters that might be present.
-      node.updateExport(testForSeparator(fullText.substring(node.valueLength)));
+      node.updateExport(testForSeparator(fullText, _off + node.valueLength));
     }
     // The next token should be the closing brace
-    var nextToken = getNextToken(fullText.substring(node.valueLength));
+    var nextToken = getNextToken(fullText, _off + node.valueLength);
     node.updateExport(nextToken);
     if (nextToken.nodeData != '}') {
       throw 'Unexpected token while parsing mesh normals: ' + nextToken.nodeData;
@@ -741,31 +757,32 @@
     return node;
   }
   // MeshTextureCoords node parser based on the assimp implementation: https://github.com/assimp/assimp/blob/master/code/AssetLib/X/XFileParser.cpp#L547-L563
-  function meshTextureCoordsNode(fullText, mesh) {
+  function meshTextureCoordsNode(fullText, _off, mesh) {
+    _off = _off || 0;
     var node = new ExportedNode(mesh);
-    var head = headOfDataObject(fullText);
+    var head = headOfDataObject(fullText, _off);
     node.updateExport(head);
-    node.updateExport(readUntilNextNonWhitespace(fullText.substring(node.valueLength)));
+    node.updateExport(readUntilNextNonWhitespace(fullText, _off + node.valueLength));
     // read the number of texture coordinates
-    var count = readInteger(fullText.substring(node.valueLength));
+    var count = readInteger(fullText, _off + node.valueLength);
     node.updateExport(count);
     if (count.nodeData != node.nodeData.vertices.length) {
       throw 'Texture coordinate count does not match vertex face count.';
     }
     // Remove the white spaces and the separator characters that might be present.
-    node.updateExport(testForSeparator(fullText.substring(node.valueLength)));
-    node.updateExport(readUntilNextNonWhitespace(fullText.substring(node.valueLength)));
+    node.updateExport(testForSeparator(fullText, _off + node.valueLength));
+    node.updateExport(readUntilNextNonWhitespace(fullText, _off + node.valueLength));
     for (var i = 0; i < count.nodeData; i++) {
-      var uv = readVector2(fullText.substring(node.valueLength));
+      var uv = readVector2(fullText, _off + node.valueLength);
       node.updateExport(uv);
       node.nodeData.texCoords.push(uv.nodeData);
       // Remove the white spaces and the separator characters that might be present.
-      node.updateExport(testForSeparator(fullText.substring(node.valueLength)));
-      node.updateExport(readUntilNextNonWhitespace(fullText.substring(node.valueLength)));
+      node.updateExport(testForSeparator(fullText, _off + node.valueLength));
+      node.updateExport(readUntilNextNonWhitespace(fullText, _off + node.valueLength));
     }
-    node.updateExport(testForSeparator(fullText.substring(node.valueLength)));
+    node.updateExport(testForSeparator(fullText, _off + node.valueLength));
     // The next token should be the closing brace
-    var nextToken = getNextToken(fullText.substring(node.valueLength));
+    var nextToken = getNextToken(fullText, _off + node.valueLength);
     node.updateExport(nextToken);
     if (nextToken.nodeData != '}') {
       throw 'Unexpected token while parsing mesh texture coords: ' + nextToken.nodeData;
@@ -773,38 +790,39 @@
     return node;
   }
   // MeshVertexColors node parser based on the assimp implementation: https://github.com/assimp/assimp/blob/master/code/AssetLib/X/XFileParser.cpp#L566-L593
-  function meshVertexColorsNode(fullText, mesh) {
+  function meshVertexColorsNode(fullText, _off, mesh) {
+    _off = _off || 0;
     var node = new ExportedNode(mesh);
-    var head = headOfDataObject(fullText);
+    var head = headOfDataObject(fullText, _off);
     node.updateExport(head);
-    node.updateExport(readUntilNextNonWhitespace(fullText.substring(node.valueLength)));
+    node.updateExport(readUntilNextNonWhitespace(fullText, _off + node.valueLength));
     // read the number of colors
-    var count = readInteger(fullText.substring(node.valueLength));
+    var count = readInteger(fullText, _off + node.valueLength);
     node.updateExport(count);
     if (count.nodeData != node.nodeData.vertices.length) {
       throw 'Vertex color count does not match vertex count';
     }
     // Remove the white spaces and the separator characters that might be present.
-    node.updateExport(testForSeparator(fullText.substring(node.valueLength)));
-    node.updateExport(readUntilNextNonWhitespace(fullText.substring(node.valueLength)));
+    node.updateExport(testForSeparator(fullText, _off + node.valueLength));
+    node.updateExport(readUntilNextNonWhitespace(fullText, _off + node.valueLength));
     for (var i = 0; i < count.nodeData; i++) {
-      var index = readInteger(fullText.substring(node.valueLength));
+      var index = readInteger(fullText, _off + node.valueLength);
       node.updateExport(index);
       if (index.nodeData >= node.nodeData.vertices.length) {
         throw 'Vertex color index out of bounds';
       }
-      node.updateExport(testForSeparator(fullText.substring(node.valueLength)));
-      node.updateExport(readUntilNextNonWhitespace(fullText.substring(node.valueLength)));
-      var color = readRGBA(fullText.substring(node.valueLength));
+      node.updateExport(testForSeparator(fullText, _off + node.valueLength));
+      node.updateExport(readUntilNextNonWhitespace(fullText, _off + node.valueLength));
+      var color = readRGBA(fullText, _off + node.valueLength);
       node.updateExport(color);
       node.nodeData.colors[index.nodeData] = color.nodeData;
       // Remove the white spaces and the separator characters that might be present.
-      node.updateExport(testForSeparator(fullText.substring(node.valueLength)));
-      node.updateExport(readUntilNextNonWhitespace(fullText.substring(node.valueLength)));
+      node.updateExport(testForSeparator(fullText, _off + node.valueLength));
+      node.updateExport(readUntilNextNonWhitespace(fullText, _off + node.valueLength));
     }
-    node.updateExport(testForSeparator(fullText.substring(node.valueLength)));
+    node.updateExport(testForSeparator(fullText, _off + node.valueLength));
     // The next token should be the closing brace
-    var nextToken = getNextToken(fullText.substring(node.valueLength));
+    var nextToken = getNextToken(fullText, _off + node.valueLength);
     node.updateExport(nextToken);
     if (nextToken.nodeData != '}') {
       throw 'Unexpected token while parsing mesh vertex colors: ' + nextToken.nodeData;
@@ -812,23 +830,24 @@
     return node;
   }
   // MeshMaterialListNode based on the assimp implementation: https://github.com/assimp/assimp/blob/master/code/AssetLib/X/XFileParser.cpp#L596-L652
-  function meshMaterialListNode(fullText, mesh) {
+  function meshMaterialListNode(fullText, _off, mesh) {
+    _off = _off || 0;
     var node = new ExportedNode(mesh);
-    var head = headOfDataObject(fullText);
+    var head = headOfDataObject(fullText, _off);
     node.updateExport(head);
-    node.updateExport(readUntilNextNonWhitespace(fullText.substring(node.valueLength)));
+    node.updateExport(readUntilNextNonWhitespace(fullText, _off + node.valueLength));
     // read the number of materials
-    var count = readInteger(fullText.substring(node.valueLength));
+    var count = readInteger(fullText, _off + node.valueLength);
     node.updateExport(count);
     // Remove the white spaces and the separator characters that might be present.
-    node.updateExport(testForSeparator(fullText.substring(node.valueLength)));
-    node.updateExport(readUntilNextNonWhitespace(fullText.substring(node.valueLength)));
+    node.updateExport(testForSeparator(fullText, _off + node.valueLength));
+    node.updateExport(readUntilNextNonWhitespace(fullText, _off + node.valueLength));
     // read non triangulated face material index count
-    var numMatIndices = readInteger(fullText.substring(node.valueLength));
+    var numMatIndices = readInteger(fullText, _off + node.valueLength);
     node.updateExport(numMatIndices);
     // Remove the white spaces and the separator characters that might be present.
-    node.updateExport(testForSeparator(fullText.substring(node.valueLength)));
-    node.updateExport(readUntilNextNonWhitespace(fullText.substring(node.valueLength)));
+    node.updateExport(testForSeparator(fullText, _off + node.valueLength));
+    node.updateExport(readUntilNextNonWhitespace(fullText, _off + node.valueLength));
     // some models have a material index count of 1... to be able to read them we
     // replicate this single material index on every face
     if (numMatIndices.nodeData != node.nodeData.vertexFaces.length && numMatIndices.nodeData != 1) {
@@ -836,28 +855,28 @@
     }
     // read per-face material indices
     for (var i = 0; i < numMatIndices.nodeData; i++) {
-      var index = readInteger(fullText.substring(node.valueLength));
+      var index = readInteger(fullText, _off + node.valueLength);
       node.updateExport(index);
       node.nodeData.faceMaterials.push(index.nodeData);
       // Remove the white spaces and the separator characters that might be present.
-      node.updateExport(testForSeparator(fullText.substring(node.valueLength)));
-      node.updateExport(readUntilNextNonWhitespace(fullText.substring(node.valueLength)));
+      node.updateExport(testForSeparator(fullText, _off + node.valueLength));
+      node.updateExport(readUntilNextNonWhitespace(fullText, _off + node.valueLength));
     }
     // in certain versions, the face indices end with two semicolons.
-    if (node.valueLength < fullText.length && fullText[node.valueLength] == ';') {
+    if (_off + node.valueLength < fullText.length && fullText[_off + node.valueLength] == ';') {
       // handle the second semicolon with increasing the value length
       node.valueLength++;
     }
     // Remove the white spaces and the separator characters that might be present.
-    node.updateExport(testForSeparator(fullText.substring(node.valueLength)));
-    node.updateExport(readUntilNextNonWhitespace(fullText.substring(node.valueLength)));
+    node.updateExport(testForSeparator(fullText, _off + node.valueLength));
+    node.updateExport(readUntilNextNonWhitespace(fullText, _off + node.valueLength));
     // if there was only a single material index, replicate it on all faces
     while (node.nodeData.faceMaterials.length < node.nodeData.vertexFaces.length) {
       node.nodeData.faceMaterials.push(node.nodeData.faceMaterials[node.nodeData.faceMaterials.length - 1]);
     }
     // read following data objects
     while (true) {
-      var nextToken = getNextToken(fullText.substring(node.valueLength));
+      var nextToken = getNextToken(fullText, _off + node.valueLength);
       node.updateExport(nextToken);
       if (nextToken.nodeData == '') {
         throw 'Unexpected end of file while parsing mesh material list';
@@ -865,43 +884,44 @@
         break;
       } else if (nextToken.nodeData == '{') {
         // In this case we have a material referenced by name
-        var materialName = getNextToken(fullText.substring(node.valueLength));
+        var materialName = getNextToken(fullText, _off + node.valueLength);
         node.updateExport(materialName);
         var material = new Material();
         material.name = materialName.nodeData;
         material.isReference = true;
         node.nodeData.materials.push(material);
-        node.updateExport(readUntilNextNonWhitespace(fullText.substring(node.valueLength)));
-        var closingBrace = getNextToken(fullText.substring(node.valueLength));
+        node.updateExport(readUntilNextNonWhitespace(fullText, _off + node.valueLength));
+        var closingBrace = getNextToken(fullText, _off + node.valueLength);
         node.updateExport(closingBrace);
         if (closingBrace.nodeData != '}') {
           throw 'Unexpected token while parsing mesh material list: ' + closingBrace.nodeData;
         }
-        node.updateExport(readUntilNextNonWhitespace(fullText.substring(node.valueLength)));
+        node.updateExport(readUntilNextNonWhitespace(fullText, _off + node.valueLength));
       } else if (nextToken.nodeData == 'Material') {
         // inlined material
-        var _material = materialNode(fullText.substring(node.valueLength));
+        var _material = materialNode(fullText, _off + node.valueLength);
         node.updateExport(_material);
         node.nodeData.materials.push(_material.nodeData);
-        node.updateExport(readUntilNextNonWhitespace(fullText.substring(node.valueLength)));
+        node.updateExport(readUntilNextNonWhitespace(fullText, _off + node.valueLength));
       } else if (nextToken.nodeData == ';') {
         // ignore semicolons
-        node.updateExport(readUntilNextNonWhitespace(fullText.substring(node.valueLength)));
+        node.updateExport(readUntilNextNonWhitespace(fullText, _off + node.valueLength));
       } else {
         // ignore unknown data objects
-        node.updateExport(unknownNode(fullText.substring(node.valueLength)));
+        node.updateExport(unknownNode(fullText, _off + node.valueLength));
       }
     }
     return node;
   }
   // UnknowDataObjectParser based on the assimp implementation: https://github.com/assimp/assimp/blob/master/code/AssetLib/X/XFileParser.cpp#L869-L895
-  function unknownNode(fullText) {
+  function unknownNode(fullText, _off) {
+    _off = _off || 0;
     var node = new ExportedNode(null);
     var exceptionMessage = 'Unexpected end of file while parsing unknown data object';
     var depth = 0;
     // find the opening brace
     while (true) {
-      var nextToken = getNextToken(fullText.substring(node.valueLength));
+      var nextToken = getNextToken(fullText, _off + node.valueLength);
       node.updateExport(nextToken);
       if (nextToken.nodeData == '') {
         throw exceptionMessage;
@@ -912,7 +932,7 @@
     }
     // find the closing brace
     while (depth > 0) {
-      var _nextToken = getNextToken(fullText.substring(node.valueLength));
+      var _nextToken = getNextToken(fullText, _off + node.valueLength);
       node.updateExport(_nextToken);
       if (_nextToken.nodeData == '') {
         throw exceptionMessage;
@@ -925,58 +945,59 @@
     return node;
   }
   // SkinWeightsNode Parser based on the assimp implementation: https://github.com/assimp/assimp/blob/master/code/AssetLib/X/XFileParser.cpp#L448-L495
-  function skinWeightsNode(fullText, mesh) {
+  function skinWeightsNode(fullText, _off, mesh) {
+    _off = _off || 0;
     var node = new ExportedNode(mesh);
-    var head = headOfDataObject(fullText);
+    var head = headOfDataObject(fullText, _off);
     node.updateExport(head);
-    node.updateExport(readUntilNextNonWhitespace(fullText.substring(node.valueLength)));
-    var name = readString(fullText.substring(node.valueLength));
+    node.updateExport(readUntilNextNonWhitespace(fullText, _off + node.valueLength));
+    var name = readString(fullText, _off + node.valueLength);
     node.updateExport(name);
     var bone = new Bone();
     bone.name = name.nodeData;
     // Remove the white spaces and the separator characters that might be present.
-    node.updateExport(testForSeparator(fullText.substring(node.valueLength)));
-    node.updateExport(readUntilNextNonWhitespace(fullText.substring(node.valueLength)));
+    node.updateExport(testForSeparator(fullText, _off + node.valueLength));
+    node.updateExport(readUntilNextNonWhitespace(fullText, _off + node.valueLength));
     // read the number of bones
-    var numBones = readInteger(fullText.substring(node.valueLength));
+    var numBones = readInteger(fullText, _off + node.valueLength);
     node.updateExport(numBones);
     // Remove the white spaces and the separator characters that might be present.
-    node.updateExport(testForSeparator(fullText.substring(node.valueLength)));
-    node.updateExport(readUntilNextNonWhitespace(fullText.substring(node.valueLength)));
+    node.updateExport(testForSeparator(fullText, _off + node.valueLength));
+    node.updateExport(readUntilNextNonWhitespace(fullText, _off + node.valueLength));
     // read the bone indices
     for (var i = 0; i < numBones.nodeData; i++) {
-      var boneIndex = readInteger(fullText.substring(node.valueLength));
+      var boneIndex = readInteger(fullText, _off + node.valueLength);
       node.updateExport(boneIndex);
       var boneWeight = new BoneWeight();
       boneWeight.boneIndex = boneIndex.nodeData;
       bone.boneWeights.push(boneWeight);
       // Remove the white spaces and the separator characters that might be present.
-      node.updateExport(testForSeparator(fullText.substring(node.valueLength)));
-      node.updateExport(readUntilNextNonWhitespace(fullText.substring(node.valueLength)));
+      node.updateExport(testForSeparator(fullText, _off + node.valueLength));
+      node.updateExport(readUntilNextNonWhitespace(fullText, _off + node.valueLength));
     }
     // read the vertex weights
     for (var _i2 = 0; _i2 < numBones.nodeData; _i2++) {
-      var vertexWeight = readFloat(fullText.substring(node.valueLength));
+      var vertexWeight = readFloat(fullText, _off + node.valueLength);
       node.updateExport(vertexWeight);
       bone.boneWeights[_i2].weight = vertexWeight.nodeData;
       // Remove the white spaces and the separator characters that might be present.
-      node.updateExport(testForSeparator(fullText.substring(node.valueLength)));
-      node.updateExport(readUntilNextNonWhitespace(fullText.substring(node.valueLength)));
+      node.updateExport(testForSeparator(fullText, _off + node.valueLength));
+      node.updateExport(readUntilNextNonWhitespace(fullText, _off + node.valueLength));
     }
     // The next 16 floats are the bone offset matrix
     for (var _i3 = 0; _i3 < 16; _i3++) {
-      var matrixValue = readFloat(fullText.substring(node.valueLength));
+      var matrixValue = readFloat(fullText, _off + node.valueLength);
       node.updateExport(matrixValue);
       bone.offsetMatrix.push(matrixValue.nodeData);
       // Remove the separator character.
-      node.updateExport(testForSeparator(fullText.substring(node.valueLength)));
+      node.updateExport(testForSeparator(fullText, _off + node.valueLength));
     }
     // After the offset matrix, there is a semicolon.
-    node.updateExport(testForSeparator(fullText.substring(node.valueLength)));
+    node.updateExport(testForSeparator(fullText, _off + node.valueLength));
     // Remove the whitespaces.
-    node.updateExport(readUntilNextNonWhitespace(fullText.substring(node.valueLength)));
+    node.updateExport(readUntilNextNonWhitespace(fullText, _off + node.valueLength));
     // The next token should be the closing brace
-    var nextToken = getNextToken(fullText.substring(node.valueLength));
+    var nextToken = getNextToken(fullText, _off + node.valueLength);
     node.updateExport(nextToken);
     if (nextToken.nodeData != '}') {
       throw 'Unexpected token while parsing mesh skin weights node: ' + nextToken.nodeData;
@@ -986,106 +1007,108 @@
     return node;
   }
   // Mesh Node parser based on the assimp implementation: https://github.com/assimp/assimp/blob/master/code/AssetLib/X/XFileParser.cpp#L389-L445
-  function meshNode(fullText) {
-    var meshName = headOfDataObject(fullText);
+  function meshNode(fullText, _off) {
+    _off = _off || 0;
+    var meshName = headOfDataObject(fullText, _off);
     var mesh = new Mesh();
     mesh.name = meshName.nodeData;
     var node = new ExportedNode(null);
     node.updateExport(meshName);
-    node.updateExport(readUntilNextNonWhitespace(fullText.substring(node.valueLength)));
+    node.updateExport(readUntilNextNonWhitespace(fullText, _off + node.valueLength));
     // Read the vertex count
-    var vertexCount = readInteger(fullText.substring(node.valueLength));
+    var vertexCount = readInteger(fullText, _off + node.valueLength);
     node.updateExport(vertexCount);
-    node.updateExport(testForSeparator(fullText.substring(node.valueLength)));
-    node.updateExport(readUntilNextNonWhitespace(fullText.substring(node.valueLength)));
+    node.updateExport(testForSeparator(fullText, _off + node.valueLength));
+    node.updateExport(readUntilNextNonWhitespace(fullText, _off + node.valueLength));
     // read vertexCount.nodeData vertices into an array with the StringUtils.readVector3 function
     for (var i = 0; i < vertexCount.nodeData; i++) {
-      var vertex = readVector3(fullText.substring(node.valueLength));
+      var vertex = readVector3(fullText, _off + node.valueLength);
       node.updateExport(vertex);
       mesh.vertices.push(vertex.nodeData);
       // After the vector3, there is a semicolon.
-      node.updateExport(testForSeparator(fullText.substring(node.valueLength)));
+      node.updateExport(testForSeparator(fullText, _off + node.valueLength));
       // Remove the whitespaces.
-      node.updateExport(readUntilNextNonWhitespace(fullText.substring(node.valueLength)));
+      node.updateExport(readUntilNextNonWhitespace(fullText, _off + node.valueLength));
     }
     // read the number of faces to a variable with the StringUtils.readInteger function
-    var faceCount = readInteger(fullText.substring(node.valueLength));
+    var faceCount = readInteger(fullText, _off + node.valueLength);
     node.updateExport(faceCount);
-    node.updateExport(testForSeparator(fullText.substring(node.valueLength)));
-    node.updateExport(readUntilNextNonWhitespace(fullText.substring(node.valueLength)));
+    node.updateExport(testForSeparator(fullText, _off + node.valueLength));
+    node.updateExport(readUntilNextNonWhitespace(fullText, _off + node.valueLength));
     for (var _i4 = 0; _i4 < faceCount.nodeData; _i4++) {
       var face = new Face();
-      var numIndices = readInteger(fullText.substring(node.valueLength));
+      var numIndices = readInteger(fullText, _off + node.valueLength);
       node.updateExport(numIndices);
       // the number is followed by a colon
-      node.updateExport(testForSeparator(fullText.substring(node.valueLength)));
+      node.updateExport(testForSeparator(fullText, _off + node.valueLength));
       // read the indices
       for (var j = 0; j < numIndices.nodeData; j++) {
-        var index = readInteger(fullText.substring(node.valueLength));
+        var index = readInteger(fullText, _off + node.valueLength);
         node.updateExport(index);
         face.indices.push(index.nodeData);
         // Remove the separator character.
-        node.updateExport(testForSeparator(fullText.substring(node.valueLength)));
+        node.updateExport(testForSeparator(fullText, _off + node.valueLength));
       }
       mesh.vertexFaces.push(face);
       // Remove the separator character, go to next character.
-      node.updateExport(testForSeparator(fullText.substring(node.valueLength)));
-      node.updateExport(readUntilNextNonWhitespace(fullText.substring(node.valueLength)));
+      node.updateExport(testForSeparator(fullText, _off + node.valueLength));
+      node.updateExport(readUntilNextNonWhitespace(fullText, _off + node.valueLength));
     }
     // read following data objects
     while (true) {
-      var nextToken = getNextToken(fullText.substring(node.valueLength));
+      var nextToken = getNextToken(fullText, _off + node.valueLength);
       node.updateExport(nextToken);
       if (nextToken.nodeData == '') {
         throw 'Unexpected end of file while parsing mesh';
       } else if (nextToken.nodeData == '}') {
         break;
       } else if (nextToken.nodeData == 'MeshNormals') {
-        var meshNormals = meshNormalNode(fullText.substring(node.valueLength), mesh);
+        var meshNormals = meshNormalNode(fullText, _off + node.valueLength, mesh);
         node.updateExport(meshNormals);
         mesh = meshNormals.nodeData;
       } else if (nextToken.nodeData == 'MeshTextureCoords') {
-        var meshTextureCoords = meshTextureCoordsNode(fullText.substring(node.valueLength), mesh);
+        var meshTextureCoords = meshTextureCoordsNode(fullText, _off + node.valueLength, mesh);
         node.updateExport(meshTextureCoords);
         mesh = meshTextureCoords.nodeData;
       } else if (nextToken.nodeData == 'MeshVertexColors') {
-        var meshVertexColors = meshVertexColorsNode(fullText.substring(node.valueLength), mesh);
+        var meshVertexColors = meshVertexColorsNode(fullText, _off + node.valueLength, mesh);
         node.updateExport(meshVertexColors);
         mesh = meshVertexColors.nodeData;
       } else if (nextToken.nodeData == 'MeshMaterialList') {
-        var meshMaterialList = meshMaterialListNode(fullText.substring(node.valueLength), mesh);
+        var meshMaterialList = meshMaterialListNode(fullText, _off + node.valueLength, mesh);
         node.updateExport(meshMaterialList);
         mesh = meshMaterialList.nodeData;
       } else if (nextToken.nodeData == 'VertexDuplicationIndices') {
         // It is ignored by assimp, so we will ignore it too.
-        node.updateExport(unknownNode(fullText.substring(node.valueLength)));
+        node.updateExport(unknownNode(fullText, _off + node.valueLength));
       } else if (nextToken.nodeData == 'XSkinMeshHeader') {
         // It is ignored by assimp, so we will ignore it too.
-        node.updateExport(unknownNode(fullText.substring(node.valueLength)));
+        node.updateExport(unknownNode(fullText, _off + node.valueLength));
       } else if (nextToken.nodeData == 'SkinWeights') {
-        var skinWeights = skinWeightsNode(fullText.substring(node.valueLength), mesh);
+        var skinWeights = skinWeightsNode(fullText, _off + node.valueLength, mesh);
         node.updateExport(skinWeights);
         mesh = skinWeights.nodeData;
       } else {
-        node.updateExport(unknownNode(fullText.substring(node.valueLength)));
+        node.updateExport(unknownNode(fullText, _off + node.valueLength));
       }
     }
     node.nodeData = mesh;
     return node;
   }
   // AnimTicksPerSecondNode parser based on the assimp implementation: https://github.com/assimp/assimp/blob/master/code/AssetLib/X/XFileParser.cpp#L695-L699
-  function animTicksPerSecondNode(fullText) {
+  function animTicksPerSecondNode(fullText, _off) {
+    _off = _off || 0;
     var node = new ExportedNode(null);
-    var head = headOfDataObject(fullText);
+    var head = headOfDataObject(fullText, _off);
     node.updateExport(head);
-    node.updateExport(readUntilNextNonWhitespace(fullText.substring(node.valueLength)));
-    var ticksPerSecond = readInteger(fullText.substring(node.valueLength));
+    node.updateExport(readUntilNextNonWhitespace(fullText, _off + node.valueLength));
+    var ticksPerSecond = readInteger(fullText, _off + node.valueLength);
     node.updateExport(ticksPerSecond);
     node.nodeData = ticksPerSecond.nodeData;
-    node.updateExport(testForSeparator(fullText.substring(node.valueLength)));
-    node.updateExport(readUntilNextNonWhitespace(fullText.substring(node.valueLength)));
+    node.updateExport(testForSeparator(fullText, _off + node.valueLength));
+    node.updateExport(readUntilNextNonWhitespace(fullText, _off + node.valueLength));
     // The next token should be the closing brace
-    var nextToken = getNextToken(fullText.substring(node.valueLength));
+    var nextToken = getNextToken(fullText, _off + node.valueLength);
     node.updateExport(nextToken);
     if (nextToken.nodeData != '}') {
       throw 'Unexpected token while parsing aminTicksPerSecond node: ' + nextToken.nodeData;
@@ -1093,47 +1116,49 @@
     return node;
   }
   // TransformationMatrixNode parser based on the assimp implementation: https://github.com/assimp/assimp/blob/master/code/AssetLib/X/XFileParser.cpp#L361-L386
-  function transformationMatrixNode(fullText) {
+  function transformationMatrixNode(fullText, _off) {
+    _off = _off || 0;
     var node = new ExportedNode(null);
-    var head = headOfDataObject(fullText);
+    var head = headOfDataObject(fullText, _off);
     node.updateExport(head);
-    node.updateExport(readUntilNextNonWhitespace(fullText.substring(node.valueLength)));
+    node.updateExport(readUntilNextNonWhitespace(fullText, _off + node.valueLength));
     var matrix = [];
     for (var i = 0; i < 16; i++) {
-      var value = readFloat(fullText.substring(node.valueLength));
+      var value = readFloat(fullText, _off + node.valueLength);
       node.updateExport(value);
       matrix.push(value.nodeData);
-      node.updateExport(testForSeparator(fullText.substring(node.valueLength)));
+      node.updateExport(testForSeparator(fullText, _off + node.valueLength));
     }
     node.nodeData = matrix;
-    node.updateExport(testForSeparator(fullText.substring(node.valueLength)));
-    node.updateExport(readUntilNextNonWhitespace(fullText.substring(node.valueLength)));
+    node.updateExport(testForSeparator(fullText, _off + node.valueLength));
+    node.updateExport(readUntilNextNonWhitespace(fullText, _off + node.valueLength));
     // The next token should be the closing brace
-    var nextToken = getNextToken(fullText.substring(node.valueLength));
+    var nextToken = getNextToken(fullText, _off + node.valueLength);
     node.updateExport(nextToken);
     if (nextToken.nodeData != '}') {
       throw 'Unexpected token while parsing transformationMatrix node: ' + nextToken.nodeData;
     }
     return node;
   }
-  function animationKeyNode(fullText, boneAnim) {
+  function animationKeyNode(fullText, _off, boneAnim) {
+    _off = _off || 0;
     var node = new ExportedNode(boneAnim);
-    var head = headOfDataObject(fullText);
+    var head = headOfDataObject(fullText, _off);
     node.updateExport(head);
-    node.updateExport(readUntilNextNonWhitespace(fullText.substring(node.valueLength)));
-    var keyType = readInteger(fullText.substring(node.valueLength));
+    node.updateExport(readUntilNextNonWhitespace(fullText, _off + node.valueLength));
+    var keyType = readInteger(fullText, _off + node.valueLength);
     node.updateExport(keyType);
-    node.updateExport(testForSeparator(fullText.substring(node.valueLength)));
-    node.updateExport(readUntilNextNonWhitespace(fullText.substring(node.valueLength)));
-    var numberOfKeys = readInteger(fullText.substring(node.valueLength));
+    node.updateExport(testForSeparator(fullText, _off + node.valueLength));
+    node.updateExport(readUntilNextNonWhitespace(fullText, _off + node.valueLength));
+    var numberOfKeys = readInteger(fullText, _off + node.valueLength);
     node.updateExport(numberOfKeys);
-    node.updateExport(testForSeparator(fullText.substring(node.valueLength)));
-    node.updateExport(readUntilNextNonWhitespace(fullText.substring(node.valueLength)));
+    node.updateExport(testForSeparator(fullText, _off + node.valueLength));
+    node.updateExport(readUntilNextNonWhitespace(fullText, _off + node.valueLength));
     for (var i = 0; i < numberOfKeys.nodeData; i++) {
-      var time = readInteger(fullText.substring(node.valueLength));
+      var time = readInteger(fullText, _off + node.valueLength);
       node.updateExport(time);
-      node.updateExport(testForSeparator(fullText.substring(node.valueLength)));
-      var readCount = readInteger(fullText.substring(node.valueLength));
+      node.updateExport(testForSeparator(fullText, _off + node.valueLength));
+      var readCount = readInteger(fullText, _off + node.valueLength);
       switch (keyType.nodeData) {
         case 0:
           // Rotation keys
@@ -1143,16 +1168,16 @@
           if (readCount.nodeData != 4) {
             throw 'Invalid number of arguments for quaternion key in animation';
           }
-          node.updateExport(testForSeparator(fullText.substring(node.valueLength)));
+          node.updateExport(testForSeparator(fullText, _off + node.valueLength));
           quaternion.time = time.nodeData;
           for (var j = 0; j < readCount.nodeData; j++) {
-            var value = readFloat(fullText.substring(node.valueLength));
+            var value = readFloat(fullText, _off + node.valueLength);
             node.updateExport(value);
             quaternion.data.push(value.nodeData);
-            node.updateExport(testForSeparator(fullText.substring(node.valueLength)));
+            node.updateExport(testForSeparator(fullText, _off + node.valueLength));
           }
           // It might be followed by multiple separators (;,)
-          node.updateExport(testForSeparator(fullText.substring(node.valueLength)));
+          node.updateExport(testForSeparator(fullText, _off + node.valueLength));
           node.nodeData.rotationKeys.push(quaternion);
           break;
         case 1:
@@ -1162,16 +1187,16 @@
           if (readCount.nodeData != 3) {
             throw 'Invalid number of arguments for scale vector in animation';
           }
-          node.updateExport(testForSeparator(fullText.substring(node.valueLength)));
+          node.updateExport(testForSeparator(fullText, _off + node.valueLength));
           scaleVector.time = time.nodeData;
           for (var _j = 0; _j < readCount.nodeData; _j++) {
-            var _value = readFloat(fullText.substring(node.valueLength));
+            var _value = readFloat(fullText, _off + node.valueLength);
             node.updateExport(_value);
             scaleVector.data.push(_value.nodeData);
-            node.updateExport(testForSeparator(fullText.substring(node.valueLength)));
+            node.updateExport(testForSeparator(fullText, _off + node.valueLength));
           }
           // It might be followed by multiple separators (;,)
-          node.updateExport(testForSeparator(fullText.substring(node.valueLength)));
+          node.updateExport(testForSeparator(fullText, _off + node.valueLength));
           node.nodeData.scaleKeys.push(scaleVector);
           break;
         case 2:
@@ -1181,16 +1206,16 @@
           if (readCount.nodeData != 3) {
             throw 'Invalid number of arguments for position vector in animation';
           }
-          node.updateExport(testForSeparator(fullText.substring(node.valueLength)));
+          node.updateExport(testForSeparator(fullText, _off + node.valueLength));
           positionVector.time = time.nodeData;
           for (var _j2 = 0; _j2 < readCount.nodeData; _j2++) {
-            var _value2 = readFloat(fullText.substring(node.valueLength));
+            var _value2 = readFloat(fullText, _off + node.valueLength);
             node.updateExport(_value2);
             positionVector.data.push(_value2.nodeData);
-            node.updateExport(testForSeparator(fullText.substring(node.valueLength)));
+            node.updateExport(testForSeparator(fullText, _off + node.valueLength));
           }
           // It might be followed by multiple separators (;,)
-          node.updateExport(testForSeparator(fullText.substring(node.valueLength)));
+          node.updateExport(testForSeparator(fullText, _off + node.valueLength));
           node.nodeData.positionKeys.push(positionVector);
           break;
         case 3:
@@ -1200,48 +1225,49 @@
           if (readCount.nodeData != 16) {
             throw 'Invalid number of arguments for matrix in animation';
           }
-          node.updateExport(testForSeparator(fullText.substring(node.valueLength)));
+          node.updateExport(testForSeparator(fullText, _off + node.valueLength));
           matrix.time = time.nodeData;
           for (var _j3 = 0; _j3 < readCount.nodeData; _j3++) {
-            var _value3 = readFloat(fullText.substring(node.valueLength));
+            var _value3 = readFloat(fullText, _off + node.valueLength);
             node.updateExport(_value3);
             matrix.data.push(_value3.nodeData);
-            node.updateExport(testForSeparator(fullText.substring(node.valueLength)));
+            node.updateExport(testForSeparator(fullText, _off + node.valueLength));
           }
           // It might be followed by multiple separators (;,)
-          node.updateExport(testForSeparator(fullText.substring(node.valueLength)));
+          node.updateExport(testForSeparator(fullText, _off + node.valueLength));
           node.nodeData.matrixKeys.push(matrix);
           break;
         default:
           throw 'Invalid animation type';
       }
-      node.updateExport(testForSeparator(fullText.substring(node.valueLength)));
-      node.updateExport(readUntilNextNonWhitespace(fullText.substring(node.valueLength)));
+      node.updateExport(testForSeparator(fullText, _off + node.valueLength));
+      node.updateExport(readUntilNextNonWhitespace(fullText, _off + node.valueLength));
     }
     // The next token should be the closing brace
-    var nextToken = getNextToken(fullText.substring(node.valueLength));
+    var nextToken = getNextToken(fullText, _off + node.valueLength);
     node.updateExport(nextToken);
     if (nextToken.nodeData != '}') {
       throw 'Unexpected token while parsing animationKey node: ' + nextToken.nodeData;
     }
     return node;
   }
-  function animationNode(fullText, animation) {
+  function animationNode(fullText, _off, animation) {
+    _off = _off || 0;
     var node = new ExportedNode(animation);
-    var head = headOfDataObject(fullText);
+    var head = headOfDataObject(fullText, _off);
     node.updateExport(head);
-    node.updateExport(readUntilNextNonWhitespace(fullText.substring(node.valueLength)));
+    node.updateExport(readUntilNextNonWhitespace(fullText, _off + node.valueLength));
     var boneAnimation = new AnimBone();
-    node.updateExport(readUntilNextNonWhitespace(fullText.substring(node.valueLength)));
+    node.updateExport(readUntilNextNonWhitespace(fullText, _off + node.valueLength));
     while (true) {
-      var nextToken = getNextToken(fullText.substring(node.valueLength));
+      var nextToken = getNextToken(fullText, _off + node.valueLength);
       node.updateExport(nextToken);
       if (nextToken.nodeData == '') {
         throw 'Unexpected end of file while parsing animation node';
       } else if (nextToken.nodeData == '}') {
         break;
       } else if (nextToken.nodeData == 'AnimationKey') {
-        var animationKey = animationKeyNode(fullText.substring(node.valueLength), boneAnimation);
+        var animationKey = animationKeyNode(fullText, _off + node.valueLength, boneAnimation);
         node.updateExport(animationKey);
         // Update the existing one or add a new one. In case of bone animation with the name has been
         // found, update the existing one with the new keys. Otherwise, add a new one.
@@ -1256,66 +1282,68 @@
         } else {
           node.nodeData.boneAnimations.push(animationKey.nodeData);
         }
-        node.updateExport(readUntilNextNonWhitespace(fullText.substring(node.valueLength)));
+        node.updateExport(readUntilNextNonWhitespace(fullText, _off + node.valueLength));
       } else if (nextToken.nodeData == 'AnimationOptions') {
         // It is ignored by assimp, so we will ignore it too.
-        node.updateExport(unknownNode(fullText.substring(node.valueLength)));
+        node.updateExport(unknownNode(fullText, _off + node.valueLength));
       } else if (nextToken.nodeData == '{') {
-        node.updateExport(readUntilNextNonWhitespace(fullText.substring(node.valueLength)));
-        var animName = getNextToken(fullText.substring(node.valueLength));
+        node.updateExport(readUntilNextNonWhitespace(fullText, _off + node.valueLength));
+        var animName = getNextToken(fullText, _off + node.valueLength);
         node.updateExport(animName);
         boneAnimation.name = animName.nodeData;
-        node.updateExport(readUntilNextNonWhitespace(fullText.substring(node.valueLength)));
+        node.updateExport(readUntilNextNonWhitespace(fullText, _off + node.valueLength));
         // The next token should be the closing brace
-        var nameCloseBrace = getNextToken(fullText.substring(node.valueLength));
+        var nameCloseBrace = getNextToken(fullText, _off + node.valueLength);
         node.updateExport(nameCloseBrace);
         if (nameCloseBrace.nodeData != '}') {
           throw 'Unexpected token while parsing animation node: ' + nameCloseBrace.nodeData;
         }
-        node.updateExport(readUntilNextNonWhitespace(fullText.substring(node.valueLength)));
+        node.updateExport(readUntilNextNonWhitespace(fullText, _off + node.valueLength));
       } else {
-        node.updateExport(unknownNode(fullText.substring(node.valueLength)));
+        node.updateExport(unknownNode(fullText, _off + node.valueLength));
       }
-      node.updateExport(readUntilNextNonWhitespace(fullText.substring(node.valueLength)));
+      node.updateExport(readUntilNextNonWhitespace(fullText, _off + node.valueLength));
     }
     return node;
   }
-  function animationSetNode(fullText) {
+  function animationSetNode(fullText, _off) {
+    _off = _off || 0;
     var node = new ExportedNode(null);
-    var head = headOfDataObject(fullText);
+    var head = headOfDataObject(fullText, _off);
     node.updateExport(head);
     var animation = new Animation();
     animation.name = head.nodeData;
-    node.updateExport(readUntilNextNonWhitespace(fullText.substring(node.valueLength)));
+    node.updateExport(readUntilNextNonWhitespace(fullText, _off + node.valueLength));
     while (true) {
-      var nextToken = getNextToken(fullText.substring(node.valueLength));
+      var nextToken = getNextToken(fullText, _off + node.valueLength);
       node.updateExport(nextToken);
       if (nextToken.nodeData == '') {
         throw 'Unexpected end of file while parsing animationSet node';
       } else if (nextToken.nodeData == '}') {
         break;
       } else if (nextToken.nodeData == 'Animation') {
-        var animNode = animationNode(fullText.substring(node.valueLength), animation);
+        var animNode = animationNode(fullText, _off + node.valueLength, animation);
         node.updateExport(animNode);
         animation = animNode.nodeData;
-        node.updateExport(readUntilNextNonWhitespace(fullText.substring(node.valueLength)));
+        node.updateExport(readUntilNextNonWhitespace(fullText, _off + node.valueLength));
       } else {
-        node.updateExport(unknownNode(fullText.substring(node.valueLength)));
+        node.updateExport(unknownNode(fullText, _off + node.valueLength));
       }
-      node.updateExport(readUntilNextNonWhitespace(fullText.substring(node.valueLength)));
+      node.updateExport(readUntilNextNonWhitespace(fullText, _off + node.valueLength));
     }
     node.nodeData = animation;
     return node;
   }
-  function frameNode(fullText, parentFrame) {
+  function frameNode(fullText, _off, parentFrame) {
+    _off = _off || 0;
     var node = new ExportedNode(parentFrame);
-    var head = headOfDataObject(fullText);
+    var head = headOfDataObject(fullText, _off);
     node.updateExport(head);
     var frame = new Node(parentFrame);
     frame.name = head.nodeData;
-    node.updateExport(readUntilNextNonWhitespace(fullText.substring(node.valueLength)));
+    node.updateExport(readUntilNextNonWhitespace(fullText, _off + node.valueLength));
     while (true) {
-      var nextToken = getNextToken(fullText.substring(node.valueLength));
+      var nextToken = getNextToken(fullText, _off + node.valueLength);
       node.updateExport(nextToken);
       if (nextToken.nodeData == '') {
         throw 'Unexpected end of file while parsing frame node';
@@ -1323,21 +1351,21 @@
       if (nextToken.nodeData == '}') {
         break;
       } else if (nextToken.nodeData == 'Frame') {
-        var frmNode = frameNode(fullText.substring(node.valueLength), frame);
+        var frmNode = frameNode(fullText, _off + node.valueLength, frame);
         node.updateExport(frmNode);
         frame = frmNode.nodeData;
       } else if (nextToken.nodeData == 'FrameTransformMatrix') {
-        var transformMatrix = transformationMatrixNode(fullText.substring(node.valueLength));
+        var transformMatrix = transformationMatrixNode(fullText, _off + node.valueLength);
         node.updateExport(transformMatrix);
         frame.transformation = transformMatrix.nodeData;
       } else if (nextToken.nodeData == 'Mesh') {
-        var mshNode = meshNode(fullText.substring(node.valueLength));
+        var mshNode = meshNode(fullText, _off + node.valueLength);
         node.updateExport(mshNode);
         frame.meshes.push(mshNode.nodeData);
       } else {
-        node.updateExport(unknownNode(fullText.substring(node.valueLength)));
+        node.updateExport(unknownNode(fullText, _off + node.valueLength));
       }
-      node.updateExport(readUntilNextNonWhitespace(fullText.substring(node.valueLength)));
+      node.updateExport(readUntilNextNonWhitespace(fullText, _off + node.valueLength));
     }
     if (node.nodeData != null) {
       node.nodeData.addChildren(frame);
@@ -1526,7 +1554,7 @@
       this.readUntil = 0;
       this.lineNumber = 0;
       // the first line is the format definition. Not connected to the model content.
-      this.readUntil += readUntilEndOfLine(this.fileContent.substring(this.readUntil));
+      this.readUntil += readUntilEndOfLine(this.fileContent, this.readUntil);
       this.lineNumber++;
       this.exportScene = new Scene();
     }
@@ -1534,14 +1562,14 @@
       key: "parse",
       value: function parse() {
         while (this.readUntil < this.fileContent.length) {
-          var objectName = getNextToken(this.fileContent.substring(this.readUntil));
+          var objectName = getNextToken(this.fileContent, this.readUntil);
           this.readUntil += objectName.valueLength;
           this.lineNumber += objectName.lines;
           if (objectName.nodeData == '') {
             break;
           }
           this._parseObjectBasedOnName(objectName.nodeData);
-          var skipped = readUntilNextNonWhitespace(this.fileContent.substring(this.readUntil));
+          var skipped = readUntilNextNonWhitespace(this.fileContent, this.readUntil);
           this.readUntil += skipped.valueLength;
           this.lineNumber += skipped.lines;
         }
@@ -1582,14 +1610,14 @@
     }, {
       key: "_parseTemplateObject",
       value: function _parseTemplateObject() {
-        var template = templateNode(this.fileContent.substring(this.readUntil));
+        var template = templateNode(this.fileContent, this.readUntil);
         this.readUntil += template.valueLength;
         this.lineNumber += template.lines;
       }
     }, {
       key: "_parseFrameObject",
       value: function _parseFrameObject() {
-        var frame = frameNode(this.fileContent.substring(this.readUntil));
+        var frame = frameNode(this.fileContent, this.readUntil);
         this.readUntil += frame.valueLength;
         this.lineNumber += frame.lines;
         if (this.exportScene.rootNode == null) {
@@ -1616,7 +1644,7 @@
     }, {
       key: "_parseMeshObject",
       value: function _parseMeshObject() {
-        var mesh = meshNode(this.fileContent.substring(this.readUntil));
+        var mesh = meshNode(this.fileContent, this.readUntil);
         this.readUntil += mesh.valueLength;
         this.lineNumber += mesh.lines;
         this.exportScene.meshes.push(mesh.nodeData);
@@ -1627,7 +1655,7 @@
     }, {
       key: "_parseMaterialObject",
       value: function _parseMaterialObject() {
-        var material = materialNode(this.fileContent.substring(this.readUntil));
+        var material = materialNode(this.fileContent, this.readUntil);
         this.readUntil += material.valueLength;
         this.lineNumber += material.lines;
         this.exportScene.materials.push(material.nodeData);
@@ -1635,7 +1663,7 @@
     }, {
       key: "_parseAnimTicksPerSecondObject",
       value: function _parseAnimTicksPerSecondObject() {
-        var animTicksPerSecond = animTicksPerSecondNode(this.fileContent.substring(this.readUntil));
+        var animTicksPerSecond = animTicksPerSecondNode(this.fileContent, this.readUntil);
         this.readUntil += animTicksPerSecond.valueLength;
         this.lineNumber += animTicksPerSecond.lines;
         this.exportScene.animTicksPerSecond = animTicksPerSecond.nodeData;
@@ -1643,7 +1671,7 @@
     }, {
       key: "_parseAnimationSetObject",
       value: function _parseAnimationSetObject() {
-        var animationSet = animationSetNode(this.fileContent.substring(this.readUntil));
+        var animationSet = animationSetNode(this.fileContent, this.readUntil);
         this.readUntil += animationSet.valueLength;
         this.lineNumber += animationSet.lines;
         this.exportScene.animations.push(animationSet.nodeData);
@@ -1651,7 +1679,7 @@
     }, {
       key: "_parseUnknownObject",
       value: function _parseUnknownObject() {
-        var unknown = unknownNode(this.fileContent.substring(this.readUntil));
+        var unknown = unknownNode(this.fileContent, this.readUntil);
         this.readUntil += unknown.valueLength;
         this.lineNumber += unknown.lines;
       }
@@ -1761,8 +1789,9 @@
                 data = chunks.join('');
               }
             }
-            var lines = data.split(/\r?\n/);
-            parser = new TextParser(lines.slice(1).join('\n'));
+            var firstNL = data.indexOf('\n');
+            if (firstNL === -1) firstNL = data.length;
+            parser = new TextParser(data.substring(firstNL + 1));
 
           } else if (this._headerInfo._fileBinary && !this._headerInfo._fileCompressed) {
             // ── BINARY FORMAT ────────────────────────────────────
