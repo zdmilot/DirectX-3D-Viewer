@@ -39,6 +39,7 @@
         isPanning: false,
         toolbarCollapsed: false,
         activeView: 'viewer',
+        loadedFileName: 'test',
     };
 
     const DEFAULT_X_FILENAME = 'test.x';
@@ -98,6 +99,9 @@
         const url = URL.createObjectURL(file);
         const loading = $('#viewer-loading');
         const errorEl = $('#viewer-error');
+
+        // Track loaded file name for screenshot naming
+        state.loadedFileName = file.name;
 
         // Clear previous model
         clearModel();
@@ -190,6 +194,13 @@
             const grid = scene.getObjectByName('__grid__');
             if (grid) grid.visible = state.gridVisible;
         }
+        // Propagate to other applets
+        if (window.ConverterModule && window.ConverterModule.setGridVisible) {
+            window.ConverterModule.setGridVisible(state.gridVisible);
+        }
+        if (window.ExporterModule && window.ExporterModule.setGridVisible) {
+            window.ExporterModule.setGridVisible(state.gridVisible);
+        }
     }
 
     // ================================================================
@@ -233,7 +244,8 @@
         // ── Renderer ─────────────────────────────────────────
         renderer = new THREE.WebGLRenderer({
             canvas: canvas,
-            antialias: true
+            antialias: true,
+            preserveDrawingBuffer: true
         });
         renderer.setPixelRatio(window.devicePixelRatio);
         renderer.setSize(w, h);
@@ -625,6 +637,54 @@
     }
 
     // ================================================================
+    //  Screenshot Export
+    // ================================================================
+    function saveScreenshot(format) {
+        if (!renderer || !scene || !camera) return;
+
+        // Render one fresh frame to ensure canvas is up-to-date
+        renderer.render(scene, camera);
+
+        const canvas = renderer.domElement;
+        const fileName = (state.loadedFileName || 'screenshot').replace(/\.[^.]+$/, '');
+
+        if (format === 'svg') {
+            // SVG: embed the raster as a base64 image inside an SVG wrapper
+            const dataURL = canvas.toDataURL('image/png');
+            const w = canvas.width;
+            const h = canvas.height;
+            const svgContent =
+                '<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n' +
+                '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" ' +
+                'width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '">\n' +
+                '  <image width="' + w + '" height="' + h + '" xlink:href="' + dataURL + '"/>\n' +
+                '</svg>';
+            const blob = new Blob([svgContent], { type: 'image/svg+xml' });
+            downloadBlob(blob, fileName + '.svg');
+        } else if (format === 'jpg') {
+            canvas.toBlob(function(blob) {
+                if (blob) downloadBlob(blob, fileName + '.jpg');
+            }, 'image/jpeg', 0.92);
+        } else {
+            // PNG (default)
+            canvas.toBlob(function(blob) {
+                if (blob) downloadBlob(blob, fileName + '.png');
+            }, 'image/png');
+        }
+    }
+
+    function downloadBlob(blob, filename) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 5000);
+    }
+
+    // ================================================================
     //  Camera Position / Angle Display
     // ================================================================
     function updateCamDisplay() {
@@ -763,6 +823,24 @@
         if (dom.vtZoomIn) dom.vtZoomIn.addEventListener('click', () => doZoom(0.75));
         if (dom.vtZoomOut) dom.vtZoomOut.addEventListener('click', () => doZoom(1.35));
         if (dom.vtPan) dom.vtPan.addEventListener('click', togglePanMode);
+
+        // Screenshot button & dropdown
+        const ssBtn = $('#vt-screenshot');
+        const ssDrop = $('#screenshot-dropdown');
+        if (ssBtn && ssDrop) {
+            ssBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                ssDrop.classList.toggle('is-open');
+            });
+            document.addEventListener('click', () => ssDrop.classList.remove('is-open'));
+            ssDrop.addEventListener('click', (e) => e.stopPropagation());
+            ssDrop.querySelectorAll('.screenshot-option').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    saveScreenshot(btn.dataset.format);
+                    ssDrop.classList.remove('is-open');
+                });
+            });
+        }
 
         initSplash();
     }

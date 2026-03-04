@@ -20,6 +20,7 @@
         modelBox: null,        // bounding box
         modelMaxDim: 1,
         isDark: false,
+        gridVisible: true,
 
         // Six orthographic view renderers
         views: {},             // { top, bottom, left, right, front, back }
@@ -45,7 +46,13 @@
     let initialized = false;
 
     function initConverter() {
-        if (initialized) return;
+        // Refresh dark-mode from live DOM (user may have toggled in another applet)
+        cvState.isDark = document.documentElement.hasAttribute('data-theme');
+
+        if (initialized) {
+            updateConverterTheme();
+            return;
+        }
         initialized = true;
 
         const canvas = $('#cv-main-canvas');
@@ -57,7 +64,6 @@
 
         // -- Scene --
         cvState.scene = new THREE.Scene();
-        cvState.isDark = document.documentElement.hasAttribute('data-theme');
         cvState.scene.background = new THREE.Color(cvState.isDark ? DARK_BG : LIGHT_BG);
 
         // -- Camera --
@@ -89,6 +95,7 @@
         grid.name = '__cvgrid__';
         grid.renderOrder = -1;
         grid.material.depthWrite = false;
+        grid.visible = cvState.gridVisible;
         cvState.scene.add(grid);
 
         // -- Resize observer --
@@ -880,9 +887,18 @@
     // ================================================================
     //  Public API  (attaches to window for app.js to call)
     // ================================================================
+    function setConverterGridVisible(visible) {
+        cvState.gridVisible = visible;
+        if (cvState.scene) {
+            const grid = cvState.scene.getObjectByName('__cvgrid__');
+            if (grid) grid.visible = visible;
+        }
+    }
+
     window.ConverterModule = {
         init: initConverter,
         updateTheme: updateConverterTheme,
+        setGridVisible: setConverterGridVisible,
     };
 
 })();

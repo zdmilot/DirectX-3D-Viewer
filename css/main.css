@@ -925,10 +925,68 @@ body {
     background: rgba(0,0,0,0.04);
     border-radius: var(--r-xs);
     white-space: nowrap;
-    margin-left: auto;
 }
 [data-theme="dark"] .viewer-cam-display {
     background: rgba(255,255,255,0.04);
+}
+
+/* Screenshot dropdown group */
+.screenshot-group {
+    position: relative;
+}
+
+.screenshot-dropdown {
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 6px);
+    right: 0;
+    min-width: 160px;
+    background: rgba(40, 44, 52, 0.95);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-radius: 8px;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.06) inset;
+    padding: 4px 0;
+    z-index: 100;
+}
+
+.screenshot-dropdown.is-open {
+    display: flex;
+    flex-direction: column;
+}
+
+.screenshot-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border: none;
+    background: transparent;
+    color: #ccd6e0;
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: background 120ms ease;
+    white-space: nowrap;
+}
+
+.screenshot-option:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.screenshot-option:active {
+    background: rgba(2, 117, 216, 0.25);
+}
+
+.screenshot-option i {
+    width: 16px;
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--accent);
+}
+
+[data-theme="dark"] .screenshot-dropdown {
+    background: rgba(20, 26, 36, 0.95);
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04) inset;
 }
 
 /* ============================================================

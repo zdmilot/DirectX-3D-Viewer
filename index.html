@@ -6,7 +6,7 @@
     <title>3D File Tools</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1F9EA;</text></svg>">
     <link rel="stylesheet" href="css/fontawesome.min.css">
-    <link rel="stylesheet" href="css/main.css?v=20260303m">
+    <link rel="stylesheet" href="css/main.css?v=20260303n">
 </head>
 <body>
 
@@ -166,6 +166,23 @@
                     </button>
                     <div class="cv-ctrl-divider"></div>
                     <span class="viewer-cam-display" id="viewer-cam-display">X: 0.0  Y: 0.0  Z: 0.0  |  Pitch: 0.0°  Yaw: 0.0°  Roll: 0.0°</span>
+                    <div class="cv-ctrl-spacer"></div>
+                    <div class="screenshot-group" id="screenshot-group">
+                        <button class="cv-ctrl-btn cv-ctrl-btn-accent" id="vt-screenshot" title="Save screenshot">
+                            <i class="fas fa-camera"></i> Screenshot
+                        </button>
+                        <div class="screenshot-dropdown" id="screenshot-dropdown">
+                            <button class="screenshot-option" data-format="png">
+                                <i class="fas fa-file-image"></i> Save as .PNG
+                            </button>
+                            <button class="screenshot-option" data-format="jpg">
+                                <i class="fas fa-file-image"></i> Save as .JPG
+                            </button>
+                            <button class="screenshot-option" data-format="svg">
+                                <i class="fas fa-file-code"></i> Save as .SVG
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="viewer-dropzone viewer-hidden" id="viewer-dropzone">
@@ -311,6 +328,6 @@
     <script src="js/lib/STLLoader.js"></script>
     <script src="js/converter.js?v=20260303a"></script>
     <script src="js/exporter.js?v=20260303a"></script>
-    <script src="js/app.js?v=20260303h"></script>
+    <script src="js/app.js?v=20260303i"></script>
 </body>
 </html>

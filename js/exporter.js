@@ -5,10 +5,10 @@
     'use strict';
 
     const $ = s => document.querySelector(s);
-    const DARK_BG  = 0x1a1d23;
-    const LIGHT_BG = 0xf0f2f5;
-    const DARK_GRID  = 0x2a2d35;
-    const LIGHT_GRID = 0xd4d7dc;
+    const DARK_BG  = 0x1b2838;
+    const LIGHT_BG = 0xf0f0f0;
+    const DARK_GRID  = 0x2a3a4a;
+    const LIGHT_GRID = 0xcccccc;
 
     // ── State ────────────────────────────────────────────────────
     const exState = {
@@ -21,6 +21,7 @@
         modelBox: null,
         originalFileName: 'model',
         isDark: document.documentElement.getAttribute('data-theme') === 'dark',
+        gridVisible: true,
         inited: false,
         animId: null,
     };
@@ -59,6 +60,7 @@
         grid.name = '__exgrid__';
         grid.renderOrder = -1;
         grid.material.depthWrite = false;
+        grid.visible = exState.gridVisible;
         scene.add(grid);
 
         // Camera
@@ -170,6 +172,7 @@
         newGrid.name = '__exgrid__';
         newGrid.renderOrder = -1;
         newGrid.material.depthWrite = false;
+        newGrid.visible = exState.gridVisible;
         newGrid.position.y = -size.y / 2 - exState.modelMaxDim * 0.002;
         exState.scene.add(newGrid);
 
@@ -711,9 +714,18 @@
         }
     }
 
+    function setExporterGridVisible(visible) {
+        exState.gridVisible = visible;
+        if (exState.scene) {
+            const grid = exState.scene.getObjectByName('__exgrid__');
+            if (grid) grid.visible = visible;
+        }
+    }
+
     // ── Public API ───────────────────────────────────────────────
     window.ExporterModule = {
         init: initExporter,
         updateTheme: updateExporterTheme,
+        setGridVisible: setExporterGridVisible,
     };
 })();
