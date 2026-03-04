@@ -6,7 +6,7 @@
     <title>3D File Tools</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1F9EA;</text></svg>">
     <link rel="stylesheet" href="css/fontawesome.min.css">
-    <link rel="stylesheet" href="css/main.css?v=20260303w">
+    <link rel="stylesheet" href="css/main.css?v=20260303x">
 </head>
 <body>
 
@@ -116,48 +116,57 @@
 
                 <!-- Floating 3D Toolbar (collapsible) -->
                 <div class="viewer-toolbar" id="viewer-toolbar">
-                    <!-- Collapse/expand toggle -->
-                    <button class="vt-toggle" id="vt-toggle" title="Toggle toolbar">
-                        <i class="fas fa-chevron-right"></i>
-                    </button>
-
                     <div class="vt-body" id="vt-body">
-                        <!-- Axis gizmo -->
-                        <div class="vt-gizmo" id="vt-gizmo">
-                            <canvas id="gizmo-canvas" width="44" height="44"></canvas>
+                        <!-- Collapse/expand toggle -->
+                        <button class="vt-toggle" id="vt-toggle" title="Toggle toolbar">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+
+                        <div class="vt-collapsible">
+                            <!-- Axis gizmo -->
+                            <div class="vt-gizmo" id="vt-gizmo">
+                                <canvas id="gizmo-canvas" width="44" height="44"></canvas>
+                            </div>
+
+                            <div class="vt-separator"></div>
+
+                            <!-- Toolbar buttons -->
+                            <button class="vt-btn" id="vt-reset-cam" title="Reset camera">
+                                <i class="fas fa-video"></i>
+                            </button>
+                            <button class="vt-btn" id="vt-zoom-fit" title="Zoom to fit">
+                                <i class="fas fa-expand"></i>
+                            </button>
+                            <button class="vt-btn" id="vt-wireframe" title="Toggle wireframe">
+                                <i class="fas fa-draw-polygon"></i>
+                            </button>
+                            <button class="vt-btn" id="vt-perspective" title="Toggle perspective / orthographic">
+                                <i class="fas fa-cube"></i>
+                            </button>
+                            <button class="vt-btn grid-toggle" id="btn-grid" title="Toggle gridlines">
+                                <i class="fas fa-border-all"></i>
+                                <span class="grid-slash" aria-hidden="true"></span>
+                            </button>
+
+                            <div class="vt-separator"></div>
+
+                            <button class="vt-btn vt-btn-round" id="vt-zoom-in" title="Zoom in">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                            <button class="vt-btn vt-btn-round" id="vt-zoom-out" title="Zoom out">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                            <button class="vt-btn vt-btn-round" id="vt-pan" title="Pan mode">
+                                <i class="fas fa-hand-paper"></i>
+                            </button>
+
+                            <div class="vt-separator"></div>
+
+                            <!-- Drag handle to reposition toolbar -->
+                            <div class="vt-grab-handle" id="vt-grab-handle" title="Drag to move toolbar">
+                                <i class="fas fa-grip-horizontal"></i>
+                            </div>
                         </div>
-
-                        <div class="vt-separator"></div>
-
-                        <!-- Toolbar buttons -->
-                        <button class="vt-btn" id="vt-reset-cam" title="Reset camera">
-                            <i class="fas fa-video"></i>
-                        </button>
-                        <button class="vt-btn" id="vt-zoom-fit" title="Zoom to fit">
-                            <i class="fas fa-expand"></i>
-                        </button>
-                        <button class="vt-btn" id="vt-wireframe" title="Toggle wireframe">
-                            <i class="fas fa-draw-polygon"></i>
-                        </button>
-                        <button class="vt-btn" id="vt-perspective" title="Toggle perspective / orthographic">
-                            <i class="fas fa-cube"></i>
-                        </button>
-                        <button class="vt-btn grid-toggle" id="btn-grid" title="Toggle gridlines">
-                            <i class="fas fa-border-all"></i>
-                            <span class="grid-slash" aria-hidden="true"></span>
-                        </button>
-
-                        <div class="vt-separator"></div>
-
-                        <button class="vt-btn vt-btn-round" id="vt-zoom-in" title="Zoom in">
-                            <i class="fas fa-plus"></i>
-                        </button>
-                        <button class="vt-btn vt-btn-round" id="vt-zoom-out" title="Zoom out">
-                            <i class="fas fa-minus"></i>
-                        </button>
-                        <button class="vt-btn vt-btn-round" id="vt-pan" title="Pan mode">
-                            <i class="fas fa-hand-paper"></i>
-                        </button>
                     </div>
                 </div>
 
@@ -355,42 +364,49 @@
                 </div>
                 <canvas id="pp-canvas"></canvas>
 
-                <!-- Floating 3D Toolbar -->
-                <div class="viewer-toolbar" id="pp-toolbar">
-                    <button class="vt-toggle" id="pp-vt-toggle" title="Toggle toolbar">
-                        <i class="fas fa-chevron-right"></i>
-                    </button>
-                    <div class="vt-body" id="pp-vt-body">
-                        <div class="vt-gizmo pp-gizmo-sm" id="pp-vt-gizmo">
-                            <canvas id="pp-gizmo-canvas" width="28" height="28"></canvas>
+                <!-- Floating Tools Panel -->
+                <div class="pp-tools-overlay" id="pp-toolbar">
+                    <div class="pp-offset-header" id="pp-toolbar-header">
+                        <i class="fas fa-tools"></i> View Tools
+                        <button class="pp-collapse-btn" id="pp-vt-toggle" title="Collapse">
+                            <i class="fas fa-chevron-up"></i>
+                        </button>
+                    </div>
+                    <div class="pp-tools-body" id="pp-vt-body">
+                        <div class="pp-tools-row">
+                            <div class="vt-gizmo pp-gizmo-sm" id="pp-vt-gizmo">
+                                <canvas id="pp-gizmo-canvas" width="28" height="28"></canvas>
+                            </div>
                         </div>
-                        <div class="vt-separator"></div>
-                        <button class="vt-btn" id="pp-vt-reset-cam" title="Reset camera">
-                            <i class="fas fa-video"></i>
-                        </button>
-                        <button class="vt-btn" id="pp-vt-zoom-fit" title="Zoom to fit">
-                            <i class="fas fa-expand"></i>
-                        </button>
-                        <button class="vt-btn" id="pp-vt-wireframe" title="Toggle wireframe">
-                            <i class="fas fa-draw-polygon"></i>
-                        </button>
-                        <button class="vt-btn" id="pp-vt-perspective" title="Toggle perspective / orthographic">
-                            <i class="fas fa-cube"></i>
-                        </button>
-                        <button class="vt-btn grid-toggle" id="pp-btn-grid" title="Toggle gridlines">
-                            <i class="fas fa-border-all"></i>
-                            <span class="grid-slash" aria-hidden="true"></span>
-                        </button>
-                        <div class="vt-separator"></div>
-                        <button class="vt-btn vt-btn-round" id="pp-vt-zoom-in" title="Zoom in">
-                            <i class="fas fa-plus"></i>
-                        </button>
-                        <button class="vt-btn vt-btn-round" id="pp-vt-zoom-out" title="Zoom out">
-                            <i class="fas fa-minus"></i>
-                        </button>
-                        <button class="vt-btn vt-btn-round" id="pp-vt-pan" title="Pan mode">
-                            <i class="fas fa-hand-paper"></i>
-                        </button>
+                        <div class="pp-tools-row">
+                            <button class="pp-tool-btn" id="pp-vt-reset-cam" title="Reset camera">
+                                <i class="fas fa-video"></i>
+                            </button>
+                            <button class="pp-tool-btn" id="pp-vt-zoom-fit" title="Zoom to fit">
+                                <i class="fas fa-expand"></i>
+                            </button>
+                            <button class="pp-tool-btn" id="pp-vt-wireframe" title="Wireframe">
+                                <i class="fas fa-draw-polygon"></i>
+                            </button>
+                            <button class="pp-tool-btn" id="pp-vt-perspective" title="Ortho / Persp">
+                                <i class="fas fa-cube"></i>
+                            </button>
+                            <button class="pp-tool-btn grid-toggle" id="pp-btn-grid" title="Grid">
+                                <i class="fas fa-border-all"></i>
+                                <span class="grid-slash" aria-hidden="true"></span>
+                            </button>
+                        </div>
+                        <div class="pp-tools-row">
+                            <button class="pp-tool-btn" id="pp-vt-zoom-in" title="Zoom in">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                            <button class="pp-tool-btn" id="pp-vt-zoom-out" title="Zoom out">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                            <button class="pp-tool-btn" id="pp-vt-pan" title="Pan mode">
+                                <i class="fas fa-hand-paper"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -401,7 +417,7 @@
                     </div>
                     <div class="pp-offset-body">
                         <div class="pp-offset-section">
-                            <div class="pp-offset-section-title">Model Position &amp; Scale</div>
+                            <div class="pp-offset-section-title">Model Position</div>
                             <div class="pp-offset-row">
                                 <label>X</label>
                                 <input type="number" id="pp-model-x" value="0" step="0.1">
@@ -416,11 +432,6 @@
                                 <label>Z</label>
                                 <input type="number" id="pp-model-z" value="0" step="0.1">
                                 <span class="pp-unit">mm</span>
-                            </div>
-                            <div class="pp-offset-row pp-scale-row">
-                                <label><i class="fas fa-expand-arrows-alt pp-scale-icon"></i></label>
-                                <input type="number" id="pp-model-scale" value="1" step="0.01" min="0.001">
-                                <span class="pp-scale-pct" id="pp-model-scale-pct">100%</span>
                             </div>
                         </div>
                         <div class="pp-offset-divider"></div>
@@ -579,7 +590,7 @@
     <script src="js/lib/GLTFLoader.js"></script>
     <script src="js/lib/STLLoader.js"></script>
     <script src="js/converter.js?v=20260303b"></script>
-    <script src="js/platePlacer.js?v=20260303e"></script>
+    <script src="js/platePlacer.js?v=20260303f"></script>
     <script src="js/app.js?v=20260303o"></script>
 </body>
 </html>

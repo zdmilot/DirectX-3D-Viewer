@@ -26,7 +26,6 @@
 
         modelPos: { x: 0, y: 0, z: 0 },
         platePos: { x: 0, y: 0, z: 0 },
-        modelScale: 1.0,
         plateScale: 1.0,
 
         animId: null,
@@ -365,8 +364,10 @@
     // ================================================================
 
     /**
-     * Auto-scale the plate so its largest dimension is roughly 40% of
-     * the model's largest dimension.  Only runs once per model load.
+     * Auto-scale the plate so it is smaller than the imported model,
+     * then offset it along X so they don't overlap (≥ 1 grid square gap).
+     * Model always stays at native scale (1:1 with the main viewer).
+     * Only runs once per model load.
      */
     function autoScalePlateToModel() {
         if (!ppState._modelNativeSize || !ppState._plateNativeSize) return;
@@ -385,7 +386,7 @@
         );
         if (plateMax <= 0 || modelMax <= 0) return;
 
-        // Target: plate sits on top of or beside the model at ~40% size
+        // Scale plate to ~40% of model's largest dimension
         const targetRatio = 0.4;
         const autoScale = (modelMax * targetRatio) / plateMax;
 
@@ -396,12 +397,34 @@
         if (el) el.value = ppState.plateScale;
         const pctEl = $('#pp-plate-scale-pct');
         if (pctEl) pctEl.textContent = (ppState.plateScale * 100).toFixed(0) + '%';
+
+        // ── Offset the plate so it sits at least 1 grid square away ──
+        // Grid: gridSize / 40 divisions = 1 square width
+        const gridSize = Math.max(modelMax * 3, 400);
+        const gridSquare = gridSize / 40;
+
+        // Half-widths along X at their respective scales
+        const modelHalfX = ppState._modelNativeSize.x / 2;
+        const plateHalfX = (ppState._plateNativeSize.x * ppState.plateScale) / 2;
+
+        // Place plate so its nearest edge is 1 grid square from model's edge
+        const offsetX = modelHalfX + gridSquare + plateHalfX;
+
+        ppState.platePos.x = offsetX;
+        ppState.platePos.y = 0;
+        ppState.platePos.z = 0;
+
+        // Sync UI inputs
+        const pxEl = $('#pp-plate-x');
+        if (pxEl) pxEl.value = ppState.platePos.x.toFixed(1);
+        const pyEl = $('#pp-plate-y');
+        if (pyEl) pyEl.value = '0';
+        const pzEl = $('#pp-plate-z');
+        if (pzEl) pzEl.value = '0';
     }
 
     function applyScales() {
-        if (ppState.model) {
-            ppState.model.scale.setScalar(ppState.modelScale);
-        }
+        // Model always stays at native scale (1.0)
         if (ppState.plate) {
             ppState.plate.scale.setScalar(ppState.plateScale);
         }
@@ -463,19 +486,9 @@
             });
         });
 
-        // Scale inputs
-        const modelScaleEl = $('#pp-model-scale');
+        // Scale input (plate only — model stays at native scale)
         const plateScaleEl = $('#pp-plate-scale');
 
-        if (modelScaleEl) {
-            modelScaleEl.addEventListener('input', () => {
-                ppState.modelScale = parseFloat(modelScaleEl.value) || 1;
-                const pctEl = $('#pp-model-scale-pct');
-                if (pctEl) pctEl.textContent = (ppState.modelScale * 100).toFixed(0) + '%';
-                applyScales();
-                updateOffsets();
-            });
-        }
         if (plateScaleEl) {
             plateScaleEl.addEventListener('input', () => {
                 ppState.plateScale = parseFloat(plateScaleEl.value) || 1;
@@ -492,20 +505,15 @@
             resetBtn.addEventListener('click', () => {
                 ppState.modelPos = { x: 0, y: 0, z: 0 };
                 ppState.platePos = { x: 0, y: 0, z: 0 };
-                ppState.modelScale = 1.0;
                 ppState.plateScale = 1.0;
                 ppState._autoScaled = false;
                 fields.forEach(f => {
                     const el = $('#' + f.id);
                     if (el) el.value = '0';
                 });
-                if (modelScaleEl) modelScaleEl.value = '1';
                 if (plateScaleEl) plateScaleEl.value = '1';
-                const mPct = $('#pp-model-scale-pct');
                 const pPct = $('#pp-plate-scale-pct');
-                if (mPct) mPct.textContent = '100%';
                 if (pPct) pPct.textContent = '100%';
-                applyScales();
                 autoScalePlateToModel();
                 applyScales();
                 updateOffsets();
@@ -593,7 +601,10 @@
         if (toggle && toolbar) {
             toggle.addEventListener('click', () => {
                 ppState.toolbarCollapsed = !ppState.toolbarCollapsed;
-                toolbar.classList.toggle('collapsed', ppState.toolbarCollapsed);
+                const body = $('#pp-vt-body');
+                if (body) body.classList.toggle('pp-tools-collapsed', ppState.toolbarCollapsed);
+                toggle.querySelector('i').className = ppState.toolbarCollapsed
+                    ? 'fas fa-chevron-down' : 'fas fa-chevron-up';
             });
         }
 

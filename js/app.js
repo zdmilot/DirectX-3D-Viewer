@@ -599,7 +599,7 @@
 
     function toggleToolbar() {
         state.toolbarCollapsed = !state.toolbarCollapsed;
-        dom.viewerToolbar.classList.toggle('collapsed', state.toolbarCollapsed);
+        dom.vtBody.classList.toggle('collapsed', state.toolbarCollapsed);
     }
 
     function resetCamera() {
@@ -1376,10 +1376,11 @@
 
     // -- Init --------------------------------------------------------
     /* ── Draggable Panels ──────────────────────────────────── */
-    function makeDraggable(panel, handleSelector) {
+    function makeDraggable(panel, handleSelector, snapContainer) {
         const handle = handleSelector ? panel.querySelector(handleSelector) : panel;
         if (!handle) return;
         let isDragging = false, startX, startY, origLeft, origTop;
+        const SNAP_THRESHOLD = 24; // px from edge to snap
 
         handle.classList.add('draggable-handle');
 
@@ -1401,6 +1402,7 @@
             panel.style.margin = '0';
             handle.style.cursor = 'grabbing';
             document.body.style.userSelect = 'none';
+            panel.classList.remove('pp-snapped-left', 'pp-snapped-right');
             e.preventDefault();
         }
 
@@ -1417,14 +1419,42 @@
             isDragging = false;
             handle.style.cursor = '';
             document.body.style.userSelect = '';
-            // clamp to viewport so it doesn't get lost
+
             const r = panel.getBoundingClientRect();
             const maxL = window.innerWidth  - 40;
             const maxT = window.innerHeight - 40;
+
+            // Clamp to viewport
             if (r.left < 0)    panel.style.left = '0px';
             if (r.top  < 0)    panel.style.top  = '0px';
             if (r.left > maxL) panel.style.left = maxL + 'px';
             if (r.top  > maxT) panel.style.top  = maxT + 'px';
+
+            // Edge-snap: if within SNAP_THRESHOLD of the host's left/right edge,
+            // stick flush to that edge.
+            const host = snapContainer || panel.parentElement;
+            if (host) {
+                const hr = host.getBoundingClientRect();
+                const pr = panel.getBoundingClientRect();
+                const pw = pr.width;
+
+                // Distance from panel left edge to host left edge
+                const distLeft  = pr.left - hr.left;
+                // Distance from panel right edge to host right edge
+                const distRight = hr.right - pr.right;
+
+                if (distLeft <= SNAP_THRESHOLD) {
+                    panel.style.left = hr.left + 'px';
+                    panel.classList.add('pp-snapped-left');
+                    panel.classList.remove('pp-snapped-right');
+                } else if (distRight <= SNAP_THRESHOLD) {
+                    panel.style.left = (hr.right - pw) + 'px';
+                    panel.classList.add('pp-snapped-right');
+                    panel.classList.remove('pp-snapped-left');
+                } else {
+                    panel.classList.remove('pp-snapped-left', 'pp-snapped-right');
+                }
+            }
         }
 
         handle.addEventListener('pointerdown', onPointerDown);
@@ -1433,6 +1463,25 @@
     }
 
     function initDraggablePanels() {
+        // Floating 3D toolbar — drag via grab handle
+        const vtBody = document.getElementById('vt-body');
+        if (vtBody) {
+            makeDraggable(vtBody, '#vt-grab-handle');
+
+            // Double-click grab handle to snap toolbar back to default position
+            const grabHandle = vtBody.querySelector('#vt-grab-handle');
+            if (grabHandle) {
+                grabHandle.addEventListener('dblclick', () => {
+                    vtBody.style.position = '';
+                    vtBody.style.left = '';
+                    vtBody.style.top = '';
+                    vtBody.style.bottom = '';
+                    vtBody.style.right = '';
+                    vtBody.style.margin = '';
+                });
+            }
+        }
+
         // Placement offsets overlay
         const offsetOverlay = document.getElementById('pp-offset-overlay');
         if (offsetOverlay) makeDraggable(offsetOverlay, '.pp-offset-header');

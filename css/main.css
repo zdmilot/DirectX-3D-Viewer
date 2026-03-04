@@ -722,43 +722,52 @@ body {
 }
 
 .vt-toggle {
-    position: absolute;
-    top: 20px;
-    right: 14px;
     width: 32px;
     height: 32px;
     border: none;
     border-radius: 50%;
-    background: rgba(40, 44, 52, 0.85);
+    background: rgba(255, 255, 255, 0.08);
     color: #ccd6e0;
     font-size: 0.75rem;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-    transition: background var(--t-fast), right var(--t-med) ease;
+    transition: background var(--t-fast);
     z-index: 20;
     pointer-events: auto;
+    flex-shrink: 0;
 }
 
 .vt-toggle:hover {
-    background: rgba(60, 66, 78, 0.95);
+    background: rgba(255, 255, 255, 0.15);
 }
 
 .vt-toggle i {
     transition: transform var(--t-med) ease;
 }
 
-/* When expanded, push toggle to the left of the panel */
-.viewer-toolbar:not(.collapsed) .vt-toggle {
-    right: calc(56px + 14px);
+/* When collapsed, rotate chevron */
+.vt-body.collapsed .vt-toggle i {
+    transform: rotate(180deg);
 }
 
-.viewer-toolbar.collapsed .vt-toggle i {
-    transform: rotate(180deg);
+/* Collapsible content wrapper */
+.vt-collapsible {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    overflow: hidden;
+    transition: max-height var(--t-med) ease, opacity var(--t-med) ease;
+    max-height: 600px;
+    opacity: 1;
+}
+
+.vt-body.collapsed .vt-collapsible {
+    max-height: 0;
+    opacity: 0;
+    pointer-events: none;
 }
 
 .vt-body {
@@ -783,10 +792,11 @@ body {
     width: 56px;
 }
 
-.viewer-toolbar.collapsed .vt-body {
-    transform: translateX(100%);
-    opacity: 0;
-    pointer-events: none;
+/* When collapsed, just hide the collapsible content (toggle stays visible) */
+
+/* When toolbar has been dragged (position:fixed via JS), round all corners */
+.vt-body[style*="position: fixed"] {
+    border-radius: 14px;
 }
 
 /* Dark theme adjustments */
@@ -832,6 +842,31 @@ body {
     height: 1px;
     background: rgba(255, 255, 255, 0.1);
     margin: 2px 0;
+}
+
+/* Grab handle for repositioning toolbar */
+.vt-grab-handle {
+    width: 40px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(156, 168, 184, 0.5);
+    font-size: 0.85rem;
+    cursor: grab;
+    border-radius: 8px;
+    transition: color var(--t-fast), background var(--t-fast);
+    user-select: none;
+}
+
+.vt-grab-handle:hover {
+    color: #e0e8f0;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.vt-grab-handle:active {
+    cursor: grabbing;
+    color: #4da6ff;
 }
 
 /* Toolbar buttons */
