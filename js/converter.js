@@ -916,7 +916,10 @@
         if (toggle && toolbar) {
             toggle.addEventListener('click', () => {
                 cvState.toolbarCollapsed = !cvState.toolbarCollapsed;
-                toolbar.classList.toggle('collapsed', cvState.toolbarCollapsed);
+                const body = $('#cv-vt-body');
+                if (body) body.classList.toggle('pp-tools-collapsed', cvState.toolbarCollapsed);
+                toggle.querySelector('i').className = cvState.toolbarCollapsed
+                    ? 'fas fa-chevron-down' : 'fas fa-chevron-up';
             });
         }
 
@@ -1057,14 +1060,14 @@
         const canvas = $('#cv-gizmo-canvas');
         if (!canvas || !cvState.mainCamera) return;
         const ctx = canvas.getContext('2d');
-        const size = 44;
+        const size = 28;
         const dpr = window.devicePixelRatio || 1;
         canvas.width = size * dpr;
         canvas.height = size * dpr;
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         ctx.clearRect(0, 0, size, size);
 
-        const cx = size / 2, cy = size / 2, len = 16;
+        const cx = size / 2, cy = size / 2, len = 9;
         const vm = cvState.mainCamera.matrixWorldInverse;
 
         const axes = [
@@ -1086,11 +1089,17 @@
             ctx.strokeStyle = p.color;
             ctx.lineWidth = 2;
             ctx.stroke();
+
+            const r = 3.5;
+            ctx.beginPath();
+            ctx.arc(cx + p.x, cy + p.y, r, 0, Math.PI * 2);
             ctx.fillStyle = p.color;
-            ctx.font = 'bold 9px sans-serif';
+            ctx.fill();
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 5px sans-serif';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillText(p.label, cx + p.x * 1.25, cy + p.y * 1.25);
+            ctx.fillText(p.label, cx + p.x, cy + p.y + 0.5);
         });
     }
 

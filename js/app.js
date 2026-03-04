@@ -599,7 +599,10 @@
 
     function toggleToolbar() {
         state.toolbarCollapsed = !state.toolbarCollapsed;
-        dom.vtBody.classList.toggle('collapsed', state.toolbarCollapsed);
+        const body = dom.vtBody;
+        if (body) body.classList.toggle('pp-tools-collapsed', state.toolbarCollapsed);
+        const icon = dom.vtToggle ? dom.vtToggle.querySelector('i') : null;
+        if (icon) icon.className = state.toolbarCollapsed ? 'fas fa-chevron-down' : 'fas fa-chevron-up';
     }
 
     function resetCamera() {
@@ -1298,7 +1301,7 @@
         if (!dom.gizmoCanvas || !camera) return;
         const ctx = dom.gizmoCanvas.getContext('2d');
         const dpr = window.devicePixelRatio || 1;
-        const size = 44;
+        const size = 28;
         dom.gizmoCanvas.width = size * dpr;
         dom.gizmoCanvas.height = size * dpr;
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -1306,7 +1309,7 @@
 
         const cx = size / 2;
         const cy = size / 2;
-        const len = 14;
+        const len = 9;
 
         // Get camera direction to compute axis projections
         const camDir = new THREE.Vector3();
@@ -1346,7 +1349,7 @@
             ctx.stroke();
 
             // Draw endpoint circle
-            const r = isBehind ? 3 : 5;
+            const r = isBehind ? 2 : 3.5;
             ctx.beginPath();
             ctx.arc(ex, ey, r, 0, Math.PI * 2);
             if (isBehind) {
@@ -1360,7 +1363,7 @@
                 ctx.fill();
                 // Label
                 ctx.fillStyle = '#fff';
-                ctx.font = 'bold 7px Inter, sans-serif';
+                ctx.font = 'bold 5px Inter, sans-serif';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
                 ctx.fillText(p.label, ex, ey + 0.5);
@@ -1469,26 +1472,11 @@
     }
 
     function initDraggablePanels() {
-        // Floating 3D toolbar — drag via grab handle
-        // Snap to edges of the viewer host so left-snap works too
+        // Viewer tools panel — drag via header, snap to viewer-host edges
         const viewerHost = document.getElementById('viewer-host');
-        const vtBody = document.getElementById('vt-body');
-        if (vtBody) {
-            makeDraggable(vtBody, '#vt-grab-handle', viewerHost);
-
-            // Double-click grab handle to snap toolbar back to default position
-            const grabHandle = vtBody.querySelector('#vt-grab-handle');
-            if (grabHandle) {
-                grabHandle.addEventListener('dblclick', () => {
-                    vtBody.style.position = '';
-                    vtBody.style.left = '';
-                    vtBody.style.top = '';
-                    vtBody.style.bottom = '';
-                    vtBody.style.right = '';
-                    vtBody.style.margin = '';
-                    vtBody.classList.remove('pp-snapped-left', 'pp-snapped-right');
-                });
-            }
+        const viewerToolbar = document.getElementById('viewer-toolbar');
+        if (viewerToolbar) {
+            makeDraggable(viewerToolbar, '#vt-toolbar-header', viewerHost);
         }
 
         // Placer panels — snap to left/right edges of the host
@@ -1501,6 +1489,11 @@
         // Placer tools panel
         const ppToolbar = document.getElementById('pp-toolbar');
         if (ppToolbar) makeDraggable(ppToolbar, '#pp-toolbar-header', placerHost);
+
+        // Converter tools panel — snap to converter viewport edges
+        const cvViewport = document.getElementById('converter-main-viewport');
+        const cvToolbar = document.getElementById('cv-viewer-toolbar');
+        if (cvToolbar) makeDraggable(cvToolbar, '#cv-toolbar-header', cvViewport);
 
         // Debug panels
         document.querySelectorAll('.debug-panel').forEach(panel => {
