@@ -419,24 +419,30 @@
 
                     // ── Bottom cap ──
                     if (isRoundBottom) {
-                        // Hemisphere: center at wellFloorY + hemiR, curves down to wellFloorY
-                        var hemiR = btmShapeH; // always == wellBotR (clamped to depth above)
-                        const hemiGeo = new THREE.SphereGeometry(
-                            hemiR, WELL_SEGMENTS, 12,
-                            0, Math.PI * 2,
-                            0, Math.PI / 2
-                        );
-                        const hemiMesh = new THREE.Mesh(hemiGeo, wellMat);
-                        hemiMesh.rotation.x = Math.PI; // dome curves downward
-                        hemiMesh.position.set(cx, wellFloorY + hemiR, cz);
-                        group.add(hemiMesh);
+                        // Concave bowl using LatheGeometry — quarter-circle profile
+                        // revolved around Y.  Normals point inward/upward into the well
+                        // so the bowl looks concave from above (no convex dome artifact).
+                        var hemiR = btmShapeH;
+                        var bowlSegs = 12;
+                        var bowlPts = [];
+                        for (var bi = 0; bi <= bowlSegs; bi++) {
+                            var ba = (Math.PI / 2) * bi / bowlSegs;
+                            bowlPts.push(new THREE.Vector2(
+                                Math.sin(ba) * hemiR,
+                                (1 - Math.cos(ba)) * hemiR
+                            ));
+                        }
+                        var bowlGeo = new THREE.LatheGeometry(bowlPts, WELL_SEGMENTS);
+                        var bowlMesh = new THREE.Mesh(bowlGeo, wellMat);
+                        bowlMesh.position.set(cx, wellFloorY, cz);
+                        group.add(bowlMesh);
                     } else if (isVBottom) {
-                        // Cone: tip at wellFloorY, top edge at wellFloorY + vDepth
+                        // Cone with point at bottom, base at top
                         var vDepth = btmShapeH;
-                        const coneGeo = new THREE.ConeGeometry(
-                            wellBotR, vDepth, WELL_SEGMENTS, 1, true
+                        var coneGeo = new THREE.CylinderGeometry(
+                            wellBotR, 0, vDepth, WELL_SEGMENTS, 1, true
                         );
-                        const coneMesh = new THREE.Mesh(coneGeo, wellMat);
+                        var coneMesh = new THREE.Mesh(coneGeo, wellMat);
                         coneMesh.position.set(cx, wellFloorY + vDepth / 2, cz);
                         group.add(coneMesh);
                     } else {
@@ -475,72 +481,49 @@
 
                     // Bottom shape
                     if (isRoundBottom) {
-                        // Half-cylinder trough along the longer axis (X).
-                        // Radius = wSize/2 so it fills the full well width — no nipple.
-                        var troughR = Math.min(wSize / 2, btmShapeH);
-                        var troughSegs = WELL_SEGMENTS;
-
-                        // CylinderGeometry with thetaLength = PI gives a half-cylinder
-                        var halfCylGeo = new THREE.CylinderGeometry(
-                            troughR, troughR, wLen, troughSegs, 1, true,
-                            0, Math.PI
-                        );
-                        var halfCylMesh = new THREE.Mesh(halfCylGeo, wellMat);
-                        // Cylinder default axis = Y; rotate so axis runs along X (wLen)
-                        halfCylMesh.rotation.z = Math.PI / 2;
-                        halfCylMesh.rotation.y = Math.PI;
-                        // Center at wellFloorY + troughR so bottom touches wellFloorY
-                        halfCylMesh.position.set(cx, wellFloorY + troughR, cz);
-                        group.add(halfCylMesh);
-
-                        // Semicircular endcaps on each end
-                        var endcapShape = new THREE.Shape();
-                        endcapShape.absarc(0, 0, troughR, 0, Math.PI, false);
-                        endcapShape.closePath();
-                        var endcapGeo = new THREE.ShapeGeometry(endcapShape, troughSegs);
-                        var endcapLeft = new THREE.Mesh(endcapGeo, wellMat);
-                        endcapLeft.rotation.y = Math.PI / 2;
-                        endcapLeft.position.set(cx - wLen / 2, wellFloorY + troughR, cz);
-                        group.add(endcapLeft);
-                        var endcapRight = new THREE.Mesh(endcapGeo, wellMat);
-                        endcapRight.rotation.y = -Math.PI / 2;
-                        endcapRight.position.set(cx + wLen / 2, wellFloorY + troughR, cz);
-                        group.add(endcapRight);
+                        // Concave bowl at the bottom of a rectangular well.
+                        // Uses the same LatheGeometry approach — a round bowl that
+                        // fits inside the rectangular footprint.
+                        var bowlR = Math.min(wLen / 2, wSize / 2, btmShapeH);
+                        var rBowlSegs = 12;
+                        var rBowlPts = [];
+                        for (var rbi = 0; rbi <= rBowlSegs; rbi++) {
+                            var rba = (Math.PI / 2) * rbi / rBowlSegs;
+                            rBowlPts.push(new THREE.Vector2(
+                                Math.sin(rba) * bowlR,
+                                (1 - Math.cos(rba)) * bowlR
+                            ));
+                        }
+                        var rBowlGeo = new THREE.LatheGeometry(rBowlPts, WELL_SEGMENTS);
+                        var rBowlMesh = new THREE.Mesh(rBowlGeo, wellMat);
+                        rBowlMesh.position.set(cx, wellFloorY, cz);
+                        group.add(rBowlMesh);
                     } else if (isVBottom) {
-                        // V-bottom wedge: two angled planes meeting at a ridge along X
-                        var vDepthSq = btmShapeH;
-                        var halfW = wSize / 2;
-                        var slopeLen = Math.sqrt(halfW * halfW + vDepthSq * vDepthSq);
-                        var vAngle = Math.atan2(vDepthSq, halfW);
-
-                        // Left slope
-                        var slopeGeo = new THREE.PlaneGeometry(wLen, slopeLen);
-                        var slopeL = new THREE.Mesh(slopeGeo, wellMat);
-                        slopeL.rotation.x = -(Math.PI / 2 - vAngle);
-                        slopeL.position.set(cx, wellFloorY + vDepthSq / 2, cz - halfW / 2);
-                        group.add(slopeL);
-
-                        // Right slope
-                        var slopeR = new THREE.Mesh(slopeGeo, wellMat);
-                        slopeR.rotation.x = (Math.PI / 2 - vAngle);
-                        slopeR.position.set(cx, wellFloorY + vDepthSq / 2, cz + halfW / 2);
-                        group.add(slopeR);
-
-                        // Triangular endcaps
-                        var triShape = new THREE.Shape();
-                        triShape.moveTo(-halfW, 0);
-                        triShape.lineTo(halfW, 0);
-                        triShape.lineTo(0, -vDepthSq);
-                        triShape.closePath();
-                        var triGeo = new THREE.ShapeGeometry(triShape);
-                        var triL = new THREE.Mesh(triGeo, wellMat);
-                        triL.rotation.y = Math.PI / 2;
-                        triL.position.set(cx - wLen / 2, wellFloorY + vDepthSq, cz);
-                        group.add(triL);
-                        var triR = new THREE.Mesh(triGeo, wellMat);
-                        triR.rotation.y = -Math.PI / 2;
-                        triR.position.set(cx + wLen / 2, wellFloorY + vDepthSq, cz);
-                        group.add(triR);
+                        // 4-sided pyramid: apex at bottom, base rectangle at top
+                        var vD = btmShapeH;
+                        var hL = wLen / 2;
+                        var hW = wSize / 2;
+                        // Apex (bottom point)
+                        var ax = 0, ay = 0, az = 0;
+                        // Base corners (top of pyramid) — relative coords
+                        var c0 = [-hL, vD, -hW];  // front-left
+                        var c1 = [ hL, vD, -hW];  // front-right
+                        var c2 = [ hL, vD,  hW];  // back-right
+                        var c3 = [-hL, vD,  hW];  // back-left
+                        // 4 triangular faces (winding for outward normals)
+                        var pyrVerts = new Float32Array([
+                            c0[0],c0[1],c0[2], ax,ay,az, c1[0],c1[1],c1[2], // front
+                            c1[0],c1[1],c1[2], ax,ay,az, c2[0],c2[1],c2[2], // right
+                            c2[0],c2[1],c2[2], ax,ay,az, c3[0],c3[1],c3[2], // back
+                            c3[0],c3[1],c3[2], ax,ay,az, c0[0],c0[1],c0[2]  // left
+                        ]);
+                        var pyrGeo = new THREE.BufferGeometry();
+                        pyrGeo.setAttribute('position',
+                            new THREE.BufferAttribute(pyrVerts, 3));
+                        pyrGeo.computeVertexNormals();
+                        var pyrMesh = new THREE.Mesh(pyrGeo, wellMat);
+                        pyrMesh.position.set(cx, wellFloorY, cz);
+                        group.add(pyrMesh);
                     } else {
                         // Flat bottom
                         var btmGeo = new THREE.PlaneGeometry(wLen, wSize);
