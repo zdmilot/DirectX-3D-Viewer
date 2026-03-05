@@ -1236,6 +1236,8 @@
                     lgState.controls.mouseButtons.LEFT = -1; // disable
                 }
                 if (lgState.renderer) lgState.renderer.domElement.style.cursor = 'crosshair';
+                var help = $('#lg-ruler-help');
+                if (help) help.style.display = 'block';
                 if (readout) {
                     readout.style.display = 'block';
                     readout.textContent = 'Click first point on model…';
@@ -1251,6 +1253,8 @@
                 clearRuler();
                 lgState.rulerAxisLock = null;
                 if (lgState.renderer) lgState.renderer.domElement.style.cursor = '';
+                var help2 = $('#lg-ruler-help');
+                if (help2) help2.style.display = 'none';
                 if (readout) readout.style.display = 'none';
             }
         });
