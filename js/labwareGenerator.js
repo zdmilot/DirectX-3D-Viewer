@@ -418,14 +418,18 @@
                     const rwLRGeo = new THREE.BoxGeometry(wt, depth, wSize - wt * 2);
                     const wy = wellFloorY + depth / 2;
 
-                    group.add(Object.assign(new THREE.Mesh(rwFBGeo, wellMat),
-                        { position: new THREE.Vector3(cx, wy, cz - wSize / 2 + wt / 2) }));
-                    group.add(Object.assign(new THREE.Mesh(rwFBGeo, wellMat),
-                        { position: new THREE.Vector3(cx, wy, cz + wSize / 2 - wt / 2) }));
-                    group.add(Object.assign(new THREE.Mesh(rwLRGeo, wellMat),
-                        { position: new THREE.Vector3(cx - wLen / 2 + wt / 2, wy, cz) }));
-                    group.add(Object.assign(new THREE.Mesh(rwLRGeo, wellMat),
-                        { position: new THREE.Vector3(cx + wLen / 2 - wt / 2, wy, cz) }));
+                    var rwF = new THREE.Mesh(rwFBGeo, wellMat);
+                    rwF.position.set(cx, wy, cz - wSize / 2 + wt / 2);
+                    group.add(rwF);
+                    var rwB = new THREE.Mesh(rwFBGeo, wellMat);
+                    rwB.position.set(cx, wy, cz + wSize / 2 - wt / 2);
+                    group.add(rwB);
+                    var rwL = new THREE.Mesh(rwLRGeo, wellMat);
+                    rwL.position.set(cx - wLen / 2 + wt / 2, wy, cz);
+                    group.add(rwL);
+                    var rwR = new THREE.Mesh(rwLRGeo, wellMat);
+                    rwR.position.set(cx + wLen / 2 - wt / 2, wy, cz);
+                    group.add(rwR);
 
                     // Flat bottom
                     const btmGeo = new THREE.PlaneGeometry(wLen, wSize);
