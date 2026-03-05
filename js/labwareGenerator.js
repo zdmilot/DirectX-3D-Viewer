@@ -20,7 +20,7 @@
         a1OffsetY:       11.24,   // Y offset from plate corner to A1 center
         cornerRadius:    3.18,    // standard corner rounding
         wallThickness:   1.27,    // typical plate wall thickness
-        flangeHeight:    2.41,    // lip / flange at the top
+        flangeHeight:    2.41,    // skirt / flange at the bottom (sits on deck)
     };
 
     // ================================================================
@@ -439,7 +439,7 @@
 
         // ─── Top surface plane with well holes (Y = H) ──────────
         // A solid surface at the top of the plate between the wells
-        const topSurfaceY = H - 0.15;  // just below the rim rings
+        const topSurfaceY = H;  // flush with the plate top / well rim
         const topShape = new THREE.Shape();
         // Outer rectangle (inner face of walls)
         topShape.moveTo(wallT, wallT);
@@ -453,13 +453,13 @@
             for (let col = 0; col < cols; col++) {
                 const cx = firstX + col * gapX;
                 const cz = firstZ + row * gapZ;
-                const holeR = wellTopR + 0.15;  // slightly larger than well opening
+                const holeR = wellTopR + 0.01;  // tiny clearance to avoid z-fighting with well wall
                 const hole = new THREE.Path();
                 if (isCircle) {
                     hole.absarc(cx, cz, holeR, 0, Math.PI * 2, true);
                 } else {
-                    const hw = (def.wellLength / 2) + 0.15;
-                    const hh = (def.wellSize / 2) + 0.15;
+                    const hw = (def.wellLength / 2) + 0.01;
+                    const hh = (def.wellSize / 2) + 0.01;
                     hole.moveTo(cx - hw, cz - hh);
                     hole.lineTo(cx + hw, cz - hh);
                     hole.lineTo(cx + hw, cz + hh);
@@ -474,8 +474,8 @@
         const topMesh = new THREE.Mesh(topGeo, new THREE.MeshPhongMaterial({
             color: bodyColor, side: THREE.DoubleSide
         }));
-        // ShapeGeometry is in XY plane — rotate to XZ and position at topSurfaceY
-        topMesh.rotation.x = -Math.PI / 2;
+        // ShapeGeometry is in XY plane — rotate +PI/2 around X so shape-Y maps to +world-Z
+        topMesh.rotation.x = Math.PI / 2;
         topMesh.position.set(0, topSurfaceY, 0);
         group.add(topMesh);
 
