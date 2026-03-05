@@ -1213,6 +1213,124 @@
             if (btn) btn.classList.toggle('is-active', lgState.isPanning);
         });
 
+        // Ruler — click two points on the model to measure distance
+        bindClick('#lg-vt-ruler', () => {
+            lgState.rulerActive = !lgState.rulerActive;
+            const btn = $('#lg-vt-ruler');
+            if (btn) btn.classList.toggle('is-active', lgState.rulerActive);
+            const readout = $('#lg-ruler-readout');
+            if (!lgState.rulerActive) {
+                clearRuler();
+                if (readout) readout.style.display = 'none';
+                // Restore normal cursor
+                if (lgState.renderer) lgState.renderer.domElement.style.cursor = '';
+            } else {
+                // Set crosshair cursor while ruler is active
+                if (lgState.renderer) lgState.renderer.domElement.style.cursor = 'crosshair';
+                if (readout) {
+                    readout.style.display = 'block';
+                    readout.textContent = 'Click first point on model…';
+                }
+            }
+        });
+
+        // Ruler click handler on the canvas
+        (function setupRulerClick() {
+            var canvasEl = $('#lg-canvas') || (lgState.renderer ? lgState.renderer.domElement : null);
+            function getCanvasEl() {
+                return $('#lg-canvas') || (lgState.renderer ? lgState.renderer.domElement : null);
+            }
+            // Use a document-level listener that checks if the ruler is active
+            document.addEventListener('click', function (e) {
+                if (!lgState.rulerActive || !lgState.renderer || !lgState.model) return;
+                var cvs = getCanvasEl();
+                if (!cvs || e.target !== cvs) return;
+
+                var rect = cvs.getBoundingClientRect();
+                var mouse = new THREE.Vector2(
+                    ((e.clientX - rect.left) / rect.width) * 2 - 1,
+                    -((e.clientY - rect.top) / rect.height) * 2 + 1
+                );
+
+                var raycaster = new THREE.Raycaster();
+                raycaster.setFromCamera(mouse, lgState.camera);
+
+                var meshes = [];
+                lgState.model.traverse(function (c) { if (c.isMesh) meshes.push(c); });
+                var hits = raycaster.intersectObjects(meshes, false);
+                if (hits.length === 0) return;
+
+                var point = hits[0].point.clone();
+                var readout = $('#lg-ruler-readout');
+
+                if (!lgState.rulerStart) {
+                    // First point
+                    lgState.rulerStart = point;
+                    clearRuler();
+                    addRulerMarker(point);
+                    if (readout) {
+                        readout.style.display = 'block';
+                        readout.textContent = 'Click second point…';
+                    }
+                } else {
+                    // Second point — compute and display
+                    lgState.rulerEnd = point;
+                    addRulerMarker(point);
+                    drawRulerLine(lgState.rulerStart, lgState.rulerEnd);
+                    var dist = lgState.rulerStart.distanceTo(lgState.rulerEnd);
+                    if (readout) {
+                        readout.style.display = 'block';
+                        readout.textContent = '📏 ' + dist.toFixed(2) + ' mm';
+                    }
+                    // Reset for next measurement on next click
+                    lgState.rulerStart = null;
+                    lgState.rulerEnd = null;
+                }
+            }, false);
+        })();
+
+        function clearRuler() {
+            if (lgState.rulerLine && lgState.scene) {
+                lgState.scene.remove(lgState.rulerLine);
+                if (lgState.rulerLine.geometry) lgState.rulerLine.geometry.dispose();
+                if (lgState.rulerLine.material) lgState.rulerLine.material.dispose();
+                lgState.rulerLine = null;
+            }
+            lgState.rulerMarkers.forEach(function (m) {
+                if (lgState.scene) lgState.scene.remove(m);
+                if (m.geometry) m.geometry.dispose();
+                if (m.material) m.material.dispose();
+            });
+            lgState.rulerMarkers = [];
+            lgState.rulerStart = null;
+            lgState.rulerEnd = null;
+        }
+
+        function addRulerMarker(point) {
+            var geo = new THREE.SphereGeometry(0.4, 12, 8);
+            var mat = new THREE.MeshBasicMaterial({ color: 0xff4444, depthTest: false });
+            var mesh = new THREE.Mesh(geo, mat);
+            mesh.position.copy(point);
+            mesh.renderOrder = 999;
+            lgState.scene.add(mesh);
+            lgState.rulerMarkers.push(mesh);
+        }
+
+        function drawRulerLine(a, b) {
+            // Remove old line if any
+            if (lgState.rulerLine && lgState.scene) {
+                lgState.scene.remove(lgState.rulerLine);
+                if (lgState.rulerLine.geometry) lgState.rulerLine.geometry.dispose();
+                if (lgState.rulerLine.material) lgState.rulerLine.material.dispose();
+            }
+            var geo = new THREE.BufferGeometry().setFromPoints([a, b]);
+            var mat = new THREE.LineBasicMaterial({ color: 0xff4444, depthTest: false, linewidth: 2 });
+            var line = new THREE.Line(geo, mat);
+            line.renderOrder = 999;
+            lgState.scene.add(line);
+            lgState.rulerLine = line;
+        }
+
         // Make toolbar draggable
         makeDraggable($('#lg-toolbar'), $('#lg-vt-grab-handle'));
     }
