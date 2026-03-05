@@ -567,13 +567,13 @@
                 // Position camera to see the whole model
                 const fitDist = maxDim * 1.8;
                 camera.position.set(fitDist * 0.6, fitDist * 0.4, fitDist);
-                camera.near = maxDim * 0.05;
-                camera.far = maxDim * 20;
+                camera.near = maxDim * 0.001;
+                camera.far  = maxDim * 100;
                 camera.updateProjectionMatrix();
 
                 controls.target.set(0, 0, 0);
-                controls.minDistance = maxDim * 0.1;
-                controls.maxDistance = maxDim * 10;
+                controls.minDistance = maxDim * 0.01;
+                controls.maxDistance = maxDim * 50;
                 controls.update();
 
                 // Resize grid to match model scale
@@ -699,10 +699,18 @@
             const maxDim = Math.max(size.x, size.y, size.z);
             const fitDist = maxDim * 1.8;
             camera.position.set(fitDist * 0.6, fitDist * 0.4, fitDist);
+            camera.near = maxDim * 0.001;
+            camera.far  = maxDim * 100;
+            camera.updateProjectionMatrix();
             controls.target.set(0, 0, 0);
+            controls.minDistance = maxDim * 0.01;
+            controls.maxDistance = maxDim * 50;
             controls.update();
         } else {
             camera.position.set(0, 50, 150);
+            camera.near = 0.01;
+            camera.far  = 100000;
+            camera.updateProjectionMatrix();
             controls.target.set(0, 0, 0);
             controls.update();
         }
@@ -722,7 +730,11 @@
         const dir = camera.position.clone().sub(controls.target).normalize();
         camera.position.copy(dir.multiplyScalar(fitDist));
         controls.target.set(0, 0, 0);
+        camera.near = maxDim * 0.001;
+        camera.far  = maxDim * 100;
         camera.updateProjectionMatrix();
+        controls.minDistance = maxDim * 0.01;
+        controls.maxDistance = maxDim * 50;
         controls.update();
     }
 
@@ -753,8 +765,18 @@
         const pos = camera.position.clone();
         const target = controls.target.clone();
 
+        // Compute model-aware near/far to prevent clipping
+        let nearPlane = 0.01, farPlane = 100000;
+        const mdl = scene ? scene.getObjectByName('__xmodel__') : null;
+        if (mdl) {
+            const mdlBox = new THREE.Box3().setFromObject(mdl);
+            const mdlSize = mdlBox.getSize(new THREE.Vector3());
+            const mdlMax = Math.max(mdlSize.x, mdlSize.y, mdlSize.z);
+            if (mdlMax > 0) { nearPlane = mdlMax * 0.001; farPlane = mdlMax * 100; }
+        }
+
         if (state.isPerspective) {
-            camera = new THREE.PerspectiveCamera(45, w / h, 0.1, 10000);
+            camera = new THREE.PerspectiveCamera(45, w / h, nearPlane, farPlane);
             dom.vtPerspective.querySelector('i').className = 'fas fa-cube';
         } else {
             const dist = pos.distanceTo(target);
@@ -762,7 +784,7 @@
             camera = new THREE.OrthographicCamera(
                 -frustumSize * (w / h), frustumSize * (w / h),
                 frustumSize, -frustumSize,
-                0.1, 10000
+                nearPlane, farPlane
             );
             dom.vtPerspective.querySelector('i').className = 'fas fa-vector-square';
         }
