@@ -277,9 +277,15 @@
         const wellColor   = 0xc0c4cc;
         const flangeColor = 0xe0e4ea;
 
-        const bodyMat  = new THREE.MeshPhongMaterial({ color: bodyColor });
+        const bodyMat  = new THREE.MeshPhongMaterial({
+            color: bodyColor, transparent: true, opacity: 0.35,
+            side: THREE.DoubleSide, depthWrite: false,
+        });
         const wellMat  = new THREE.MeshPhongMaterial({ color: wellColor, side: THREE.DoubleSide });
-        const flangeMat = new THREE.MeshPhongMaterial({ color: flangeColor });
+        const flangeMat = new THREE.MeshPhongMaterial({
+            color: flangeColor, transparent: true, opacity: 0.4,
+            side: THREE.DoubleSide, depthWrite: false,
+        });
 
         // ─── Skirt / flange at the BOTTOM (Y = 0 → flangeH) ──────
         // Four flange strips that sit at the bottom and overhang outward
@@ -445,11 +451,11 @@
         // A solid surface at the top of the plate between the wells
         const topSurfaceY = H;  // flush with the plate top / well rim
         const topShape = new THREE.Shape();
-        // Outer rectangle (inner face of walls)
-        topShape.moveTo(wallT, wallT);
-        topShape.lineTo(L - wallT, wallT);
-        topShape.lineTo(L - wallT, W - wallT);
-        topShape.lineTo(wallT, W - wallT);
+        // Outer rectangle — full plate extent so labels sit on the surface
+        topShape.moveTo(0, 0);
+        topShape.lineTo(L, 0);
+        topShape.lineTo(L, W);
+        topShape.lineTo(0, W);
         topShape.closePath();
 
         // Punch holes for each well
@@ -483,44 +489,64 @@
         topMesh.position.set(0, topSurfaceY, 0);
         group.add(topMesh);
 
-        // ─── Alphanumeric well labels ────────────────────────────
-        // Row letters (A, B, C, …) along the left edge
-        // Column numbers (1, 2, 3, …) along the top edge
-        function makeTextSprite(text, size) {
+        // ─── Alphanumeric labels etched into top surface ─────────
+        // Row letters (A, B, C, …) along left margin
+        // Column numbers (1, 2, 3, …) along front margin
+        // Centered in the gap between wells and plate edge
+        function makeEtchedLabel(text, cellW, cellH) {
+            var res = 256;
             var canvas = document.createElement('canvas');
-            var sz = 128;
-            canvas.width = sz;
-            canvas.height = sz;
+            canvas.width = res;
+            canvas.height = res;
             var ctx = canvas.getContext('2d');
-            ctx.fillStyle = '#333333';
-            ctx.font = 'bold ' + Math.round(sz * 0.6) + 'px Arial';
+            // Transparent background
+            ctx.clearRect(0, 0, res, res);
+            // Dark etched text
+            ctx.fillStyle = '#555555';
+            ctx.font = 'bold ' + Math.round(res * 0.55) + 'px Arial';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillText(text, sz / 2, sz / 2);
+            ctx.fillText(text, res / 2, res / 2);
             var tex = new THREE.CanvasTexture(canvas);
             tex.needsUpdate = true;
-            var mat = new THREE.SpriteMaterial({ map: tex, depthTest: false });
-            var sprite = new THREE.Sprite(mat);
-            sprite.scale.set(size, size, 1);
-            return sprite;
+            var mat = new THREE.MeshBasicMaterial({
+                map: tex, transparent: true, depthWrite: false,
+                side: THREE.DoubleSide,
+            });
+            var geo = new THREE.PlaneGeometry(cellW, cellH);
+            var mesh = new THREE.Mesh(geo, mat);
+            return mesh;
         }
 
-        var labelSize = Math.min(gapX, gapZ) * 0.55;
-        // Row labels (left of plate)
+        // Margins: gap between plate edge and first well center
+        var marginLeft = firstX;           // X from plate edge to first col center
+        var marginFront = firstZ;          // Z from plate edge to first row center
+        var labelY = H + 0.05;             // just above top surface to avoid z-fighting
+
+        // Row labels — centered in left margin strip
+        var rowLabelX = marginLeft / 2;    // midpoint of left margin
+        var rowLabelW = Math.min(marginLeft - wallT, gapZ * 0.8);
+        var rowLabelH = Math.min(gapZ * 0.7, marginLeft - wallT);
         for (var r = 0; r < rows; r++) {
-            var letter = String.fromCharCode(65 + r);  // A, B, C, ...
-            var sprite = makeTextSprite(letter, labelSize);
+            var letter = String.fromCharCode(65 + r);
             var rz = firstZ + r * gapZ;
-            sprite.position.set(-labelSize * 0.6, H + 0.5, rz);
-            group.add(sprite);
+            var lbl = makeEtchedLabel(letter, rowLabelW, rowLabelH);
+            lbl.rotation.x = -Math.PI / 2;
+            lbl.position.set(rowLabelX, labelY, rz);
+            group.add(lbl);
         }
-        // Column labels (above plate, front edge)
+
+        // Column labels — centered in front margin strip
+        var colLabelZ = marginFront / 2;   // midpoint of front margin
+        var colLabelW = Math.min(gapX * 0.8, marginFront - wallT);
+        var colLabelH = Math.min(marginFront - wallT, gapX * 0.8);
         for (var c = 0; c < cols; c++) {
             var numStr = String(c + 1);
-            var sprite2 = makeTextSprite(numStr, labelSize);
             var cx2 = firstX + c * gapX;
-            sprite2.position.set(cx2, H + 0.5, -labelSize * 0.6);
-            group.add(sprite2);
+            var lbl2 = makeEtchedLabel(numStr, colLabelW, colLabelH);
+            lbl2.rotation.x = -Math.PI / 2;
+            lbl2.position.set(cx2, labelY, colLabelZ);
+            group.add(lbl2);
         }
 
         return group;
