@@ -276,7 +276,10 @@
       ++result.valueLength;
     }
     if (isNaN(parseInt(fullText[_off + result.valueLength], 10))) {
-      throw 'Number expected.';
+      var _pos = _off + result.valueLength;
+      var _ctx = fullText.substring(_pos, _pos + 40).replace(/\n/g, '\\n').replace(/\r/g, '\\r');
+      var _before = fullText.substring(Math.max(0, _pos - 80), _pos).replace(/\n/g, '\\n').replace(/\r/g, '\\r');
+      throw 'Integer expected at offset ' + _pos + ', found char ' + JSON.stringify(fullText[_pos]) + ', context: [...' + _before + '>>>HERE>>>' + _ctx + '...]';
     }
     while (_off + result.valueLength < fullText.length) {
       var currentDigit = parseInt(fullText[_off + result.valueLength], 10);
@@ -308,7 +311,10 @@
       ++result.valueLength;
     }
     if (isNaN(parseInt(fullText[_off + result.valueLength], 10))) {
-      throw 'Number expected.';
+      var _fpos = _off + result.valueLength;
+      var _fctx = fullText.substring(_fpos, _fpos + 40).replace(/\n/g, '\\n').replace(/\r/g, '\\r');
+      var _fbefore = fullText.substring(Math.max(0, _fpos - 80), _fpos).replace(/\n/g, '\\n').replace(/\r/g, '\\r');
+      throw 'Float expected at offset ' + _fpos + ', found char ' + JSON.stringify(fullText[_fpos]) + ', context: [...' + _fbefore + '>>>HERE>>>' + _fctx + '...]';
     }
     while (_off + result.valueLength < fullText.length) {
       var currentDigit = parseInt(fullText[_off + result.valueLength], 10);

@@ -107,11 +107,30 @@
     }
 
     /**
+     * Check if an ArrayBuffer starts with 'xof ' (a raw .x text file).
+     * Some files have .hxx extension but contain raw DirectX .x data.
+     * @param {ArrayBuffer} buffer
+     * @returns {boolean}
+     */
+    function isRawXFile(buffer) {
+        if (!buffer || buffer.byteLength < 4) return false;
+        const bytes = new Uint8Array(buffer, 0, 4);
+        return bytes[0] === 0x78 && bytes[1] === 0x6F &&
+               bytes[2] === 0x66 && bytes[3] === 0x20; // 'xof '
+    }
+
+    /**
      * Parse a .hxx file and extract all sections.
      * @param {ArrayBuffer} buffer - The raw .hxx file bytes.
      * @returns {Promise<{xFileText: string, textures: Array<{name: string, blob: Blob}>}>}
      */
     async function parse(buffer) {
+        // Some .hxx files are actually raw .x text — handle gracefully
+        if (isRawXFile(buffer)) {
+            const xFileText = new TextDecoder('utf-8').decode(new Uint8Array(buffer));
+            return { xFileText: xFileText, textures: [] };
+        }
+
         if (!isHXX(buffer)) {
             throw new Error('Not a valid .hxx file (missing Hamilton3dData header)');
         }
@@ -248,6 +267,7 @@
     // ── Public API ───────────────────────────────────────────────
     window.HXXLoader = {
         isHXX: isHXX,
+        isRawXFile: isRawXFile,
         isHXXFilename: isHXXFilename,
         isXOrHXX: isXOrHXX,
         parse: parse,
