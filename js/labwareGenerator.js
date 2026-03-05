@@ -46,6 +46,8 @@
         rulerEnd: null,
         rulerLine: null,    // THREE.Line
         rulerMarkers: [],   // start/end spheres
+        rulerAxisLock: null, // 'x', 'y', or 'z' — or null for free
+        _savedMouseButtons: null,
     };
 
     const LIGHT_BG   = 0xf0f0f0;
@@ -1213,78 +1215,204 @@
             if (btn) btn.classList.toggle('is-active', lgState.isPanning);
         });
 
-        // Ruler — click two points on the model to measure distance
+        // ── Ruler Tool ──────────────────────────────────────────────
+        // When active: normal click = measure, Cmd/Ctrl+drag = orbit
+        // First click sets start, mousemove draws live line, second click finalizes
+        // Press X, Y, or Z to lock measurement to that axis
         bindClick('#lg-vt-ruler', () => {
             lgState.rulerActive = !lgState.rulerActive;
             const btn = $('#lg-vt-ruler');
             if (btn) btn.classList.toggle('is-active', lgState.rulerActive);
             const readout = $('#lg-ruler-readout');
-            if (!lgState.rulerActive) {
-                clearRuler();
-                if (readout) readout.style.display = 'none';
-                // Restore normal cursor
-                if (lgState.renderer) lgState.renderer.domElement.style.cursor = '';
-            } else {
-                // Set crosshair cursor while ruler is active
+
+            if (lgState.rulerActive) {
+                // Disable orbit on left-click; only Cmd/Ctrl will orbit
+                if (lgState.controls) {
+                    lgState._savedMouseButtons = {
+                        LEFT: lgState.controls.mouseButtons.LEFT,
+                        MIDDLE: lgState.controls.mouseButtons.MIDDLE,
+                        RIGHT: lgState.controls.mouseButtons.RIGHT,
+                    };
+                    lgState.controls.mouseButtons.LEFT = -1; // disable
+                }
                 if (lgState.renderer) lgState.renderer.domElement.style.cursor = 'crosshair';
                 if (readout) {
                     readout.style.display = 'block';
                     readout.textContent = 'Click first point on model…';
                 }
+            } else {
+                // Restore orbit controls
+                if (lgState.controls && lgState._savedMouseButtons) {
+                    lgState.controls.mouseButtons.LEFT = lgState._savedMouseButtons.LEFT;
+                    lgState.controls.mouseButtons.MIDDLE = lgState._savedMouseButtons.MIDDLE;
+                    lgState.controls.mouseButtons.RIGHT = lgState._savedMouseButtons.RIGHT;
+                    lgState._savedMouseButtons = null;
+                }
+                clearRuler();
+                lgState.rulerAxisLock = null;
+                if (lgState.renderer) lgState.renderer.domElement.style.cursor = '';
+                if (readout) readout.style.display = 'none';
             }
         });
 
-        // Ruler click handler on the canvas
-        (function setupRulerClick() {
-            var canvasEl = $('#lg-canvas') || (lgState.renderer ? lgState.renderer.domElement : null);
-            function getCanvasEl() {
-                return $('#lg-canvas') || (lgState.renderer ? lgState.renderer.domElement : null);
+        // Raycast helper
+        function rulerRaycast(e) {
+            if (!lgState.renderer || !lgState.model) return null;
+            var cvs = lgState.renderer.domElement;
+            var rect = cvs.getBoundingClientRect();
+            var mouse = new THREE.Vector2(
+                ((e.clientX - rect.left) / rect.width) * 2 - 1,
+                -((e.clientY - rect.top) / rect.height) * 2 + 1
+            );
+            var raycaster = new THREE.Raycaster();
+            raycaster.setFromCamera(mouse, lgState.camera);
+            var meshes = [];
+            lgState.model.traverse(function (c) { if (c.isMesh) meshes.push(c); });
+            var hits = raycaster.intersectObjects(meshes, false);
+            return hits.length > 0 ? hits[0].point.clone() : null;
+        }
+
+        // Apply axis lock: constrain endpoint to match start on locked axes
+        function applyAxisLock(start, end) {
+            if (!lgState.rulerAxisLock || !start) return end;
+            var locked = end.clone();
+            if (lgState.rulerAxisLock === 'x') {
+                locked.y = start.y;
+                locked.z = start.z;
+            } else if (lgState.rulerAxisLock === 'y') {
+                locked.x = start.x;
+                locked.z = start.z;
+            } else if (lgState.rulerAxisLock === 'z') {
+                locked.x = start.x;
+                locked.y = start.y;
             }
-            // Use a document-level listener that checks if the ruler is active
-            document.addEventListener('click', function (e) {
-                if (!lgState.rulerActive || !lgState.renderer || !lgState.model) return;
-                var cvs = getCanvasEl();
-                if (!cvs || e.target !== cvs) return;
+            return locked;
+        }
 
-                var rect = cvs.getBoundingClientRect();
-                var mouse = new THREE.Vector2(
-                    ((e.clientX - rect.left) / rect.width) * 2 - 1,
-                    -((e.clientY - rect.top) / rect.height) * 2 + 1
-                );
+        // Axis lock label
+        function axisLabel() {
+            if (!lgState.rulerAxisLock) return '';
+            return ' [locked ' + lgState.rulerAxisLock.toUpperCase() + ']';
+        }
 
-                var raycaster = new THREE.Raycaster();
-                raycaster.setFromCamera(mouse, lgState.camera);
+        // Pointer down on canvas — ruler click handler
+        (function setupRuler() {
+            document.addEventListener('pointerdown', function (e) {
+                if (!lgState.rulerActive || !lgState.renderer) return;
+                var cvs = lgState.renderer.domElement;
+                if (e.target !== cvs) return;
 
-                var meshes = [];
-                lgState.model.traverse(function (c) { if (c.isMesh) meshes.push(c); });
-                var hits = raycaster.intersectObjects(meshes, false);
-                if (hits.length === 0) return;
+                // Cmd/Ctrl held → let orbit controls handle it
+                if (e.metaKey || e.ctrlKey) {
+                    // Temporarily re-enable orbit for this gesture
+                    if (lgState.controls) {
+                        lgState.controls.mouseButtons.LEFT = THREE.MOUSE.ROTATE;
+                    }
+                    // Restore disable after mouseup
+                    var onUp = function () {
+                        if (lgState.rulerActive && lgState.controls) {
+                            lgState.controls.mouseButtons.LEFT = -1;
+                        }
+                        document.removeEventListener('pointerup', onUp);
+                    };
+                    document.addEventListener('pointerup', onUp);
+                    return;
+                }
 
-                var point = hits[0].point.clone();
+                e.preventDefault();
+                e.stopPropagation();
+
+                var point = rulerRaycast(e);
+                if (!point) return;
                 var readout = $('#lg-ruler-readout');
 
                 if (!lgState.rulerStart) {
                     // First point
-                    lgState.rulerStart = point;
                     clearRuler();
+                    lgState.rulerStart = point;
+                    lgState.rulerAxisLock = null;
                     addRulerMarker(point);
                     if (readout) {
                         readout.style.display = 'block';
-                        readout.textContent = 'Click second point…';
+                        readout.textContent = 'Move to second point… (X/Y/Z to lock axis)';
                     }
                 } else {
-                    // Second point — compute and display
-                    lgState.rulerEnd = point;
-                    addRulerMarker(point);
-                    drawRulerLine(lgState.rulerStart, lgState.rulerEnd);
-                    var dist = lgState.rulerStart.distanceTo(lgState.rulerEnd);
+                    // Second point — finalize
+                    var lockedPt = applyAxisLock(lgState.rulerStart, point);
+                    lgState.rulerEnd = lockedPt;
+                    // Clear live line, draw final
+                    if (lgState.rulerMarkers.length > 1) {
+                        // Remove the live-tracking marker
+                        var liveMarker = lgState.rulerMarkers.pop();
+                        lgState.scene.remove(liveMarker);
+                        liveMarker.geometry.dispose();
+                        liveMarker.material.dispose();
+                    }
+                    addRulerMarker(lockedPt);
+                    drawRulerLine(lgState.rulerStart, lockedPt);
+                    var dist = lgState.rulerStart.distanceTo(lockedPt);
                     if (readout) {
                         readout.style.display = 'block';
-                        readout.textContent = '📏 ' + dist.toFixed(2) + ' mm';
+                        readout.textContent = '📏 ' + dist.toFixed(2) + ' mm' + axisLabel() +
+                            '  — click to start new measurement';
                     }
-                    // Reset for next measurement on next click
+                    // Ready for next measurement
                     lgState.rulerStart = null;
                     lgState.rulerEnd = null;
+                    lgState.rulerAxisLock = null;
+                }
+            }, true);  // capture phase so we intercept before orbit controls
+
+            // Live line on mousemove after first point is set
+            document.addEventListener('pointermove', function (e) {
+                if (!lgState.rulerActive || !lgState.rulerStart || !lgState.renderer) return;
+                var cvs = lgState.renderer.domElement;
+                if (e.target !== cvs) return;
+
+                var point = rulerRaycast(e);
+                if (!point) return;
+                var lockedPt = applyAxisLock(lgState.rulerStart, point);
+
+                // Update live line
+                drawRulerLine(lgState.rulerStart, lockedPt);
+
+                // Update or add live end marker
+                if (lgState.rulerMarkers.length > 1) {
+                    lgState.rulerMarkers[1].position.copy(lockedPt);
+                } else {
+                    addRulerMarker(lockedPt);
+                }
+
+                // Update live distance readout
+                var dist = lgState.rulerStart.distanceTo(lockedPt);
+                var readout = $('#lg-ruler-readout');
+                if (readout) {
+                    readout.style.display = 'block';
+                    readout.textContent = '📏 ' + dist.toFixed(2) + ' mm' + axisLabel();
+                }
+            }, false);
+
+            // Axis lock keys
+            document.addEventListener('keydown', function (e) {
+                if (!lgState.rulerActive || !lgState.rulerStart) return;
+                var key = e.key.toLowerCase();
+                if (key === 'x' || key === 'y' || key === 'z') {
+                    // Toggle: pressing same key again unlocks
+                    lgState.rulerAxisLock = (lgState.rulerAxisLock === key) ? null : key;
+                    var readout = $('#lg-ruler-readout');
+                    if (readout) {
+                        var lockText = lgState.rulerAxisLock
+                            ? 'Locked to ' + lgState.rulerAxisLock.toUpperCase() + ' axis'
+                            : 'Axis unlocked — free measurement';
+                        readout.textContent = lockText;
+                    }
+                    e.preventDefault();
+                } else if (key === 'escape') {
+                    // Cancel current measurement
+                    clearRuler();
+                    lgState.rulerAxisLock = null;
+                    var readout = $('#lg-ruler-readout');
+                    if (readout) readout.textContent = 'Click first point on model…';
                 }
             }, false);
         })();
@@ -1317,7 +1445,6 @@
         }
 
         function drawRulerLine(a, b) {
-            // Remove old line if any
             if (lgState.rulerLine && lgState.scene) {
                 lgState.scene.remove(lgState.rulerLine);
                 if (lgState.rulerLine.geometry) lgState.rulerLine.geometry.dispose();
