@@ -270,47 +270,78 @@
         const H = def.height;            // Y dimension (mm)
         const wallT = SBS.wallThickness;
         const flangeH = Math.min(SBS.flangeHeight, H * 0.15);
+        const flangeOverhang = 0.5;      // mm overhang on each side
+        const bottomT = wallT;           // bottom slab thickness
 
-        // Colors — semi-transparent white plastic look
+        // Colors
         const bodyColor   = 0xd8dce2;
+        const innerColor  = 0xe8eaee;
         const wellColor   = 0xc0c4cc;
         const flangeColor = 0xe0e4ea;
 
-        // ─── Plate body (outer shell) ───────────────────────
-        const bodyGeo = new THREE.BoxGeometry(L, H, W);
-        const bodyMat = new THREE.MeshPhongMaterial({
-            color: bodyColor,
-            transparent: true,
-            opacity: 0.85,
-            side: THREE.DoubleSide,
-        });
-        const bodyMesh = new THREE.Mesh(bodyGeo, bodyMat);
-        bodyMesh.position.set(L / 2, H / 2, W / 2);
-        group.add(bodyMesh);
+        const bodyMat = new THREE.MeshPhongMaterial({ color: bodyColor });
+        const innerMat = new THREE.MeshPhongMaterial({ color: innerColor });
+        const wellMat = new THREE.MeshPhongMaterial({ color: wellColor, side: THREE.DoubleSide });
+        const flangeMat = new THREE.MeshPhongMaterial({ color: flangeColor });
 
-        // ─── Flange / lip at the top ────────────────────────
-        const flangeGeo = new THREE.BoxGeometry(L + 1.0, flangeH, W + 1.0);
-        const flangeMat = new THREE.MeshPhongMaterial({
-            color: flangeColor,
-            transparent: true,
-            opacity: 0.9,
-        });
-        const flangeMesh = new THREE.Mesh(flangeGeo, flangeMat);
-        flangeMesh.position.set(L / 2, H - flangeH / 2, W / 2);
-        group.add(flangeMesh);
+        // ─── Bottom slab ────────────────────────────────────
+        const bottomGeo = new THREE.BoxGeometry(L, bottomT, W);
+        const bottomMesh = new THREE.Mesh(bottomGeo, bodyMat);
+        bottomMesh.position.set(L / 2, bottomT / 2, W / 2);
+        group.add(bottomMesh);
 
-        // ─── Inner cavity (plate interior slightly smaller) ──
-        const innerL = L - wallT * 2;
-        const innerW = W - wallT * 2;
-        const innerH = H - wallT;
-        const innerGeo = new THREE.BoxGeometry(innerL, innerH, innerW);
-        const innerMat = new THREE.MeshPhongMaterial({
-            color: 0xf5f5f5,
-            side: THREE.BackSide,
-        });
-        const innerMesh = new THREE.Mesh(innerGeo, innerMat);
-        innerMesh.position.set(L / 2, innerH / 2 + wallT, W / 2);
-        group.add(innerMesh);
+        // ─── Four walls (non-overlapping with bottom) ───────
+        const wallH = H - bottomT;  // wall height above the bottom slab
+
+        // Front wall (Z = 0 side)
+        const frontGeo = new THREE.BoxGeometry(L, wallH, wallT);
+        const frontMesh = new THREE.Mesh(frontGeo, bodyMat);
+        frontMesh.position.set(L / 2, bottomT + wallH / 2, wallT / 2);
+        group.add(frontMesh);
+
+        // Back wall (Z = W side)
+        const backMesh = new THREE.Mesh(frontGeo, bodyMat);
+        backMesh.position.set(L / 2, bottomT + wallH / 2, W - wallT / 2);
+        group.add(backMesh);
+
+        // Left wall (X = 0 side), spans only interior width to avoid corner overlap
+        const sideInnerW = W - wallT * 2;
+        const sideGeo = new THREE.BoxGeometry(wallT, wallH, sideInnerW);
+        const leftMesh = new THREE.Mesh(sideGeo, bodyMat);
+        leftMesh.position.set(wallT / 2, bottomT + wallH / 2, W / 2);
+        group.add(leftMesh);
+
+        // Right wall (X = L side)
+        const rightMesh = new THREE.Mesh(sideGeo, bodyMat);
+        rightMesh.position.set(L - wallT / 2, bottomT + wallH / 2, W / 2);
+        group.add(rightMesh);
+
+        // ─── Flange / lip at the top edge ───────────────────
+        // Four flange strips that sit on top of the walls and overhang outward
+        const flangeOuterL = L + flangeOverhang * 2;
+        const flangeOuterW = W + flangeOverhang * 2;
+        const flangeY = H - flangeH / 2;
+
+        // Front and back flanges (full length)
+        const flangeFBGeo = new THREE.BoxGeometry(flangeOuterL, flangeH, wallT + flangeOverhang);
+        const flangeFront = new THREE.Mesh(flangeFBGeo, flangeMat);
+        flangeFront.position.set(L / 2, flangeY, -flangeOverhang / 2 + wallT / 2);
+        group.add(flangeFront);
+
+        const flangeBack = new THREE.Mesh(flangeFBGeo, flangeMat);
+        flangeBack.position.set(L / 2, flangeY, W + flangeOverhang / 2 - wallT / 2);
+        group.add(flangeBack);
+
+        // Left and right flanges (inner span only)
+        const flangeLRLen = W - wallT * 2;
+        const flangeLRGeo = new THREE.BoxGeometry(wallT + flangeOverhang, flangeH, flangeLRLen);
+        const flangeLeft = new THREE.Mesh(flangeLRGeo, flangeMat);
+        flangeLeft.position.set(-flangeOverhang / 2 + wallT / 2, flangeY, W / 2);
+        group.add(flangeLeft);
+
+        const flangeRight = new THREE.Mesh(flangeLRGeo, flangeMat);
+        flangeRight.position.set(L + flangeOverhang / 2 - wallT / 2, flangeY, W / 2);
+        group.add(flangeRight);
 
         // ─── Wells ──────────────────────────────────────────
         const rows = def.rowCount;
@@ -323,86 +354,92 @@
         const gapX = def.colGap;
         const gapZ = def.rowGap;
 
-        // Determine well geometry based on shape and bottom shape
         const isCircle = (def.wellShape || '').toLowerCase() === 'circle';
         const isRoundBottom = (def.bottomShape || '').toLowerCase() === 'circle';
         const isVBottom = def.vShapeDepth > 0;
+
+        // Wells hang down from the top surface (Y = H) into the interior
+        // The top of each well cylinder sits at Y = H (plate top, below flange)
+        // The bottom sits at Y = H - depth
+        const wellTopY = H - flangeH;  // just below flange
 
         for (let row = 0; row < rows; row++) {
             for (let col = 0; col < cols; col++) {
                 const cx = firstX + col * gapX;
                 const cz = firstZ + row * gapZ;
-                const wellY = H;  // Top of plate
 
                 if (isCircle) {
-                    // Circular well — use cylinder (tapered if top != bottom radius)
-                    const wellGeo = new THREE.CylinderGeometry(
-                        wellTopR,      // top radius
-                        isRoundBottom ? wellBotR : wellBotR,
-                        depth,
-                        WELL_SEGMENTS,
-                        1,
-                        true           // open ended (no cap at top)
+                    // Tapered cylinder wall
+                    const cylGeo = new THREE.CylinderGeometry(
+                        wellTopR, wellBotR, depth, WELL_SEGMENTS, 1, true
                     );
-                    const wellMat = new THREE.MeshPhongMaterial({
-                        color: wellColor,
-                        side: THREE.DoubleSide,
-                    });
-                    const wellMesh = new THREE.Mesh(wellGeo, wellMat);
-                    wellMesh.position.set(cx, wellY - depth / 2, cz);
-                    group.add(wellMesh);
+                    const cylMesh = new THREE.Mesh(cylGeo, wellMat);
+                    cylMesh.position.set(cx, wellTopY - depth / 2, cz);
+                    group.add(cylMesh);
+
+                    // Top rim ring (annular disk at the top of each well)
+                    const rimGeo = new THREE.RingGeometry(
+                        wellTopR, wellTopR + 0.3, WELL_SEGMENTS
+                    );
+                    const rimMesh = new THREE.Mesh(rimGeo, new THREE.MeshPhongMaterial({
+                        color: flangeColor, side: THREE.DoubleSide
+                    }));
+                    rimMesh.rotation.x = -Math.PI / 2;
+                    rimMesh.position.set(cx, wellTopY, cz);
+                    group.add(rimMesh);
 
                     // Bottom cap
                     if (isRoundBottom) {
-                        // Hemisphere bottom
                         const hemiGeo = new THREE.SphereGeometry(
                             wellBotR, WELL_SEGMENTS, 8,
                             0, Math.PI * 2,
-                            Math.PI / 2, Math.PI / 2
+                            0, Math.PI / 2  // bottom hemisphere
                         );
-                        const hemiMat = new THREE.MeshPhongMaterial({
-                            color: wellColor,
-                            side: THREE.DoubleSide,
-                        });
-                        const hemiMesh = new THREE.Mesh(hemiGeo, hemiMat);
-                        hemiMesh.position.set(cx, wellY - depth, cz);
+                        const hemiMesh = new THREE.Mesh(hemiGeo, wellMat);
+                        hemiMesh.rotation.x = Math.PI;  // flip so dome goes downward
+                        hemiMesh.position.set(cx, wellTopY - depth, cz);
                         group.add(hemiMesh);
                     } else if (isVBottom) {
-                        // V-shaped bottom cone
                         const coneGeo = new THREE.ConeGeometry(
                             wellBotR, def.vShapeDepth, WELL_SEGMENTS, 1, true
                         );
-                        const coneMat = new THREE.MeshPhongMaterial({
-                            color: wellColor,
-                            side: THREE.DoubleSide,
-                        });
-                        const coneMesh = new THREE.Mesh(coneGeo, coneMat);
-                        coneMesh.position.set(cx, wellY - depth - def.vShapeDepth / 2, cz);
+                        const coneMesh = new THREE.Mesh(coneGeo, wellMat);
+                        coneMesh.position.set(cx, wellTopY - depth - def.vShapeDepth / 2, cz);
                         group.add(coneMesh);
                     } else {
                         // Flat bottom disk
                         const diskGeo = new THREE.CircleGeometry(wellBotR, WELL_SEGMENTS);
-                        const diskMat = new THREE.MeshPhongMaterial({
-                            color: wellColor,
-                            side: THREE.DoubleSide,
-                        });
-                        const diskMesh = new THREE.Mesh(diskGeo, diskMat);
+                        const diskMesh = new THREE.Mesh(diskGeo, wellMat);
                         diskMesh.rotation.x = -Math.PI / 2;
-                        diskMesh.position.set(cx, wellY - depth, cz);
+                        diskMesh.position.set(cx, wellTopY - depth, cz);
                         group.add(diskMesh);
                     }
                 } else {
-                    // Rectangular well
+                    // Rectangular well (open top box)
                     const wLen = def.wellLength;
                     const wSize = def.wellSize;
-                    const wellGeo = new THREE.BoxGeometry(wLen, depth, wSize);
-                    const wellMat = new THREE.MeshPhongMaterial({
-                        color: wellColor,
-                        side: THREE.DoubleSide,
-                    });
-                    const wellMesh = new THREE.Mesh(wellGeo, wellMat);
-                    wellMesh.position.set(cx, wellY - depth / 2, cz);
-                    group.add(wellMesh);
+                    const wt = 0.3; // thin wall for rect wells
+
+                    // Four thin walls for rectangular well
+                    const rwFBGeo = new THREE.BoxGeometry(wLen, depth, wt);
+                    const rwLRGeo = new THREE.BoxGeometry(wt, depth, wSize - wt * 2);
+                    const wy = wellTopY - depth / 2;
+
+                    group.add(Object.assign(new THREE.Mesh(rwFBGeo, wellMat),
+                        { position: new THREE.Vector3(cx, wy, cz - wSize / 2 + wt / 2) }));
+                    group.add(Object.assign(new THREE.Mesh(rwFBGeo, wellMat),
+                        { position: new THREE.Vector3(cx, wy, cz + wSize / 2 - wt / 2) }));
+                    group.add(Object.assign(new THREE.Mesh(rwLRGeo, wellMat),
+                        { position: new THREE.Vector3(cx - wLen / 2 + wt / 2, wy, cz) }));
+                    group.add(Object.assign(new THREE.Mesh(rwLRGeo, wellMat),
+                        { position: new THREE.Vector3(cx + wLen / 2 - wt / 2, wy, cz) }));
+
+                    // Flat bottom
+                    const btmGeo = new THREE.PlaneGeometry(wLen, wSize);
+                    const btmMesh = new THREE.Mesh(btmGeo, wellMat);
+                    btmMesh.rotation.x = -Math.PI / 2;
+                    btmMesh.position.set(cx, wellTopY - depth, cz);
+                    group.add(btmMesh);
                 }
             }
         }
