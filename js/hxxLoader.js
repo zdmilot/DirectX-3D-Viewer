@@ -43,27 +43,102 @@
     }
 
     /**
-     * Decompress gzip data using the browser's DecompressionStream API.
-     * Tolerates trailing junk bytes after the gzip stream (common in
-     * .hxx files where compressed size is only estimated).
+     * Find the exact end of a gzip stream by locating the ISIZE trailer field.
+     * ISIZE is the last 4 bytes of a valid gzip stream (little-endian uint32)
+     * and equals decompressedSize mod 2^32.
      * @param {Uint8Array} compressedBytes
+     * @param {number} expectedDecompSize - the expected decompressed size
+     * @returns {number} byte offset of the gzip stream end, or -1 if not found
+     */
+    function findGzipEnd(compressedBytes, expectedDecompSize) {
+        const isize = expectedDecompSize >>> 0; // unsigned 32-bit
+        // Scan backward from the end — ISIZE is at the tail of the gzip stream
+        // CRC32 (4 bytes) + ISIZE (4 bytes) = last 8 bytes of gzip
+        const searchStart = Math.max(10, compressedBytes.length - 2048);
+        for (let i = compressedBytes.length - 4; i >= searchStart; i--) {
+            const val = (compressedBytes[i]) |
+                        (compressedBytes[i + 1] << 8) |
+                        (compressedBytes[i + 2] << 16) |
+                        ((compressedBytes[i + 3] << 24) >>> 0);
+            if ((val >>> 0) === isize) {
+                return i + 4; // gzip stream ends right after ISIZE
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * Parse gzip header and return offset where raw DEFLATE data starts.
+     * Standard gzip header is at least 10 bytes; extra fields follow flags.
+     * @param {Uint8Array} data
+     * @returns {number} offset of raw DEFLATE payload
+     */
+    function gzipHeaderSize(data) {
+        if (data.length < 10 || data[0] !== 0x1f || data[1] !== 0x8b) return -1;
+        const flags = data[3];
+        let pos = 10;
+        if (flags & 0x04) { // FEXTRA
+            if (pos + 2 > data.length) return -1;
+            const xlen = data[pos] | (data[pos + 1] << 8);
+            pos += 2 + xlen;
+        }
+        if (flags & 0x08) { // FNAME
+            while (pos < data.length && data[pos] !== 0) pos++;
+            pos++;
+        }
+        if (flags & 0x10) { // FCOMMENT
+            while (pos < data.length && data[pos] !== 0) pos++;
+            pos++;
+        }
+        if (flags & 0x02) { // FHCRC
+            pos += 2;
+        }
+        return pos;
+    }
+
+    /**
+     * Decompress a clean gzip buffer (no trailing junk).
+     * @param {Uint8Array} cleanBytes
      * @returns {Promise<Uint8Array>}
      */
-    async function decompressGzip(compressedBytes) {
-        if (typeof DecompressionStream === 'undefined') {
-            throw new Error('DecompressionStream API not available');
-        }
-
+    async function decompressGzipClean(cleanBytes) {
         const ds = new DecompressionStream('gzip');
         const writer = ds.writable.getWriter();
         const reader = ds.readable.getReader();
 
-        // Write compressed data — don't await, let read side pull
-        writer.write(compressedBytes).catch(function () { /* ignore write-side errors from trailing junk */ });
-        writer.close().catch(function () { /* ignore */ });
+        writer.write(cleanBytes).then(function () { return writer.close(); }).catch(function () {});
 
-        // Read all decompressed chunks, tolerating errors caused by
-        // trailing junk bytes after the valid gzip stream.
+        const chunks = [];
+        let totalLen = 0;
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            chunks.push(value);
+            totalLen += value.byteLength;
+        }
+
+        const result = new Uint8Array(totalLen);
+        let pos = 0;
+        for (const chunk of chunks) {
+            result.set(chunk, pos);
+            pos += chunk.byteLength;
+        }
+        return result;
+    }
+
+    /**
+     * Decompress raw DEFLATE data (no gzip header/trailer).
+     * @param {Uint8Array} deflateBytes
+     * @returns {Promise<Uint8Array>}
+     */
+    async function decompressDeflateRaw(deflateBytes) {
+        const ds = new DecompressionStream('deflate-raw');
+        const writer = ds.writable.getWriter();
+        const reader = ds.readable.getReader();
+
+        writer.write(deflateBytes).catch(function () {});
+        writer.close().catch(function () {});
+
         const chunks = [];
         let totalLen = 0;
         try {
@@ -74,14 +149,93 @@
                 totalLen += value.byteLength;
             }
         } catch (e) {
-            // DecompressionStream throws when it encounters trailing
-            // bytes after the gzip stream.  If we already collected
-            // decompressed data, treat it as success.
+            // deflate-raw might still complain about trailing bytes
             if (totalLen === 0) throw e;
-            console.warn('[HXXLoader] Ignoring trailing data after gzip stream:', e.message);
         }
 
-        // Combine chunks into a single Uint8Array
+        const result = new Uint8Array(totalLen);
+        let pos = 0;
+        for (const chunk of chunks) {
+            result.set(chunk, pos);
+            pos += chunk.byteLength;
+        }
+        return result;
+    }
+
+    /**
+     * Decompress gzip data using the browser's DecompressionStream API.
+     * Uses multiple strategies to handle trailing junk bytes after the
+     * gzip stream (common in .hxx files where compressed size is estimated).
+     *
+     * Strategy 1: Find exact gzip end via ISIZE trailer field, trim, decompress clean.
+     * Strategy 2: Skip gzip header, decompress raw DEFLATE payload.
+     * Strategy 3: Tolerant gzip decompress (catch errors, keep partial data).
+     *
+     * @param {Uint8Array} compressedBytes
+     * @param {number} [expectedDecompSize] - decompressed size from section table
+     * @returns {Promise<Uint8Array>}
+     */
+    async function decompressGzip(compressedBytes, expectedDecompSize) {
+        if (typeof DecompressionStream === 'undefined') {
+            throw new Error('DecompressionStream API not available');
+        }
+
+        // Strategy 1: Trim to exact gzip boundary using ISIZE
+        if (expectedDecompSize && expectedDecompSize > 0) {
+            const gzipEnd = findGzipEnd(compressedBytes, expectedDecompSize);
+            if (gzipEnd > 0 && gzipEnd <= compressedBytes.length) {
+                try {
+                    const trimmed = compressedBytes.slice(0, gzipEnd);
+                    const result = await decompressGzipClean(trimmed);
+                    if (result.length === expectedDecompSize) {
+                        return result;
+                    }
+                    console.warn('[HXXLoader] ISIZE trim: size mismatch (got ' +
+                        result.length + ', expected ' + expectedDecompSize + ')');
+                } catch (e) {
+                    console.warn('[HXXLoader] ISIZE trim failed, trying fallback:', e.message);
+                }
+            }
+        }
+
+        // Strategy 2: Skip gzip header, use deflate-raw (avoids trailer validation)
+        if (typeof DecompressionStream !== 'undefined') {
+            const hdrSize = gzipHeaderSize(compressedBytes);
+            if (hdrSize > 0) {
+                try {
+                    const deflatePayload = compressedBytes.slice(hdrSize);
+                    const result = await decompressDeflateRaw(deflatePayload);
+                    if (result.length > 0) {
+                        return result;
+                    }
+                } catch (e) {
+                    console.warn('[HXXLoader] deflate-raw fallback failed:', e.message);
+                }
+            }
+        }
+
+        // Strategy 3: Tolerant gzip decompress (original approach)
+        const ds = new DecompressionStream('gzip');
+        const writer = ds.writable.getWriter();
+        const reader = ds.readable.getReader();
+
+        writer.write(compressedBytes).catch(function () {});
+        writer.close().catch(function () {});
+
+        const chunks = [];
+        let totalLen = 0;
+        try {
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                chunks.push(value);
+                totalLen += value.byteLength;
+            }
+        } catch (e) {
+            if (totalLen === 0) throw e;
+            console.warn('[HXXLoader] Tolerant decompress — partial data collected:', e.message);
+        }
+
         const result = new Uint8Array(totalLen);
         let pos = 0;
         for (const chunk of chunks) {
@@ -200,7 +354,7 @@
             mainSection.dataOffset,
             mainSection.dataOffset + mainSection.compressedSize
         );
-        const mainDecompressed = await decompressGzip(mainCompressed);
+        const mainDecompressed = await decompressGzip(mainCompressed, mainSection.decompressedSize);
 
         // Decode as text (it's a standard .x text file)
         const xFileText = new TextDecoder('utf-8').decode(mainDecompressed);
@@ -215,7 +369,7 @@
                     s.dataOffset,
                     s.dataOffset + s.compressedSize
                 );
-                const decompressed = await decompressGzip(compressed);
+                const decompressed = await decompressGzip(compressed, s.decompressedSize);
 
                 // Determine MIME type from the section name
                 let mimeType = 'application/octet-stream';
