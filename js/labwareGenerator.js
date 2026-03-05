@@ -40,6 +40,12 @@
         toolbarCollapsed: false,
         animId: null,
         parsedDef: null,   // parsed labware definition
+        // Ruler state
+        rulerActive: false,
+        rulerStart: null,   // THREE.Vector3
+        rulerEnd: null,
+        rulerLine: null,    // THREE.Line
+        rulerMarkers: [],   // start/end spheres
     };
 
     const LIGHT_BG   = 0xf0f0f0;

@@ -816,12 +816,19 @@
                                             <i class="fas fa-hand-paper"></i>
                                         </button>
                                         <div class="vt-separator"></div>
+                                        <button class="vt-btn" id="lg-vt-ruler" title="Ruler — click two points to measure">
+                                            <i class="fas fa-ruler"></i>
+                                        </button>
+                                        <div class="vt-separator"></div>
                                         <div class="vt-grab-handle" id="lg-vt-grab-handle" title="Drag to move toolbar">
                                             <i class="fas fa-grip-horizontal"></i>
                                         </div>
                                     </div>
                                 </div>
                             </div>
+
+                            <!-- Ruler measurement readout -->
+                            <div id="lg-ruler-readout" style="display:none;position:absolute;bottom:12px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.75);color:#fff;padding:6px 16px;border-radius:6px;font:bold 14px/1.4 monospace;z-index:60;pointer-events:none;white-space:nowrap;"></div>
 
                             <div class="viewer-dropzone viewer-hidden" id="lg-dropzone">
                                 <div class="dropzone-content">
