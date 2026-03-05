@@ -496,14 +496,15 @@
                 // overlapping meshes.  Mesh 0 (outer shell) gets zero
                 // offset; later meshes are pushed progressively behind
                 // so the outer shell always wins at coplanar surfaces.
-                // This is symmetric — the same GPU polygonOffset math
-                // applies identically regardless of viewing direction.
+                // Cap at reasonable values so models with hundreds of
+                // meshes don't get extreme depth offsets.
                 if (model.material) {
                     const applyOffset = (m, meshIdx) => {
                         if (meshIdx > 0) {
+                            const capped = Math.min(meshIdx, 10);
                             m.polygonOffset = true;
-                            m.polygonOffsetFactor = meshIdx;
-                            m.polygonOffsetUnits  = meshIdx * 4;
+                            m.polygonOffsetFactor = capped;
+                            m.polygonOffsetUnits  = capped * 4;
                         }
                     };
                     if (Array.isArray(model.material)) {

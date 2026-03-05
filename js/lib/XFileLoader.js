@@ -2044,6 +2044,18 @@
             materials.push(mpMat);
           });
 
+          // ── Fallback: create a default material if none were defined ────────
+          if (materials.length === 0) {
+            var defaultMat = new THREE.MeshPhongMaterial();
+            defaultMat.side = THREE.DoubleSide;
+            defaultMat.name = 'default';
+            defaultMat.color = new THREE.Color(0.7, 0.7, 0.7);
+            defaultMat.shininess = 30;
+            defaultMat.specular = new THREE.Color(0.1, 0.1, 0.1);
+            defaultMat.emissive = new THREE.Color(0, 0, 0);
+            materials.push(defaultMat);
+          }
+
           // ── Set up material groups for multi-material meshes ────────────────
           if (materials.length > 1 && triMatIndices.length > 0) {
             // Sort triangles by material index for efficient grouping
