@@ -973,14 +973,32 @@
             // Apply any parent transforms into vertex data
             geom.applyMatrix4(child.matrixWorld);
 
+            // Convert back from right-handed (Three.js) to left-handed (DirectX)
+            // by negating X positions and normals, and flipping winding order.
             const pos  = geom.attributes.position;
+            if (pos) {
+                for (let vi = 0; vi < pos.count; vi++) {
+                    pos.setX(vi, -pos.getX(vi));
+                }
+            }
             const norm = geom.attributes.normal;
+            if (norm) {
+                for (let ni = 0; ni < norm.count; ni++) {
+                    norm.setX(ni, -norm.getX(ni));
+                }
+            }
             const uv   = geom.attributes.uv;
 
-            // Build index array
+            // Build index array & flip winding back to left-handed
             let indices;
             if (geom.index) {
                 indices = geom.index;
+                for (let fi = 0; fi < indices.count; fi += 3) {
+                    const a = indices.getX(fi);
+                    const b = indices.getX(fi + 1);
+                    indices.setX(fi, b);
+                    indices.setX(fi + 1, a);
+                }
             } else {
                 const arr = [];
                 for (let i = 0; i < pos.count; i++) arr.push(i);
