@@ -99,6 +99,10 @@
                         <i class="fas fa-th"></i>
                         <span>Plate Placer</span>
                     </button>
+                    <button class="sidebar-nav-item" data-view="labware">
+                        <i class="fas fa-flask"></i>
+                        <span>Labware Gen</span>
+                    </button>
                 </div>
             </aside>
 
@@ -595,6 +599,247 @@
                 </div>
             </div>
 
+            <!-- ====== LABWARE GENERATOR VIEW ====== -->
+            <div class="view-panel" data-view-panel="labware" id="labware-host">
+                <div class="lg-layout">
+                    <!-- Left: Parameter Panel -->
+                    <div class="lg-params-col">
+                        <div class="lg-params-scroll">
+                            <div class="lg-params-header">
+                                <i class="fas fa-flask"></i> Labware Generator
+                            </div>
+
+                            <!-- File Input -->
+                            <div class="lg-section">
+                                <div class="lg-section-title">Import Definition</div>
+                                <input type="file" id="lg-file-input" accept=".xml" style="display:none">
+                                <button class="cv-ctrl-btn lg-full-btn" id="lg-open-btn">
+                                    <i class="fas fa-folder-open"></i> Open XML File
+                                </button>
+                                <div class="lg-status" id="lg-status">No file loaded — edit values manually or import XML</div>
+                            </div>
+
+                            <div class="lg-divider"></div>
+
+                            <!-- General Info -->
+                            <form id="lg-param-form" autocomplete="off">
+                                <div class="lg-section">
+                                    <div class="lg-section-title">General</div>
+                                    <div class="lg-field">
+                                        <label>Name</label>
+                                        <input type="text" id="lg-name" value="96 Well Plate">
+                                    </div>
+                                    <div class="lg-field">
+                                        <label>Manufacturer</label>
+                                        <input type="text" id="lg-manufacturer" value="">
+                                    </div>
+                                    <div class="lg-field">
+                                        <label>Part Number</label>
+                                        <input type="text" id="lg-part-number" value="">
+                                    </div>
+                                    <div class="lg-field">
+                                        <label>Type</label>
+                                        <select id="lg-type">
+                                            <option value="plate" selected>Plate (SBS)</option>
+                                            <option value="tube">Tube / Reservoir</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="lg-divider"></div>
+
+                                <div id="lg-plate-fields">
+                                    <!-- Footprint -->
+                                    <div class="lg-section">
+                                        <div class="lg-section-title">
+                                            Footprint (SBS/ANSI)
+                                            <span class="lg-sbs-badge sbs-ok" id="lg-sbs-badge">SBS Compliant</span>
+                                        </div>
+                                        <div class="lg-field-row">
+                                            <div class="lg-field">
+                                                <label>Length (mm)</label>
+                                                <input type="number" id="lg-fp-length" value="127.76" step="0.01">
+                                            </div>
+                                            <div class="lg-field">
+                                                <label>Width (mm)</label>
+                                                <input type="number" id="lg-fp-width" value="85.48" step="0.01">
+                                            </div>
+                                        </div>
+                                        <div class="lg-field">
+                                            <label>Height (mm)</label>
+                                            <input type="number" id="lg-height" value="14.20" step="0.01">
+                                        </div>
+                                        <button type="button" class="cv-ctrl-btn cv-ctrl-btn-muted lg-full-btn" id="lg-sbs-defaults">
+                                            <i class="fas fa-ruler-combined"></i> Apply SBS Defaults
+                                        </button>
+                                    </div>
+
+                                    <div class="lg-divider"></div>
+
+                                    <!-- Wells -->
+                                    <div class="lg-section">
+                                        <div class="lg-section-title">Wells</div>
+                                        <div class="lg-well-count" id="lg-well-count">96 wells (8×12)</div>
+                                        <div class="lg-field-row">
+                                            <div class="lg-field">
+                                                <label>Rows</label>
+                                                <input type="number" id="lg-rows" value="8" min="1" max="48">
+                                            </div>
+                                            <div class="lg-field">
+                                                <label>Columns</label>
+                                                <input type="number" id="lg-cols" value="12" min="1" max="48">
+                                            </div>
+                                        </div>
+                                        <div class="lg-field-row">
+                                            <div class="lg-field">
+                                                <label>Row Gap (mm)</label>
+                                                <input type="number" id="lg-row-gap" value="9.00" step="0.01">
+                                            </div>
+                                            <div class="lg-field">
+                                                <label>Col Gap (mm)</label>
+                                                <input type="number" id="lg-col-gap" value="9.00" step="0.01">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="lg-divider"></div>
+
+                                    <!-- Well Geometry -->
+                                    <div class="lg-section">
+                                        <div class="lg-section-title">Well Geometry</div>
+                                        <div class="lg-field">
+                                            <label>Well Shape</label>
+                                            <select id="lg-well-shape">
+                                                <option value="Circle" selected>Circle</option>
+                                                <option value="Square">Square</option>
+                                            </select>
+                                        </div>
+                                        <div class="lg-field-row">
+                                            <div class="lg-field">
+                                                <label>Top Ø (mm)</label>
+                                                <input type="number" id="lg-well-size" value="6.86" step="0.01">
+                                            </div>
+                                            <div class="lg-field">
+                                                <label>Bottom Ø (mm)</label>
+                                                <input type="number" id="lg-well-size-bottom" value="6.35" step="0.01">
+                                            </div>
+                                        </div>
+                                        <div class="lg-field">
+                                            <label>Depth (mm)</label>
+                                            <input type="number" id="lg-well-depth" value="11.30" step="0.01">
+                                        </div>
+                                        <div class="lg-field">
+                                            <label>Bottom Shape</label>
+                                            <select id="lg-bottom-shape">
+                                                <option value="Flat">Flat</option>
+                                                <option value="Circle" selected>Round (U-Bottom)</option>
+                                                <option value="VShape">V-Bottom</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div class="lg-divider"></div>
+
+                                    <!-- A1 Position -->
+                                    <div class="lg-section">
+                                        <div class="lg-section-title">A1 Well Position</div>
+                                        <div class="lg-field-row">
+                                            <div class="lg-field">
+                                                <label>X offset (mm)</label>
+                                                <input type="number" id="lg-first-x" value="14.38" step="0.01">
+                                            </div>
+                                            <div class="lg-field">
+                                                <label>Y offset (mm)</label>
+                                                <input type="number" id="lg-first-y" value="11.24" step="0.01">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+
+                            <div class="lg-divider"></div>
+
+                            <!-- Action Buttons -->
+                            <div class="lg-section lg-actions">
+                                <button class="cv-ctrl-btn cv-ctrl-btn-accent lg-full-btn" id="lg-generate-btn">
+                                    <i class="fas fa-sync-alt"></i> Generate 3D Model
+                                </button>
+                                <button class="cv-ctrl-btn cv-ctrl-btn-accent lg-full-btn" id="lg-save-btn">
+                                    <i class="fas fa-download"></i> Save as .x File
+                                </button>
+                                <button class="cv-ctrl-btn lg-full-btn" id="lg-load-viewer-btn">
+                                    <i class="fas fa-eye"></i> Load into Viewer
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: 3D Preview -->
+                    <div class="lg-preview-col">
+                        <div class="lg-preview-viewport">
+                            <canvas id="lg-canvas"></canvas>
+
+                            <!-- Floating 3D Toolbar -->
+                            <div class="viewer-toolbar" id="lg-toolbar">
+                                <div class="vt-body" id="lg-vt-body">
+                                    <button class="vt-toggle" id="lg-vt-toggle" title="Toggle toolbar">
+                                        <i class="fas fa-chevron-right"></i>
+                                    </button>
+                                    <div class="vt-collapsible">
+                                        <div class="vt-gizmo pp-gizmo-sm" id="lg-vt-gizmo">
+                                            <canvas id="lg-gizmo-canvas" width="28" height="28"></canvas>
+                                        </div>
+                                        <div class="vt-separator"></div>
+                                        <button class="vt-btn" id="lg-vt-reset-cam" title="Reset camera">
+                                            <i class="fas fa-video"></i>
+                                        </button>
+                                        <button class="vt-btn" id="lg-vt-zoom-fit" title="Zoom to fit">
+                                            <i class="fas fa-expand"></i>
+                                        </button>
+                                        <button class="vt-btn" id="lg-vt-wireframe" title="Toggle wireframe">
+                                            <i class="fas fa-draw-polygon"></i>
+                                        </button>
+                                        <button class="vt-btn" id="lg-vt-perspective" title="Toggle perspective/orthographic">
+                                            <i class="fas fa-cube"></i>
+                                        </button>
+                                        <button class="vt-btn grid-toggle" id="lg-btn-grid" title="Toggle gridlines">
+                                            <i class="fas fa-border-all"></i>
+                                            <span class="grid-slash" aria-hidden="true"></span>
+                                        </button>
+                                        <div class="vt-separator"></div>
+                                        <button class="vt-btn vt-btn-round" id="lg-vt-zoom-in" title="Zoom in">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                        <button class="vt-btn vt-btn-round" id="lg-vt-zoom-out" title="Zoom out">
+                                            <i class="fas fa-minus"></i>
+                                        </button>
+                                        <button class="vt-btn vt-btn-round" id="lg-vt-pan" title="Pan mode">
+                                            <i class="fas fa-hand-paper"></i>
+                                        </button>
+                                        <div class="vt-separator"></div>
+                                        <div class="vt-grab-handle" id="lg-vt-grab-handle" title="Drag to move toolbar">
+                                            <i class="fas fa-grip-horizontal"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="viewer-dropzone viewer-hidden" id="lg-dropzone">
+                                <div class="dropzone-content">
+                                    <i class="fas fa-file-import"></i>
+                                    <span>Drop XML labware file here</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Bottom status bar -->
+                        <div class="viewer-controls-bar" id="lg-controls-bar">
+                            <span class="viewer-cam-display" id="lg-cam-display">X: 0.0  Y: 0.0  Z: 0.0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
 
@@ -645,6 +890,7 @@
     <script src="js/lib/STLLoader.js"></script>
     <script src="js/converter.js?v=20260304d"></script>
     <script src="js/platePlacer.js?v=20260304d"></script>
+    <script src="js/labwareGenerator.js?v=20260305a"></script>
     <script src="js/app.js?v=20260304e"></script>
 </body>
 </html>

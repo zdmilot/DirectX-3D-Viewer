@@ -187,6 +187,24 @@
     }
     window._fixLeftHandedCoords = fixLeftHandedCoords;
 
+    // -- Load generated .x file from labware generator ---------------
+    window._loadGeneratedXFile = function (url, name) {
+        state.loadedFileName = name || 'labware.x';
+        state.lastLoadedUrl = url;
+        clearModel();
+        const loading = $('#viewer-loading');
+        const errorEl = $('#viewer-error');
+        if (loading) {
+            loading.classList.remove('viewer-hidden');
+            const span = loading.querySelector('span');
+            if (span) span.textContent = 'Loading ' + name + '…';
+        }
+        if (errorEl) errorEl.classList.add('viewer-hidden');
+        setFilenameDisplay();
+        loadXFile(url, loading, errorEl);
+        switchView('viewer');
+    };
+
     // -- Theme Toggle ------------------------------------------------
     function toggleTheme() {
         state.isDark = !state.isDark;
@@ -645,6 +663,8 @@
         if (window.ConverterModule) window.ConverterModule.updateTheme();
         // Also update placer theme
         if (window.PlacerModule) window.PlacerModule.updateTheme();
+        // Also update labware generator theme
+        if (window.LabwareGenModule) window.LabwareGenModule.updateTheme();
 
     }
 
@@ -674,6 +694,11 @@
         // Initialize plate placer on first switch
         if (viewName === 'placer' && window.PlacerModule) {
             setTimeout(() => window.PlacerModule.init(state.lastLoadedUrl, state.loadedFileName), 50);
+        }
+
+        // Initialize labware generator on first switch
+        if (viewName === 'labware' && window.LabwareGenModule) {
+            setTimeout(() => window.LabwareGenModule.init(), 50);
         }
 
         // Auto-collapse sidebar after navigation
