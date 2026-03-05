@@ -377,50 +377,67 @@
         const isRoundBottom = (def.bottomShape || '').toLowerCase() === 'circle';
         const isVBottom = def.vShapeDepth > 0;
 
-        // Wells: open at Y = H (top), bottom cap at Y = wellFloorY
+        // Shaped-bottom height — the dome/cone is INSIDE the well depth,
+        // so the straight wall is shortened and the lowest point = wellFloorY.
+        // Hemisphere radius always equals the well bottom radius (no nipples).
+        var btmShapeH = 0; // height consumed by the shaped bottom
+        if (isRoundBottom) {
+            btmShapeH = wellBotR;               // full hemisphere, radius = well bottom
+        } else if (isVBottom) {
+            btmShapeH = def.vShapeDepth;
+        }
+        // Clamp so the shaped bottom doesn't exceed the well depth
+        btmShapeH = Math.min(btmShapeH, depth);
+
+        // Straight-wall portion sits above the shaped bottom
+        const straightDepth = depth - btmShapeH; // may be 0 if bottom fills the well
+        const straightBotY = wellFloorY + btmShapeH;  // bottom of straight walls
+
+        // Wells: open at Y = H (top), lowest point at Y = wellFloorY
         for (let row = 0; row < rows; row++) {
             for (let col = 0; col < cols; col++) {
                 const cx = firstX + col * gapX;
                 const cz = firstZ + row * gapZ;
 
                 if (isCircle) {
-                    // Tapered cylinder wall (open top, open bottom — caps added separately)
-                    const cylGeo = new THREE.CylinderGeometry(
-                        wellTopR, wellBotR, depth, WELL_SEGMENTS, 1, true
-                    );
-                    const cylMesh = new THREE.Mesh(cylGeo, wellMat);
-                    // Center of cylinder between wellFloorY and H
-                    cylMesh.position.set(cx, wellFloorY + depth / 2, cz);
-                    group.add(cylMesh);
+                    // ── Straight cylinder wall (above shaped bottom) ──
+                    if (straightDepth > 0.01) {
+                        const cylGeo = new THREE.CylinderGeometry(
+                            wellTopR, wellBotR, straightDepth, WELL_SEGMENTS, 1, true
+                        );
+                        const cylMesh = new THREE.Mesh(cylGeo, wellMat);
+                        cylMesh.position.set(cx, straightBotY + straightDepth / 2, cz);
+                        group.add(cylMesh);
+                    }
 
-                    // Top rim ring at Y = H (decorative edge around each well opening)
+                    // Top rim ring at Y = H
                     const rimGeo = new THREE.RingGeometry(wellTopR, wellTopR + 0.3, WELL_SEGMENTS);
                     const rimMesh = new THREE.Mesh(rimGeo, glassMat);
                     rimMesh.rotation.x = -Math.PI / 2;
                     rimMesh.position.set(cx, H, cz);
                     group.add(rimMesh);
 
-                    // Bottom cap at Y = wellFloorY
+                    // ── Bottom cap ──
                     if (isRoundBottom) {
-                        // Hemisphere curving downward — clamp radius so it doesn't go below Y=0
-                        var hemiR = Math.min(wellBotR, wellFloorY);
+                        // Hemisphere: center at wellFloorY + hemiR, curves down to wellFloorY
+                        var hemiR = btmShapeH; // always == wellBotR (clamped to depth above)
                         const hemiGeo = new THREE.SphereGeometry(
-                            hemiR, WELL_SEGMENTS, 8,
+                            hemiR, WELL_SEGMENTS, 12,
                             0, Math.PI * 2,
                             0, Math.PI / 2
                         );
                         const hemiMesh = new THREE.Mesh(hemiGeo, wellMat);
                         hemiMesh.rotation.x = Math.PI; // dome curves downward
-                        hemiMesh.position.set(cx, wellFloorY, cz);
+                        hemiMesh.position.set(cx, wellFloorY + hemiR, cz);
                         group.add(hemiMesh);
                     } else if (isVBottom) {
-                        // V-bottom cone — clamp depth so it doesn't go below Y=0
-                        var vDepth = Math.min(def.vShapeDepth, wellFloorY);
+                        // Cone: tip at wellFloorY, top edge at wellFloorY + vDepth
+                        var vDepth = btmShapeH;
                         const coneGeo = new THREE.ConeGeometry(
                             wellBotR, vDepth, WELL_SEGMENTS, 1, true
                         );
                         const coneMesh = new THREE.Mesh(coneGeo, wellMat);
-                        coneMesh.position.set(cx, wellFloorY - vDepth / 2, cz);
+                        coneMesh.position.set(cx, wellFloorY + vDepth / 2, cz);
                         group.add(coneMesh);
                     } else {
                         // Flat bottom disk
@@ -431,75 +448,52 @@
                         group.add(diskMesh);
                     }
                 } else {
-                    // Rectangular / square well (open at top)
+                    // ── Rectangular / square well (open at top) ──
                     const wLen = def.wellLength;
                     const wSize = def.wellSize;
                     const wt = 0.3;
 
-                    // Bottom shape depth: hemisphere radius or v-depth, clamped to wellFloorY
-                    var sqBtmH = 0; // height consumed by the shaped bottom
-                    if (isRoundBottom) {
-                        sqBtmH = Math.min(wSize / 2, wellFloorY);
-                    } else if (isVBottom) {
-                        sqBtmH = Math.min(def.vShapeDepth, wellFloorY);
-                    }
-
-                    // Straight wall portion of the well (above the shaped bottom)
-                    const straightH = depth - sqBtmH;
-                    const straightY = wellFloorY + sqBtmH + straightH / 2;
-
-                    if (straightH > 0.01) {
-                        const rwFBGeo = new THREE.BoxGeometry(wLen, straightH, wt);
-                        const rwLRGeo = new THREE.BoxGeometry(wt, straightH, wSize - wt * 2);
+                    // Straight wall portion (above shaped bottom)
+                    if (straightDepth > 0.01) {
+                        const rwFBGeo = new THREE.BoxGeometry(wLen, straightDepth, wt);
+                        const rwLRGeo = new THREE.BoxGeometry(wt, straightDepth, wSize - wt * 2);
+                        const wallCY = straightBotY + straightDepth / 2;
 
                         var rwF = new THREE.Mesh(rwFBGeo, wellMat);
-                        rwF.position.set(cx, straightY, cz - wSize / 2 + wt / 2);
+                        rwF.position.set(cx, wallCY, cz - wSize / 2 + wt / 2);
                         group.add(rwF);
                         var rwB = new THREE.Mesh(rwFBGeo, wellMat);
-                        rwB.position.set(cx, straightY, cz + wSize / 2 - wt / 2);
+                        rwB.position.set(cx, wallCY, cz + wSize / 2 - wt / 2);
                         group.add(rwB);
                         var rwL = new THREE.Mesh(rwLRGeo, wellMat);
-                        rwL.position.set(cx - wLen / 2 + wt / 2, straightY, cz);
+                        rwL.position.set(cx - wLen / 2 + wt / 2, wallCY, cz);
                         group.add(rwL);
                         var rwR = new THREE.Mesh(rwLRGeo, wellMat);
-                        rwR.position.set(cx + wLen / 2 - wt / 2, straightY, cz);
+                        rwR.position.set(cx + wLen / 2 - wt / 2, wallCY, cz);
                         group.add(rwR);
                     }
 
                     // Bottom shape
                     if (isRoundBottom) {
-                        // Half-cylinder trough along the longer axis
-                        // Creates a U-shaped bottom for a rectangular well
-                        var troughR = sqBtmH; // radius = clamped half-width
-                        // Build a half-cylinder: cylinder with phiStart/phiLength isn't
-                        // available, so use a lathe geometry for the semicircle profile
-                        // rotated to align as a trough along X (wLen direction)
+                        // Half-cylinder trough along the longer axis (X).
+                        // Radius = wSize/2 so it fills the full well width — no nipple.
+                        var troughR = Math.min(wSize / 2, btmShapeH);
                         var troughSegs = WELL_SEGMENTS;
-                        var troughPts = [];
-                        for (var ti = 0; ti <= troughSegs; ti++) {
-                            var angle = Math.PI * ti / troughSegs; // 0 → π (half circle)
-                            troughPts.push(new THREE.Vector2(
-                                Math.cos(angle) * troughR,
-                                -Math.sin(angle) * troughR
-                            ));
-                        }
-                        // Extrude the semicircle along the well length using a series of
-                        // thin cylinder-slices — or more simply, build it from BufferGeometry
-                        // We'll use a simpler approach: half-cylinder via CylinderGeometry
-                        // rotated to be a trough
+
+                        // CylinderGeometry with thetaLength = PI gives a half-cylinder
                         var halfCylGeo = new THREE.CylinderGeometry(
                             troughR, troughR, wLen, troughSegs, 1, true,
                             0, Math.PI
                         );
                         var halfCylMesh = new THREE.Mesh(halfCylGeo, wellMat);
-                        // Cylinder axis defaults to Y — rotate so axis is along X (wLen)
+                        // Cylinder default axis = Y; rotate so axis runs along X (wLen)
                         halfCylMesh.rotation.z = Math.PI / 2;
-                        // Opening faces up (Y+), round part faces down
                         halfCylMesh.rotation.y = Math.PI;
+                        // Center at wellFloorY + troughR so bottom touches wellFloorY
                         halfCylMesh.position.set(cx, wellFloorY + troughR, cz);
                         group.add(halfCylMesh);
 
-                        // Flat endcap semicircles on each end of the trough
+                        // Semicircular endcaps on each end
                         var endcapShape = new THREE.Shape();
                         endcapShape.absarc(0, 0, troughR, 0, Math.PI, false);
                         endcapShape.closePath();
@@ -512,30 +506,14 @@
                         endcapRight.rotation.y = -Math.PI / 2;
                         endcapRight.position.set(cx + wLen / 2, wellFloorY + troughR, cz);
                         group.add(endcapRight);
-
-                        // If the well is wider than the trough diameter, add flat side
-                        // strips connecting the straight walls to the trough edges
-                        if (wSize > troughR * 2 + 0.01) {
-                            var sideStripW = (wSize - troughR * 2) / 2;
-                            var sideStripGeo = new THREE.PlaneGeometry(wLen, sideStripW);
-                            var ssF = new THREE.Mesh(sideStripGeo, wellMat);
-                            ssF.rotation.x = -Math.PI / 2;
-                            ssF.position.set(cx, wellFloorY + sqBtmH, cz - wSize / 2 + sideStripW / 2);
-                            group.add(ssF);
-                            var ssB = new THREE.Mesh(sideStripGeo, wellMat);
-                            ssB.rotation.x = -Math.PI / 2;
-                            ssB.position.set(cx, wellFloorY + sqBtmH, cz + wSize / 2 - sideStripW / 2);
-                            group.add(ssB);
-                        }
                     } else if (isVBottom) {
-                        // V-bottom wedge: triangular profile extruded along wLen
-                        // Two angled planes meeting at a line along the X axis
-                        var vDepthSq = sqBtmH;
+                        // V-bottom wedge: two angled planes meeting at a ridge along X
+                        var vDepthSq = btmShapeH;
                         var halfW = wSize / 2;
+                        var slopeLen = Math.sqrt(halfW * halfW + vDepthSq * vDepthSq);
                         var vAngle = Math.atan2(vDepthSq, halfW);
 
-                        // Left slope (cz-side to center ridge)
-                        var slopeLen = Math.sqrt(halfW * halfW + vDepthSq * vDepthSq);
+                        // Left slope
                         var slopeGeo = new THREE.PlaneGeometry(wLen, slopeLen);
                         var slopeL = new THREE.Mesh(slopeGeo, wellMat);
                         slopeL.rotation.x = -(Math.PI / 2 - vAngle);
