@@ -849,63 +849,142 @@ body {
     margin: 2px 0;
 }
 
-/* ── Rotation & Reflection Transform Section ────────────── */
-.vt-transform-section {
-    display: flex;
+/* ── Transform Flyout Panel ──────────────────────────────── */
+.tf-flyout {
+    position: absolute;
+    right: 62px;
+    top: 12px;
+    width: 200px;
+    background: rgba(34, 40, 52, 0.94);
+    border-radius: 14px;
+    padding: 12px 14px 14px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.06) inset;
+    z-index: 40;
+    display: none;
     flex-direction: column;
-    align-items: center;
-    gap: 3px;
-    padding: 2px 0;
+    gap: 8px;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
 }
 
-.vt-transform-label {
-    font-size: 0.6rem;
+.tf-flyout.is-open {
+    display: flex;
+    animation: tf-slide-in 180ms ease-out;
+}
+
+@keyframes tf-slide-in {
+    from { opacity: 0; transform: translateX(10px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+
+.tf-header {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: rgba(180, 190, 205, 0.7);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding-bottom: 4px;
+}
+
+.tf-header i {
+    font-size: 0.68rem;
+    color: rgba(77, 166, 255, 0.7);
+}
+
+.tf-section {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.tf-label {
+    font-size: 0.65rem;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: rgba(156, 168, 184, 0.6);
-    margin-bottom: 1px;
+    letter-spacing: 0.04em;
+    color: rgba(156, 168, 184, 0.55);
     user-select: none;
 }
 
-.vt-transform-grid {
+.tf-divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.tf-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 3px;
-    width: 100%;
-    padding: 0 4px;
+    gap: 5px;
 }
 
-.vt-mirror-grid {
-    grid-template-columns: 1fr 1fr 1fr;
+.tf-grid-2 { grid-template-columns: 1fr 1fr; }
+.tf-grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+
+.tf-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    height: 34px;
+    border: none;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.06);
+    color: #b8c4d2;
+    font-size: 0.78rem;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 120ms ease, color 120ms ease, transform 80ms ease;
 }
 
-.vt-btn.vt-btn-sm {
-    width: auto;
-    height: 28px;
-    min-width: 28px;
-    font-size: 0.7rem;
-    border-radius: 6px;
-    gap: 1px;
-    padding: 0 5px;
+.tf-btn:hover {
+    background: rgba(255, 255, 255, 0.14);
+    color: #e0e8f0;
+    transform: scale(1.04);
 }
 
-.vt-btn.vt-btn-sm i {
-    font-size: 0.55rem;
+.tf-btn:active {
+    transform: scale(0.96);
+    background: rgba(2, 117, 216, 0.25);
 }
 
-.vt-axis {
+.tf-btn i {
+    font-size: 0.65rem;
+    opacity: 0.7;
+}
+
+.tf-axis {
     font-weight: 700;
-    font-size: 0.7rem;
+    font-size: 0.8rem;
 }
-.vt-axis.x { color: #e74c6f; }
-.vt-axis.y { color: #8bc34a; }
-.vt-axis.z { color: #4a90d9; }
+.tf-axis.x { color: #e74c6f; }
+.tf-axis.y { color: #8bc34a; }
+.tf-axis.z { color: #4a90d9; }
 
-.vt-dir {
-    font-weight: 700;
-    font-size: 0.75rem;
+.tf-sign {
+    font-size: 0.7rem;
+    font-weight: 500;
     color: #9ca8b8;
+}
+
+/* Light mode */
+:root .tf-flyout {
+    background: rgba(245, 248, 252, 0.96);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.06);
+}
+:root .tf-header { color: rgba(60, 70, 85, 0.7); }
+:root .tf-label  { color: rgba(90, 100, 115, 0.6); }
+:root .tf-divider { background: rgba(0, 0, 0, 0.07); }
+:root .tf-btn { background: rgba(0, 0, 0, 0.05); color: #4a5568; }
+:root .tf-btn:hover { background: rgba(0, 0, 0, 0.1); color: #1a2b3c; }
+:root .tf-btn:active { background: rgba(2, 117, 216, 0.15); }
+:root .tf-sign { color: #5c7080; }
+
+/* Dark mode overrides already covered by default (dark bg) */
+[data-theme="dark"] .tf-flyout {
+    background: rgba(20, 26, 36, 0.94);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04) inset;
 }
 
 /* Grab handle for repositioning toolbar */

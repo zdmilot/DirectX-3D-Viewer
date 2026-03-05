@@ -33,7 +33,10 @@
         vtZoomOut: $('#vt-zoom-out'),
         vtPan: $('#vt-pan'),
         vtSave: $('#vt-save'),
-        // Rotation/reflection buttons
+        // Transform flyout
+        vtTransformToggle: $('#vt-transform-toggle'),
+        tfFlyout: $('#tf-flyout'),
+        // Rotation/reflection buttons (inside flyout)
         vtRotXPos: $('#vt-rot-x-pos'),
         vtRotXNeg: $('#vt-rot-x-neg'),
         vtRotYPos: $('#vt-rot-y-pos'),
@@ -1905,6 +1908,16 @@
         // Save button
         if (dom.vtSave) dom.vtSave.addEventListener('click', saveXFile);
 
+        // Transform flyout toggle
+        if (dom.vtTransformToggle && dom.tfFlyout) {
+            dom.vtTransformToggle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const isOpen = dom.tfFlyout.classList.toggle('is-open');
+                dom.vtTransformToggle.classList.toggle('is-active', isOpen);
+            });
+            dom.tfFlyout.addEventListener('click', (e) => e.stopPropagation());
+        }
+
         // Rotation buttons
         if (dom.vtRotXPos) dom.vtRotXPos.addEventListener('click', () => rotateModel('x', +1));
         if (dom.vtRotXNeg) dom.vtRotXNeg.addEventListener('click', () => rotateModel('x', -1));
@@ -1933,6 +1946,9 @@
                 ssDrop.classList.remove('is-open');
                 const exDrop = $('#export-dropdown');
                 if (exDrop) exDrop.classList.remove('is-open');
+                // Close transform flyout too
+                if (dom.tfFlyout) dom.tfFlyout.classList.remove('is-open');
+                if (dom.vtTransformToggle) dom.vtTransformToggle.classList.remove('is-active');
             });
             ssDrop.addEventListener('click', (e) => e.stopPropagation());
             ssDrop.querySelectorAll('.screenshot-option').forEach(btn => {

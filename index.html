@@ -6,7 +6,7 @@
     <title>3D File Tools</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1F9EA;</text></svg>">
     <link rel="stylesheet" href="css/fontawesome.min.css">
-    <link rel="stylesheet" href="css/main.css?v=20260304b">
+    <link rel="stylesheet" href="css/main.css?v=20260304c">
 </head>
 <body>
 
@@ -162,24 +162,10 @@
 
                             <div class="vt-separator"></div>
 
-                            <!-- Rotation & Reflection Tools -->
-                            <div class="vt-transform-section">
-                                <div class="vt-transform-label">Rotate</div>
-                                <div class="vt-transform-grid">
-                                    <button class="vt-btn vt-btn-sm" id="vt-rot-x-pos" title="Rotate +90° around X"><span class="vt-axis x">X</span><span class="vt-dir">+</span></button>
-                                    <button class="vt-btn vt-btn-sm" id="vt-rot-x-neg" title="Rotate −90° around X"><span class="vt-axis x">X</span><span class="vt-dir">−</span></button>
-                                    <button class="vt-btn vt-btn-sm" id="vt-rot-y-pos" title="Rotate +90° around Y"><span class="vt-axis y">Y</span><span class="vt-dir">+</span></button>
-                                    <button class="vt-btn vt-btn-sm" id="vt-rot-y-neg" title="Rotate −90° around Y"><span class="vt-axis y">Y</span><span class="vt-dir">−</span></button>
-                                    <button class="vt-btn vt-btn-sm" id="vt-rot-z-pos" title="Rotate +90° around Z"><span class="vt-axis z">Z</span><span class="vt-dir">+</span></button>
-                                    <button class="vt-btn vt-btn-sm" id="vt-rot-z-neg" title="Rotate −90° around Z"><span class="vt-axis z">Z</span><span class="vt-dir">−</span></button>
-                                </div>
-                                <div class="vt-transform-label">Mirror</div>
-                                <div class="vt-transform-grid vt-mirror-grid">
-                                    <button class="vt-btn vt-btn-sm" id="vt-mirror-x" title="Mirror across X axis"><i class="fas fa-arrows-alt-h"></i> <span class="vt-axis x">X</span></button>
-                                    <button class="vt-btn vt-btn-sm" id="vt-mirror-y" title="Mirror across Y axis"><i class="fas fa-arrows-alt-v"></i> <span class="vt-axis y">Y</span></button>
-                                    <button class="vt-btn vt-btn-sm" id="vt-mirror-z" title="Mirror across Z axis"><i class="fas fa-exchange-alt fa-rotate-90"></i> <span class="vt-axis z">Z</span></button>
-                                </div>
-                            </div>
+                            <!-- Transform flyout toggle -->
+                            <button class="vt-btn" id="vt-transform-toggle" title="Rotate / Mirror">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
 
                             <div class="vt-separator"></div>
 
@@ -187,6 +173,31 @@
                             <div class="vt-grab-handle" id="vt-grab-handle" title="Drag to move toolbar">
                                 <i class="fas fa-grip-horizontal"></i>
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Transform Flyout Panel -->
+                <div class="tf-flyout" id="tf-flyout">
+                    <div class="tf-header"><i class="fas fa-sync-alt"></i> Transform</div>
+                    <div class="tf-section">
+                        <div class="tf-label">Rotate ±90°</div>
+                        <div class="tf-grid tf-grid-2">
+                            <button class="tf-btn" id="vt-rot-x-pos"><span class="tf-axis x">X</span><span class="tf-sign">+90°</span></button>
+                            <button class="tf-btn" id="vt-rot-x-neg"><span class="tf-axis x">X</span><span class="tf-sign">−90°</span></button>
+                            <button class="tf-btn" id="vt-rot-y-pos"><span class="tf-axis y">Y</span><span class="tf-sign">+90°</span></button>
+                            <button class="tf-btn" id="vt-rot-y-neg"><span class="tf-axis y">Y</span><span class="tf-sign">−90°</span></button>
+                            <button class="tf-btn" id="vt-rot-z-pos"><span class="tf-axis z">Z</span><span class="tf-sign">+90°</span></button>
+                            <button class="tf-btn" id="vt-rot-z-neg"><span class="tf-axis z">Z</span><span class="tf-sign">−90°</span></button>
+                        </div>
+                    </div>
+                    <div class="tf-divider"></div>
+                    <div class="tf-section">
+                        <div class="tf-label">Mirror / Reflect</div>
+                        <div class="tf-grid tf-grid-3">
+                            <button class="tf-btn" id="vt-mirror-x"><i class="fas fa-arrows-alt-h"></i> <span class="tf-axis x">X</span></button>
+                            <button class="tf-btn" id="vt-mirror-y"><i class="fas fa-arrows-alt-v"></i> <span class="tf-axis y">Y</span></button>
+                            <button class="tf-btn" id="vt-mirror-z"><i class="fas fa-exchange-alt"></i> <span class="tf-axis z">Z</span></button>
                         </div>
                     </div>
                 </div>
@@ -634,6 +645,6 @@
     <script src="js/lib/STLLoader.js"></script>
     <script src="js/converter.js?v=20260303c"></script>
     <script src="js/platePlacer.js?v=20260303i"></script>
-    <script src="js/app.js?v=20260304c"></script>
+    <script src="js/app.js?v=20260304d"></script>
 </body>
 </html>
