@@ -431,14 +431,28 @@
                         group.add(diskMesh);
                     }
                 } else {
-                    // Rectangular well (open at top)
-                    const wLen = def.wellLength;
+                    // Rectangular / square well (open at top)
+                    const wLen = def.wellLength || def.wellSize;
                     const wSize = def.wellSize;
                     const wt = 0.3;
 
-                    const rwFBGeo = new THREE.BoxGeometry(wLen, depth, wt);
-                    const rwLRGeo = new THREE.BoxGeometry(wt, depth, wSize - wt * 2);
-                    const wy = wellFloorY + depth / 2;
+                    // --- Determine bottom shape for rectangular wells ---
+                    const rectVBottom = isVBottom || (def.bottomShape || '').toLowerCase() === 'v';
+                    const rectRoundBottom = isRoundBottom;
+                    var rectBotDepth = 0;
+                    if (rectVBottom) {
+                        rectBotDepth = def.vShapeDepth || Math.min(wLen, wSize) / 2;
+                        rectBotDepth = Math.min(rectBotDepth, wellFloorY);
+                    } else if (rectRoundBottom) {
+                        rectBotDepth = Math.min(Math.min(wLen, wSize) / 2, wellFloorY);
+                    }
+
+                    // Wall height: above the V/round portion the walls are straight
+                    var rectWallH = depth;
+
+                    const rwFBGeo = new THREE.BoxGeometry(wLen, rectWallH, wt);
+                    const rwLRGeo = new THREE.BoxGeometry(wt, rectWallH, wSize - wt * 2);
+                    const wy = wellFloorY + rectWallH / 2;
 
                     var rwF = new THREE.Mesh(rwFBGeo, wellMat);
                     rwF.position.set(cx, wy, cz - wSize / 2 + wt / 2);
@@ -453,12 +467,74 @@
                     rwR.position.set(cx + wLen / 2 - wt / 2, wy, cz);
                     group.add(rwR);
 
-                    // Flat bottom
-                    const btmGeo = new THREE.PlaneGeometry(wLen, wSize);
-                    const btmMesh = new THREE.Mesh(btmGeo, wellMat);
-                    btmMesh.rotation.x = -Math.PI / 2;
-                    btmMesh.position.set(cx, wellFloorY, cz);
-                    group.add(btmMesh);
+                    // Bottom cap at Y = wellFloorY
+                    if (rectVBottom) {
+                        // V-bottom: inverted pyramid shape
+                        // Build from 4 triangular faces converging to a point
+                        const hw = wLen / 2;
+                        const hs = wSize / 2;
+                        const tipY = wellFloorY - rectBotDepth;
+                        const topY = wellFloorY;
+                        const vGeo = new THREE.BufferGeometry();
+                        // 5 unique points: 4 top corners + 1 bottom tip
+                        const verts = new Float32Array([
+                            // Front face (−Z side)
+                            cx - hw, topY, cz - hs,
+                            cx + hw, topY, cz - hs,
+                            cx,      tipY, cz,
+                            // Back face (+Z side)
+                            cx + hw, topY, cz + hs,
+                            cx - hw, topY, cz + hs,
+                            cx,      tipY, cz,
+                            // Left face (−X side)
+                            cx - hw, topY, cz + hs,
+                            cx - hw, topY, cz - hs,
+                            cx,      tipY, cz,
+                            // Right face (+X side)
+                            cx + hw, topY, cz - hs,
+                            cx + hw, topY, cz + hs,
+                            cx,      tipY, cz,
+                        ]);
+                        vGeo.setAttribute('position', new THREE.BufferAttribute(verts, 3));
+                        vGeo.computeVertexNormals();
+                        const vMesh = new THREE.Mesh(vGeo, wellMat);
+                        group.add(vMesh);
+                    } else if (rectRoundBottom) {
+                        // Round bottom for rectangular well — hemisphere clamped
+                        var sqHemiR = Math.min(Math.min(wLen, wSize) / 2, wellFloorY);
+                        const hemiGeo = new THREE.SphereGeometry(
+                            sqHemiR, WELL_SEGMENTS, 8,
+                            0, Math.PI * 2, 0, Math.PI / 2
+                        );
+                        const hemiMesh = new THREE.Mesh(hemiGeo, wellMat);
+                        hemiMesh.rotation.x = Math.PI;
+                        hemiMesh.position.set(cx, wellFloorY, cz);
+                        group.add(hemiMesh);
+                    } else {
+                        // Flat bottom
+                        const btmGeo = new THREE.PlaneGeometry(wLen, wSize);
+                        const btmMesh = new THREE.Mesh(btmGeo, wellMat);
+                        btmMesh.rotation.x = -Math.PI / 2;
+                        btmMesh.position.set(cx, wellFloorY, cz);
+                        group.add(btmMesh);
+                    }
+
+                    // Top rim border for rectangular well
+                    const rimW = 0.3;
+                    const rimFBGeo = new THREE.BoxGeometry(wLen + rimW * 2, rimW, rimW);
+                    const rimLRGeo = new THREE.BoxGeometry(rimW, rimW, wSize);
+                    var rimFR = new THREE.Mesh(rimFBGeo, glassMat);
+                    rimFR.position.set(cx, H, cz - wSize / 2);
+                    group.add(rimFR);
+                    var rimBR = new THREE.Mesh(rimFBGeo, glassMat);
+                    rimBR.position.set(cx, H, cz + wSize / 2);
+                    group.add(rimBR);
+                    var rimLR = new THREE.Mesh(rimLRGeo, glassMat);
+                    rimLR.position.set(cx - wLen / 2, H, cz);
+                    group.add(rimLR);
+                    var rimRR = new THREE.Mesh(rimLRGeo, glassMat);
+                    rimRR.position.set(cx + wLen / 2, H, cz);
+                    group.add(rimRR);
                 }
             }
         }
