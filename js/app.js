@@ -1958,6 +1958,17 @@
         const offsetOverlay = document.getElementById('pp-offset-overlay');
         if (offsetOverlay) makeDraggable(offsetOverlay, '.pp-offset-header', placerHost);
 
+        // Placement offsets collapse toggle
+        const offsetToggle = document.getElementById('pp-offset-toggle');
+        if (offsetToggle && offsetOverlay) {
+            offsetToggle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const collapsed = offsetOverlay.classList.toggle('collapsed');
+                offsetToggle.innerHTML = collapsed ? '+' : '&#8211;';
+                offsetToggle.title = collapsed ? 'Expand' : 'Collapse';
+            });
+        }
+
         // Debug panels
         document.querySelectorAll('.debug-panel').forEach(panel => {
             makeDraggable(panel, '.debug-panel-header');
