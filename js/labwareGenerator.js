@@ -485,89 +485,84 @@
         topMesh.position.set(0, topSurfaceY, 0);
         group.add(topMesh);
 
-        // ─── 3D etched alphanumeric labels in top surface ─────────
-        // Creates a rectangular recess in the top surface with a raised
-        // text shape at the bottom of each pocket.
-        var etchDepth = 0.4;   // mm depth of the etched pocket
-        var etchMat = new THREE.MeshPhongMaterial({
-            color: 0x888888, side: THREE.DoubleSide
-        });
+        // ─── 3D recessed alphanumeric labels in top surface ───────
+        // Each label is a subdivided plane whose vertices are displaced
+        // downward in the shape of the character — same glass material,
+        // no color difference, just a physical divot.
+        var etchDepth = 0.35;  // mm recess depth
 
-        // Build a 3D etched label: pocket walls + text floor
-        function makeEtched3DLabel(text, pocketW, pocketH) {
-            var labelGroup = new THREE.Group();
-            var wt = 0.15;  // pocket wall thickness
-
-            // Pocket walls (4 sides)
-            var wallMat = glassMat;
-            // Front & back walls of pocket
-            var fbGeo = new THREE.BoxGeometry(pocketW, etchDepth, wt);
-            var f = new THREE.Mesh(fbGeo, wallMat);
-            f.position.set(0, -etchDepth / 2, -pocketH / 2 + wt / 2);
-            labelGroup.add(f);
-            var b = new THREE.Mesh(fbGeo, wallMat);
-            b.position.set(0, -etchDepth / 2, pocketH / 2 - wt / 2);
-            labelGroup.add(b);
-            // Left & right walls of pocket
-            var lrGeo = new THREE.BoxGeometry(wt, etchDepth, pocketH - wt * 2);
-            var l = new THREE.Mesh(lrGeo, wallMat);
-            l.position.set(-pocketW / 2 + wt / 2, -etchDepth / 2, 0);
-            labelGroup.add(l);
-            var ri = new THREE.Mesh(lrGeo, wallMat);
-            ri.position.set(pocketW / 2 - wt / 2, -etchDepth / 2, 0);
-            labelGroup.add(ri);
-
-            // Floor of pocket with text texture
-            var res = 256;
+        function makeRecessedLabel(text, labelW, labelH) {
+            var res = 128;
             var canvas = document.createElement('canvas');
             canvas.width = res;
             canvas.height = res;
             var ctx = canvas.getContext('2d');
-            ctx.clearRect(0, 0, res, res);
-            ctx.fillStyle = '#666666';
-            ctx.font = 'bold ' + Math.round(res * 0.65) + 'px Arial';
+            // Black background = surface level, white text = recessed
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(0, 0, res, res);
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold ' + Math.round(res * 0.72) + 'px Arial';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillText(text, res / 2, res / 2);
-            var tex = new THREE.CanvasTexture(canvas);
-            tex.needsUpdate = true;
-            var floorMat = new THREE.MeshBasicMaterial({
-                map: tex, transparent: true, side: THREE.DoubleSide,
-            });
-            var floorGeo = new THREE.PlaneGeometry(pocketW - wt * 2, pocketH - wt * 2);
-            var floorMesh = new THREE.Mesh(floorGeo, floorMat);
-            floorMesh.rotation.x = -Math.PI / 2;
-            floorMesh.position.set(0, -etchDepth, 0);
-            labelGroup.add(floorMesh);
 
-            return labelGroup;
+            var imageData = ctx.getImageData(0, 0, res, res);
+            var pixels = imageData.data;
+
+            // Subdivided plane — enough segments to capture letter detail
+            var segs = 80;
+            var geo = new THREE.PlaneGeometry(labelW, labelH, segs, segs);
+            var pos = geo.attributes.position.array;
+
+            // Displace each vertex Z based on canvas brightness
+            for (var i = 0; i < pos.length; i += 3) {
+                var vx = pos[i];
+                var vy = pos[i + 1];
+                // Map vertex position to canvas UV
+                var u = (vx / labelW + 0.5);
+                var v = 1.0 - (vy / labelH + 0.5);
+                var px = Math.floor(u * (res - 1));
+                var py = Math.floor(v * (res - 1));
+                px = Math.max(0, Math.min(res - 1, px));
+                py = Math.max(0, Math.min(res - 1, py));
+                var idx = (py * res + px) * 4;
+                var brightness = pixels[idx] / 255;
+                // Push down where text is (brightness > 0)
+                pos[i + 2] = -brightness * etchDepth;
+            }
+
+            geo.attributes.position.needsUpdate = true;
+            geo.computeVertexNormals();
+
+            var mesh = new THREE.Mesh(geo, glassMat);
+            return mesh;
         }
 
         // Margins: gap between plate edge and first well center
         var marginLeft = firstX;
         var marginFront = firstZ;
 
-        // Row labels — centered in left margin strip
+        // Row labels (A, B, C…) — centered in left margin
         var rowLabelX = marginLeft / 2;
-        var rowLabelW = Math.min(marginLeft - wallT * 2, gapZ * 0.65);
-        var rowLabelH = Math.min(gapZ * 0.55, marginLeft - wallT * 2);
+        var rowLabelSz = Math.min(marginLeft - wallT * 2, gapZ * 0.65);
         for (var r = 0; r < rows; r++) {
             var letter = String.fromCharCode(65 + r);
             var rz = firstZ + r * gapZ;
-            var lbl = makeEtched3DLabel(letter, rowLabelW, rowLabelH);
-            lbl.position.set(rowLabelX, H, rz);
+            var lbl = makeRecessedLabel(letter, rowLabelSz, rowLabelSz);
+            lbl.rotation.x = -Math.PI / 2;
+            lbl.position.set(rowLabelX, H + 0.01, rz);
             group.add(lbl);
         }
 
-        // Column labels — centered in front margin strip
+        // Column labels (1, 2, 3…) — centered in front margin
         var colLabelZ = marginFront / 2;
-        var colLabelW = Math.min(gapX * 0.65, marginFront - wallT * 2);
-        var colLabelH = Math.min(marginFront - wallT * 2, gapX * 0.65);
+        var colLabelSz = Math.min(gapX * 0.65, marginFront - wallT * 2);
         for (var c = 0; c < cols; c++) {
             var numStr = String(c + 1);
             var cx2 = firstX + c * gapX;
-            var lbl2 = makeEtched3DLabel(numStr, colLabelW, colLabelH);
-            lbl2.position.set(cx2, H, colLabelZ);
+            var lbl2 = makeRecessedLabel(numStr, colLabelSz, colLabelSz);
+            lbl2.rotation.x = -Math.PI / 2;
+            lbl2.position.set(cx2, H + 0.01, colLabelZ);
             group.add(lbl2);
         }
 
@@ -780,9 +775,9 @@
             lines.push('    0' + sep);
         }
         lines.push('    Material {');
-        lines.push('      0.847059;0.862745;0.886275;1.000000;;');
-        lines.push('      20.000000;');
-        lines.push('      0.900000;0.900000;0.900000;;');
+        lines.push('      0.847059;0.862745;0.886275;0.320000;;');
+        lines.push('      90.000000;');
+        lines.push('      0.266667;0.266667;0.266667;;');
         lines.push('      0.100000;0.100000;0.100000;;');
         lines.push('    }');
         lines.push('  }');
