@@ -272,20 +272,20 @@
         const wellFloorY = H - depth;    // must be > flangeH for geometry to make sense
         const bottomT = Math.max(wallT, wellFloorY - flangeH); // solid between skirt top and well floor
 
-        // Colors
-        const bodyColor   = 0xd8dce2;
-        const wellColor   = 0xc0c4cc;
-        const flangeColor = 0xe0e4ea;
-
-        const bodyMat  = new THREE.MeshPhongMaterial({
-            color: bodyColor, transparent: true, opacity: 0.35,
-            side: THREE.DoubleSide, depthWrite: false,
+        // Colors — unified translucent glass look for entire plate
+        const glassColor  = 0xd8dce2;
+        const glassMat = new THREE.MeshPhongMaterial({
+            color: glassColor,
+            transparent: true,
+            opacity: 0.32,
+            side: THREE.DoubleSide,
+            depthWrite: false,
+            shininess: 90,
+            specular: 0x444444,
         });
-        const wellMat  = new THREE.MeshPhongMaterial({ color: wellColor, side: THREE.DoubleSide });
-        const flangeMat = new THREE.MeshPhongMaterial({
-            color: flangeColor, transparent: true, opacity: 0.4,
-            side: THREE.DoubleSide, depthWrite: false,
-        });
+        const wellMat  = glassMat;
+        const flangeMat = glassMat;
+        const bodyMat = glassMat;
 
         // ─── Skirt / flange at the BOTTOM (Y = 0 → flangeH) ──────
         // Four flange strips that sit at the bottom and overhang outward
@@ -380,9 +380,7 @@
 
                     // Top rim ring at Y = H (decorative edge around each well opening)
                     const rimGeo = new THREE.RingGeometry(wellTopR, wellTopR + 0.3, WELL_SEGMENTS);
-                    const rimMesh = new THREE.Mesh(rimGeo, new THREE.MeshPhongMaterial({
-                        color: flangeColor, side: THREE.DoubleSide
-                    }));
+                    const rimMesh = new THREE.Mesh(rimGeo, glassMat);
                     rimMesh.rotation.x = -Math.PI / 2;
                     rimMesh.position.set(cx, H, cz);
                     group.add(rimMesh);
@@ -481,71 +479,95 @@
         }
 
         const topGeo = new THREE.ShapeGeometry(topShape);
-        const topMesh = new THREE.Mesh(topGeo, new THREE.MeshPhongMaterial({
-            color: bodyColor, side: THREE.DoubleSide
-        }));
+        const topMesh = new THREE.Mesh(topGeo, glassMat);
         // ShapeGeometry is in XY plane — rotate +PI/2 around X so shape-Y maps to +world-Z
         topMesh.rotation.x = Math.PI / 2;
         topMesh.position.set(0, topSurfaceY, 0);
         group.add(topMesh);
 
-        // ─── Alphanumeric labels etched into top surface ─────────
-        // Row letters (A, B, C, …) along left margin
-        // Column numbers (1, 2, 3, …) along front margin
-        // Centered in the gap between wells and plate edge
-        function makeEtchedLabel(text, cellW, cellH) {
+        // ─── 3D etched alphanumeric labels in top surface ─────────
+        // Creates a rectangular recess in the top surface with a raised
+        // text shape at the bottom of each pocket.
+        var etchDepth = 0.4;   // mm depth of the etched pocket
+        var etchMat = new THREE.MeshPhongMaterial({
+            color: 0x888888, side: THREE.DoubleSide
+        });
+
+        // Build a 3D etched label: pocket walls + text floor
+        function makeEtched3DLabel(text, pocketW, pocketH) {
+            var labelGroup = new THREE.Group();
+            var wt = 0.15;  // pocket wall thickness
+
+            // Pocket walls (4 sides)
+            var wallMat = glassMat;
+            // Front & back walls of pocket
+            var fbGeo = new THREE.BoxGeometry(pocketW, etchDepth, wt);
+            var f = new THREE.Mesh(fbGeo, wallMat);
+            f.position.set(0, -etchDepth / 2, -pocketH / 2 + wt / 2);
+            labelGroup.add(f);
+            var b = new THREE.Mesh(fbGeo, wallMat);
+            b.position.set(0, -etchDepth / 2, pocketH / 2 - wt / 2);
+            labelGroup.add(b);
+            // Left & right walls of pocket
+            var lrGeo = new THREE.BoxGeometry(wt, etchDepth, pocketH - wt * 2);
+            var l = new THREE.Mesh(lrGeo, wallMat);
+            l.position.set(-pocketW / 2 + wt / 2, -etchDepth / 2, 0);
+            labelGroup.add(l);
+            var ri = new THREE.Mesh(lrGeo, wallMat);
+            ri.position.set(pocketW / 2 - wt / 2, -etchDepth / 2, 0);
+            labelGroup.add(ri);
+
+            // Floor of pocket with text texture
             var res = 256;
             var canvas = document.createElement('canvas');
             canvas.width = res;
             canvas.height = res;
             var ctx = canvas.getContext('2d');
-            // Transparent background
             ctx.clearRect(0, 0, res, res);
-            // Dark etched text
-            ctx.fillStyle = '#555555';
-            ctx.font = 'bold ' + Math.round(res * 0.55) + 'px Arial';
+            ctx.fillStyle = '#666666';
+            ctx.font = 'bold ' + Math.round(res * 0.65) + 'px Arial';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillText(text, res / 2, res / 2);
             var tex = new THREE.CanvasTexture(canvas);
             tex.needsUpdate = true;
-            var mat = new THREE.MeshBasicMaterial({
-                map: tex, transparent: true, depthWrite: false,
-                side: THREE.DoubleSide,
+            var floorMat = new THREE.MeshBasicMaterial({
+                map: tex, transparent: true, side: THREE.DoubleSide,
             });
-            var geo = new THREE.PlaneGeometry(cellW, cellH);
-            var mesh = new THREE.Mesh(geo, mat);
-            return mesh;
+            var floorGeo = new THREE.PlaneGeometry(pocketW - wt * 2, pocketH - wt * 2);
+            var floorMesh = new THREE.Mesh(floorGeo, floorMat);
+            floorMesh.rotation.x = -Math.PI / 2;
+            floorMesh.position.set(0, -etchDepth, 0);
+            labelGroup.add(floorMesh);
+
+            return labelGroup;
         }
 
         // Margins: gap between plate edge and first well center
-        var marginLeft = firstX;           // X from plate edge to first col center
-        var marginFront = firstZ;          // Z from plate edge to first row center
-        var labelY = H + 0.05;             // just above top surface to avoid z-fighting
+        var marginLeft = firstX;
+        var marginFront = firstZ;
 
         // Row labels — centered in left margin strip
-        var rowLabelX = marginLeft / 2;    // midpoint of left margin
-        var rowLabelW = Math.min(marginLeft - wallT, gapZ * 0.8);
-        var rowLabelH = Math.min(gapZ * 0.7, marginLeft - wallT);
+        var rowLabelX = marginLeft / 2;
+        var rowLabelW = Math.min(marginLeft - wallT * 2, gapZ * 0.65);
+        var rowLabelH = Math.min(gapZ * 0.55, marginLeft - wallT * 2);
         for (var r = 0; r < rows; r++) {
             var letter = String.fromCharCode(65 + r);
             var rz = firstZ + r * gapZ;
-            var lbl = makeEtchedLabel(letter, rowLabelW, rowLabelH);
-            lbl.rotation.x = -Math.PI / 2;
-            lbl.position.set(rowLabelX, labelY, rz);
+            var lbl = makeEtched3DLabel(letter, rowLabelW, rowLabelH);
+            lbl.position.set(rowLabelX, H, rz);
             group.add(lbl);
         }
 
         // Column labels — centered in front margin strip
-        var colLabelZ = marginFront / 2;   // midpoint of front margin
-        var colLabelW = Math.min(gapX * 0.8, marginFront - wallT);
-        var colLabelH = Math.min(marginFront - wallT, gapX * 0.8);
+        var colLabelZ = marginFront / 2;
+        var colLabelW = Math.min(gapX * 0.65, marginFront - wallT * 2);
+        var colLabelH = Math.min(marginFront - wallT * 2, gapX * 0.65);
         for (var c = 0; c < cols; c++) {
             var numStr = String(c + 1);
             var cx2 = firstX + c * gapX;
-            var lbl2 = makeEtchedLabel(numStr, colLabelW, colLabelH);
-            lbl2.rotation.x = -Math.PI / 2;
-            lbl2.position.set(cx2, labelY, colLabelZ);
+            var lbl2 = makeEtched3DLabel(numStr, colLabelW, colLabelH);
+            lbl2.position.set(cx2, H, colLabelZ);
             group.add(lbl2);
         }
 
