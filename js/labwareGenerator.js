@@ -374,8 +374,9 @@
         const gapZ = def.rowGap;
 
         const isCircle = (def.wellShape || '').toLowerCase() === 'circle';
-        const isRoundBottom = (def.bottomShape || '').toLowerCase() === 'circle';
-        const isVBottom = def.vShapeDepth > 0;
+        const bsLower = (def.bottomShape || '').toLowerCase();
+        const isRoundBottom = bsLower === 'circle';
+        const isVBottom = bsLower === 'vshape' || bsLower === 'v' || def.vShapeDepth > 0;
 
         // Shaped-bottom height — the dome/cone is INSIDE the well depth,
         // so the straight wall is shortened and the lowest point = wellFloorY.
@@ -384,7 +385,8 @@
         if (isRoundBottom) {
             btmShapeH = wellBotR;               // full hemisphere, radius = well bottom
         } else if (isVBottom) {
-            btmShapeH = def.vShapeDepth;
+            // Use explicit VShapeDepth if given, otherwise default to well bottom radius
+            btmShapeH = def.vShapeDepth > 0 ? def.vShapeDepth : wellBotR;
         }
         // Clamp so the shaped bottom doesn't exceed the well depth
         btmShapeH = Math.min(btmShapeH, depth);
@@ -437,10 +439,10 @@
                         bowlMesh.position.set(cx, wellFloorY, cz);
                         group.add(bowlMesh);
                     } else if (isVBottom) {
-                        // Cone with point at bottom, base at top
+                        // Cone with point at bottom, base at top (closed surface)
                         var vDepth = btmShapeH;
                         var coneGeo = new THREE.CylinderGeometry(
-                            wellBotR, 0, vDepth, WELL_SEGMENTS, 1, true
+                            wellBotR, 0, vDepth, WELL_SEGMENTS, 1, false
                         );
                         var coneMesh = new THREE.Mesh(coneGeo, wellMat);
                         coneMesh.position.set(cx, wellFloorY + vDepth / 2, cz);
@@ -961,7 +963,7 @@
                 wellLength:      parseFloat($('#lg-well-size').value) || 6.86,
                 sizeBottom:      parseFloat($('#lg-well-size-bottom').value) || 6.35,
                 bottomShape:     $('#lg-bottom-shape').value || 'Flat',
-                vShapeDepth:     0,
+                vShapeDepth:     parseFloat($('#lg-v-depth')?.value) || 0,
                 angle:           0,
                 nominalVolume:   0,
                 firstHolePos: {
