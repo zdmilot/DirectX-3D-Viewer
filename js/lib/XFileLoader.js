@@ -158,6 +158,8 @@
     this.emissiveMap = '';
     // lightMapFileName
     this.lightMap = '';
+    // opacity (from diffuse color alpha channel)
+    this.opacity = 1.0;
     // is reference flag - if true, the material is given only by name
     this.isReference = false;
   });
@@ -356,10 +358,13 @@
     result.updateExport(bColorComponentData);
     result.valueLength += 1;
     // read the alpha component.
+    var aColorComponentData = readFloat(fullText, _off + result.valueLength);
     // increase the result.valueLength by the length of the read data.
-    result.updateExport(readFloat(fullText, _off + result.valueLength));
+    result.updateExport(aColorComponentData);
     // set the color.
     result.nodeData = new Color(rColorComponentData.nodeData, gColorComponentData.nodeData, bColorComponentData.nodeData);
+    // store alpha separately so callers can access it
+    result.alpha = aColorComponentData.nodeData;
     result.updateExport(testForSeparator(fullText, _off + result.valueLength));
     return result;
   }
@@ -617,6 +622,10 @@
     node.updateExport(diffuseColor);
     // Set the diffuse color of the material
     node.nodeData.color = new Color(diffuseColor.nodeData.r, diffuseColor.nodeData.g, diffuseColor.nodeData.b);
+    // Set the opacity from the alpha channel of the diffuse color
+    if (diffuseColor.alpha !== undefined) {
+      node.nodeData.opacity = diffuseColor.alpha;
+    }
     // Remove the white spaces and the separator characters that might be present.
     node.updateExport(testForSeparator(fullText, _off + node.valueLength));
 
@@ -2008,6 +2017,10 @@
             mpMat.shininess = material.shininess;
             mpMat.specular = new THREE.Color(material.specular.r, material.specular.g, material.specular.b);
             mpMat.emissive = new THREE.Color(material.emissive.r, material.emissive.g, material.emissive.b);
+            if (material.opacity !== undefined && material.opacity < 1.0) {
+              mpMat.opacity = material.opacity;
+              mpMat.transparent = true;
+            }
             if (material.map) {
               mpMat.map = _this4.texloader.load(material.map);
             }
