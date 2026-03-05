@@ -44,47 +44,51 @@
 
     /**
      * Decompress gzip data using the browser's DecompressionStream API.
-     * Falls back to manual inflate if DecompressionStream is unavailable.
+     * Tolerates trailing junk bytes after the gzip stream (common in
+     * .hxx files where compressed size is only estimated).
      * @param {Uint8Array} compressedBytes
      * @returns {Promise<Uint8Array>}
      */
     async function decompressGzip(compressedBytes) {
-        // Modern browsers support DecompressionStream
-        if (typeof DecompressionStream !== 'undefined') {
-            const ds = new DecompressionStream('gzip');
-            const writer = ds.writable.getWriter();
-            const reader = ds.readable.getReader();
+        if (typeof DecompressionStream === 'undefined') {
+            throw new Error('DecompressionStream API not available');
+        }
 
-            // Write compressed data
-            writer.write(compressedBytes);
-            writer.close();
+        const ds = new DecompressionStream('gzip');
+        const writer = ds.writable.getWriter();
+        const reader = ds.readable.getReader();
 
-            // Read all decompressed chunks
-            const chunks = [];
-            let totalLen = 0;
+        // Write compressed data — don't await, let read side pull
+        writer.write(compressedBytes).catch(function () { /* ignore write-side errors from trailing junk */ });
+        writer.close().catch(function () { /* ignore */ });
+
+        // Read all decompressed chunks, tolerating errors caused by
+        // trailing junk bytes after the valid gzip stream.
+        const chunks = [];
+        let totalLen = 0;
+        try {
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) break;
                 chunks.push(value);
                 totalLen += value.byteLength;
             }
-
-            // Combine chunks into a single Uint8Array
-            const result = new Uint8Array(totalLen);
-            let pos = 0;
-            for (const chunk of chunks) {
-                result.set(chunk, pos);
-                pos += chunk.byteLength;
-            }
-            return result;
+        } catch (e) {
+            // DecompressionStream throws when it encounters trailing
+            // bytes after the gzip stream.  If we already collected
+            // decompressed data, treat it as success.
+            if (totalLen === 0) throw e;
+            console.warn('[HXXLoader] Ignoring trailing data after gzip stream:', e.message);
         }
 
-        // Fallback: try using Response + ReadableStream with gzip
-        // (works in Chrome, Edge, Firefox with Blob trick)
-        const blob = new Blob([compressedBytes]);
-        const resp = new Response(blob.stream().pipeThrough(new DecompressionStream('gzip')));
-        const ab = await resp.arrayBuffer();
-        return new Uint8Array(ab);
+        // Combine chunks into a single Uint8Array
+        const result = new Uint8Array(totalLen);
+        let pos = 0;
+        for (const chunk of chunks) {
+            result.set(chunk, pos);
+            pos += chunk.byteLength;
+        }
+        return result;
     }
 
     /**
