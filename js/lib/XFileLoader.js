@@ -2020,6 +2020,7 @@
             if (material.opacity !== undefined && material.opacity < 1.0) {
               mpMat.opacity = material.opacity;
               mpMat.transparent = true;
+              mpMat.depthWrite = false;
             }
             if (material.map) {
               mpMat.map = _this4.texloader.load(material.map);
