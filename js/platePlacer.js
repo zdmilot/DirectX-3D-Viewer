@@ -539,13 +539,26 @@
             fileInput.addEventListener('change', e => {
                 const file = e.target.files[0];
                 if (!file) return;
-                if (!file.name.toLowerCase().endsWith('.x')) {
-                    alert('Please select a .x file.');
+                if (!(window.HXXLoader && HXXLoader.isXOrHXX(file.name))) {
+                    alert('Please select a .x or .hxx file.');
                     return;
                 }
                 ppState.loadedFileName = file.name;
-                const url = URL.createObjectURL(file);
-                loadXFilePlacer(url);
+                if (HXXLoader.isHXXFilename(file.name)) {
+                    const reader = new FileReader();
+                    reader.onload = function () {
+                        HXXLoader.toXFileBlob(reader.result).then(function (blob) {
+                            loadXFilePlacer(URL.createObjectURL(blob));
+                        }).catch(function (err) {
+                            console.error('[PlatePlacer] HXX error:', err);
+                            alert('Failed to parse .hxx file: ' + (err.message || err));
+                        });
+                    };
+                    reader.readAsArrayBuffer(file);
+                } else {
+                    const url = URL.createObjectURL(file);
+                    loadXFilePlacer(url);
+                }
                 fileInput.value = '';
             });
         }
@@ -583,9 +596,21 @@
                 dragCtr = 0;
                 if (dropzone) dropzone.classList.add('viewer-hidden');
                 const file = e.dataTransfer.files[0];
-                if (file && file.name.toLowerCase().endsWith('.x')) {
+                if (file && window.HXXLoader && HXXLoader.isXOrHXX(file.name)) {
                     ppState.loadedFileName = file.name;
-                    loadXFilePlacer(URL.createObjectURL(file));
+                    if (HXXLoader.isHXXFilename(file.name)) {
+                        const reader = new FileReader();
+                        reader.onload = function () {
+                            HXXLoader.toXFileBlob(reader.result).then(function (blob) {
+                                loadXFilePlacer(URL.createObjectURL(blob));
+                            }).catch(function (err) {
+                                console.error('[PlatePlacer] HXX drop error:', err);
+                            });
+                        };
+                        reader.readAsArrayBuffer(file);
+                    } else {
+                        loadXFilePlacer(URL.createObjectURL(file));
+                    }
                 }
             });
         }

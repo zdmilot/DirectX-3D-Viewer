@@ -237,17 +237,15 @@
     }
 
     function loadUserFile(file) {
-        if (!file.name.toLowerCase().endsWith('.x')) {
-            alert('Please select a .x file.');
+        if (!HXXLoader.isXOrHXX(file.name)) {
+            alert('Please select a .x or .hxx file.');
             return;
         }
-        const url = URL.createObjectURL(file);
         const loading = $('#viewer-loading');
         const errorEl = $('#viewer-error');
 
         // Track loaded file name for screenshot naming
         state.loadedFileName = file.name;
-        state.lastLoadedUrl = url;  // Store for placer auto-load
 
         // Clear previous model
         clearModel();
@@ -263,7 +261,30 @@
         // Update filename display
         setFilenameDisplay();
 
-        loadXFile(url, loading, errorEl);
+        if (HXXLoader.isHXXFilename(file.name)) {
+            // Read as ArrayBuffer, decompress, then load
+            const reader = new FileReader();
+            reader.onload = function () {
+                HXXLoader.toXFileBlob(reader.result).then(function (blob) {
+                    const url = URL.createObjectURL(blob);
+                    state.lastLoadedUrl = url;
+                    loadXFile(url, loading, errorEl);
+                }).catch(function (err) {
+                    if (loading) loading.classList.add('viewer-hidden');
+                    showError(errorEl, 'HXX parse error: ' + (err.message || err));
+                    console.error('[HXX]', err);
+                });
+            };
+            reader.onerror = function () {
+                if (loading) loading.classList.add('viewer-hidden');
+                showError(errorEl, 'Failed to read .hxx file.');
+            };
+            reader.readAsArrayBuffer(file);
+        } else {
+            const url = URL.createObjectURL(file);
+            state.lastLoadedUrl = url;
+            loadXFile(url, loading, errorEl);
+        }
     }
 
     function clearModel() {

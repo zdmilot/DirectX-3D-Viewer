@@ -72,7 +72,7 @@
                     </div>
                 </div>
             <div class="navbar-actions">
-                <input type="file" id="file-input" accept=".x" style="display:none">
+                <input type="file" id="file-input" accept=".x,.hxx" style="display:none">
                 <button class="nav-btn nav-btn-icon" id="btn-theme" data-tooltip="Switch to night mode" aria-label="Switch to night mode">
                     <i class="fas fa-moon"></i>
                 </button>
@@ -254,7 +254,7 @@
                 <div class="viewer-dropzone viewer-hidden" id="viewer-dropzone">
                     <div class="dropzone-content">
                         <i class="fas fa-file-import"></i>
-                        <span>Drop .x file here</span>
+                        <span>Drop .x or .hxx file here</span>
                     </div>
                 </div>
 
@@ -540,7 +540,7 @@
 
                 <!-- Bottom Controls Bar -->
                 <div class="viewer-controls-bar" id="pp-controls-bar">
-                    <input type="file" id="pp-file-input" accept=".x" style="display:none">
+                    <input type="file" id="pp-file-input" accept=".x,.hxx" style="display:none">
                     <button class="cv-ctrl-btn" id="pp-open" title="Open .x file">
                         <i class="fas fa-folder-open"></i> Open
                     </button>
@@ -588,7 +588,7 @@
                 <div class="viewer-dropzone viewer-hidden" id="pp-dropzone">
                     <div class="dropzone-content">
                         <i class="fas fa-file-import"></i>
-                        <span>Drop .x file here</span>
+                        <span>Drop .x or .hxx file here</span>
                     </div>
                 </div>
 
@@ -898,9 +898,10 @@
     <script src="js/lib/MTLLoader.js"></script>
     <script src="js/lib/GLTFLoader.js"></script>
     <script src="js/lib/STLLoader.js"></script>
+    <script src="js/hxxLoader.js?v=20260305a"></script>
     <script src="js/converter.js?v=20260304d"></script>
     <script src="js/platePlacer.js?v=20260304d"></script>
     <script src="js/labwareGenerator.js?v=20260305a"></script>
-    <script src="js/app.js?v=20260304e"></script>
+    <script src="js/app.js?v=20260305a"></script>
 </body>
 </html>

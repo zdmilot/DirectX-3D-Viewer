@@ -111,13 +111,34 @@
         exState.mainCamera.updateProjectionMatrix();
     }
 
-    // ── File Loading (.x only) ───────────────────────────────────
-    function loadXFileExporter(file) {
+    // ── File Loading (.x and .hxx) ─────────────────────────────────
+    function loadFileForExporter(file) {
         exState.originalFileName = file.name.replace(/\.[^.]+$/, '');
         clearExporterModel();
         showExporterLoading(true, 'Loading ' + file.name + '…');
 
-        const url = URL.createObjectURL(file);
+        if (window.HXXLoader && HXXLoader.isHXXFilename(file.name)) {
+            // .hxx file: read as ArrayBuffer, decompress, then load
+            const reader = new FileReader();
+            reader.onload = function () {
+                HXXLoader.toXFileBlob(reader.result).then(function (blob) {
+                    const url = URL.createObjectURL(blob);
+                    loadXUrlIntoExporter(url);
+                }).catch(function (err) {
+                    showExporterError('HXX parse error: ' + (err.message || err));
+                });
+            };
+            reader.onerror = function () {
+                showExporterError('Failed to read .hxx file.');
+            };
+            reader.readAsArrayBuffer(file);
+        } else {
+            const url = URL.createObjectURL(file);
+            loadXUrlIntoExporter(url);
+        }
+    }
+
+    function loadXUrlIntoExporter(url) {
         const loader = new THREE.XFileLoader();
         loader.load(url, function (object) {
             URL.revokeObjectURL(url);
@@ -133,6 +154,9 @@
             showExporterError('X file load error: ' + (err && err.message || err));
         });
     }
+
+    // For backward compatibility
+    var loadXFileExporter = loadFileForExporter;
 
     // ── Scene Management ─────────────────────────────────────────
     function addModelToExporter(object) {
@@ -686,15 +710,15 @@
                 const files = e.dataTransfer.files;
                 if (!files || files.length === 0) return;
 
-                // Find the .x file
+                // Find the .x or .hxx file
                 let xFile = null;
                 for (let i = 0; i < files.length; i++) {
-                    if (files[i].name.toLowerCase().endsWith('.x')) { xFile = files[i]; break; }
+                    if (window.HXXLoader && HXXLoader.isXOrHXX(files[i].name)) { xFile = files[i]; break; }
                 }
                 if (xFile) {
-                    loadXFileExporter(xFile);
+                    loadFileForExporter(xFile);
                 } else {
-                    showExporterError('Please drop a .x file');
+                    showExporterError('Please drop a .x or .hxx file');
                 }
             });
         }
