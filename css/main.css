@@ -849,6 +849,65 @@ body {
     margin: 2px 0;
 }
 
+/* ── Rotation & Reflection Transform Section ────────────── */
+.vt-transform-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 2px 0;
+}
+
+.vt-transform-label {
+    font-size: 0.6rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: rgba(156, 168, 184, 0.6);
+    margin-bottom: 1px;
+    user-select: none;
+}
+
+.vt-transform-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3px;
+    width: 100%;
+    padding: 0 4px;
+}
+
+.vt-mirror-grid {
+    grid-template-columns: 1fr 1fr 1fr;
+}
+
+.vt-btn.vt-btn-sm {
+    width: auto;
+    height: 28px;
+    min-width: 28px;
+    font-size: 0.7rem;
+    border-radius: 6px;
+    gap: 1px;
+    padding: 0 5px;
+}
+
+.vt-btn.vt-btn-sm i {
+    font-size: 0.55rem;
+}
+
+.vt-axis {
+    font-weight: 700;
+    font-size: 0.7rem;
+}
+.vt-axis.x { color: #e74c6f; }
+.vt-axis.y { color: #8bc34a; }
+.vt-axis.z { color: #4a90d9; }
+
+.vt-dir {
+    font-weight: 700;
+    font-size: 0.75rem;
+    color: #9ca8b8;
+}
+
 /* Grab handle for repositioning toolbar */
 .vt-grab-handle {
     width: 40px;

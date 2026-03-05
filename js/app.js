@@ -32,6 +32,17 @@
         vtZoomIn: $('#vt-zoom-in'),
         vtZoomOut: $('#vt-zoom-out'),
         vtPan: $('#vt-pan'),
+        vtSave: $('#vt-save'),
+        // Rotation/reflection buttons
+        vtRotXPos: $('#vt-rot-x-pos'),
+        vtRotXNeg: $('#vt-rot-x-neg'),
+        vtRotYPos: $('#vt-rot-y-pos'),
+        vtRotYNeg: $('#vt-rot-y-neg'),
+        vtRotZPos: $('#vt-rot-z-pos'),
+        vtRotZNeg: $('#vt-rot-z-neg'),
+        vtMirrorX: $('#vt-mirror-x'),
+        vtMirrorY: $('#vt-mirror-y'),
+        vtMirrorZ: $('#vt-mirror-z'),
         gizmoCanvas: $('#gizmo-canvas'),
     };
 
@@ -47,6 +58,7 @@
         activeView: 'viewer',
         loadedFileName: 'test',
         lastLoadedUrl: null,   // URL of the last loaded .x file (for passing to placer)
+        rawXFileContent: null, // Raw .x file text content for save/transform
     };
 
     const DEFAULT_X_FILENAME = 'test.x';
@@ -317,6 +329,7 @@
         });
         renderer.setPixelRatio(window.devicePixelRatio);
         renderer.setSize(w, h);
+        renderer.sortObjects = true;
 
         // ── Controls (orbit / pan / zoom) ────────────────────
         controls = new THREE.OrbitControls(camera, renderer.domElement);
@@ -462,6 +475,34 @@
             }
 
             scene.add(group);
+
+            // ── Make blue-dominant materials translucent ──────
+            // Many .x exports do not preserve translucency in the alpha
+            // channel.  Detect materials whose blue component is dominant
+            // and force them to be translucent so enclosure panels look
+            // like real polycarbonate covers.
+            group.traverse(function (child) {
+                if (!child.isMesh) return;
+                var mats = Array.isArray(child.material) ? child.material : [child.material];
+                var isTransparent = false;
+                mats.forEach(function (m) {
+                    if (!m || !m.color) return;
+                    var r = m.color.r, g = m.color.g, b = m.color.b;
+                    // Blue-dominant heuristic: blue channel dominates red
+                    if (b > r * 1.5 && b > 0.1) {
+                        m.transparent = true;
+                        // Keep file-specified opacity if already < 1, otherwise default 0.4
+                        if (m.opacity >= 1.0) m.opacity = 0.4;
+                        m.depthWrite = false;
+                        m.side = THREE.DoubleSide;
+                        isTransparent = true;
+                    }
+                });
+                // Render transparent meshes after all opaque meshes
+                if (isTransparent) {
+                    child.renderOrder = 999;
+                }
+            });
 
             // ── Auto-fit: center & scale model to fill view ──
             const box = new THREE.Box3().setFromObject(group);
@@ -708,6 +749,306 @@
                 ? THREE.MOUSE.PAN
                 : THREE.MOUSE.ROTATE;
         }
+    }
+
+    // ================================================================
+    //  Rotation & Reflection Tools — bake transforms into vertex data
+    // ================================================================
+
+    /**
+     * Apply a Matrix4 transform to ALL vertex positions and normals
+     * in the loaded model.  This permanently modifies the geometry
+     * so the changes are captured when saving.
+     *
+     * @param {THREE.Matrix4} matrix  - The transformation to apply
+     * @param {boolean}       flipWinding - If true, reverse triangle winding
+     *                                      (needed for reflections with odd # of negative axes)
+     */
+    function applyTransformToModel(matrix, flipWinding) {
+        if (!scene) return;
+        const model = scene.getObjectByName('__xmodel__');
+        if (!model) { alert('No model loaded.'); return; }
+
+        const normalMatrix = new THREE.Matrix3().getNormalMatrix(matrix);
+
+        model.traverse(function (child) {
+            if (!child.isMesh || !child.geometry) return;
+            const geom = child.geometry;
+
+            // Transform positions
+            const pos = geom.attributes.position;
+            if (pos) {
+                const v = new THREE.Vector3();
+                for (let i = 0; i < pos.count; i++) {
+                    v.set(pos.getX(i), pos.getY(i), pos.getZ(i));
+                    v.applyMatrix4(matrix);
+                    pos.setXYZ(i, v.x, v.y, v.z);
+                }
+                pos.needsUpdate = true;
+            }
+
+            // Transform normals
+            const norm = geom.attributes.normal;
+            if (norm) {
+                const n = new THREE.Vector3();
+                for (let i = 0; i < norm.count; i++) {
+                    n.set(norm.getX(i), norm.getY(i), norm.getZ(i));
+                    n.applyMatrix3(normalMatrix).normalize();
+                    norm.setXYZ(i, n.x, n.y, n.z);
+                }
+                norm.needsUpdate = true;
+            }
+
+            // Flip winding order for reflections (swap index pairs)
+            if (flipWinding && geom.index) {
+                const idx = geom.index;
+                for (let f = 0; f < idx.count; f += 3) {
+                    const a = idx.getX(f);
+                    const b = idx.getX(f + 1);
+                    idx.setX(f, b);
+                    idx.setX(f + 1, a);
+                }
+                idx.needsUpdate = true;
+            }
+
+            geom.computeBoundingBox();
+            geom.computeBoundingSphere();
+        });
+
+        // Also mark raw content as modified (needs re-serialize on save)
+        state.rawXFileContent = null;
+    }
+
+    /**
+     * Rotate the model 90° around the given axis.
+     * @param {'x'|'y'|'z'} axis
+     * @param {number} sign  +1 or -1
+     */
+    function rotateModel(axis, sign) {
+        const angle = sign * Math.PI / 2; // ±90°
+        const mat = new THREE.Matrix4();
+        switch (axis) {
+            case 'x': mat.makeRotationX(angle); break;
+            case 'y': mat.makeRotationY(angle); break;
+            case 'z': mat.makeRotationZ(angle); break;
+        }
+        applyTransformToModel(mat, false);
+    }
+
+    /**
+     * Mirror/reflect the model across the given axis plane.
+     * @param {'x'|'y'|'z'} axis
+     */
+    function mirrorModel(axis) {
+        const sx = axis === 'x' ? -1 : 1;
+        const sy = axis === 'y' ? -1 : 1;
+        const sz = axis === 'z' ? -1 : 1;
+        const mat = new THREE.Matrix4().makeScale(sx, sy, sz);
+        // A single-axis mirror flips winding order
+        applyTransformToModel(mat, true);
+    }
+
+    // ================================================================
+    //  Save .x File — serialize current model back to DirectX .x format
+    // ================================================================
+
+    function serializeModelToXFile() {
+        if (!scene) return null;
+        const model = scene.getObjectByName('__xmodel__');
+        if (!model) return null;
+
+        model.updateMatrixWorld(true);
+
+        const lines = [];
+
+        // Header
+        lines.push('xof 0303txt 0032');
+        lines.push('');
+
+        // Standard template definitions
+        lines.push('template ColorRGBA {');
+        lines.push('  <35ff44e0-6c7c-11cf-8f52-0040333594a3>');
+        lines.push('  FLOAT red; FLOAT green; FLOAT blue; FLOAT alpha;');
+        lines.push('}');
+        lines.push('');
+        lines.push('template ColorRGB {');
+        lines.push('  <d3e16e81-7835-11cf-8f52-0040333594a3>');
+        lines.push('  FLOAT red; FLOAT green; FLOAT blue;');
+        lines.push('}');
+        lines.push('');
+        lines.push('template Material {');
+        lines.push('  <3d82ab4d-62da-11cf-ab39-0020af71e433>');
+        lines.push('  ColorRGBA faceColor; FLOAT power; ColorRGB specularColor; ColorRGB emissiveColor; [...]');
+        lines.push('}');
+        lines.push('');
+        lines.push('template MeshMaterialList {');
+        lines.push('  <f6f23f42-7686-11cf-8f52-0040333594a3>');
+        lines.push('  DWORD nMaterials; DWORD nFaceIndexes; array DWORD faceIndexes[nFaceIndexes]; [Material <3d82ab4d-62da-11cf-ab39-0020af71e433>]');
+        lines.push('}');
+        lines.push('');
+        lines.push('template Vector {');
+        lines.push('  <3d82ab5e-62da-11cf-ab39-0020af71e433>');
+        lines.push('  FLOAT x; FLOAT y; FLOAT z;');
+        lines.push('}');
+        lines.push('');
+        lines.push('template MeshFace {');
+        lines.push('  <3d82ab5f-62da-11cf-ab39-0020af71e433>');
+        lines.push('  DWORD nFaceVertexIndices; array DWORD faceVertexIndices[nFaceVertexIndices];');
+        lines.push('}');
+        lines.push('');
+        lines.push('template Mesh {');
+        lines.push('  <3d82ab44-62da-11cf-ab39-0020af71e433>');
+        lines.push('  DWORD nVertices; array Vector vertices[nVertices]; DWORD nFaces; array MeshFace faces[nFaces]; [...]');
+        lines.push('}');
+        lines.push('');
+        lines.push('template MeshNormals {');
+        lines.push('  <f6f23f43-7686-11cf-8f52-0040333594a3>');
+        lines.push('  DWORD nNormals; array Vector normals[nNormals]; DWORD nFaceNormals; array MeshFace faceNormals[nFaceNormals];');
+        lines.push('}');
+        lines.push('');
+        lines.push('template MeshTextureCoords {');
+        lines.push('  <f6f23f40-7686-11cf-8f52-0040333594a3>');
+        lines.push('  DWORD nTextureCoords; array Coords2d textureCoords[nTextureCoords];');
+        lines.push('}');
+        lines.push('');
+        lines.push('template Coords2d {');
+        lines.push('  <f6f23f44-7686-11cf-8f52-0040333594a3>');
+        lines.push('  FLOAT u; FLOAT v;');
+        lines.push('}');
+        lines.push('');
+
+        // Serialize each mesh
+        let meshIdx = 0;
+        model.traverse(function (child) {
+            if (!child.isMesh || !child.geometry) return;
+
+            const geom = child.geometry.clone();
+            // Apply any parent transforms into vertex data
+            geom.applyMatrix4(child.matrixWorld);
+
+            const pos  = geom.attributes.position;
+            const norm = geom.attributes.normal;
+            const uv   = geom.attributes.uv;
+
+            // Build index array
+            let indices;
+            if (geom.index) {
+                indices = geom.index;
+            } else {
+                const arr = [];
+                for (let i = 0; i < pos.count; i++) arr.push(i);
+                geom.setIndex(arr);
+                indices = geom.index;
+            }
+
+            const vertCount = pos.count;
+            const faceCount = indices.count / 3;
+
+            lines.push('Mesh Mesh_' + meshIdx + ' {');
+            lines.push('  ' + vertCount + ';');
+
+            // Vertices
+            for (let i = 0; i < vertCount; i++) {
+                const sep = (i < vertCount - 1) ? ',' : ';';
+                lines.push('  ' + pos.getX(i).toFixed(6) + ';' + pos.getY(i).toFixed(6) + ';' + pos.getZ(i).toFixed(6) + ';' + sep);
+            }
+
+            // Faces
+            lines.push('  ' + faceCount + ';');
+            for (let f = 0; f < faceCount; f++) {
+                const i0 = indices.getX(f * 3);
+                const i1 = indices.getX(f * 3 + 1);
+                const i2 = indices.getX(f * 3 + 2);
+                const sep = (f < faceCount - 1) ? ',' : ';';
+                lines.push('  3;' + i0 + ',' + i1 + ',' + i2 + ';' + sep);
+            }
+
+            // MeshMaterialList
+            const mat = child.material;
+            const mats = Array.isArray(mat) ? mat : [mat];
+            lines.push('  MeshMaterialList {');
+            lines.push('    ' + mats.length + ';');
+            lines.push('    ' + faceCount + ';');
+            // Material index per face (assign all faces to material 0 for single-material)
+            for (let f = 0; f < faceCount; f++) {
+                const matFaceIdx = 0; // Simplified: use first material
+                const sep = (f < faceCount - 1) ? ',' : ';;';
+                lines.push('    ' + matFaceIdx + sep);
+            }
+            mats.forEach(function (m, mi) {
+                const r = m && m.color ? m.color.r : 0.7;
+                const g = m && m.color ? m.color.g : 0.7;
+                const b = m && m.color ? m.color.b : 0.7;
+                const a = m && m.opacity !== undefined ? m.opacity : 1.0;
+                const power = m && m.shininess !== undefined ? m.shininess : 20.0;
+                const sr = m && m.specular ? m.specular.r : 0.0;
+                const sg = m && m.specular ? m.specular.g : 0.0;
+                const sb = m && m.specular ? m.specular.b : 0.0;
+                const er = m && m.emissive ? m.emissive.r : 0.0;
+                const eg = m && m.emissive ? m.emissive.g : 0.0;
+                const eb = m && m.emissive ? m.emissive.b : 0.0;
+                lines.push('    Material {');
+                lines.push('      ' + r.toFixed(6) + ';' + g.toFixed(6) + ';' + b.toFixed(6) + ';' + a.toFixed(6) + ';;');
+                lines.push('      ' + power.toFixed(6) + ';');
+                lines.push('      ' + sr.toFixed(6) + ';' + sg.toFixed(6) + ';' + sb.toFixed(6) + ';;');
+                lines.push('      ' + er.toFixed(6) + ';' + eg.toFixed(6) + ';' + eb.toFixed(6) + ';;');
+                lines.push('    }');
+            });
+            lines.push('  }');
+
+            // MeshNormals
+            if (norm) {
+                lines.push('  MeshNormals {');
+                lines.push('    ' + norm.count + ';');
+                for (let i = 0; i < norm.count; i++) {
+                    const sep = (i < norm.count - 1) ? ',' : ';';
+                    lines.push('    ' + norm.getX(i).toFixed(6) + ';' + norm.getY(i).toFixed(6) + ';' + norm.getZ(i).toFixed(6) + ';' + sep);
+                }
+                lines.push('    ' + faceCount + ';');
+                for (let f = 0; f < faceCount; f++) {
+                    const i0 = indices.getX(f * 3);
+                    const i1 = indices.getX(f * 3 + 1);
+                    const i2 = indices.getX(f * 3 + 2);
+                    const sep = (f < faceCount - 1) ? ',' : ';';
+                    lines.push('    3;' + i0 + ',' + i1 + ',' + i2 + ';' + sep);
+                }
+                lines.push('  }');
+            }
+
+            // MeshTextureCoords
+            if (uv) {
+                lines.push('  MeshTextureCoords {');
+                lines.push('    ' + uv.count + ';');
+                for (let i = 0; i < uv.count; i++) {
+                    const sep = (i < uv.count - 1) ? ',' : ';';
+                    lines.push('    ' + uv.getX(i).toFixed(6) + ';' + uv.getY(i).toFixed(6) + ';' + sep);
+                }
+                lines.push('  }');
+            }
+
+            lines.push('}');
+            lines.push('');
+
+            meshIdx++;
+            geom.dispose();
+        });
+
+        return lines.join('\n');
+    }
+
+    /**
+     * Save the current model as a .x file download.
+     */
+    function saveXFile() {
+        const model = scene ? scene.getObjectByName('__xmodel__') : null;
+        if (!model) { alert('No model loaded to save.'); return; }
+
+        const content = serializeModelToXFile();
+        if (!content) { alert('Failed to serialize model.'); return; }
+
+        const fileName = (state.loadedFileName || 'model').replace(/\.[^.]+$/, '') + '.x';
+        const blob = new Blob([content], { type: 'text/plain' });
+        downloadBlob(blob, fileName);
     }
 
     // ================================================================
@@ -1560,6 +1901,22 @@
         if (dom.vtZoomIn) dom.vtZoomIn.addEventListener('click', () => doZoom(0.75));
         if (dom.vtZoomOut) dom.vtZoomOut.addEventListener('click', () => doZoom(1.35));
         if (dom.vtPan) dom.vtPan.addEventListener('click', togglePanMode);
+
+        // Save button
+        if (dom.vtSave) dom.vtSave.addEventListener('click', saveXFile);
+
+        // Rotation buttons
+        if (dom.vtRotXPos) dom.vtRotXPos.addEventListener('click', () => rotateModel('x', +1));
+        if (dom.vtRotXNeg) dom.vtRotXNeg.addEventListener('click', () => rotateModel('x', -1));
+        if (dom.vtRotYPos) dom.vtRotYPos.addEventListener('click', () => rotateModel('y', +1));
+        if (dom.vtRotYNeg) dom.vtRotYNeg.addEventListener('click', () => rotateModel('y', -1));
+        if (dom.vtRotZPos) dom.vtRotZPos.addEventListener('click', () => rotateModel('z', +1));
+        if (dom.vtRotZNeg) dom.vtRotZNeg.addEventListener('click', () => rotateModel('z', -1));
+
+        // Mirror/reflect buttons
+        if (dom.vtMirrorX) dom.vtMirrorX.addEventListener('click', () => mirrorModel('x'));
+        if (dom.vtMirrorY) dom.vtMirrorY.addEventListener('click', () => mirrorModel('y'));
+        if (dom.vtMirrorZ) dom.vtMirrorZ.addEventListener('click', () => mirrorModel('z'));
 
         // Screenshot button & dropdown
         const ssBtn = $('#vt-screenshot');
