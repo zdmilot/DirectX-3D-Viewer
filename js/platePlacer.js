@@ -196,6 +196,7 @@
             ppState.plate = group;
             ppState._plateCenter = center.clone();
             ppState._plateNativeSize = box.getSize(new THREE.Vector3()).clone();
+            if (window._fixLeftHandedCoords) window._fixLeftHandedCoords(group);
             ppState.scene.add(group);
 
             // Auto-scale plate to match model if model is already loaded
@@ -289,6 +290,9 @@
             }
 
             ppState.scene.add(group);
+
+            // Fix left-handed DirectX coords
+            if (window._fixLeftHandedCoords) window._fixLeftHandedCoords(group);
 
             // Center model
             const box = new THREE.Box3().setFromObject(group);

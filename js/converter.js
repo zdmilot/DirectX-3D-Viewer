@@ -350,6 +350,7 @@
             }
             const group = new THREE.Group();
             object.models.forEach(m => group.add(m));
+            if (window._fixLeftHandedCoords) window._fixLeftHandedCoords(group);
             addModelToScene(group);
         }, undefined, function (err) {
             URL.revokeObjectURL(url);

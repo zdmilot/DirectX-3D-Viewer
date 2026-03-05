@@ -149,6 +149,44 @@
     // Expose for converter/placer modules
     window._updateDebugPanel = updateDebugPanel;
 
+    /**
+     * Convert a Three.js Group loaded from a DirectX .x file from
+     * left-handed (DirectX) to right-handed (Three.js) coordinates.
+     * Negates X positions and normals, flips triangle winding order.
+     */
+    function fixLeftHandedCoords(group) {
+        group.traverse(function (child) {
+            if (!child.isMesh || !child.geometry) return;
+            var pos = child.geometry.attributes.position;
+            if (pos) {
+                for (var i = 0; i < pos.count; i++) {
+                    pos.setX(i, -pos.getX(i));
+                }
+                pos.needsUpdate = true;
+            }
+            var norm = child.geometry.attributes.normal;
+            if (norm) {
+                for (var i = 0; i < norm.count; i++) {
+                    norm.setX(i, -norm.getX(i));
+                }
+                norm.needsUpdate = true;
+            }
+            var idx = child.geometry.index;
+            if (idx) {
+                for (var f = 0; f < idx.count; f += 3) {
+                    var a = idx.getX(f);
+                    var b = idx.getX(f + 1);
+                    idx.setX(f, b);
+                    idx.setX(f + 1, a);
+                }
+                idx.needsUpdate = true;
+            }
+            child.geometry.computeBoundingBox();
+            child.geometry.computeBoundingSphere();
+        });
+    }
+    window._fixLeftHandedCoords = fixLeftHandedCoords;
+
     // -- Theme Toggle ------------------------------------------------
     function toggleTheme() {
         state.isDark = !state.isDark;
@@ -479,8 +517,14 @@
 
             scene.add(group);
 
+            // ── Left-handed → right-handed coordinate fix ────
+            // DirectX .x files use a left-handed coordinate system;
+            // Three.js is right-handed.  Negate the X axis in all
+            // vertex positions and normals, and flip winding order
+            // so faces remain outward-pointing.
+            fixLeftHandedCoords(group);
+
             // ── Make blue-dominant materials translucent ──────
-            // Many .x exports do not preserve translucency in the alpha
             // channel.  Detect materials whose blue component is dominant
             // and force them to be translucent so enclosure panels look
             // like real polycarbonate covers.
