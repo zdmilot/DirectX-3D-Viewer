@@ -686,6 +686,8 @@
         if (window.PlacerModule) window.PlacerModule.updateTheme();
         // Also update labware generator theme
         if (window.LabwareGenModule) window.LabwareGenModule.updateTheme();
+        // Also update HXX exporter theme
+        if (window.HxxExportModule) window.HxxExportModule.updateTheme();
 
     }
 
@@ -720,6 +722,11 @@
         // Initialize labware generator on first switch
         if (viewName === 'labware' && window.LabwareGenModule) {
             setTimeout(() => window.LabwareGenModule.init(), 50);
+        }
+
+        // Initialize HXX exporter on first switch
+        if (viewName === 'hxxexport' && window.HxxExportModule) {
+            setTimeout(() => window.HxxExportModule.init(), 50);
         }
 
         // Auto-collapse sidebar after navigation

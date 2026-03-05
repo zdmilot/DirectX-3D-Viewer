@@ -1111,6 +1111,7 @@
         init: initConverter,
         updateTheme: updateConverterTheme,
         setGridVisible: setConverterGridVisible,
+        generateXFileText: generateXFileText,
     };
 
 })();

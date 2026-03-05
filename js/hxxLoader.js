@@ -418,6 +418,124 @@
         return /\.(x|hxx)$/i.test(filename);
     }
 
+    // ================================================================
+    //  Compose — build a .hxx container from .x text (+ textures)
+    // ================================================================
+
+    /**
+     * Compress data using browser CompressionStream('gzip').
+     * @param {Uint8Array} data
+     * @returns {Promise<Uint8Array>}
+     */
+    async function compressGzip(data) {
+        const cs = new CompressionStream('gzip');
+        const writer = cs.writable.getWriter();
+        const reader = cs.readable.getReader();
+
+        writer.write(data);
+        writer.close();
+
+        const chunks = [];
+        let totalLen = 0;
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            chunks.push(value);
+            totalLen += value.byteLength;
+        }
+
+        const result = new Uint8Array(totalLen);
+        let pos = 0;
+        for (const chunk of chunks) {
+            result.set(chunk, pos);
+            pos += chunk.byteLength;
+        }
+        return result;
+    }
+
+    /**
+     * Build a Hamilton .hxx binary container from .x text and optional textures.
+     *
+     * @param {string} xFileText - The DirectX .x file content as a string.
+     * @param {Array<{name: string, data: Uint8Array}>} [textures] - Optional texture sections.
+     * @returns {Promise<ArrayBuffer>} The complete .hxx file as an ArrayBuffer.
+     */
+    async function composeHXX(xFileText, textures) {
+        textures = textures || [];
+
+        // Prepare sections array
+        const sections = [];
+
+        // Main 3D data section
+        const xFileBytes = new TextEncoder().encode(xFileText);
+        const xFileCompressed = await compressGzip(xFileBytes);
+        sections.push({
+            name: MAIN_SECTION,
+            decompressedSize: xFileBytes.byteLength,
+            compressedData: xFileCompressed,
+        });
+
+        // Texture sections
+        for (const tex of textures) {
+            const texCompressed = await compressGzip(tex.data);
+            sections.push({
+                name: tex.name,
+                decompressedSize: tex.data.byteLength,
+                compressedData: texCompressed,
+            });
+        }
+
+        // Calculate binary layout
+        const sectionCount = sections.length;
+        const headerSize = 20; // 14 magic + 2 version + 4 sectionCount
+        const tableSize = sectionCount * 12;
+        let dataOffset = headerSize + tableSize;
+
+        // Assign positions for each section's data
+        for (const s of sections) {
+            const nameBytes = new TextEncoder().encode(s.name);
+            s.nameBytes = nameBytes;
+            s.nameOffset = dataOffset;
+            s.nameLen = nameBytes.byteLength;
+            dataOffset += s.nameLen + s.compressedData.byteLength;
+        }
+
+        const totalSize = dataOffset;
+
+        // Build the binary container
+        const buffer = new ArrayBuffer(totalSize);
+        const dv = new DataView(buffer);
+        const allBytes = new Uint8Array(buffer);
+
+        // [0..13] Magic: "Hamilton3dData"
+        for (let i = 0; i < HXX_MAGIC.length; i++) {
+            allBytes[i] = HXX_MAGIC.charCodeAt(i);
+        }
+
+        // [14..15] Version bytes
+        allBytes[14] = 0x00;
+        allBytes[15] = 0x01;
+
+        // [16..19] Section count (big-endian uint32)
+        dv.setUint32(16, sectionCount, false);
+
+        // [20..] Section table: N entries × 12 bytes each
+        for (let i = 0; i < sectionCount; i++) {
+            const base = 20 + i * 12;
+            dv.setUint32(base, sections[i].nameOffset, false);
+            dv.setUint32(base + 4, sections[i].nameLen, false);
+            dv.setUint32(base + 8, sections[i].decompressedSize, false);
+        }
+
+        // Section data blocks: name bytes + compressed data
+        for (const s of sections) {
+            allBytes.set(s.nameBytes, s.nameOffset);
+            allBytes.set(s.compressedData, s.nameOffset + s.nameLen);
+        }
+
+        return buffer;
+    }
+
     // ── Public API ───────────────────────────────────────────────
     window.HXXLoader = {
         isHXX: isHXX,
@@ -426,5 +544,6 @@
         isXOrHXX: isXOrHXX,
         parse: parse,
         toXFileBlob: toXFileBlob,
+        composeHXX: composeHXX,
     };
 })();

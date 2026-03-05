@@ -95,6 +95,10 @@
                         <i class="fas fa-exchange-alt"></i>
                         <span>Convert to .x</span>
                     </button>
+                    <button class="sidebar-nav-item" data-view="hxxexport">
+                        <i class="fas fa-file-archive"></i>
+                        <span>Export .hxx</span>
+                    </button>
                     <button class="sidebar-nav-item" data-view="placer">
                         <i class="fas fa-th"></i>
                         <span>Plate Placer</span>
@@ -398,6 +402,139 @@
                             <div class="cv-view-card">
                                 <div class="cv-view-label">Left</div>
                                 <canvas id="cv-view-left"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ====== HXX EXPORT VIEW ====== -->
+            <div class="view-panel" data-view-panel="hxxexport">
+                <div class="cv-layout">
+                    <!-- Left: Main 3D viewport -->
+                    <div class="cv-main-col">
+                        <div class="cv-main-viewport" id="hx-main-viewport">
+                            <!-- Floating 3D Toolbar -->
+                            <div class="viewer-toolbar" id="hx-viewer-toolbar">
+                                <div class="vt-body" id="hx-vt-body">
+                                    <button class="vt-toggle" id="hx-vt-toggle" title="Toggle toolbar">
+                                        <i class="fas fa-chevron-right"></i>
+                                    </button>
+                                    <div class="vt-collapsible">
+                                        <div class="vt-gizmo" id="hx-vt-gizmo">
+                                            <canvas id="hx-gizmo-canvas" width="44" height="44"></canvas>
+                                        </div>
+                                        <div class="vt-separator"></div>
+                                        <button class="vt-btn" id="hx-vt-reset-cam" title="Reset camera">
+                                            <i class="fas fa-video"></i>
+                                        </button>
+                                        <button class="vt-btn" id="hx-vt-zoom-fit" title="Zoom to fit">
+                                            <i class="fas fa-expand"></i>
+                                        </button>
+                                        <button class="vt-btn" id="hx-vt-wireframe" title="Toggle wireframe">
+                                            <i class="fas fa-draw-polygon"></i>
+                                        </button>
+                                        <button class="vt-btn" id="hx-vt-perspective" title="Toggle perspective / orthographic">
+                                            <i class="fas fa-cube"></i>
+                                        </button>
+                                        <button class="vt-btn grid-toggle" id="hx-btn-grid" title="Toggle gridlines">
+                                            <i class="fas fa-border-all"></i>
+                                            <span class="grid-slash" aria-hidden="true"></span>
+                                        </button>
+                                        <div class="vt-separator"></div>
+                                        <button class="vt-btn vt-btn-round" id="hx-vt-zoom-in" title="Zoom in">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                        <button class="vt-btn vt-btn-round" id="hx-vt-zoom-out" title="Zoom out">
+                                            <i class="fas fa-minus"></i>
+                                        </button>
+                                        <button class="vt-btn vt-btn-round" id="hx-vt-pan" title="Pan mode">
+                                            <i class="fas fa-hand-paper"></i>
+                                        </button>
+                                        <div class="vt-separator"></div>
+                                        <div class="vt-grab-handle" id="hx-vt-grab-handle" title="Drag to move toolbar">
+                                            <i class="fas fa-grip-horizontal"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <canvas id="hx-main-canvas"></canvas>
+                            <div class="viewer-loading viewer-hidden" id="hx-loading">
+                                <div class="viewer-spinner"></div>
+                                <span>Loading…</span>
+                            </div>
+                            <div class="viewer-error viewer-hidden" id="hx-error">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <span id="hx-error-msg">Error</span>
+                            </div>
+                            <div class="cv-format-badge" id="hx-format-badge" style="display:none">.X</div>
+                            <div class="viewer-dropzone viewer-hidden" id="hx-dropzone">
+                                <div class="dropzone-content">
+                                    <i class="fas fa-file-import"></i>
+                                    <span>Drop 3D file here</span>
+                                </div>
+                            </div>
+
+                            <!-- Debug Panel -->
+                            <div class="debug-panel" id="debug-panel-hxxexport">
+                                <div class="debug-panel-header"><i class="fas fa-bug"></i> Debug Info</div>
+                                <pre class="debug-panel-content" id="debug-content-hxxexport">No model loaded.</pre>
+                            </div>
+                        </div>
+
+                        <!-- Controls Bar -->
+                        <div class="cv-controls-bar">
+                            <input type="file" id="hx-file-input" accept=".obj,.mtl,.stl,.glb,.gltf,.x,.hxx,.png,.jpg,.jpeg,.bmp" multiple style="display:none">
+                            <button class="cv-ctrl-btn" id="hx-open-btn" title="Open 3D file">
+                                <i class="fas fa-folder-open"></i> Open
+                            </button>
+                            <div class="cv-ctrl-divider"></div>
+                            <div class="cv-rot-group">
+                                <span class="cv-rot-label">Rotate:</span>
+                                <button class="hx-rot-btn cv-rot-btn" data-axis="x" data-deg="90" title="Rotate +90° around X">X+90</button>
+                                <button class="hx-rot-btn cv-rot-btn" data-axis="x" data-deg="-90" title="Rotate −90° around X">X−90</button>
+                                <button class="hx-rot-btn cv-rot-btn" data-axis="y" data-deg="90" title="Rotate +90° around Y">Y+90</button>
+                                <button class="hx-rot-btn cv-rot-btn" data-axis="y" data-deg="-90" title="Rotate −90° around Y">Y−90</button>
+                                <button class="hx-rot-btn cv-rot-btn" data-axis="z" data-deg="90" title="Rotate +90° around Z">Z+90</button>
+                                <button class="hx-rot-btn cv-rot-btn" data-axis="z" data-deg="-90" title="Rotate −90° around Z">Z−90</button>
+                            </div>
+                            <button class="cv-ctrl-btn cv-ctrl-btn-muted" id="hx-reset-rot" title="Reset orientation">
+                                <i class="fas fa-undo"></i> Reset
+                            </button>
+                            <span class="cv-rotation-display" id="hx-rotation-display">X: 0°  Y: 0°  Z: 0°</span>
+                            <div class="cv-ctrl-spacer"></div>
+                            <button class="cv-ctrl-btn cv-ctrl-btn-accent" id="hx-export-btn" disabled title="Export as .hxx file">
+                                <i class="fas fa-download"></i> Export .hxx
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Right: Six orthographic views -->
+                    <div class="cv-views-col">
+                        <div class="cv-views-grid">
+                            <div class="cv-view-card">
+                                <div class="cv-view-label">Top</div>
+                                <canvas id="hx-view-top"></canvas>
+                            </div>
+                            <div class="cv-view-card">
+                                <div class="cv-view-label">Front</div>
+                                <canvas id="hx-view-front"></canvas>
+                            </div>
+                            <div class="cv-view-card">
+                                <div class="cv-view-label">Right</div>
+                                <canvas id="hx-view-right"></canvas>
+                            </div>
+                            <div class="cv-view-card">
+                                <div class="cv-view-label">Bottom</div>
+                                <canvas id="hx-view-bottom"></canvas>
+                            </div>
+                            <div class="cv-view-card">
+                                <div class="cv-view-label">Back</div>
+                                <canvas id="hx-view-back"></canvas>
+                            </div>
+                            <div class="cv-view-card">
+                                <div class="cv-view-label">Left</div>
+                                <canvas id="hx-view-left"></canvas>
                             </div>
                         </div>
                     </div>
@@ -903,6 +1040,7 @@
     <script src="js/converter.js?v=20260304d"></script>
     <script src="js/platePlacer.js?v=20260304d"></script>
     <script src="js/labwareGenerator.js?v=20260305a"></script>
+    <script src="js/hxxExporter.js?v=20260305a"></script>
     <script src="js/app.js?v=20260305a"></script>
 </body>
 </html>
