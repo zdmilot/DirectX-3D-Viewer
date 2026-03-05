@@ -218,13 +218,18 @@
             wellShape:   wells ? getTextContent(wells, 'Shape') : 'Circle',
             wellSize:    wells ? getNum(wells, 'Size', DIV) : 6.86,
             wellLength:  wells ? getNum(wells, 'Length', DIV) : 6.86,
-            sizeBottom:  wells ? getNum(wells, 'SizeBottom', DIV) : 6.35,
+            sizeBottom:  wells ? getNum(wells, 'SizeBottom', DIV) : 0,
             bottomShape: wells ? getTextContent(wells, 'BottomShape') : 'Flat',
             vShapeDepth: wells ? getNum(wells, 'VShapeDepth', DIV) : 0,
             angle:       wells ? getNum(wells, 'Angle', 1) : 0,
             nominalVolume: wells ? getNum(wells, 'NominalWellVolume', DIV) : 360,
             firstHolePos: { x: 0, y: 0 },
         };
+
+        // If SizeBottom is 0 or missing, wells have straight walls — use top size
+        if (!def.sizeBottom) {
+            def.sizeBottom = def.wellSize;
+        }
 
         // Parse first hole position "x;y" format
         if (wells) {
