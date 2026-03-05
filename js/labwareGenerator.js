@@ -277,12 +277,14 @@
         const W = def.footprintWidth;    // Z dimension (mm)
         const H = def.height;            // total Y dimension (mm)
         const wallT = SBS.wallThickness;
-        const flangeH = Math.min(SBS.flangeHeight, H * 0.2);
         const flangeOverhang = 0.5;      // mm overhang on each side
 
         // The well floor Y position — wells extend from (H - depth) up to H
-        const depth = def.wellDepth;
-        const wellFloorY = H - depth;    // must be > flangeH for geometry to make sense
+        const depth = Math.min(def.wellDepth, H - wallT); // clamp so floor stays above bottom
+        const wellFloorY = H - depth;
+
+        // Flange must not exceed the well floor — otherwise slab would be negative
+        const flangeH = Math.min(SBS.flangeHeight, H * 0.2, wellFloorY);
         const bottomT = Math.max(wallT, wellFloorY - flangeH); // solid between skirt top and well floor
 
         // Colors — unified translucent glass look for entire plate
@@ -400,9 +402,10 @@
 
                     // Bottom cap at Y = wellFloorY
                     if (isRoundBottom) {
-                        // Hemisphere curving downward
+                        // Hemisphere curving downward — clamp radius so it doesn't go below Y=0
+                        var hemiR = Math.min(wellBotR, wellFloorY);
                         const hemiGeo = new THREE.SphereGeometry(
-                            wellBotR, WELL_SEGMENTS, 8,
+                            hemiR, WELL_SEGMENTS, 8,
                             0, Math.PI * 2,
                             0, Math.PI / 2
                         );
@@ -411,11 +414,13 @@
                         hemiMesh.position.set(cx, wellFloorY, cz);
                         group.add(hemiMesh);
                     } else if (isVBottom) {
+                        // V-bottom cone — clamp depth so it doesn't go below Y=0
+                        var vDepth = Math.min(def.vShapeDepth, wellFloorY);
                         const coneGeo = new THREE.ConeGeometry(
-                            wellBotR, def.vShapeDepth, WELL_SEGMENTS, 1, true
+                            wellBotR, vDepth, WELL_SEGMENTS, 1, true
                         );
                         const coneMesh = new THREE.Mesh(coneGeo, wellMat);
-                        coneMesh.position.set(cx, wellFloorY - def.vShapeDepth / 2, cz);
+                        coneMesh.position.set(cx, wellFloorY - vDepth / 2, cz);
                         group.add(coneMesh);
                     } else {
                         // Flat bottom disk
