@@ -171,8 +171,6 @@
         // Detect labware type
         if (tagName === 'Plate') {
             return parsePlateXML(doc);
-        } else if (tagName === 'Tube' || tagName === 'Reservoir') {
-            return parseTubeXML(doc);
         }
 
         // Try generic — look for Measurements and Wells children
@@ -180,7 +178,7 @@
             return parsePlateXML(doc);
         }
 
-        throw new Error('Unrecognized labware XML format (root: <' + tagName + '>)');
+        throw new Error('Unrecognized labware XML format (root: <' + tagName + '>');
     }
 
     function getTextContent(parent, tagName) {
@@ -244,19 +242,7 @@
         return def;
     }
 
-    function parseTubeXML(doc) {
-        // Basic tube/reservoir parsing
-        const meas = doc.querySelector('Measurements');
-        const DIV = 100;
 
-        return {
-            type: 'tube',
-            name: getTextContent(doc, 'Name') || 'Tube',
-            manufacturer: getTextContent(doc, 'Manufacturer') || '',
-            height: meas ? getNum(meas, 'HeightMM', DIV) : 50,
-            diameter: meas ? getNum(meas, 'DiameterMM', DIV) : 12,
-        };
-    }
 
     // ================================================================
     //  3D Geometry Generation — SBS Plate
@@ -451,31 +437,92 @@
             }
         }
 
+        // ─── Top surface plane with well holes (Y = H) ──────────
+        // A solid surface at the top of the plate between the wells
+        const topSurfaceY = H - 0.15;  // just below the rim rings
+        const topShape = new THREE.Shape();
+        // Outer rectangle (inner face of walls)
+        topShape.moveTo(wallT, wallT);
+        topShape.lineTo(L - wallT, wallT);
+        topShape.lineTo(L - wallT, W - wallT);
+        topShape.lineTo(wallT, W - wallT);
+        topShape.closePath();
+
+        // Punch holes for each well
+        for (let row = 0; row < rows; row++) {
+            for (let col = 0; col < cols; col++) {
+                const cx = firstX + col * gapX;
+                const cz = firstZ + row * gapZ;
+                const holeR = wellTopR + 0.15;  // slightly larger than well opening
+                const hole = new THREE.Path();
+                if (isCircle) {
+                    hole.absarc(cx, cz, holeR, 0, Math.PI * 2, true);
+                } else {
+                    const hw = (def.wellLength / 2) + 0.15;
+                    const hh = (def.wellSize / 2) + 0.15;
+                    hole.moveTo(cx - hw, cz - hh);
+                    hole.lineTo(cx + hw, cz - hh);
+                    hole.lineTo(cx + hw, cz + hh);
+                    hole.lineTo(cx - hw, cz + hh);
+                    hole.closePath();
+                }
+                topShape.holes.push(hole);
+            }
+        }
+
+        const topGeo = new THREE.ShapeGeometry(topShape);
+        const topMesh = new THREE.Mesh(topGeo, new THREE.MeshPhongMaterial({
+            color: bodyColor, side: THREE.DoubleSide
+        }));
+        // ShapeGeometry is in XY plane — rotate to XZ and position at topSurfaceY
+        topMesh.rotation.x = -Math.PI / 2;
+        topMesh.position.set(0, topSurfaceY, 0);
+        group.add(topMesh);
+
+        // ─── Alphanumeric well labels ────────────────────────────
+        // Row letters (A, B, C, …) along the left edge
+        // Column numbers (1, 2, 3, …) along the top edge
+        function makeTextSprite(text, size) {
+            var canvas = document.createElement('canvas');
+            var sz = 128;
+            canvas.width = sz;
+            canvas.height = sz;
+            var ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#333333';
+            ctx.font = 'bold ' + Math.round(sz * 0.6) + 'px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, sz / 2, sz / 2);
+            var tex = new THREE.CanvasTexture(canvas);
+            tex.needsUpdate = true;
+            var mat = new THREE.SpriteMaterial({ map: tex, depthTest: false });
+            var sprite = new THREE.Sprite(mat);
+            sprite.scale.set(size, size, 1);
+            return sprite;
+        }
+
+        var labelSize = Math.min(gapX, gapZ) * 0.55;
+        // Row labels (left of plate)
+        for (var r = 0; r < rows; r++) {
+            var letter = String.fromCharCode(65 + r);  // A, B, C, ...
+            var sprite = makeTextSprite(letter, labelSize);
+            var rz = firstZ + r * gapZ;
+            sprite.position.set(-labelSize * 0.6, H + 0.5, rz);
+            group.add(sprite);
+        }
+        // Column labels (above plate, front edge)
+        for (var c = 0; c < cols; c++) {
+            var numStr = String(c + 1);
+            var sprite2 = makeTextSprite(numStr, labelSize);
+            var cx2 = firstX + c * gapX;
+            sprite2.position.set(cx2, H + 0.5, -labelSize * 0.6);
+            group.add(sprite2);
+        }
+
         return group;
     }
 
-    // ================================================================
-    //  3D Geometry Generation — Tube / Reservoir
-    // ================================================================
-    function generateTubeModel(def) {
-        const group = new THREE.Group();
-        group.name = '__lg_labware__';
 
-        const h = def.height;
-        const r = def.diameter / 2;
-
-        const tubeGeo = new THREE.CylinderGeometry(r, r, h, 24, 1, false);
-        const tubeMat = new THREE.MeshPhongMaterial({
-            color: 0xd8dce2,
-            transparent: true,
-            opacity: 0.85,
-        });
-        const tubeMesh = new THREE.Mesh(tubeGeo, tubeMat);
-        tubeMesh.position.set(0, h / 2, 0);
-        group.add(tubeMesh);
-
-        return group;
-    }
 
     // ================================================================
     //  Display the generated model
@@ -786,12 +833,29 @@
                 wellCount: (parseInt($('#lg-rows').value) || 8) * (parseInt($('#lg-cols').value) || 12),
             };
         }
+        // Default plate definition when form is empty
         return {
-            type: 'tube',
+            type: 'plate',
             name: $('#lg-name').value,
             manufacturer: $('#lg-manufacturer').value,
-            height: 50,
-            diameter: 12,
+            footprintLength: SBS.footprintLength,
+            footprintWidth: SBS.footprintWidth,
+            height: 14.35,
+            rowCount: 8,
+            colCount: 12,
+            rowGap: 9,
+            colGap: 9,
+            wellDepth: 10.67,
+            wellShape: 'Circle',
+            wellSize: 6.86,
+            wellLength: 6.86,
+            sizeBottom: 6.35,
+            bottomShape: 'Flat',
+            vShapeDepth: 0,
+            angle: 0,
+            nominalVolume: 0,
+            firstHolePos: { x: SBS.a1OffsetX, y: SBS.a1OffsetY },
+            wellCount: 96,
         };
     }
 
@@ -845,13 +909,7 @@
         const def = readFormDef();
         lgState.parsedDef = def;
 
-        let model;
-        if (def.type === 'plate') {
-            model = generatePlateModel(def);
-        } else {
-            model = generateTubeModel(def);
-        }
-
+        const model = generatePlateModel(def);
         displayModel(model);
     }
 
