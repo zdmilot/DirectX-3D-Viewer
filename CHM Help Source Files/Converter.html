@@ -1,0 +1,96 @@
+<html>
+<head>
+    <title>Convert to .x</title>
+    <link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+<div class="header">Convert to .x</div>
+<div class="main">
+<div class="breadcrumb"><a href="Overview.html">3D File Tools</a> &raquo; Convert to .x</div>
+
+<h2>Overview</h2>
+<p>The <b>Convert to .x</b> tool imports 3D model files in OBJ, STL, or GLB/GLTF format and exports them as DirectX ASCII <code>.x</code> files suitable for use in Hamilton VENUS labware definitions and related tools.</p>
+<div class="image-placeholder">PLACE IMAGE OF CONVERTER PANEL WITH MODEL LOADED HERE</div>
+
+<h2>Panel Layout</h2>
+<p>The converter uses a two-column layout:</p>
+<ul>
+  <li><b>Left column</b> &mdash; Main 3D viewport with floating toolbar and bottom controls bar</li>
+  <li><b>Right column</b> &mdash; Six synchronized orthographic views (Top, Front, Right, Bottom, Back, Left)</li>
+</ul>
+
+<h2>Opening a File</h2>
+<p>Click <b>Open</b> in the bottom controls bar or drag and drop a supported 3D file onto the main viewport. A format badge (e.g. <b>.OBJ</b>, <b>.STL</b>, <b>.GLB</b>) appears in the top-left corner of the viewport after loading to confirm the detected format.</p>
+<p>Supported input formats:</p>
+<table>
+<thead><tr><th>Extension</th><th>Format</th></tr></thead>
+<tbody>
+<tr><td><code>.obj</code> / <code>.mtl</code></td><td>Wavefront OBJ. If an <code>.mtl</code> file with the same base name exists in the same folder, materials are loaded automatically. You can also select both <code>.obj</code> and <code>.mtl</code> files at once using multi-select.</td></tr>
+<tr><td><code>.stl</code></td><td>STereoLithography (binary or ASCII)</td></tr>
+<tr><td><code>.glb</code></td><td>GL Transmission Format binary package</td></tr>
+<tr><td><code>.gltf</code></td><td>GL Transmission Format JSON with external binary/texture refs</td></tr>
+<tr><td><code>.x</code></td><td>DirectX ASCII mesh (can be re-exported after reorientation)</td></tr>
+</tbody>
+</table>
+
+<h2>Six Orthographic Views</h2>
+<p>The right column contains six small orthographic viewports that always show the model from fixed world-space directions. They update automatically whenever you rotate the model.</p>
+<table>
+<thead><tr><th>View</th><th>Camera Direction</th></tr></thead>
+<tbody>
+<tr><td><b>Top</b></td><td>Looking down the &minus;Y axis</td></tr>
+<tr><td><b>Front</b></td><td>Looking down the &minus;Z axis</td></tr>
+<tr><td><b>Right</b></td><td>Looking down the &minus;X axis</td></tr>
+<tr><td><b>Bottom</b></td><td>Looking down the +Y axis</td></tr>
+<tr><td><b>Back</b></td><td>Looking down the +Z axis</td></tr>
+<tr><td><b>Left</b></td><td>Looking down the +X axis</td></tr>
+</tbody>
+</table>
+<p>Use these views to verify the orientation of the model before exporting, especially to confirm which side faces up and which end is the front.</p>
+
+<h2>Rotation Controls</h2>
+<p>The bottom controls bar contains rotation buttons to reorient the model:</p>
+<table>
+<thead><tr><th>Button</th><th>Action</th></tr></thead>
+<tbody>
+<tr><td><b>X+90</b></td><td>Rotate 90&deg; around the X axis (positive)</td></tr>
+<tr><td><b>X&minus;90</b></td><td>Rotate 90&deg; around the X axis (negative)</td></tr>
+<tr><td><b>Y+90</b></td><td>Rotate 90&deg; around the Y axis (positive)</td></tr>
+<tr><td><b>Y&minus;90</b></td><td>Rotate 90&deg; around the Y axis (negative)</td></tr>
+<tr><td><b>Z+90</b></td><td>Rotate 90&deg; around the Z axis (positive)</td></tr>
+<tr><td><b>Z&minus;90</b></td><td>Rotate 90&deg; around the Z axis (negative)</td></tr>
+<tr><td><b>Reset</b> (undo icon)</td><td>Reverts all rotations to the original loaded orientation</td></tr>
+</tbody>
+</table>
+<p>The current cumulative rotation is displayed as <b>X: 0&deg;  Y: 0&deg;  Z: 0&deg;</b> next to the rotation buttons. Rotations are cumulative: clicking <b>X+90</b> twice results in a 180&deg; rotation around X.</p>
+
+<h2>Exporting as .x</h2>
+<p>Once the model is correctly oriented, click <b>Export .x</b> in the bottom controls bar. The button is disabled until a model is loaded. The exported file is named after the original input file (e.g., importing <code>mypart.obj</code> exports <code>mypart.x</code>).</p>
+
+<h3>What Gets Exported</h3>
+<ul>
+  <li>All mesh geometry (vertices, faces/indices) after applying the cumulative rotation</li>
+  <li>Per-face material assignments and diffuse colors (from OBJ MTL files or GLB materials)</li>
+  <li>A single <code>Frame</code> containing a <code>Mesh</code> node in DirectX <code>.x</code> ASCII format</li>
+</ul>
+<p>See <a href="XFileFormat.html">DirectX .x File Format</a> for details on the output format.</p>
+
+<h2>Camera Navigation (Main Viewport)</h2>
+<p>The main viewport supports full orbit, pan, and zoom navigation. The floating toolbar provides camera controls identical to those in the 3D Viewer. See <a href="Toolbar.html">3D Toolbar Reference</a> and <a href="KeyboardShortcuts.html">Keyboard &amp; Mouse Controls</a>.</p>
+
+<h2>Workflow Example: Converting an STL to .x</h2>
+<ol>
+  <li>Click <b>Convert to .x</b> in the left sidebar</li>
+  <li>Click <b>Open</b> and select your <code>.stl</code> file</li>
+  <li>The model appears in the main viewport and all six ortho views update</li>
+  <li>Inspect the orthographic views to confirm orientation. If the model is lying on its side, click <b>X+90</b> or <b>X&minus;90</b> to stand it up</li>
+  <li>Confirm the orientation is correct in the six views</li>
+  <li>Click <b>Export .x</b> &mdash; a <code>.x</code> file is downloaded</li>
+</ol>
+<div class="image-placeholder">PLACE STEP-BY-STEP SCREENSHOT OF STL-TO-X CONVERSION HERE</div>
+</div>
+<div class="footer">
+<p>3D File Tools Help</p>
+</div>
+</body>
+</html>

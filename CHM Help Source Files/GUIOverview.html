@@ -1,12 +1,106 @@
 <html>
 <head>
-    <title>GUI Overview</title>
+    <title>Interface Overview</title>
     <link rel="stylesheet" type="text/css" href="help.css">
 </head>
 <body>
-<div class="header">GUI Overview</div>
+<div class="header">Interface Overview</div>
 <div class="main">
-<div class="breadcrumb"><a href="Overview.html">Venus Library Manager</a> &raquo; GUI Overview</div>
+<div class="breadcrumb"><a href="Overview.html">3D File Tools</a> &raquo; Interface Overview</div>
+
+<h2>Application Layout</h2>
+<p>3D File Tools is a single-page application with four main areas: the top navigation bar, the left sidebar, the active tool panel, and the bottom controls bar.</p>
+<div class="image-placeholder">PLACE ANNOTATED SCREENSHOT OF FULL APPLICATION LAYOUT HERE</div>
+
+<h2>Top Navigation Bar</h2>
+<p>The navigation bar spans the top of the application and contains:</p>
+<table>
+<thead><tr><th>Element</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><b>Sidebar Toggle</b> (&#9776;)</td><td>Expands or collapses the left sidebar. When collapsed, only icons are shown; when expanded, labels appear next to each icon.</td></tr>
+<tr><td><b>App Logo &amp; Title</b></td><td>The teapot logo and &ldquo;3D File Tools / FOR DIRECT3D&rdquo; branding.</td></tr>
+<tr><td><b>Theme Button</b> (moon icon)</td><td>Toggles between light mode and dark mode. All viewports update simultaneously.</td></tr>
+<tr><td><b>About Button</b> (&#9432;)</td><td>Opens the About dialog showing version, author, and third-party license information.</td></tr>
+</tbody>
+</table>
+
+<h2>Left Sidebar Navigation</h2>
+<p>The sidebar provides navigation between the four tool panels:</p>
+<table>
+<thead><tr><th>Button</th><th>Icon</th><th>Tool</th></tr></thead>
+<tbody>
+<tr><td><b>3D Viewer</b></td><td>Cube</td><td>View and interact with <code>.x</code> and <code>.hxx</code> 3D models</td></tr>
+<tr><td><b>Convert to .x</b></td><td>Exchange arrows</td><td>Import OBJ/STL/GLB and export as <code>.x</code></td></tr>
+<tr><td><b>Plate Placer</b></td><td>Grid / th</td><td>Overlay model on a 96-well plate for offset calculation</td></tr>
+<tr><td><b>Integra Gen</b></td><td>Flask</td><td>Parametric SBS labware model generator</td></tr>
+</tbody>
+</table>
+<p>The active tool is highlighted. Click any button to switch panels.</p>
+
+<h2>3D Viewer Panel</h2>
+<p>The 3D Viewer is the default panel. It contains:</p>
+<ul>
+  <li><b>3D Canvas</b> &mdash; WebGL viewport displaying the loaded model</li>
+  <li><b>Floating Toolbar</b> &mdash; Collapsible panel with camera controls, view options, transform tools, and a drag handle to reposition the toolbar</li>
+  <li><b>Transform Flyout</b> &mdash; Opened from the rotate button in the toolbar; provides &#177;90&deg; rotation around X/Y/Z and mirror/reflect controls</li>
+  <li><b>Drop Zone</b> &mdash; Semi-transparent overlay shown when dragging a file over the viewport</li>
+  <li><b>Bottom Controls Bar</b> &mdash; Open, Save, file name, camera position display, Screenshot, and Export buttons</li>
+  <li><b>Debug Panel</b> &mdash; Hidden diagnostic info panel (see <a href="3DViewer.html#debug">Debug Panel</a>)</li>
+</ul>
+<div class="image-placeholder">PLACE ANNOTATED SCREENSHOT OF 3D VIEWER PANEL HERE</div>
+
+<h2>Convert to .x Panel</h2>
+<p>The converter tool has a two-column layout:</p>
+<ul>
+  <li><b>Left column</b> &mdash; Main 3D viewport with floating toolbar, file format badge, and bottom controls bar (Open, rotation buttons, Reset, Export .x)</li>
+  <li><b>Right column</b> &mdash; Six synchronized orthographic views: Top, Front, Right, Bottom, Back, Left</li>
+</ul>
+<div class="image-placeholder">PLACE ANNOTATED SCREENSHOT OF CONVERTER PANEL HERE</div>
+
+<h2>Plate Placer Panel</h2>
+<p>The Plate Placer panel contains:</p>
+<ul>
+  <li><b>3D Canvas</b> &mdash; Shows the loaded model and the reference 96-well plate in the same scene</li>
+  <li><b>Floating Toolbar</b> &mdash; Standard camera controls (same as the viewer)</li>
+  <li><b>Placement Offsets Overlay</b> &mdash; Collapsible panel (bottom-right) with Model Position, Plate Position &amp; Scale, and Calculated Offset fields</li>
+  <li><b>Bottom Controls Bar</b> &mdash; Open, Reset Positions, camera display, Screenshot, and Export buttons</li>
+</ul>
+<div class="image-placeholder">PLACE ANNOTATED SCREENSHOT OF PLATE PLACER PANEL HERE</div>
+
+<h2>Integra Generator Panel</h2>
+<p>The generator has a two-column layout:</p>
+<ul>
+  <li><b>Left column (parameter panel)</b> &mdash; Import XML button, parameter form (General, Footprint, Wells, Well Geometry, A1 Position), SBS compliance badge, and action buttons (Generate 3D Model, Save as .x, Load into Viewer)</li>
+  <li><b>Right column (3D preview)</b> &mdash; Live 3D preview with floating toolbar including a <b>Ruler</b> tool; bottom status/camera bar</li>
+</ul>
+<div class="image-placeholder">PLACE ANNOTATED SCREENSHOT OF INTEGRA GENERATOR PANEL HERE</div>
+
+<h2>About Dialog</h2>
+<p>Click the <b>&#9432;</b> button in the navigation bar to open the About dialog. It shows:</p>
+<ul>
+  <li>Application name and version (1.0.0)</li>
+  <li>Author: Zachary Milot</li>
+  <li>Third-party library licenses (Three.js, OrbitControls, OBJLoader, MTLLoader, GLTFLoader, STLLoader, Font Awesome, Inter Font)</li>
+</ul>
+<p>Clicking the teapot logo in the About dialog cycles it through 0&deg;, 90&deg;, 180&deg;, and 270&deg; rotations. When upside-down (180&deg;), a <b>Debug Panel</b> is revealed in each viewport showing mesh statistics, bounding box data, and NaN checks.</p>
+
+<h2>Screenshot Modal</h2>
+<p>The Screenshot modal appears after clicking the <b>Screenshot</b> button in any bottom controls bar. It shows a preview of the captured image and options to:</p>
+<ul>
+  <li>Toggle the grid on/off in the screenshot</li>
+  <li>Toggle the background on/off (transparent background)</li>
+  <li>Save as <b>PNG</b>, <b>JPG</b>, or <b>SVG</b></li>
+</ul>
+<p>See <a href="Screenshot.html">Screenshot</a> for full details.</p>
+
+<h2>Splash Screen</h2>
+<p>On startup, a splash screen with the teapot wireframe logo is displayed for approximately 2.2 seconds before the application fades in.</p>
+</div>
+<div class="footer">
+<p>3D File Tools Help</p>
+</div>
+</body>
+</html>
 
 <h2>Main Window Layout</h2>
 <p>The Venus Library Manager graphical user interface is built around a card-based library browser with navigation tabs, a sidebar for groups and VENUS tool shortcuts, and contextual detail modals.</p>

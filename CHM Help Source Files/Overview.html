@@ -1,10 +1,88 @@
 <html>
 <head>
-    <title>Venus Library Manager Overview</title>
+    <title>3D File Tools Overview</title>
     <link rel="stylesheet" type="text/css" href="help.css">
 </head>
 <body>
-<div class="header">Venus Library Manager</div>
+<div class="header">3D File Tools</div>
+<div class="main">
+<h2>Overview</h2>
+<p><b>3D File Tools</b> is a browser-based application for viewing, converting, and generating DirectX <code>.x</code> and Hamilton <code>.hxx</code> 3D model files. It runs entirely in the browser without any server-side installation and supports drag-and-drop file loading.</p>
+
+<p>The suite is designed for laboratory automation engineers and hardware developers who work with Hamilton liquid handling systems and need to inspect or create 3D geometry for labware and instrument components.</p>
+
+<div class="image-placeholder">PLACE IMAGE OF 3D FILE TOOLS MAIN WINDOW HERE</div>
+
+<h2>Key Capabilities</h2>
+<ul>
+  <li><b>3D Viewer</b> - Load and inspect <code>.x</code> (DirectX ASCII mesh) and <code>.hxx</code> (Hamilton 3D binary) files with a full 3D scene. Supports wireframe mode, perspective and orthographic projection, camera orbit/pan/zoom, axis gizmo, and live camera position display.</li>
+  <li><b>File Conversion</b> - Import OBJ, STL, and GLB/GLTF files and export them as DirectX <code>.x</code> files. Supports cumulative rotation in 90&deg; increments before export. Six synchronized orthographic views (Top, Front, Right, Bottom, Back, Left) update live as you rotate.</li>
+  <li><b>Plate Placer</b> - Load a custom <code>.x</code> model and overlay it with a reference 96-well microplate to visually calculate X/Y/Z placement offsets. Useful for calibrating labware definitions in Hamilton VENUS.</li>
+  <li><b>Integra Generator</b> - Build SBS-format labware 3D models from parametric inputs or imported XML labware definition files. Supports plates, well geometry, A1 positioning, and exports to <code>.x</code>. Includes a built-in ruler tool for measuring distances in the 3D scene.</li>
+  <li><b>Export</b> - Export any loaded model to <b>OBJ</b>, <b>STL</b>, <b>GLB</b>, or <b>HXX</b> format directly from the browser.</li>
+  <li><b>Screenshot</b> - Capture the 3D viewport as PNG, JPG, or SVG with options to include or exclude the grid and background.</li>
+  <li><b>Transform</b> - Rotate the loaded model &#177;90&deg; around X/Y/Z axes and mirror across any axis. Transforms are applied to the underlying <code>.x</code> file data and can be saved back to a <code>.x</code> file.</li>
+  <li><b>Dark / Light Theme</b> - Toggle between light and dark rendering modes. All viewports adapt simultaneously.</li>
+  <li><b>HXX Support</b> - Read Hamilton binary <code>.hxx</code> archives containing gzip-compressed <code>.x</code> data and optional PNG texture sections. Transparent to the user: dropped <code>.hxx</code> files open just like <code>.x</code> files.</li>
+</ul>
+
+<h2>System Requirements</h2>
+<ul>
+  <li><b>Browser:</b> Any modern browser with WebGL support (Chrome, Firefox, Edge, Safari)</li>
+  <li><b>Operating System:</b> Any OS (runs entirely in the browser)</li>
+  <li><b>Server:</b> No server required &mdash; open <code>index.html</code> directly, or serve with any static HTTP server</li>
+  <li><b>External Dependencies:</b> None (all libraries bundled in <code>js/lib/</code>)</li>
+</ul>
+
+<h2>Application Layout</h2>
+<p>The application is a single-page app with four tool panels selectable from the left sidebar:</p>
+<table>
+<thead><tr><th>Panel</th><th>Icon</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><b>3D Viewer</b></td><td>Cube</td><td>Full-featured viewer for <code>.x</code> and <code>.hxx</code> files</td></tr>
+<tr><td><b>Convert to .x</b></td><td>Exchange arrows</td><td>Import OBJ/STL/GLB and export as <code>.x</code></td></tr>
+<tr><td><b>Plate Placer</b></td><td>Grid</td><td>Side-by-side model + plate for offset calculation</td></tr>
+<tr><td><b>Integra Gen</b></td><td>Flask</td><td>Parametric labware model builder</td></tr>
+</tbody>
+</table>
+
+<h2>File Support Matrix</h2>
+<table>
+<thead><tr><th>Format</th><th>Read</th><th>Write</th><th>Notes</th></tr></thead>
+<tbody>
+<tr><td><code>.x</code></td><td>Yes</td><td>Yes</td><td>DirectX ASCII text mesh format</td></tr>
+<tr><td><code>.hxx</code></td><td>Yes</td><td>Yes</td><td>Hamilton 3D binary container (gzip+<code>.x</code>)</td></tr>
+<tr><td><code>.obj</code> / <code>.mtl</code></td><td>Yes</td><td>Yes</td><td>Wavefront OBJ (converter input and export)</td></tr>
+<tr><td><code>.stl</code></td><td>Yes</td><td>Yes</td><td>STereoLithography (binary and ASCII)</td></tr>
+<tr><td><code>.glb</code> / <code>.gltf</code></td><td>Yes</td><td>Yes</td><td>GL Transmission Format</td></tr>
+<tr><td><code>.xml</code></td><td>Yes</td><td>No</td><td>Hamilton / Integra XML labware definitions (Integra Gen only)</td></tr>
+</tbody>
+</table>
+
+<h2>Documentation Sections</h2>
+<ul>
+  <li><a href="GettingStarted.html">Getting Started</a> - Opening files and basic workflows</li>
+  <li><a href="GUIOverview.html">Interface Overview</a> - Application layout, navigation, and controls</li>
+  <li><a href="3DViewer.html">3D Viewer</a> - Full viewer feature reference</li>
+  <li><a href="Converter.html">Convert to .x</a> - Converting foreign formats to DirectX .x</li>
+  <li><a href="PlatePlacer.html">Plate Placer</a> - Labware placement offset calculation</li>
+  <li><a href="LabwareGenerator.html">Integra Generator</a> - Parametric labware model generation</li>
+  <li><a href="Toolbar.html">3D Toolbar Reference</a> - Floating toolbar button reference</li>
+  <li><a href="ExportOptions.html">Export Options</a> - Export formats and options</li>
+  <li><a href="Screenshot.html">Screenshot</a> - Viewport capture and save</li>
+  <li><a href="FileFormats.html">Supported File Formats</a> - Format specifications</li>
+  <li><a href="XFileFormat.html">DirectX .x File Format</a> - <code>.x</code> format internals</li>
+  <li><a href="HXXFormat.html">Hamilton .hxx Format</a> - <code>.hxx</code> binary container</li>
+  <li><a href="KeyboardShortcuts.html">Keyboard &amp; Mouse Controls</a> - Navigation reference</li>
+  <li><a href="XFileLoader.html">XFileLoader Rendering Pipeline</a> - Technical rendering details</li>
+  <li><a href="Troubleshooting.html">Troubleshooting</a> - Common issues and solutions</li>
+</ul>
+</div>
+<div class="footer">
+<p>3D File Tools Help</p>
+</div>
+</body>
+</html>
 <div class="main">
 <h2>Overview</h2>
 <p>Venus Library Manager is a desktop application and command-line tool for managing Hamilton VENUS libraries and related assets. Built on NW.js and Node.js, it provides a complete package lifecycle for <code>.hxlibpkg</code> (single library package) and <code>.hxlibarch</code> (multi-library archive) files.</p>

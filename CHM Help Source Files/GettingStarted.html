@@ -6,7 +6,93 @@
 <body>
 <div class="header">Getting Started</div>
 <div class="main">
-<div class="breadcrumb"><a href="Overview.html">Venus Library Manager</a> &raquo; Getting Started</div>
+<div class="breadcrumb"><a href="Overview.html">3D File Tools</a> &raquo; Getting Started</div>
+
+<h2>Introduction</h2>
+<p>This guide walks you through opening the application and performing the most common operations: viewing a 3D model, converting a file to <code>.x</code> format, and generating labware geometry.</p>
+
+<h2>Opening the Application</h2>
+<p>Open <code>index.html</code> in any modern web browser. The application starts with a brief splash screen showing the teapot logo, then transitions to the main interface.</p>
+<div class="image-placeholder">PLACE IMAGE OF SPLASH SCREEN HERE</div>
+<p>No installation is required. The application runs entirely in the browser with all dependencies bundled in the <code>js/lib/</code> folder.</p>
+
+<h2>Application Structure</h2>
+<p>The left sidebar contains four navigation buttons:</p>
+<table>
+<thead><tr><th>Button</th><th>Tool</th></tr></thead>
+<tbody>
+<tr><td><b>3D Viewer</b></td><td>Load and inspect <code>.x</code> / <code>.hxx</code> files</td></tr>
+<tr><td><b>Convert to .x</b></td><td>Import OBJ/STL/GLB and export as DirectX <code>.x</code></td></tr>
+<tr><td><b>Plate Placer</b></td><td>Overlay a model on a 96-well plate for offset calculation</td></tr>
+<tr><td><b>Integra Gen</b></td><td>Parametric SBS labware generator</td></tr>
+</tbody>
+</table>
+<p>Click the hamburger icon (<b>&#9776;</b>) in the top-left to expand the sidebar and show labels next to each icon.</p>
+
+<h2>Opening a 3D File in the Viewer</h2>
+<ol>
+  <li>Click the <b>3D Viewer</b> button in the sidebar (it is selected by default on launch)</li>
+  <li>Click <b>Open</b> in the bottom controls bar, or drag and drop a <code>.x</code> or <code>.hxx</code> file onto the viewport</li>
+  <li>The model loads and the camera automatically fits to the model bounds</li>
+  <li>Orbit with the left mouse button, pan with the right mouse button (or middle mouse), zoom with the scroll wheel</li>
+</ol>
+<div class="image-placeholder">PLACE IMAGE OF VIEWER WITH MODEL LOADED HERE</div>
+
+<h3>Supported Input Formats for the Viewer</h3>
+<ul>
+  <li><code>.x</code> &mdash; DirectX ASCII mesh format (used by Hamilton VENUS)</li>
+  <li><code>.hxx</code> &mdash; Hamilton 3D Data binary container (wraps a gzip-compressed <code>.x</code> file)</li>
+</ul>
+
+<h2>Converting a File to .x Format</h2>
+<ol>
+  <li>Click <b>Convert to .x</b> in the sidebar</li>
+  <li>Click <b>Open</b> and select an OBJ, STL, or GLB file, or drag and drop it into the viewport</li>
+  <li>The model appears in the main viewport. Six orthographic views (Top, Front, Right, Bottom, Back, Left) update automatically</li>
+  <li>Use the rotation buttons (<b>X+90</b>, <b>Y-90</b>, etc.) to orient the model correctly</li>
+  <li>Click <b>Export .x</b> to save the model as a DirectX <code>.x</code> file</li>
+</ol>
+<p>See <a href="Converter.html">Convert to .x</a> for full details.</p>
+
+<h2>Using the Plate Placer</h2>
+<ol>
+  <li>First load a model in the 3D Viewer (the Plate Placer will auto-load the same model)</li>
+  <li>Click <b>Plate Placer</b> in the sidebar</li>
+  <li>The tool shows your model alongside the standard 96-well plate reference model</li>
+  <li>Adjust the <b>Model Position</b> and <b>Plate Position</b> fields to align the objects</li>
+  <li>Read the <b>Calculated Offset (&Delta;X, &Delta;Y, &Delta;Z)</b> values for use in your labware definition</li>
+</ol>
+<p>See <a href="PlatePlacer.html">Plate Placer</a> for full details.</p>
+
+<h2>Generating Labware Geometry</h2>
+<ol>
+  <li>Click <b>Integra Gen</b> in the sidebar</li>
+  <li>Either import an XML labware definition file, or fill in the parameter form manually</li>
+  <li>Configure: Name, footprint dimensions, well count, well geometry, A1 position</li>
+  <li>Click <b>Generate 3D Model</b> to create the 3D preview</li>
+  <li>Click <b>Save as .x File</b> to export, or <b>Load into Viewer</b> to inspect it in the 3D Viewer</li>
+</ol>
+<p>See <a href="LabwareGenerator.html">Integra Generator</a> for full details.</p>
+
+<h2>Theme Toggle</h2>
+<p>Click the moon icon (<i>&#9790;</i>) in the top-right navigation bar to switch between light and dark rendering modes. All viewports adapt simultaneously.</p>
+
+<h2>Keyboard Shortcuts</h2>
+<p>See <a href="KeyboardShortcuts.html">Keyboard &amp; Mouse Controls</a> for a complete reference of navigation shortcuts and toolbar hotkeys.</p>
+
+<h2>Next Steps</h2>
+<ul>
+  <li><a href="GUIOverview.html">Interface Overview</a> - Detailed description of every UI element</li>
+  <li><a href="3DViewer.html">3D Viewer</a> - Full viewer feature reference</li>
+  <li><a href="Toolbar.html">3D Toolbar Reference</a> - All floating toolbar buttons explained</li>
+  <li><a href="FileFormats.html">Supported File Formats</a> - Details on <code>.x</code>, <code>.hxx</code>, and other formats</li>
+</ul>
+</div>
+<div class="footer">
+<p>3D File Tools Help</p>
+</div>
+</body>
+</html>
 
 <h2>Introduction</h2>
 <p>This guide walks you through the initial setup of Venus Library Manager and the most common workflows you will perform when managing Hamilton VENUS libraries.</p>

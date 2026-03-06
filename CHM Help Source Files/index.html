@@ -1,59 +1,46 @@
 <html>
 <head>
-    <title>Venus Library Manager Help - Index</title>
+    <title>3D File Tools Help</title>
     <link rel="stylesheet" type="text/css" href="help.css">
 </head>
 <body>
-<div class="header">Venus Library Manager Help</div>
+<div class="header">3D File Tools Help</div>
 <div class="main">
 
 <h2>Welcome</h2>
-<p>Welcome to the Venus Library Manager documentation. Use the links below or the Contents panel to navigate to any topic.</p>
+<p>Welcome to <b>3D File Tools</b> — a browser-based suite of tools for viewing, converting, and generating DirectX <code>.x</code> and Hamilton <code>.hxx</code> 3D model files. Use the links below or the Contents panel to navigate to any topic.</p>
 
-<div class="image-placeholder">PLACE IMAGE OF THE VENUS LIBRARY MANAGER MAIN WINDOW HERE</div>
+<div class="image-placeholder">PLACE IMAGE OF THE 3D FILE TOOLS MAIN WINDOW HERE</div>
 
 <h2>Getting Started</h2>
 <ul>
   <li><a href="Overview.html">Overview</a> - Features, capabilities, and system requirements</li>
-  <li><a href="GettingStarted.html">Getting Started</a> - First-time setup and basic workflows</li>
-  <li><a href="GUIOverview.html">GUI Overview</a> - Navigating the desktop application</li>
+  <li><a href="GettingStarted.html">Getting Started</a> - Opening files and basic workflows</li>
+  <li><a href="GUIOverview.html">Interface Overview</a> - Navigating the application layout</li>
 </ul>
 
-<h2>Core Concepts</h2>
+<h2>Tools</h2>
 <ul>
-  <li><a href="PackageFormats.html">Package Formats</a> - .hxlibpkg and .hxlibarch internal structure</li>
-  <li><a href="BinaryContainerFormat.html">Binary Container Format</a> - Custom binary envelope, XOR scrambling, and HMAC integrity</li>
-  <li><a href="PackageSpecSchema.html">Package Spec JSON Schema</a> - Specification file format for CLI packaging</li>
-  <li><a href="HSLFileArchitecture.html">HSL File Architecture</a> - Hamilton metadata footer format</li>
-  <li><a href="DataModel.html">Data Model</a> - Database collections and record structures</li>
-  <li><a href="IntegrityVerification.html">Integrity Verification</a> - Multi-layered integrity: container HMAC, package signing, SHA-256, and footer verification</li>
+  <li><a href="3DViewer.html">3D Viewer</a> - View and inspect <code>.x</code> and <code>.hxx</code> files</li>
+  <li><a href="Converter.html">Convert to .x</a> - Convert OBJ, STL, and GLB files to DirectX <code>.x</code> format</li>
+  <li><a href="PlatePlacer.html">Plate Placer</a> - Calculate microwell plate placement offsets</li>
+  <li><a href="LabwareGenerator.html">Integra Generator</a> - Generate SBS labware 3D models and export as <code>.x</code></li>
 </ul>
 
-<h2>Workflows</h2>
+<h2>Reference</h2>
 <ul>
-  <li><a href="ImportingLibraries.html">Importing Libraries</a> - Install packages via GUI or CLI</li>
-  <li><a href="ExportingLibraries.html">Exporting Libraries</a> - Export installed libraries as packages</li>
-  <li><a href="CreatingPackages.html">Creating Packages</a> - Build .hxlibpkg from source files</li>
-  <li><a href="DeletingLibraries.html">Deleting Libraries</a> - Remove installed libraries</li>
-  <li><a href="VersionRollback.html">Version Rollback</a> - Revert to a previously cached version</li>
-  <li><a href="LibraryGrouping.html">Library Grouping</a> - Organize libraries into groups</li>
-  <li><a href="VENUSIntegration.html">VENUS Integration</a> - Tool shortcuts and directory shortcuts</li>
+  <li><a href="Toolbar.html">3D Toolbar Reference</a> - All floating toolbar buttons explained</li>
+  <li><a href="ExportOptions.html">Export Options</a> - Exporting to OBJ, STL, GLB, and HXX</li>
+  <li><a href="Screenshot.html">Screenshot</a> - Capturing and saving 3D screenshots</li>
+  <li><a href="FileFormats.html">Supported File Formats</a> - <code>.x</code>, <code>.hxx</code>, <code>.obj</code>, <code>.stl</code>, <code>.glb</code></li>
+  <li><a href="XFileFormat.html">DirectX .x File Format</a> - Structure and parsing details</li>
+  <li><a href="HXXFormat.html">Hamilton .hxx Format</a> - Binary container format</li>
+  <li><a href="KeyboardShortcuts.html">Keyboard &amp; Mouse Controls</a> - Navigation shortcuts</li>
 </ul>
 
-<h2>CLI Reference</h2>
+<h2>Technical Reference</h2>
 <ul>
-  <li><a href="CLIReference.html">CLI Reference</a> - Command overview, global options, and exit codes</li>
-  <li><a href="CLIListLibs.html">list-libs</a> - List installed libraries</li>
-  <li><a href="CLIImportLib.html">import-lib</a> - Import a single package</li>
-  <li><a href="CLIImportArchive.html">import-archive</a> - Import a multi-library archive</li>
-  <li><a href="CLIExportLib.html">export-lib</a> - Export a library as a package</li>
-  <li><a href="CLIExportArchive.html">export-archive</a> - Export libraries as an archive</li>
-  <li><a href="CLIDeleteLib.html">delete-lib</a> - Delete an installed library</li>
-  <li><a href="CLICreatePackage.html">create-package</a> - Create a package from a spec file</li>
-  <li><a href="CLIListVersions.html">list-versions</a> - List cached package versions</li>
-  <li><a href="CLIRollbackLib.html">rollback-lib</a> - Reinstall a cached version</li>
-  <li><a href="CLIGenerateSyslibHashes.html">generate-syslib-hashes</a> - Generate system library baseline</li>
-  <li><a href="CLIVerifySyslibHashes.html">verify-syslib-hashes</a> - Verify system library integrity</li>
+  <li><a href="XFileLoader.html">XFileLoader Rendering Pipeline</a> - Ear-clipping, z-fighting prevention, and rendering details</li>
 </ul>
 
 <h2>Support</h2>
@@ -63,7 +50,7 @@
 
 </div>
 <div class="footer">
-<p>Venus Library Manager Help</p>
+<p>3D File Tools Help</p>
 </div>
 </body>
 </html>

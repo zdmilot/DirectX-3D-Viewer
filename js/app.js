@@ -227,8 +227,13 @@
 
     // -- File Open ---------------------------------------------------
     function openFileDialog() {
-        // Use a single, stable picker path to avoid double-prompt flows
-        // on browsers where showOpenFilePicker can fail after selection.
+        // Always use the hidden <input type="file"> for maximum
+        // cross-platform reliability.  The File System Access API
+        // (showOpenFilePicker) can silently error after showing
+        // its own dialog on some browser/OS combos, which falls
+        // back to a SECOND native dialog — causing the user to
+        // have to select the file twice.  A single <input> click
+        // avoids this entirely and works on every browser.
         if (!dom.fileInput) return;
         dom.fileInput.click();
     }
@@ -241,7 +246,7 @@
         dom.fileInput.value = '';
     }
 
-    function loadUserFile(file, handle) {
+    function loadUserFile(file) {
         if (!HXXLoader.isXOrHXX(file.name)) {
             alert('Please select a .x or .hxx file.');
             return;
@@ -253,11 +258,6 @@
         state.loadedFileName = file.name;
         // Try to get the best available path: file.path (Electron/NW.js), webkitRelativePath, or just name
         state.loadedFilePath = file.path || file.webkitRelativePath || file.name;
-
-        // If opened via File System Access API, try to resolve full path from directory
-        if (handle && window.showDirectoryPicker) {
-            _tryResolveFullPath(handle);
-        }
 
         // Clear previous model
         clearModel();
@@ -338,21 +338,6 @@
             }
             pathText.textContent = display;
             if (pathWrap) pathWrap.title = display;
-        }
-    }
-
-    // Try to resolve full path via File System Access API directory handle
-    function _tryResolveFullPath(fileHandle) {
-        // The only reliable way to get a "path" in the browser is to ask the user
-        // to also grant access to a parent directory. We store a cached directory
-        // handle if the user has previously used one.
-        if (state._lastDirHandle) {
-            state._lastDirHandle.resolve(fileHandle).then(function (parts) {
-                if (parts) {
-                    state.loadedFilePath = parts.join('/');
-                    setFilenameDisplay();
-                }
-            }).catch(function () {});
         }
     }
 
