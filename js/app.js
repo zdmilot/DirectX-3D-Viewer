@@ -237,11 +237,10 @@
                 multiple: false
             }).then(function (handles) {
                 const handle = handles[0];
-                handle.getFile().then(function (file) {
+                return handle.getFile().then(function (file) {
+                    // Attempt to get containing directory for full path
                     state._lastFileHandle = handle;
                     loadUserFile(file, handle);
-                }).catch(function (err) {
-                    console.error('[FileOpen] Error loading file:', err);
                 });
             }).catch(function (err) {
                 // User cancelled or API error — fall back to <input>
@@ -468,7 +467,8 @@
             canvas: canvas,
             antialias: true,
             alpha: true,
-            preserveDrawingBuffer: true
+            preserveDrawingBuffer: true,
+            logarithmicDepthBuffer: true
         });
         renderer.setPixelRatio(window.devicePixelRatio);
         renderer.setSize(w, h);
