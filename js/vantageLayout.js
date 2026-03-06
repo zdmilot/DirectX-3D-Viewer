@@ -276,6 +276,9 @@
         // -- Build deck geometry --
         buildDeckGeometry();
 
+        // -- Load GLTF deck model (supplements procedural geometry) --
+        loadDeckModel();
+
         // -- Resize observer --
         const ro = new ResizeObserver(() => {
             const cw = host.clientWidth;
@@ -376,6 +379,67 @@
         grid.visible = vlState.gridVisible;
         grid.position.set(700, DECK.SURFACE_Z + 4.1, 310);
         scene.add(grid);
+    }
+
+    // ================================================================
+    //  Load Real GLTF Deck Model
+    // ================================================================
+    function loadDeckModel() {
+        if (typeof THREE.GLTFLoader === 'undefined') return;
+
+        const loader = new THREE.GLTFLoader();
+        loader.load(
+            'DeckLayoutManager/vantage_20_deck.gltf',
+            function (gltf) {
+                const model = gltf.scene;
+                model.name = '__vantage_gltf__';
+
+                // Make all meshes slightly transparent so track slots / carriers
+                // placed on top remain visually distinct.
+                model.traverse(function (child) {
+                    if (child.isMesh && child.material) {
+                        const mats = Array.isArray(child.material)
+                            ? child.material
+                            : [child.material];
+                        mats.forEach(function (m) {
+                            m.transparent = true;
+                            m.opacity = 0.88;
+                            m.depthWrite = true;
+                        });
+                    }
+                });
+
+                // Compute world-space bounds after all GLTF node transforms applied
+                const box = new THREE.Box3().setFromObject(model);
+                const center = box.getCenter(new THREE.Vector3());
+
+                // Target: GLTF deck center-X aligns with procedural deck center-X,
+                //         GLTF bottom-Y sits at SURFACE_Z - 5 (just under the surface),
+                //         GLTF center-Z aligns with procedural deck center-Z.
+                const targetX = 720;
+                const targetY = DECK.SURFACE_Z - 5;
+                const targetZ = 311;
+
+                model.position.set(
+                    targetX - center.x,
+                    targetY - box.min.y,
+                    targetZ - center.z
+                );
+
+                vlState.scene.add(model);
+
+                // Hide the simple procedural surface box — GLTF provides better visuals
+                const surf = vlState.scene.getObjectByName('__decksurf__');
+                if (surf) surf.visible = false;
+
+                setStatus('Vantage deck model loaded');
+            },
+            undefined,
+            function (err) {
+                console.warn('VantageLayout: GLTF load failed', err);
+                // Procedural geometry remains visible as fallback
+            }
+        );
     }
 
     function addTrackLabel(text, xPos, isDark) {

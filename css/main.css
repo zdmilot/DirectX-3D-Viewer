@@ -2957,10 +2957,13 @@ body {
     font-weight: 600;
 }
 
-/* ── Controls bar (left/right offset to avoid panel overlap) ── */
+/* ── Controls bar — absolutely pinned to bottom, inset to clear side panels ── */
 #vl-controls-bar {
+    position: absolute;
+    bottom: 0;
     left: 220px;
     right: 200px;
+    z-index: 25;
 }
 
 /* ── Scrollbar styling for vantage panels ── */
