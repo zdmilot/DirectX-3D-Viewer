@@ -170,6 +170,10 @@
         hoveredTrack: null,   // track number 1-54
         ghostMesh: null,      // preview mesh while dragging from palette
 
+        // Palette drag-to-place state
+        dragToPlaceEnabled: true,
+        paletteDrag: null,    // { type, def } while dragging from palette
+
         // TML import state
         importedCarrier: null,
 
@@ -820,9 +824,182 @@
                 <span class="vl-palette-name">${def.viewName}</span>
                 <span class="vl-palette-desc">${def.description}</span>
                 <span class="vl-palette-size">${def.tWidth}T</span>`;
-            item.addEventListener('click', () => showPlaceDialog(key));
+            // Click opens the dialog; mousedown starts a palette drag
+            item.addEventListener('click', () => {
+                if (!vlState.paletteDragJustFinished) showPlaceDialog(key);
+            });
+            item.addEventListener('mousedown', e => {
+                if (!vlState.dragToPlaceEnabled) return;
+                e.preventDefault();
+                startPaletteDrag(e, key);
+            });
             list.appendChild(item);
         });
+    }
+
+    // ================================================================
+    //  Drag-to-Place
+    // ================================================================
+
+    function setDragToPlace(enabled) {
+        vlState.dragToPlaceEnabled = enabled;
+        const host = vlState.host;
+        if (host) host.classList.toggle('drag-place-enabled', enabled);
+        const btn = $('#vl-vt-drag-place');
+        if (btn) btn.classList.toggle('is-active', enabled);
+    }
+
+    function destroyGhostMesh() {
+        if (!vlState.ghostMesh) return;
+        vlState.scene.remove(vlState.ghostMesh);
+        vlState.ghostMesh.traverse(child => {
+            if (child.geometry) child.geometry.dispose();
+            if (child.material) {
+                (Array.isArray(child.material) ? child.material : [child.material])
+                    .forEach(m => m.dispose());
+            }
+        });
+        vlState.ghostMesh = null;
+    }
+
+    function startPaletteDrag(e, carrierType) {
+        const def = CARRIER_LIBRARY[carrierType];
+        if (!def) return;
+
+        // Disable orbit controls so camera doesn't pan during palette drag
+        if (vlState.controls) vlState.controls.enabled = false;
+
+        // Exit pan mode so the deck is interactive under the ghost
+        if (vlState.isPanning) toggleVLPan();
+
+        // Build ghost mesh – same as carrier but semi-transparent blue
+        destroyGhostMesh();
+        const { group } = buildCarrierMesh(def, 1);
+        group.visible = false;
+        group.traverse(child => {
+            if (child.isMesh) {
+                child.material = child.material.clone();
+                child.material.transparent = true;
+                child.material.opacity = 0.42;
+                child.material.color.set(0x4499ee);
+                child.material.depthWrite = false;
+            }
+        });
+        vlState.ghostMesh = group;
+        vlState.scene.add(group);
+
+        vlState.paletteDrag = { type: carrierType, def };
+        vlState.paletteDragJustFinished = false;
+
+        // Show cursor ghost div
+        const ghostDiv = document.getElementById('vl-drag-cursor-ghost');
+        const ghostLabel = document.getElementById('vl-drag-ghost-label');
+        if (ghostDiv && ghostLabel) {
+            ghostLabel.textContent = def.viewName + ' (' + def.tWidth + 'T)';
+            ghostDiv.style.display = 'flex';
+            ghostDiv.style.left = (e.clientX + 14) + 'px';
+            ghostDiv.style.top  = (e.clientY + 8) + 'px';
+        }
+
+        document.addEventListener('mousemove', onPaletteDragMove);
+        document.addEventListener('mouseup',   onPaletteDragEnd);
+    }
+
+    function onPaletteDragMove(e) {
+        if (!vlState.paletteDrag) return;
+
+        // Move cursor ghost
+        const ghostDiv = document.getElementById('vl-drag-cursor-ghost');
+        if (ghostDiv) {
+            ghostDiv.style.left = (e.clientX + 14) + 'px';
+            ghostDiv.style.top  = (e.clientY + 8)  + 'px';
+        }
+
+        const canvas = vlState.canvas;
+        if (!canvas || !vlState.scene || !vlState._deckPlane) return;
+
+        const rect = canvas.getBoundingClientRect();
+        const overCanvas = e.clientX >= rect.left && e.clientX <= rect.right &&
+                           e.clientY >= rect.top  && e.clientY <= rect.bottom;
+
+        if (!overCanvas) {
+            if (vlState.ghostMesh) vlState.ghostMesh.visible = false;
+            return;
+        }
+
+        // Raycast onto the invisible deck plane
+        vlState._mouse.x =  ((e.clientX - rect.left)  / rect.width)  * 2 - 1;
+        vlState._mouse.y = -((e.clientY - rect.top)   / rect.height) * 2 + 1;
+        vlState._raycaster.setFromCamera(vlState._mouse, vlState.camera);
+        const hits = vlState._raycaster.intersectObject(vlState._deckPlane, false);
+
+        if (hits.length === 0) {
+            if (vlState.ghostMesh) vlState.ghostMesh.visible = false;
+            return;
+        }
+
+        const point = hits[0].point;
+        const def   = vlState.paletteDrag.def;
+        const trackNum    = snapToTrack(point.x);
+        const clampedTrack = Math.max(1, Math.min(DECK.TRACK_COUNT - def.tWidth + 1, trackNum));
+        const snappedX     = DECK.FIRST_TRACK_X + (clampedTrack - 1) * DECK.TRACK_SPACING;
+
+        if (vlState.ghostMesh) {
+            vlState.ghostMesh.position.set(snappedX, DECK.SURFACE_Z, DECK.TRACK_Y_START);
+            vlState.ghostMesh.visible = true;
+
+            // Red tint if occupied, blue if free
+            const hasCollision = checkCarrierCollision(clampedTrack, def.tWidth, -1);
+            const ghostColor = hasCollision ? 0xee4444 : 0x4499ee;
+            vlState.ghostMesh.traverse(child => {
+                if (child.isMesh) child.material.color.set(ghostColor);
+            });
+        }
+        vlState.hoveredTrack = clampedTrack;
+    }
+
+    function onPaletteDragEnd(e) {
+        document.removeEventListener('mousemove', onPaletteDragMove);
+        document.removeEventListener('mouseup',   onPaletteDragEnd);
+
+        // Re-enable orbit controls
+        if (vlState.controls) vlState.controls.enabled = true;
+
+        // Hide cursor ghost
+        const ghostDiv = document.getElementById('vl-drag-cursor-ghost');
+        if (ghostDiv) ghostDiv.style.display = 'none';
+
+        if (!vlState.paletteDrag) return;
+
+        const { type, def } = vlState.paletteDrag;
+        vlState.paletteDrag = null;
+
+        // Check drop position
+        const canvas = vlState.canvas;
+        const droppedOnCanvas = (() => {
+            if (!canvas) return false;
+            const rect = canvas.getBoundingClientRect();
+            return e.clientX >= rect.left && e.clientX <= rect.right &&
+                   e.clientY >= rect.top  && e.clientY <= rect.bottom;
+        })();
+
+        if (droppedOnCanvas && vlState.ghostMesh?.visible && vlState.hoveredTrack !== null) {
+            const track = vlState.hoveredTrack;
+            destroyGhostMesh();
+            if (!checkCarrierCollision(track, def.tWidth, -1)) {
+                const entry = placeCarrier(type, track, false);
+                if (entry) selectCarrier(entry.id);
+                // Suppress the click event that fires right after mouseup
+                vlState.paletteDragJustFinished = true;
+                setTimeout(() => { vlState.paletteDragJustFinished = false; }, 150);
+            } else {
+                showVLStatus('Cannot place: track position occupied.', 'error');
+            }
+        } else {
+            destroyGhostMesh();
+        }
+
+        vlState.hoveredTrack = null;
     }
 
     function showPlaceDialog(carrierType) {
@@ -1161,6 +1338,9 @@
 
         // Pan mode
         wireBtn('#vl-vt-pan', toggleVLPan);
+
+        // Drag-to-place toggle
+        wireBtn('#vl-vt-drag-place', () => setDragToPlace(!vlState.dragToPlaceEnabled));
 
         // Drag-to-move toolbar
         wireDragHandle('#vl-vt-grab-handle', '#vl-toolbar');

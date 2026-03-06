@@ -2397,12 +2397,50 @@ body {
     overflow: hidden;
 }
 
+/* Dock the gizmo toolbar to the LEFT of the Site Positions panel
+   (right panel is 200 px wide) so it is never hidden behind it. */
+#vl-host #vl-toolbar {
+    right: 200px;
+}
+
 #vl-canvas {
     position: absolute;
     inset: 0;
     width: 100%;
     height: 100%;
     display: block;
+}
+
+/* ── Drag-to-place cursor ghost (follows pointer across the whole page) ── */
+#vl-drag-cursor-ghost {
+    position: fixed;
+    pointer-events: none;
+    z-index: 9999;
+    background: rgba(30, 90, 160, 0.88);
+    color: #fff;
+    border-radius: 7px;
+    padding: 5px 12px 5px 9px;
+    font-size: 11px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.45);
+    white-space: nowrap;
+    transform: translate(0, 0);
+}
+#vl-drag-cursor-ghost i {
+    font-size: 13px;
+    opacity: 0.85;
+}
+
+/* Grabbing cursor on palette items when drag-to-place is enabled */
+#vl-host.drag-place-enabled .vl-palette-item {
+    cursor: grab;
+    user-select: none;
+}
+#vl-host.drag-place-enabled .vl-palette-item:active {
+    cursor: grabbing;
 }
 
 /* ── Left Panel (Carrier Palette + TML + Placed List) ── */

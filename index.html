@@ -6,7 +6,7 @@
     <title>3D File Tools</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1F9EA;</text></svg>">
     <link rel="stylesheet" href="css/fontawesome.min.css">
-    <link rel="stylesheet" href="css/main.css?v=20260305v">
+    <link rel="stylesheet" href="css/main.css?v=20260305w">
 </head>
 <body>
 
@@ -881,6 +881,10 @@
                                 <i class="fas fa-hand-paper"></i>
                             </button>
                             <div class="vt-separator"></div>
+                            <button class="vt-btn" id="vl-vt-drag-place" title="Drag-to-Place: drag carriers from the palette onto the deck">
+                                <i class="fas fa-hand-pointer"></i>
+                            </button>
+                            <div class="vt-separator"></div>
                             <div class="vt-grab-handle" id="vl-vt-grab-handle" title="Drag to move toolbar">
                                 <i class="fas fa-grip-horizontal"></i>
                             </div>
@@ -1077,6 +1081,12 @@
                 <button class="about-close-btn" id="about-close">Close</button>
             </div>
         </div>
+    </div>
+
+    <!-- Carrier drag-to-place cursor ghost -->
+    <div id="vl-drag-cursor-ghost" style="display:none">
+        <i class="fas fa-th-large"></i>
+        <span id="vl-drag-ghost-label"></span>
     </div>
 
     <script src="js/lib/pako.min.js"></script>
