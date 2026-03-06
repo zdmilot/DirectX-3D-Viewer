@@ -32,6 +32,7 @@
             description: 'Plate Carrier L5 Landscape (AC)',
             tWidth: 6, dx: 135, dy: 497, dz: 130,
             color: 0x607080,
+            modelFile: 'Base Hamilton Files/Labware/ML_STAR/PLT_CAR_L5AC_A00.hxx',
             sites: [
                 { id:1, x:4, y:392.5, z:86.15, dx:127, dy:86 },
                 { id:2, x:4, y:296.5, z:86.15, dx:127, dy:86 },
@@ -45,6 +46,7 @@
             description: 'Plate Carrier L5 PCR Landscape',
             tWidth: 6, dx: 135, dy: 497, dz: 130,
             color: 0x506070,
+            modelFile: 'Base Hamilton Files/Labware/ML_STAR/PLT_CAR_L5PCR_A00.x',
             sites: [
                 { id:4, x:5, y:393.5, z:109.2, dx:127, dy:86 },
                 { id:5, x:5, y:297.5, z:109.2, dx:127, dy:86 },
@@ -58,6 +60,7 @@
             description: 'Plate Carrier L5 Medium Deck',
             tWidth: 6, dx: 135, dy: 497, dz: 130,
             color: 0x556677,
+            modelFile: 'Base Hamilton Files/Labware/ML_STAR/PLT_CAR_L5MD_A00.hxx',
             sites: [
                 { id:1, x:4, y:392.5, z:86.15, dx:127, dy:86 },
                 { id:2, x:4, y:296.5, z:86.15, dx:127, dy:86 },
@@ -71,6 +74,7 @@
             description: 'Plate Carrier L5 Deep Well',
             tWidth: 6, dx: 135, dy: 497, dz: 130,
             color: 0x4a6070,
+            modelFile: 'Base Hamilton Files/Labware/ML_STAR/PLT_CAR_L5_DWP.hxx',
             sites: [
                 { id:1, x:4, y:392.5, z:77.15, dx:127, dy:86 },
                 { id:2, x:4, y:296.5, z:77.15, dx:127, dy:86 },
@@ -84,6 +88,7 @@
             description: 'Tip Carrier 480 (5 tip boxes)',
             tWidth: 6, dx: 135, dy: 497, dz: 130,
             color: 0x405060,
+            modelFile: 'Base Hamilton Files/Labware/ML_STAR/TIP_CAR_480_A00.hxx',
             sites: [
                 { id:1, x:6.5, y:391.15, z:114.95, dx:122, dy:82 },
                 { id:2, x:6.5, y:295.15, z:114.95, dx:122, dy:82 },
@@ -97,6 +102,7 @@
             description: 'Reagent Carrier 12 Trough',
             tWidth: 6, dx: 135, dy: 497, dz: 130,
             color: 0x6d4a20,
+            modelFile: 'Base Hamilton Files/Labware/ML_STAR/RGT_CAR_12R_A00.x',
             sites: [
                 { id:1,  x:4,  y:437, z:81, dx:25, dy:105 },
                 { id:2,  x:4,  y:327, z:81, dx:25, dy:105 },
@@ -117,6 +123,7 @@
             description: 'Plate Carrier P3 Portrait (5T)',
             tWidth: 5, dx: 112.5, dy: 497, dz: 130,
             color: 0x607080,
+            modelFile: 'Base Hamilton Files/Labware/ML_STAR/PLT_CAR_P3AC_A00.hxx',
             sites: [
                 { id:1, x:7.25, y:349, z:86.15, dx:86, dy:127 },
                 { id:2, x:7.25, y:203, z:86.15, dx:86, dy:127 },
@@ -128,6 +135,7 @@
             description: 'Tip Carrier 288 Portrait (4T)',
             tWidth: 4, dx: 90, dy: 497, dz: 130,
             color: 0x405060,
+            modelFile: 'Base Hamilton Files/Labware/ML_STAR/TIP_CAR_288_C00.hxx',
             sites: [
                 { id:1, x:7, y:358.5, z:114.7, dx:82, dy:122 },
                 { id:2, x:7, y:212.5, z:114.7, dx:82, dy:122 },
@@ -139,6 +147,7 @@
             description: 'Sample Carrier 32 (1T)',
             tWidth: 1, dx: 22.5, dy: 497, dz: 140,
             color: 0x708090,
+            modelFile: 'Base Hamilton Files/Labware/ML_STAR/SMP_CAR_32_A00.hxx',
             sites: [], // tube positions, not SBS plates
         },
     };
@@ -204,6 +213,9 @@
         deckCutouts: [true, true, true, true],
         // Cached Three.js object references for the 4 cover panels (populated after GLTF loads)
         deckCoverNodes: null,
+
+        // Settings: use generic (procedural) carrier rendering instead of .x models
+        useGenericCarriers: false,
 
         // Settings: deck repositioning offset (applied on top of auto-calculated base pos)
 
@@ -301,6 +313,9 @@
 
         // -- Load GLTF deck model (supplements procedural geometry) --
         loadDeckModel();
+
+        // -- Preload .x/.hxx 3D models for built-in carriers --
+        preloadBuiltinCarrierModels();
 
         // -- Resize observer --
         const ro = new ResizeObserver(() => {
@@ -497,6 +512,133 @@
         );
     }
 
+    // ================================================================
+    //  Preload .x/.hxx 3D Models for Built-in Carriers
+    // ================================================================
+    function preloadBuiltinCarrierModels() {
+        if (typeof THREE.XFileLoader === 'undefined') return;
+
+        Object.keys(CARRIER_LIBRARY).forEach(function (key) {
+            var def = CARRIER_LIBRARY[key];
+            if (!def.modelFile) return;
+
+            var filePath = def.modelFile;
+            var isHxx = /\.hxx$/i.test(filePath);
+
+            fetch(filePath).then(function (resp) {
+                if (!resp.ok) throw new Error('HTTP ' + resp.status);
+                return isHxx ? resp.arrayBuffer() : resp.text();
+            }).then(function (data) {
+                if (isHxx) {
+                    // Use HXXLoader to extract .x text from .hxx container
+                    if (typeof HXXLoader === 'undefined') {
+                        console.warn('[VantageLayout] HXXLoader not available, skipping', key);
+                        return;
+                    }
+                    return HXXLoader.parse(data).then(function (result) {
+                        return result.xFileText;
+                    });
+                }
+                return data; // already .x text
+            }).then(function (xText) {
+                if (!xText) return;
+                // Parse the .x text using THREE.XFileLoader
+                var blob = new Blob([xText], { type: 'text/plain' });
+                var url = URL.createObjectURL(blob);
+                var manager = new THREE.LoadingManager();
+                var loader = new THREE.XFileLoader(manager);
+
+                loader.load(url, function (object) {
+                    URL.revokeObjectURL(url);
+                    if (!object || !object.models || object.models.length === 0) {
+                        console.warn('[VantageLayout] No geometry in model for', key);
+                        return;
+                    }
+
+                    var group = new THREE.Group();
+                    group.name = '__xmodel_template_' + key + '__';
+                    object.models.forEach(function (m, idx) {
+                        m.renderOrder = idx;
+                        if (m.material) {
+                            var mats = Array.isArray(m.material) ? m.material : [m.material];
+                            mats.forEach(function (mat) {
+                                if (!mat) return;
+                                mat.polygonOffset = true;
+                                mat.polygonOffsetFactor = idx === 0 ? 1 : -Math.min(idx, 10);
+                                mat.polygonOffsetUnits  = idx === 0 ? 1 : -Math.min(idx, 10) * 4;
+                            });
+                        }
+                        group.add(m);
+                    });
+
+                    fixXFileCoords(group);
+                    vlState.xModelCache[key] = group;
+
+                    // Rebuild any already-placed carriers of this type
+                    rebuildPlacedCarriersOfType(key);
+
+                    console.log('[VantageLayout] Preloaded model for', key);
+                }, undefined, function (err) {
+                    URL.revokeObjectURL(url);
+                    console.warn('[VantageLayout] Failed to parse .x for', key, err);
+                });
+            }).catch(function (err) {
+                console.warn('[VantageLayout] Could not preload model for', key, ':', err.message);
+            });
+        });
+    }
+
+    /**
+     * Rebuild all placed carriers of a given type (after model load or setting change).
+     */
+    function rebuildPlacedCarriersOfType(carrierKey) {
+        var toRefresh = vlState.placedCarriers.filter(function (c) { return c.type === carrierKey; });
+        toRefresh.forEach(function (carrier) {
+            var trackStart = carrier.trackStart;
+            var def = carrier.def;
+
+            // Dispose old mesh
+            carrier.mesh.traverse(function (child) {
+                if (child.geometry) child.geometry.dispose();
+                if (child.material) {
+                    (Array.isArray(child.material) ? child.material : [child.material])
+                        .forEach(function (m) { if (m) m.dispose(); });
+                }
+            });
+            vlState.scene.remove(carrier.mesh);
+
+            // Build new mesh
+            var result = buildCarrierMesh(def, trackStart);
+            vlState.scene.add(result.group);
+
+            // Re-attach any existing plates
+            var plateMeshes = [];
+            carrier.plateMeshes.forEach(function (pm) {
+                var site = def.sites.find(function (s) { return s.id === pm.siteId; });
+                if (site) {
+                    var newPm = buildPlateMesh(site, def);
+                    result.group.add(newPm);
+                    plateMeshes.push({ siteId: pm.siteId, mesh: newPm });
+                }
+            });
+
+            carrier.mesh = result.group;
+            carrier.siteMeshes = result.siteMeshes;
+            carrier.plateMeshes = plateMeshes;
+        });
+    }
+
+    /**
+     * Rebuild ALL placed carriers (used when toggling generic carrier mode).
+     */
+    function rebuildAllPlacedCarriers() {
+        var types = {};
+        vlState.placedCarriers.forEach(function (c) { types[c.type] = true; });
+        Object.keys(types).forEach(function (key) {
+            rebuildPlacedCarriersOfType(key);
+        });
+    }
+
     function addTrackLabel(text, xPos, isDark) {
         const size = 64;
         const cv = document.createElement('canvas');
@@ -562,6 +704,11 @@
             result.sites.push({ id: siteId, x: sx, y: sy, z: sz, dx: sdx, dy: sdy });
         }
 
+        // Extract 3D model relative path (used to auto-load .x/.hxx companion)
+        if (kv['3DModelRel']) {
+            result.modelFileRel = kv['3DModelRel'].replace(/\\/g, '/').replace(/^\.\//, '');
+        }
+
         return result;
     }
 
@@ -614,9 +761,9 @@
         const y0 = DECK.TRACK_Y_START;
         const z0 = DECK.SURFACE_Z;
 
-        // Check for a cached .x model first
+        // Check for a cached .x model first (skip if generic mode is on)
         const cacheKey = getCarrierCacheKey(carrierDef);
-        const cachedXModel = cacheKey ? vlState.xModelCache[cacheKey] : null;
+        const cachedXModel = (!vlState.useGenericCarriers && cacheKey) ? vlState.xModelCache[cacheKey] : null;
 
         if (cachedXModel) {
             // Clone the cached model so each placed carrier is independent
@@ -1449,30 +1596,30 @@
      */
     function processTMLDrop(files) {
         const tmlFiles = files.filter(f => /\.tml$/i.test(f.name));
-        const xFiles   = files.filter(f => /\.x$/i.test(f.name));
+        const xFiles   = files.filter(f => /\.(x|hxx)$/i.test(f.name));
 
         if (tmlFiles.length === 0 && xFiles.length === 0) {
-            showVLStatus('Please drop a .tml carrier template file (optionally with a .x model).', 'error');
+            showVLStatus('Please drop a .tml carrier template file (optionally with a .x/.hxx model).', 'error');
             return;
         }
 
-        // Match each .tml with its companion .x by base name, or by sole-file pairing
+        // Match each .tml with its companion .x/.hxx by base name, or by sole-file pairing
         tmlFiles.forEach(function (tmlFile) {
             const baseName = tmlFile.name.replace(/\.tml$/i, '').toLowerCase();
-            let companionX = xFiles.find(f => f.name.replace(/\.x$/i, '').toLowerCase() === baseName);
-            // Fall back: if exactly one .tml and one .x are dropped together, pair them
+            let companionX = xFiles.find(f => f.name.replace(/\.(x|hxx)$/i, '').toLowerCase() === baseName);
+            // Fall back: if exactly one .tml and one .x/.hxx are dropped together, pair them
             if (!companionX && tmlFiles.length === 1 && xFiles.length === 1) {
                 companionX = xFiles[0];
             }
             loadTMLFile(tmlFile, companionX || null);
         });
 
-        // If only .x files were dropped (no .tml), attach to the most-recently imported carrier
+        // If only .x/.hxx files were dropped (no .tml), attach to the most-recently imported carrier
         if (tmlFiles.length === 0 && xFiles.length > 0) {
             if (vlState.importedCarrier) {
-                xFiles.forEach(f => loadXModelForCarrierKey(vlState.importedCarrier, f));
+                xFiles.forEach(f => loadXOrHxxModelForCarrierKey(vlState.importedCarrier, f));
             } else {
-                showVLStatus('Drop a .tml alongside the .x to assign the 3D model.', 'error');
+                showVLStatus('Drop a .tml alongside the .x/.hxx to assign the 3D model.', 'error');
             }
         }
     }
@@ -1493,15 +1640,38 @@
             showVLStatus(`Loaded ${parsed.viewName}: ${parsed.sites.length} sites, ${parsed.tWidth}T`, 'ok');
             populateCarrierPalette();
 
-            // Load companion .x model if provided
+            // Load companion .x/.hxx model if provided
             if (xFile) {
-                loadXModelForCarrierKey(key, xFile);
+                loadXOrHxxModelForCarrierKey(key, xFile);
             }
 
             // Auto-open place dialog
             showPlaceDialog(key);
         };
         reader.readAsText(tmlFile);
+    }
+
+    /**
+     * Load a .x or .hxx file and cache its geometry under the given carrier key.
+     * For .hxx files, extracts the embedded .x data using HXXLoader first.
+     */
+    function loadXOrHxxModelForCarrierKey(carrierKey, file) {
+        if (/\.hxx$/i.test(file.name) && typeof HXXLoader !== 'undefined') {
+            // Read as ArrayBuffer, extract .x text, then load
+            var hxxReader = new FileReader();
+            hxxReader.onload = function (ev) {
+                HXXLoader.parse(ev.target.result).then(function (result) {
+                    var blob = new Blob([result.xFileText], { type: 'text/plain' });
+                    var syntheticFile = new File([blob], carrierKey + '.x', { type: 'text/plain' });
+                    loadXModelForCarrierKey(carrierKey, syntheticFile);
+                }).catch(function (err) {
+                    showVLStatus('Failed to parse .hxx file: ' + err.message, 'error');
+                });
+            };
+            hxxReader.readAsArrayBuffer(file);
+        } else {
+            loadXModelForCarrierKey(carrierKey, file);
+        }
     }
 
     /**
@@ -1546,43 +1716,11 @@
             vlState.xModelCache[carrierKey] = group;
 
             // Rebuild any already-placed carriers of this type
-            const toRefresh = vlState.placedCarriers.filter(c => c.type === carrierKey);
-            toRefresh.forEach(function (carrier) {
-                const trackStart = carrier.trackStart;
-                const def        = carrier.def;
+            rebuildPlacedCarriersOfType(carrierKey);
 
-                // Dispose old mesh
-                carrier.mesh.traverse(function (child) {
-                    if (child.geometry) child.geometry.dispose();
-                    if (child.material) {
-                        (Array.isArray(child.material) ? child.material : [child.material])
-                            .forEach(function (m) { if (m) m.dispose(); });
-                    }
-                });
-                vlState.scene.remove(carrier.mesh);
-
-                // Build new mesh with .x model
-                const { group: newGroup, siteMeshes } = buildCarrierMesh(def, trackStart);
-                vlState.scene.add(newGroup);
-
-                // Re-attach any existing plates
-                const plateMeshes = [];
-                carrier.plateMeshes.forEach(function (pm) {
-                    const site = def.sites.find(s => s.id === pm.siteId);
-                    if (site) {
-                        const newPm = buildPlateMesh(site, def);
-                        newGroup.add(newPm);
-                        plateMeshes.push({ siteId: pm.siteId, mesh: newPm });
-                    }
-                });
-
-                carrier.mesh        = newGroup;
-                carrier.siteMeshes  = siteMeshes;
-                carrier.plateMeshes = plateMeshes;
-            });
-
-            if (toRefresh.length > 0) {
-                showVLStatus('3D model applied to ' + toRefresh.length + ' carrier(s).', 'ok');
+            var refreshCount = vlState.placedCarriers.filter(function (c) { return c.type === carrierKey; }).length;
+            if (refreshCount > 0) {
+                showVLStatus('3D model applied to ' + refreshCount + ' carrier(s).', 'ok');
             } else {
                 showVLStatus('3D model cached — place ' + carrierKey + ' to see it.', 'ok');
             }
@@ -1894,6 +2032,16 @@
                 const panel = document.getElementById('vl-deck-debug-panel');
                 if (panel) panel.classList.toggle('is-open', vlState.debugDeckMode);
                 if (vlState.debugDeckMode) refreshDeckDebugReadout();
+            });
+        }
+
+        // ── Generic Carrier toggle ───────────────────────────────────
+        const genericCarrierToggle = document.getElementById('settings-generic-carrier-toggle');
+        if (genericCarrierToggle) {
+            genericCarrierToggle.checked = vlState.useGenericCarriers;
+            genericCarrierToggle.addEventListener('change', function () {
+                vlState.useGenericCarriers = genericCarrierToggle.checked;
+                rebuildAllPlacedCarriers();
             });
         }
 
