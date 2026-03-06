@@ -526,13 +526,14 @@
                 return resp.arrayBuffer();
             }).then(function (data) {
                 if (isHxx) {
-                    // Use HXXLoader to extract .x text from .hxx container
+                    // Use HXXLoader to extract .x data from .hxx container
                     if (typeof HXXLoader === 'undefined') {
                         console.warn('[VantageLayout] HXXLoader not available, skipping', key);
                         return;
                     }
                     return HXXLoader.parse(data).then(function (result) {
-                        return result.xFileText;
+                        // Return binary ArrayBuffer or text string
+                        return result.xFileBinary || result.xFileText;
                     });
                 }
                 return data; // raw .x bytes (may be binary or text format)
@@ -542,6 +543,14 @@
                 var blob = new Blob([xData], { type: 'application/octet-stream' });
                 var url = URL.createObjectURL(blob);
                 var manager = new THREE.LoadingManager();
+                // Resolve texture paths relative to the original model file location
+                var basePath = filePath.substring(0, filePath.lastIndexOf('/') + 1);
+                manager.setURLModifier(function (texUrl) {
+                    if (/\.(png|jpg|jpeg|bmp|tga)$/i.test(texUrl)) {
+                        return basePath + texUrl.split('/').pop();
+                    }
+                    return texUrl;
+                });
                 var loader = new THREE.XFileLoader(manager);
 
                 loader.load(url, function (object) {

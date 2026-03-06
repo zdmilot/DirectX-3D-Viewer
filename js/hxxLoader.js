@@ -356,8 +356,20 @@
         );
         const mainDecompressed = await decompressGzip(mainCompressed, mainSection.decompressedSize);
 
-        // Decode as text (it's a standard .x text file)
-        const xFileText = new TextDecoder('utf-8').decode(mainDecompressed);
+        // Check if the decompressed .x content is text or binary format.
+        // Binary .x files start with "xof 0303bin" — these must stay as raw bytes.
+        let xFileText;
+        let xFileBinary = null;
+        const headerStr = new TextDecoder('ascii').decode(mainDecompressed.slice(0, 16));
+        if (headerStr.indexOf('bin ') !== -1 || headerStr.indexOf('bin\x00') !== -1) {
+            // Binary .x format — cannot safely decode as UTF-8
+            xFileBinary = mainDecompressed.buffer.byteLength === mainDecompressed.length
+                ? mainDecompressed.buffer
+                : mainDecompressed.slice().buffer;
+            xFileText = null;
+        } else {
+            xFileText = new TextDecoder('utf-8').decode(mainDecompressed);
+        }
 
         // Extract texture sections (all non-main sections, typically PNGs)
         const textures = [];
@@ -387,7 +399,7 @@
             }
         }
 
-        return { xFileText, textures };
+        return { xFileText, xFileBinary, textures };
     }
 
     /**
@@ -397,6 +409,9 @@
      */
     async function toXFileBlob(buffer) {
         const result = await parse(buffer);
+        if (result.xFileBinary) {
+            return new Blob([result.xFileBinary], { type: 'application/octet-stream' });
+        }
         return new Blob([result.xFileText], { type: 'text/plain' });
     }
 
