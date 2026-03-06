@@ -237,10 +237,11 @@
                 multiple: false
             }).then(function (handles) {
                 const handle = handles[0];
-                return handle.getFile().then(function (file) {
-                    // Attempt to get containing directory for full path
+                handle.getFile().then(function (file) {
                     state._lastFileHandle = handle;
                     loadUserFile(file, handle);
+                }).catch(function (err) {
+                    console.error('[FileOpen] Error loading file:', err);
                 });
             }).catch(function (err) {
                 // User cancelled or API error — fall back to <input>
@@ -630,6 +631,52 @@
             // so faces remain outward-pointing.
             fixLeftHandedCoords(group);
 
+            // ── Nudge coplanar decal meshes off surface ────
+            // Label/text/barcode meshes sit exactly coplanar with
+            // the body surface.  Polygon offset alone is unreliable
+            // at large zoom distances due to depth buffer precision.
+            // Detect flat meshes (all vertices share one axis value)
+            // and push them slightly outward from the model center.
+            (function nudgeDecals() {
+                var allMeshes = [];
+                group.traverse(function (c) { if (c.isMesh) allMeshes.push(c); });
+                if (allMeshes.length < 2) return;
+                // Find model center from bounding box
+                var bbox = new THREE.Box3().setFromObject(group);
+                var modelCenter = bbox.getCenter(new THREE.Vector3());
+                var eps = 0.01;
+                var nudge = 0.15; // mm offset
+                for (var mi = 0; mi < allMeshes.length; mi++) {
+                    var mesh = allMeshes[mi];
+                    var pos = mesh.geometry.attributes.position;
+                    if (!pos || pos.count < 3) continue;
+                    // Check each axis for constant value (flat mesh)
+                    for (var axis = 0; axis < 3; axis++) {
+                        var getter = axis === 0 ? 'getX' : axis === 1 ? 'getY' : 'getZ';
+                        var setter = axis === 0 ? 'setX' : axis === 1 ? 'setY' : 'setZ';
+                        var val0 = pos[getter](0);
+                        var isFlat = true;
+                        for (var vi = 1; vi < pos.count; vi++) {
+                            if (Math.abs(pos[getter](vi) - val0) > eps) {
+                                isFlat = false;
+                                break;
+                            }
+                        }
+                        if (!isFlat) continue;
+                        // This mesh is flat on this axis — nudge away from center
+                        var axisCenter = axis === 0 ? modelCenter.x : axis === 1 ? modelCenter.y : modelCenter.z;
+                        var dir = (val0 >= axisCenter) ? 1 : -1;
+                        for (var vi2 = 0; vi2 < pos.count; vi2++) {
+                            pos[setter](vi2, pos[getter](vi2) + dir * nudge);
+                        }
+                        pos.needsUpdate = true;
+                        mesh.geometry.computeBoundingBox();
+                        mesh.geometry.computeBoundingSphere();
+                        break; // only nudge on one axis
+                    }
+                }
+            })();
+
             // ── Make blue-dominant materials translucent ──────
             // channel.  Detect materials whose blue component is dominant
             // and force them to be translucent so enclosure panels look
@@ -676,8 +723,8 @@
                 // Position camera to see the whole model
                 const fitDist = maxDim * 1.8;
                 camera.position.set(fitDist * 0.6, fitDist * 0.4, fitDist);
-                camera.near = maxDim * 0.001;
-                camera.far  = maxDim * 100;
+                camera.near = maxDim * 0.01;
+                camera.far  = maxDim * 20;
                 camera.updateProjectionMatrix();
 
                 controls.target.set(0, 0, 0);
