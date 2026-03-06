@@ -2170,7 +2170,10 @@
             mesh = new THREE.Mesh(geometry, materials.length === 1 ? materials[0] : materials);
           }
           mesh.name = this._currentMesh.name;
-          // Apply the full Frame transformation hierarchy to position the mesh correctly
+          // Apply the full Frame transformation hierarchy to position the mesh correctly.
+          // We bake the transform into the geometry (not the Object3D) so that the
+          // subsequent left-handed → right-handed X-flip in app.js operates on
+          // world-space vertices rather than local-frame vertices.
           if (currentObject && currentObject.transformation) {
             var worldBaseMx = new THREE.Matrix4();
             // Walk the Frame hierarchy from root to this frame, accumulating transforms
@@ -2186,7 +2189,7 @@
             for (var fi = frameChain.length - 1; fi >= 0; fi--) {
               worldBaseMx.multiply(frameChain[fi]);
             }
-            mesh.applyMatrix4(worldBaseMx);
+            geometry.applyMatrix4(worldBaseMx);
           }
           this.meshes.push(mesh);
         }
