@@ -1105,29 +1105,24 @@ body {
     color: var(--accent);
 }
 
+/* Stacked file path + camera info */
+.viewer-info-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+}
+
 /* Loaded file path display */
 .viewer-file-path {
-    font-size: 0.72rem;
+    font-size: 0.66rem;
     font-family: 'Menlo', 'Consolas', monospace;
     color: var(--text-muted);
-    padding: 4px 8px;
-    background: rgba(0,0,0,0.04);
-    border-radius: var(--r-xs);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 360px;
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
     cursor: default;
-}
-.viewer-file-path i {
-    font-size: 0.68rem;
-    opacity: 0.6;
-}
-[data-theme="dark"] .viewer-file-path {
-    background: rgba(255,255,255,0.04);
+    line-height: 1.3;
 }
 
 /* Camera info display */
