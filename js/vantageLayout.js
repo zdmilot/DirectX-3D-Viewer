@@ -18,7 +18,8 @@
         TRACK_DEPTH:   497.0,   // mm front-to-back
         TRACK_Y_START:  63.0,   // mm Y of first track
         FIRST_TRACK_X: 100.25,  // mm X of track 1
-        TRACK_COUNT:    80,
+        TRACK_COUNT:    80,     // total placeable tracks (extended)
+        PHYSICAL_TRACKS: 54,    // tracks covered by the physical GLTF deck model
         SURFACE_Z:     100.0,   // mm deck surface height
         CANVAS_W:      2200,
         CANVAS_D:       520,
@@ -451,9 +452,9 @@
                 const box = new THREE.Box3().setFromObject(model);
                 const center = box.getCenter(new THREE.Vector3());
 
-                // Align GLTF so its TOP surface sits at DECK.SURFACE_Z,
-                // so carriers placed at y = DECK.SURFACE_Z rest on top of the deck hardware.
-                const deckCenterX = DECK.FIRST_TRACK_X + (DECK.TRACK_COUNT * DECK.TRACK_SPACING) / 2;
+                // Align GLTF so its TOP surface sits at DECK.SURFACE_Z.
+                // Use PHYSICAL_TRACKS — the GLTF model only covers the original deck hardware.
+                const deckCenterX = DECK.FIRST_TRACK_X + (DECK.PHYSICAL_TRACKS * DECK.TRACK_SPACING) / 2;
                 const deckCenterZ = DECK.TRACK_Y_START + DECK.TRACK_DEPTH / 2;
 
                 model.position.set(
