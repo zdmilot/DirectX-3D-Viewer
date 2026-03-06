@@ -240,14 +240,17 @@
                 return handle.getFile().then(function (file) {
                     // Attempt to get containing directory for full path
                     state._lastFileHandle = handle;
-                    loadUserFile(file, handle);
+                    try {
+                        loadUserFile(file, handle);
+                    } catch (loadErr) {
+                        console.error('[FileOpen] loadUserFile error:', loadErr);
+                    }
                 });
             }).catch(function (err) {
-                // User cancelled or API error — fall back to <input>
-                if (err.name !== 'AbortError') {
-                    console.warn('[FileOpen] showOpenFilePicker failed, falling back:', err);
-                    dom.fileInput.click();
-                }
+                // User cancelled — do nothing; API error — fall back to <input>
+                if (err.name === 'AbortError') return;
+                console.warn('[FileOpen] showOpenFilePicker failed, falling back:', err);
+                dom.fileInput.click();
             });
         } else {
             dom.fileInput.click();
@@ -291,9 +294,6 @@
         }
         if (errorEl) errorEl.classList.add('viewer-hidden');
 
-        // Update filename display
-        setFilenameDisplay();
-
         if (HXXLoader.isHXXFilename(file.name)) {
             // Read as ArrayBuffer, decompress, then load
             const reader = new FileReader();
@@ -301,6 +301,8 @@
                 HXXLoader.toXFileBlob(reader.result).then(function (blob) {
                     const url = URL.createObjectURL(blob);
                     state.lastLoadedUrl = url;
+                    // Update filename display after URL is set
+                    setFilenameDisplay();
                     loadXFile(url, loading, errorEl);
                 }).catch(function (err) {
                     if (loading) loading.classList.add('viewer-hidden');
@@ -316,6 +318,8 @@
         } else {
             const url = URL.createObjectURL(file);
             state.lastLoadedUrl = url;
+            // Update filename display after URL is set
+            setFilenameDisplay();
             loadXFile(url, loading, errorEl);
         }
     }
