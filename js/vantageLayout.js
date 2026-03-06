@@ -304,6 +304,7 @@
         wireTMLImport();
         wireCarrierPalette();
         wireCanvasEvents();
+        wireVLPanelToggles();
         populateCarrierPalette();
         resetVLCamera();
     }
@@ -356,11 +357,13 @@
         const frontGeo = new THREE.BoxGeometry(deckW, 8, 6);
         const frontMesh = new THREE.Mesh(frontGeo, railMat);
         frontMesh.position.set(deckW / 2 + (-80), DECK.SURFACE_Z + 4, DECK.TRACK_Y_START - 4);
+        frontMesh.name = '__rail_front__';
         scene.add(frontMesh);
         // Back rail
         const backGeo = new THREE.BoxGeometry(deckW, 8, 6);
         const backMesh = new THREE.Mesh(backGeo, railMat.clone());
         backMesh.position.set(deckW / 2 + (-80), DECK.SURFACE_Z + 4, DECK.TRACK_Y_START + DECK.TRACK_DEPTH + 4);
+        backMesh.name = '__rail_back__';
         scene.add(backMesh);
 
         // Waste block area indicator (right end of deck, tracks ~50-54)
@@ -409,28 +412,33 @@
                     }
                 });
 
-                // Compute world-space bounds after all GLTF node transforms applied
+                // Compute world-space bounds with model at origin (before placing in scene)
                 const box = new THREE.Box3().setFromObject(model);
                 const center = box.getCenter(new THREE.Vector3());
 
-                // Target: GLTF deck center-X aligns with procedural deck center-X,
-                //         GLTF bottom-Y sits at SURFACE_Z - 5 (just under the surface),
-                //         GLTF center-Z aligns with procedural deck center-Z.
-                const targetX = 720;
-                const targetY = DECK.SURFACE_Z - 5;
-                const targetZ = 311;
+                // Align GLTF so its TOP surface sits at DECK.SURFACE_Z,
+                // so carriers placed at y = DECK.SURFACE_Z rest on top of the deck hardware.
+                const deckCenterX = DECK.FIRST_TRACK_X + (DECK.TRACK_COUNT * DECK.TRACK_SPACING) / 2;
+                const deckCenterZ = DECK.TRACK_Y_START + DECK.TRACK_DEPTH / 2;
 
                 model.position.set(
-                    targetX - center.x,
-                    targetY - box.min.y,
-                    targetZ - center.z
+                    deckCenterX - center.x,
+                    DECK.SURFACE_Z - box.max.y,   // top of GLTF = deck surface level
+                    deckCenterZ - center.z
                 );
 
                 vlState.scene.add(model);
 
-                // Hide the simple procedural surface box — GLTF provides better visuals
-                const surf = vlState.scene.getObjectByName('__decksurf__');
-                if (surf) surf.visible = false;
+                // Hide procedural geometry — GLTF provides authentic deck visuals
+                const procNames = ['__decksurf__', '__rail_front__', '__rail_back__', '__wastearea__'];
+                procNames.forEach(n => {
+                    const o = vlState.scene.getObjectByName(n);
+                    if (o) o.visible = false;
+                });
+                for (let i = 1; i <= DECK.TRACK_COUNT; i++) {
+                    const o = vlState.scene.getObjectByName(`__track_${i}__`);
+                    if (o) o.visible = false;
+                }
 
                 setStatus('Vantage deck model loaded');
             },
@@ -1088,6 +1096,35 @@
 
         const resetCamBtn = $('#vl-reset-cam-btn');
         if (resetCamBtn) resetCamBtn.addEventListener('click', resetVLCamera);
+    }
+
+    // ================================================================
+    //  Panel Collapse Toggles
+    // ================================================================
+    function wireVLPanelToggles() {
+        const host        = $('#vl-host');
+        const leftPanel   = $('#vl-left-panel');
+        const rightPanel  = $('#vl-right-panel');
+        const leftToggle  = $('#vl-left-toggle');
+        const rightToggle = $('#vl-right-toggle');
+
+        if (leftToggle && leftPanel && host) {
+            leftToggle.addEventListener('click', () => {
+                const collapsed = leftPanel.classList.toggle('is-collapsed');
+                host.classList.toggle('vl-left-collapsed', collapsed);
+                const icon = $('#vl-left-toggle-icon');
+                if (icon) icon.className = collapsed ? 'fas fa-chevron-right' : 'fas fa-chevron-left';
+            });
+        }
+
+        if (rightToggle && rightPanel && host) {
+            rightToggle.addEventListener('click', () => {
+                const collapsed = rightPanel.classList.toggle('is-collapsed');
+                host.classList.toggle('vl-right-collapsed', collapsed);
+                const icon = $('#vl-right-toggle-icon');
+                if (icon) icon.className = collapsed ? 'fas fa-chevron-left' : 'fas fa-chevron-right';
+            });
+        }
     }
 
     function wireVLToolbar() {
