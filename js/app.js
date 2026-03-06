@@ -716,6 +716,8 @@
         if (window.PlacerModule) window.PlacerModule.updateTheme();
         // Also update labware generator theme
         if (window.LabwareGenModule) window.LabwareGenModule.updateTheme();
+        // Also update vantage layout theme
+        if (window.VantageLayoutModule) window.VantageLayoutModule.updateTheme();
 
     }
 
@@ -750,6 +752,11 @@
         // Initialize labware generator on first switch
         if (viewName === 'labware' && window.LabwareGenModule) {
             setTimeout(() => window.LabwareGenModule.init(), 50);
+        }
+
+        // Initialize vantage layout on first switch
+        if (viewName === 'vantage' && window.VantageLayoutModule) {
+            setTimeout(() => window.VantageLayoutModule.init(), 50);
         }
 
         // Auto-collapse sidebar after navigation

@@ -6,7 +6,7 @@
     <title>3D File Tools</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1F9EA;</text></svg>">
     <link rel="stylesheet" href="css/fontawesome.min.css">
-    <link rel="stylesheet" href="css/main.css?v=20260304c">
+    <link rel="stylesheet" href="css/main.css?v=20260305v">
 </head>
 <body>
 
@@ -102,6 +102,10 @@
                     <button class="sidebar-nav-item" data-view="labware">
                         <i class="fas fa-flask"></i>
                         <span>Integra Gen</span>
+                    </button>
+                    <button class="sidebar-nav-item" data-view="vantage">
+                        <i class="fas fa-layer-group"></i>
+                        <span>Vantage Layout</span>
                     </button>
                 </div>
             </aside>
@@ -835,10 +839,169 @@
                 </div>
             </div>
 
+            <!-- ====== VANTAGE LAYOUT VIEW ====== -->
+            <div class="view-panel" data-view-panel="vantage" id="vl-host">
+                <canvas id="vl-canvas"></canvas>
+
+                <!-- Floating 3D Toolbar -->
+                <div class="viewer-toolbar" id="vl-toolbar">
+                    <div class="vt-body" id="vl-vt-body">
+                        <button class="vt-toggle" id="vl-vt-toggle" title="Toggle toolbar">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                        <div class="vt-collapsible">
+                            <div class="vt-gizmo pp-gizmo-sm" id="vl-vt-gizmo">
+                                <canvas id="vl-gizmo-canvas" width="28" height="28"></canvas>
+                            </div>
+                            <div class="vt-separator"></div>
+                            <button class="vt-btn" id="vl-vt-reset-cam" title="Reset camera">
+                                <i class="fas fa-video"></i>
+                            </button>
+                            <button class="vt-btn" id="vl-vt-zoom-fit" title="Zoom to fit deck">
+                                <i class="fas fa-expand"></i>
+                            </button>
+                            <button class="vt-btn" id="vl-vt-topdown" title="Top-down orthographic view">
+                                <i class="fas fa-arrow-down"></i>
+                            </button>
+                            <button class="vt-btn" id="vl-vt-perspective" title="Toggle perspective / orthographic">
+                                <i class="fas fa-cube"></i>
+                            </button>
+                            <button class="vt-btn grid-toggle" id="vl-btn-grid" title="Toggle grid">
+                                <i class="fas fa-border-all"></i>
+                                <span class="grid-slash" aria-hidden="true"></span>
+                            </button>
+                            <div class="vt-separator"></div>
+                            <button class="vt-btn vt-btn-round" id="vl-vt-zoom-in" title="Zoom in">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                            <button class="vt-btn vt-btn-round" id="vl-vt-zoom-out" title="Zoom out">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                            <button class="vt-btn vt-btn-round" id="vl-vt-pan" title="Pan mode">
+                                <i class="fas fa-hand-paper"></i>
+                            </button>
+                            <div class="vt-separator"></div>
+                            <div class="vt-grab-handle" id="vl-vt-grab-handle" title="Drag to move toolbar">
+                                <i class="fas fa-grip-horizontal"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Left Panel: Carrier Palette + TML Import -->
+                <div class="vl-left-panel" id="vl-left-panel">
+                    <div class="vl-panel-section">
+                        <div class="vl-panel-header">
+                            <i class="fas fa-th-large"></i> Carrier Palette
+                        </div>
+                        <div class="vl-palette-list" id="vl-palette-list">
+                            <!-- populated by JS -->
+                        </div>
+                    </div>
+                    <div class="vl-panel-divider"></div>
+                    <div class="vl-panel-section">
+                        <div class="vl-panel-header">
+                            <i class="fas fa-file-import"></i> Import .tml
+                        </div>
+                        <input type="file" id="vl-tml-input" accept=".tml" style="display:none">
+                        <div class="vl-tml-drop" id="vl-tml-drop">
+                            <i class="fas fa-file-upload"></i>
+                            <span>Drop .tml here or</span>
+                            <button class="vl-tml-browse" id="vl-tml-open">Browse</button>
+                        </div>
+                    </div>
+                    <div class="vl-panel-divider"></div>
+                    <div class="vl-panel-section vl-placed-section">
+                        <div class="vl-panel-header">
+                            <i class="fas fa-list"></i> Placed Carriers
+                        </div>
+                        <div class="vl-carrier-list" id="vl-carrier-list">
+                            <div class="vl-empty-hint">No carriers placed yet.<br>Select a carrier above and click Place.</div>
+                        </div>
+                        <button class="vl-danger-btn" id="vl-clear-deck">
+                            <i class="fas fa-trash"></i> Clear Deck
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Right Panel: Site Manager -->
+                <div class="vl-right-panel" id="vl-right-panel">
+                    <div class="vl-panel-header" id="vl-site-panel-title">
+                        <i class="fas fa-map-marker-alt"></i> Site Positions
+                    </div>
+                    <div class="vl-site-panel" id="vl-site-panel">
+                        <div class="vl-empty-hint">Select a carrier to manage its plate sites.</div>
+                    </div>
+                    <div class="vl-site-actions">
+                        <button class="vl-site-action-btn" id="vl-fill-all">
+                            <i class="fas fa-plus"></i> Fill All Sites
+                        </button>
+                        <button class="vl-site-action-btn vl-site-action-btn-muted" id="vl-clear-all">
+                            <i class="fas fa-minus"></i> Clear All
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Place Carrier Dialog -->
+                <div class="vl-dialog-overlay" id="vl-place-dialog">
+                    <div class="vl-dialog">
+                        <div class="vl-dialog-header">
+                            <i class="fas fa-plus-circle"></i> Place Carrier
+                        </div>
+                        <div class="vl-dialog-body">
+                            <div class="vl-dialog-row">
+                                <span class="vl-dialog-key">Carrier</span>
+                                <span class="vl-dialog-val" id="vl-pd-carrier-name">—</span>
+                            </div>
+                            <div class="vl-dialog-row">
+                                <span class="vl-dialog-key">Description</span>
+                                <span class="vl-dialog-val vl-dialog-val-sm" id="vl-pd-carrier-desc">—</span>
+                            </div>
+                            <div class="vl-dialog-row">
+                                <span class="vl-dialog-key">Width</span>
+                                <span class="vl-dialog-val" id="vl-pd-twidth">6T</span>
+                            </div>
+                            <div class="vl-dialog-row">
+                                <span class="vl-dialog-key">Sites</span>
+                                <span class="vl-dialog-val" id="vl-pd-sites">5</span>
+                            </div>
+                            <div class="vl-dialog-row">
+                                <span class="vl-dialog-key">Start Track</span>
+                                <input type="number" id="vl-pd-track" value="1" min="1" max="54" class="vl-dialog-input">
+                            </div>
+                            <div class="vl-dialog-row vl-dialog-row-check">
+                                <label class="vl-dialog-check">
+                                    <input type="checkbox" id="vl-pd-autofill" checked>
+                                    <span>Auto-fill plates on all sites</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="vl-dialog-footer">
+                            <button class="vl-dialog-cancel" id="vl-pd-cancel">Cancel</button>
+                            <button class="vl-dialog-confirm" id="vl-pd-confirm">
+                                <i class="fas fa-check"></i> Place
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bottom Controls Bar -->
+                <div class="viewer-controls-bar" id="vl-controls-bar">
+                    <span class="vl-status-msg" id="vl-status">Ready</span>
+                    <div class="cv-ctrl-spacer"></div>
+                    <button class="cv-ctrl-btn" id="vl-reset-cam-btn" title="Reset camera">
+                        <i class="fas fa-video"></i> Reset View
+                    </button>
+                    <div class="cv-ctrl-divider"></div>
+                    <button class="cv-ctrl-btn cv-ctrl-btn-accent" id="vl-export-btn" title="Export layout as JSON">
+                        <i class="fas fa-download"></i> Export Layout
+                    </button>
+                </div>
+            </div>
+
         </div>
     </div>
 
-    <!-- Screenshot Preview Modal -->
     <div class="ss-overlay" id="ss-overlay">
         <div class="ss-modal">
             <div class="ss-header">
@@ -917,9 +1080,10 @@
     <script src="js/lib/GLTFLoader.js"></script>
     <script src="js/lib/STLLoader.js"></script>
     <script src="js/hxxLoader.js?v=20260305a"></script>
+    <script src="js/vantageLayout.js?v=20260305a"></script>
     <script src="js/converter.js?v=20260304d"></script>
     <script src="js/platePlacer.js?v=20260304d"></script>
     <script src="js/labwareGenerator.js?v=20260305a"></script>
-    <script src="js/app.js?v=20260305c"></script>
+    <script src="js/app.js?v=20260305v"></script>
 </body>
 </html>
