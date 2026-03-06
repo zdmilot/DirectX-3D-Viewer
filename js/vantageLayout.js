@@ -1260,9 +1260,10 @@
             const item = document.createElement('button');
             item.className = 'vl-palette-item';
             item.dataset.carrierType = key;
+            const has3D = !!(def.modelFile || def.modelFileRel || vlState.xModelCache[key]);
             item.innerHTML = `
                 <span class="vl-palette-icon"><i class="fas fa-th-large"></i></span>
-                <span class="vl-palette-name">${def.viewName}</span>
+                <span class="vl-palette-name">${def.viewName}${has3D ? ' <i class="fas fa-cube" title="3D model available"></i>' : ''}</span>
                 <span class="vl-palette-desc">${def.description}</span>
                 <span class="vl-palette-size">${def.tWidth}T</span>`;
             // Click opens the dialog; mousedown starts a palette drag
@@ -1717,6 +1718,9 @@
 
             // Rebuild any already-placed carriers of this type
             rebuildPlacedCarriersOfType(carrierKey);
+
+            // Refresh palette so 3D icon appears
+            populateCarrierPalette();
 
             var refreshCount = vlState.placedCarriers.filter(function (c) { return c.type === carrierKey; }).length;
             if (refreshCount > 0) {
