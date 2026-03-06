@@ -771,7 +771,7 @@ function cmdLoad(filePath) {
     }
 
     const elapsed = Date.now() - startTime;
-    const xInfo = xText ? parseXFileText(xText) : { header: getXFileFormat(buf) + ' (compressed binary)', frames: [], meshes: [], materials: [], animations: [], totalVertices: 0, totalFaces: 0 };
+    const xInfo = xText ? parseXFileText(xText) : { header: getXFileFormat(buf) + ' (compressed binary)', version: null, format: null, floatSize: null, templates: [], frames: [], meshes: [], materials: [], animations: [], totalVertices: 0, totalFaces: 0 };
 
     state.loaded = { filePath: resolved, raw: buf, hxx, xInfo, xText, isCompressedX: isCompressedXFile(buf) };
 
@@ -1026,7 +1026,7 @@ async function cmdBatch(dirPath, recursive) {
                 }
             }
 
-            const xInfo = xText ? parseXFileText(xText) : { header: getXFileFormat(buf) + ' (compressed binary)', frames: [], meshes: [], materials: [], animations: [], totalVertices: 0, totalFaces: 0 };
+            const xInfo = xText ? parseXFileText(xText) : { header: getXFileFormat(buf) + ' (compressed binary)', version: null, format: null, floatSize: null, templates: [], frames: [], meshes: [], materials: [], animations: [], totalVertices: 0, totalFaces: 0 };
             const elapsed = Date.now() - startTime;
 
             if (xText && !xInfo.header.startsWith('xof')) {
