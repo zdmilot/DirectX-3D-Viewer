@@ -445,8 +445,8 @@
                 const deckCenterZ = DECK.TRACK_Y_START + DECK.TRACK_DEPTH / 2;
 
                 model.position.set(
-                    deckCenterX + (0),
-                    DECK.SURFACE_Z - box.max.y + (59),
+                    deckCenterX - center.x,
+                    DECK.SURFACE_Z - box.max.y - 59,
                     deckCenterZ + (91)
                 );
 
