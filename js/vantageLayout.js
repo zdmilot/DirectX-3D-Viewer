@@ -725,7 +725,7 @@
 
     /**
      * Apply a left-handed (DirectX) → right-handed (Three.js) fix to a group.
-     * Negates X on all vertex positions and normals, flips winding order.
+     * Negates Z on all vertex positions and normals, flips winding order.
      * Mirrors window._fixLeftHandedCoords from app.js (which loads after this
      * module, so we keep a local copy here).
      */

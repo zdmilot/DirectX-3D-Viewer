@@ -156,7 +156,7 @@
     /**
      * Convert a Three.js Group loaded from a DirectX .x file from
      * left-handed (DirectX) to right-handed (Three.js) coordinates.
-     * Negates X positions and normals, flips triangle winding order.
+     * Negates Z positions and normals, flips triangle winding order.
      */
     function fixLeftHandedCoords(group) {
         group.traverse(function (child) {
@@ -164,14 +164,14 @@
             var pos = child.geometry.attributes.position;
             if (pos) {
                 for (var i = 0; i < pos.count; i++) {
-                    pos.setX(i, -pos.getX(i));
+                    pos.setZ(i, -pos.getZ(i));
                 }
                 pos.needsUpdate = true;
             }
             var norm = child.geometry.attributes.normal;
             if (norm) {
                 for (var i = 0; i < norm.count; i++) {
-                    norm.setX(i, -norm.getX(i));
+                    norm.setZ(i, -norm.getZ(i));
                 }
                 norm.needsUpdate = true;
             }
@@ -593,7 +593,7 @@
 
             // ── Left-handed → right-handed coordinate fix ────
             // DirectX .x files use a left-handed coordinate system;
-            // Three.js is right-handed.  Negate the X axis in all
+            // Three.js is right-handed.  Negate the Z axis in all
             // vertex positions and normals, and flip winding order
             // so faces remain outward-pointing.
             fixLeftHandedCoords(group);
@@ -1127,17 +1127,17 @@
             geom.applyMatrix4(child.matrixWorld);
 
             // Convert back from right-handed (Three.js) to left-handed (DirectX)
-            // by negating X positions and normals, and flipping winding order.
+            // by negating Z positions and normals, and flipping winding order.
             const pos  = geom.attributes.position;
             if (pos) {
                 for (let vi = 0; vi < pos.count; vi++) {
-                    pos.setX(vi, -pos.getX(vi));
+                    pos.setZ(vi, -pos.getZ(vi));
                 }
             }
             const norm = geom.attributes.normal;
             if (norm) {
                 for (let ni = 0; ni < norm.count; ni++) {
-                    norm.setX(ni, -norm.getX(ni));
+                    norm.setZ(ni, -norm.getZ(ni));
                 }
             }
             const uv   = geom.attributes.uv;
