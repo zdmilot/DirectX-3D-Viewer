@@ -832,8 +832,14 @@
         const siteMeshes = [];
         carrierDef.sites.forEach(site => {
             const wellGeo = new THREE.BoxGeometry(site.dx, 6, site.dy);
-            const wellMat = new THREE.MeshLambertMaterial({ color: 0x1a2530 });
+            const wellMat = new THREE.MeshLambertMaterial({
+                color: 0x1a2530,
+                polygonOffset: true,
+                polygonOffsetFactor: -1,
+                polygonOffsetUnits: -1,
+            });
             const wellMesh = new THREE.Mesh(wellGeo, wellMat);
+            wellMesh.renderOrder = 50;
             wellMesh.position.set(
                 site.x + site.dx / 2,
                 site.z - carrierDef.dz * 0.10,
@@ -860,8 +866,13 @@
             color: 0xd0e8f8,
             transparent: true,
             opacity: 0.85,
+            depthWrite: true,
+            polygonOffset: true,
+            polygonOffsetFactor: -2,
+            polygonOffsetUnits: -2,
         });
         const mesh = new THREE.Mesh(geo, mat);
+        mesh.renderOrder = 100;
         mesh.name = `__plate_site${site.id}__`;
         mesh.userData.siteId = site.id;
         // Position within the carrier group's local space
@@ -873,8 +884,14 @@
 
         // Add a thin well-pattern overlay (visual indicator)
         const topGeo = new THREE.BoxGeometry(SBS_PLATE.dx - 2, 1, SBS_PLATE.dy - 2);
-        const topMat = new THREE.MeshLambertMaterial({ color: 0x88c0e0 });
+        const topMat = new THREE.MeshLambertMaterial({
+            color: 0x88c0e0,
+            polygonOffset: true,
+            polygonOffsetFactor: -3,
+            polygonOffsetUnits: -3,
+        });
         const topMesh = new THREE.Mesh(topGeo, topMat);
+        topMesh.renderOrder = 101;
         topMesh.position.y = SBS_PLATE.dz / 2 + 0.5;
         mesh.add(topMesh);
 
