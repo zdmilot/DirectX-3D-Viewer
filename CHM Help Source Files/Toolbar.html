@@ -1,0 +1,104 @@
+<html>
+<head>
+    <title>3D Toolbar Reference</title>
+    <link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+<div class="header">3D Toolbar Reference</div>
+<div class="main">
+<div class="breadcrumb"><a href="Overview.html">3D File Tools</a> &raquo; 3D Toolbar Reference</div>
+
+<h2>Overview</h2>
+<p>Every 3D viewport in 3D File Tools has a <b>floating toolbar</b> on the left side of the canvas. The toolbar is collapsible, repositionable, and contains buttons for camera control, view options, and (in the 3D Viewer) model transforms.</p>
+<div class="image-placeholder">PLACE ANNOTATED IMAGE OF THE FLOATING TOOLBAR HERE</div>
+
+<h2>Toolbar Controls</h2>
+
+<h3>Toolbar Toggle</h3>
+<table>
+<thead><tr><th>Button</th><th>Icon</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><b>Toggle Toolbar</b></td><td>Chevron right/left</td><td>Collapses or expands the toolbar body. When collapsed, only the toggle button is visible. All tool buttons inside are hidden.</td></tr>
+</tbody>
+</table>
+
+<h3>Axis Gizmo</h3>
+<p>A small canvas at the top of the toolbar displays the current X (red), Y (green), and Z (blue) axis directions relative to the camera. It updates continuously as you orbit. The 3D Viewer uses a 44&times;44 px gizmo; the Plate Placer and Integra Generator use a 28&times;28 px compact version.</p>
+
+<h3>Camera Controls</h3>
+<table>
+<thead><tr><th>Button</th><th>Icon</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><b>Reset Camera</b></td><td>Video camera</td><td>Returns the camera to its default position and angle for the loaded model. The target point is reset to the model center.</td></tr>
+<tr><td><b>Zoom to Fit</b></td><td>Expand arrows</td><td>Repositions and zooms the camera so the entire model fills the viewport. Works in both perspective and orthographic modes.</td></tr>
+</tbody>
+</table>
+
+<h3>View Mode Controls</h3>
+<table>
+<thead><tr><th>Button</th><th>Icon</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><b>Wireframe</b></td><td>Draw polygon</td><td>Toggles wireframe rendering on/off. In wireframe mode, solid surfaces are replaced by edge lines. Toggles state is remembered per-viewport.</td></tr>
+<tr><td><b>Perspective / Orthographic</b></td><td>Cube</td><td>Toggles between perspective projection (natural 3D) and orthographic projection (no perspective foreshortening). Useful for precise alignment and measurement.</td></tr>
+<tr><td><b>Grid</b></td><td>Border-all (with slash overlay when off)</td><td>Toggles the reference grid plane on/off. The grid is rendered at the model base and adapts to the model scale.</td></tr>
+</tbody>
+</table>
+
+<h3>Zoom &amp; Pan</h3>
+<table>
+<thead><tr><th>Button</th><th>Icon</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><b>Zoom In</b></td><td>Plus (round)</td><td>Zooms the camera in by a fixed step</td></tr>
+<tr><td><b>Zoom Out</b></td><td>Minus (round)</td><td>Zooms the camera out by a fixed step</td></tr>
+<tr><td><b>Pan Mode</b></td><td>Hand / palm</td><td>Enables pan mode. In pan mode, left-click drag pans the camera instead of orbiting. Click again to disable. The button is highlighted while active.</td></tr>
+</tbody>
+</table>
+
+<h3>Transform Toggle (3D Viewer Only)</h3>
+<table>
+<thead><tr><th>Button</th><th>Icon</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><b>Rotate / Mirror</b></td><td>Sync/rotate arrows</td><td>Opens or closes the Transform flyout panel. The flyout contains 6 rotation buttons (&plusmn;90&deg; around X/Y/Z) and 3 mirror buttons (X/Y/Z). See <a href="3DViewer.html">3D Viewer</a> for details.</td></tr>
+</tbody>
+</table>
+
+<h3>Ruler (Integra Generator Only)</h3>
+<table>
+<thead><tr><th>Button</th><th>Icon</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><b>Ruler</b></td><td>Ruler</td><td>Enables the measurement ruler. Click two points on the model to measure the 3D distance between them. Press X/Y/Z to lock the axis. Press Esc to cancel.</td></tr>
+</tbody>
+</table>
+
+<h3>Drag Handle</h3>
+<table>
+<thead><tr><th>Element</th><th>Icon</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><b>Drag Handle</b></td><td>Grip horizontal dots</td><td>Drag this handle to reposition the entire toolbar anywhere within the viewport. The toolbar position is not persisted between page reloads.</td></tr>
+</tbody>
+</table>
+
+<h2>Toolbar Availability by Panel</h2>
+<table>
+<thead><tr><th>Feature</th><th>3D Viewer</th><th>Converter</th><th>Plate Placer</th><th>Integra Gen</th></tr></thead>
+<tbody>
+<tr><td>Axis Gizmo</td><td>44px</td><td>44px</td><td>28px</td><td>28px</td></tr>
+<tr><td>Reset Camera</td><td>Yes</td><td>Yes</td><td>Yes</td><td>Yes</td></tr>
+<tr><td>Zoom to Fit</td><td>Yes</td><td>Yes</td><td>Yes</td><td>Yes</td></tr>
+<tr><td>Wireframe</td><td>Yes</td><td>Yes</td><td>Yes</td><td>Yes</td></tr>
+<tr><td>Perspective Toggle</td><td>Yes</td><td>Yes</td><td>Yes</td><td>Yes</td></tr>
+<tr><td>Grid Toggle</td><td>Yes</td><td>Yes</td><td>Yes</td><td>Yes</td></tr>
+<tr><td>Zoom In/Out</td><td>Yes</td><td>Yes</td><td>Yes</td><td>Yes</td></tr>
+<tr><td>Pan Mode</td><td>Yes</td><td>Yes</td><td>Yes</td><td>Yes</td></tr>
+<tr><td>Transform (Rotate/Mirror)</td><td>Yes</td><td>No</td><td>No</td><td>No</td></tr>
+<tr><td>Ruler</td><td>No</td><td>No</td><td>No</td><td>Yes</td></tr>
+<tr><td>Drag Handle</td><td>Yes</td><td>Yes</td><td>Yes</td><td>Yes</td></tr>
+<tr><td>Collapse Toggle</td><td>Yes</td><td>Yes</td><td>Yes</td><td>Yes</td></tr>
+</tbody>
+</table>
+</div>
+<div class="footer">
+<p>3D File Tools Help</p>
+</div>
+</body>
+</html>
