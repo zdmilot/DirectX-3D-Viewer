@@ -74,7 +74,7 @@ Track 18: X = 482.75     Track 36: X = 887.75     Track 54: X = 1292.75
 | **5-Pos MTP (PLT_CAR_L5_MTP)** | 135 | 497 | 117.1 | 6T |
 | **5-Pos PCR (PLT_CAR_L5PCR)** | 135 | 497 | 130 | 6T |
 | **4-Pos HD (PLT_CAR_L4HD)** | 135 | 497 | — | 6T |
-| **3-Pos Portrait (PLT_CAR_P3AC)** | 112.5 | 497 | — | 5T |
+| **3-Pos Portrait (PLT_CAR_P3AC)** | 135 | 497 | — | 6T |
 | **3-Pos Reagent (REA_CAR_L3AT)** | 135 | 497 | 130 | 6T |
 | **12-Pos Reagent (RGT_CAR_12R)** | 135 | 497 | 130 | 6T |
 | **32-Pos Sample (SMP_CAR_32)** | 22.5 | 497 | 140 | 1T |

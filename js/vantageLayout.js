@@ -120,14 +120,14 @@
         },
         PLT_CAR_P3AC: {
             viewName: 'PLT_CAR_P3AC',
-            description: 'Plate Carrier P3 Portrait (5T)',
-            tWidth: 5, dx: 112.5, dy: 497, dz: 130,
+            description: 'Plate Carrier P3 Portrait (6T)',
+            tWidth: 6, dx: 135, dy: 497, dz: 130,
             color: 0x607080,
             modelFile: 'Base Hamilton Files/Labware/ML_STAR/PLT_CAR_P3AC_A00.hxx',
             sites: [
-                { id:1, x:7.25, y:349, z:86.15, dx:86, dy:127 },
-                { id:2, x:7.25, y:203, z:86.15, dx:86, dy:127 },
-                { id:3, x:7.25, y:57,  z:86.15, dx:86, dy:127 },
+                { id:1, x:43.85, y:329.5, z:86.15, dx:86, dy:127 },
+                { id:2, x:43.85, y:183.5, z:86.15, dx:86, dy:127 },
+                { id:3, x:43.85, y:37.5,  z:86.15, dx:86, dy:127 },
             ],
         },
         TIP_CAR_288: {
@@ -734,12 +734,12 @@
             if (!child.isMesh || !child.geometry) return;
             const pos = child.geometry.attributes.position;
             if (pos) {
-                for (let i = 0; i < pos.count; i++) pos.setX(i, -pos.getX(i));
+                for (let i = 0; i < pos.count; i++) pos.setZ(i, -pos.getZ(i));
                 pos.needsUpdate = true;
             }
             const norm = child.geometry.attributes.normal;
             if (norm) {
-                for (let i = 0; i < norm.count; i++) norm.setX(i, -norm.getX(i));
+                for (let i = 0; i < norm.count; i++) norm.setZ(i, -norm.getZ(i));
                 norm.needsUpdate = true;
             }
             const idx = child.geometry.index;

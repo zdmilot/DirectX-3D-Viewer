@@ -48,7 +48,7 @@ CARRIERS = {
     "TIP_CAR_480":  {"t_width": 6, "dx": 135, "dy": 497, "dz": 130, "sites": 5, "site_z": 114.95},
     "REA_CAR_L3AT": {"t_width": 6, "dx": 135, "dy": 497, "dz": 130, "sites": 3, "site_z": 77.52},
     "RGT_CAR_12R":  {"t_width": 6, "dx": 135, "dy": 497, "dz": 130, "sites": 12, "site_z": 81},
-    "PLT_CAR_P3AC": {"t_width": 5, "dx": 112.5, "dy": 497, "dz": 130, "sites": 3, "site_z": 86.15},
+    "PLT_CAR_P3AC": {"t_width": 6, "dx": 135, "dy": 497, "dz": 130, "sites": 3, "site_z": 86.15},
     "SMP_CAR_32":   {"t_width": 1, "dx": 22.5, "dy": 497, "dz": 140, "sites": 32, "site_z": 10.8},
     "TIP_CAR_288":  {"t_width": 4, "dx": 90, "dy": 497, "dz": 130, "sites": 3, "site_z": 114.7},
     "PLT_CAR_L5FLEX":{"t_width": 7, "dx": 157.5, "dy": 497, "dz": 130, "sites": 5, "site_z": 89.1},
