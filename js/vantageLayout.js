@@ -646,7 +646,8 @@
         ctx.textBaseline = 'middle';
         ctx.fillText(text, size / 2, size / 2);
         const tex = new THREE.CanvasTexture(cv);
-        const mat = new THREE.SpriteMaterial({ map: tex, transparent: true });
+        tex.premultiplyAlpha = false;
+        const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, alphaTest: 0.1 });
         const sprite = new THREE.Sprite(mat);
         sprite.scale.set(14, 14, 1);
         sprite.position.set(xPos + DECK.TRACK_WIDTH / 2, DECK.SURFACE_Z + 12, DECK.TRACK_Y_START + DECK.TRACK_DEPTH + 12);
