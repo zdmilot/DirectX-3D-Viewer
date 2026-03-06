@@ -1,0 +1,87 @@
+<html>
+<head>
+    <title>CLI: list-versions</title>
+    <link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+<div class="header">CLI: list-versions</div>
+<div class="main">
+<div class="breadcrumb"><a href="Overview.html">Venus Library Manager</a> &raquo; <a href="CLIReference.html">CLI Reference</a> &raquo; list-versions</div>
+
+<h2>Description</h2>
+<p>Lists all cached <code>.hxlibpkg</code> versions for a given library. Every time a library is imported (via GUI or CLI), the package file is automatically saved to the package store. This command queries that store and displays each cached version with its metadata.</p>
+
+<h2>Usage</h2>
+<div class="code"><pre>node cli.js list-versions --name &lt;library-name&gt; [--json]</pre></div>
+
+<h2>Options</h2>
+<table>
+<thead><tr><th>Flag</th><th>Required</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>--name &lt;name&gt;</code></td><td><span class="badge badge-required">Required</span></td><td>Library name to look up in the package store</td></tr>
+<tr><td><code>--json</code>, <code>-j</code></td><td><span class="badge badge-optional">Optional</span></td><td>Output results as a JSON array</td></tr>
+<tr><td><code>--user-data &lt;path&gt;</code></td><td><span class="badge badge-optional">Optional</span></td><td>Override user data directory (affects package store location)</td></tr>
+<tr><td><code>--lib-dir &lt;path&gt;</code></td><td><span class="badge badge-optional">Optional</span></td><td>Override library directory</td></tr>
+</tbody>
+</table>
+
+<h2>Package Store Location</h2>
+<p>Cached packages are stored in:</p>
+<div class="code"><pre>C:\Program Files (x86)\HAMILTON\Library\LibraryPackages\&lt;LibraryName&gt;\</pre></div>
+<p>Files follow the naming pattern: <code>&lt;Name&gt;_v&lt;Version&gt;_&lt;timestamp&gt;.hxlibpkg</code></p>
+
+<h2>Output Fields</h2>
+<p>Each cached entry displays the following information:</p>
+<table>
+<thead><tr><th>Field</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td>Version</td><td>Library version from the manifest</td></tr>
+<tr><td>Author</td><td>Author from the manifest (or - if not set)</td></tr>
+<tr><td>Created</td><td>Original creation date from the manifest (or - if not set)</td></tr>
+<tr><td>Cached</td><td>Date the package was stored in the cache</td></tr>
+<tr><td>Size</td><td>Package file size in KB</td></tr>
+<tr><td>File</td><td>Filename of the cached <code>.hxlibpkg</code></td></tr>
+</tbody>
+</table>
+
+<h2>Examples</h2>
+
+<h3>Table Output (Default)</h3>
+<div class="code"><pre>node cli.js list-versions --name "HSLAppsLib"</pre></div>
+<p>Sample output:</p>
+<div class="code"><pre>Cached packages for "HSLAppsLib"
+================================================================
+  [1] Version: 1.2.0
+      Author:  Hamilton
+      Created: 2024-01-15T10:30:00Z
+      Cached:  2024-06-01T14:22:11Z
+      Size:    124.8 KB
+      File:    HSLAppsLib_v1.2.0_20240601142211.hxlibpkg
+
+  [2] Version: 1.1.0
+      Author:  Hamilton
+      Created: 2023-11-01T08:00:00Z
+      Cached:  2024-03-15T09:10:05Z
+      Size:    118.3 KB
+      File:    HSLAppsLib_v1.1.0_20240315091005.hxlibpkg
+
+Total: 2 cached versions</pre></div>
+
+<h3>JSON Output</h3>
+<div class="code"><pre>node cli.js list-versions --name "HSLAppsLib" --json</pre></div>
+
+<h3>No Cached Versions</h3>
+<p>If no packages have been cached for the given library name, you will see:</p>
+<div class="code"><pre>No cached packages found for "HSLAppsLib".</pre></div>
+
+<h2>Related</h2>
+<ul>
+  <li><a href="CLIRollbackLib.html">CLI: rollback-lib</a> - Use an index or version from this output to roll back</li>
+  <li><a href="VersionRollback.html">Version Rollback</a></li>
+</ul>
+</div>
+<div class="footer">
+<p>Venus Library Manager Help</p>
+</div>
+</body>
+</html>

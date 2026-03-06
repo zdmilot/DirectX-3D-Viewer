@@ -1,0 +1,52 @@
+[OPTIONS]
+Compatibility=1.1 or later
+Compiled file=Venus Library Manager.chm
+Contents file=help.hhc
+Default topic=index.html
+Display compile progress=No
+Full-text search=Yes
+Index file=help.hhk
+Language=0x409 English (United States)
+Title=Venus Library Manager Help
+
+[FILES]
+index.html
+Overview.html
+GettingStarted.html
+GUIOverview.html
+SearchFeatures.html
+PackageFormats.html
+BinaryContainerFormat.html
+PackageSpecSchema.html
+HSLFileArchitecture.html
+DataModel.html
+IntegrityVerification.html
+ImportingLibraries.html
+ExportingLibraries.html
+CreatingPackages.html
+GitHubRepository.html
+DeletingLibraries.html
+VersionRollback.html
+LibraryGrouping.html
+VENUSIntegration.html
+CLIReference.html
+CLIListLibs.html
+CLIImportLib.html
+CLIImportArchive.html
+CLIExportLib.html
+CLIExportArchive.html
+CLIDeleteLib.html
+CLICreatePackage.html
+CLIListVersions.html
+CLIRollbackLib.html
+CLIGenerateSyslibHashes.html
+CLIVerifySyslibHashes.html
+CLIVerifyPackage.html
+LibraryAuditLog.html
+UnsignedLibraries.html
+VisualIdentity.html
+SplashScreen.html
+SuccessDialogs.html
+Troubleshooting.html
+
+[INFOTYPES]

@@ -1,0 +1,167 @@
+<html>
+<head>
+    <title>Success Dialogs</title>
+    <link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+<div class="header">Success Dialogs</div>
+<div class="main">
+<div class="breadcrumb"><a href="Overview.html">Venus Library Manager</a> &raquo; <a href="VisualIdentity.html">Visual Identity &amp; Assets</a> &raquo; Success Dialogs</div>
+
+<h2>Overview</h2>
+<p>Venus Library Manager uses a <b>unified visual identity</b> for all success confirmation dialogs. Rather than using plain browser <code>alert()</code> pop-ups, every successful operation displays a styled modal dialog with a consistent appearance:</p>
+<ul>
+  <li>A large green <b>check-circle</b> icon with a subtle drop shadow</li>
+  <li>A bold title describing the completed action</li>
+  <li>The library or resource name displayed prominently</li>
+  <li>A secondary detail line (e.g. file counts)</li>
+  <li>A paths section showing filesystem locations (monospace font, rounded background)</li>
+  <li>An optional status bar for signature verification, COM registration results, or warnings</li>
+  <li>A centered <b>Done</b> button to dismiss the dialog</li>
+</ul>
+<p>This design ensures that users receive clear, readable feedback regardless of which operation was performed, and that the application maintains a professional, cohesive look and feel.</p>
+
+<h2>Success Events</h2>
+<p>The following table lists every operation that produces a styled success dialog, along with the information displayed in each case:</p>
+
+<table>
+<thead><tr><th>Operation</th><th>Modal Title</th><th>Name Line</th><th>Detail Line</th><th>Paths Shown</th><th>Status Bar</th></tr></thead>
+<tbody>
+<tr>
+  <td>Library imported</td>
+  <td>Library Installed Successfully!</td>
+  <td>Library name</td>
+  <td>File count installed</td>
+  <td>Library Files path, Demo Methods path, Package Cached path</td>
+  <td>COM registration result (success or warning)</td>
+</tr>
+<tr>
+  <td>Package created</td>
+  <td>Package Created Successfully!</td>
+  <td>Library name</td>
+  <td>Library file count, demo method file count</td>
+  <td>Saved To (output path)</td>
+  <td>&mdash;</td>
+</tr>
+<tr>
+  <td>Library exported</td>
+  <td>Library Exported Successfully!</td>
+  <td>Library name</td>
+  <td>Library file count, help file count, demo file count</td>
+  <td>Saved To (output path)</td>
+  <td>&mdash;</td>
+</tr>
+<tr>
+  <td>Archive exported</td>
+  <td>Archive Exported Successfully!</td>
+  <td>&mdash;</td>
+  <td>Number of libraries included</td>
+  <td>Saved To (output path) + list of libraries with file counts</td>
+  <td>Warnings (if any)</td>
+</tr>
+<tr>
+  <td>Archive imported</td>
+  <td>Archive Imported Successfully!</td>
+  <td>&mdash;</td>
+  <td>Succeeded count, failed count (if any)</td>
+  <td>Per-library success/fail list with icons</td>
+  <td>&mdash;</td>
+</tr>
+<tr>
+  <td>Version rollback</td>
+  <td>Version Rollback Successful!</td>
+  <td>Library name</td>
+  <td>File count installed, target version</td>
+  <td>&mdash;</td>
+  <td>&mdash;</td>
+</tr>
+<tr>
+  <td>System library repaired</td>
+  <td>System Library Repaired Successfully!</td>
+  <td>Library name</td>
+  <td>File count re-extracted</td>
+  <td>&mdash;</td>
+  <td>Package signature verified (if signed)</td>
+</tr>
+<tr>
+  <td>Library repaired</td>
+  <td>Library Repaired Successfully!</td>
+  <td>Library name</td>
+  <td>File count re-extracted, version</td>
+  <td>&mdash;</td>
+  <td>Package signature verified (if signed)</td>
+</tr>
+<tr>
+  <td>Audit log saved</td>
+  <td>Audit Log Saved Successfully!</td>
+  <td>&mdash;</td>
+  <td>&mdash;</td>
+  <td>Saved To (output path)</td>
+  <td>&mdash;</td>
+</tr>
+</tbody>
+</table>
+
+<h2>Implementation</h2>
+<p>Two modal elements in <code>index.html</code> serve as the success dialog containers:</p>
+
+<h3><code>#importSuccessModal</code></h3>
+<p>Used exclusively for the <b>Library Imported</b> flow. This modal is populated directly by the import handler in <code>main.js</code> using jQuery selectors targeting class names like <code>.import-success-libname</code>, <code>.import-success-filecount</code>, <code>.import-success-paths</code>, and <code>.import-success-com-status</code>.</p>
+
+<h3><code>#genericSuccessModal</code></h3>
+<p>A reusable modal used by all other success operations. It is displayed via the <code>showGenericSuccessModal(opts)</code> helper function in <code>main.js</code>.</p>
+
+<h3>Helper Function</h3>
+<div class="code"><pre>showGenericSuccessModal({
+    title:       "Package Created Successfully!",    // Modal heading
+    name:        "MyLibrary",                        // Bold primary line (optional)
+    detail:      "5 library files, 2 demo files",    // Muted secondary line (optional)
+    paths:       [                                   // Path rows (optional)
+        { label: "Saved To", value: "C:\\output\\MyLibrary.hxlibpkg" }
+    ],
+    listHtml:    "&lt;div&gt;...&lt;/div&gt;",                    // Arbitrary HTML block (optional)
+    statusHtml:  "COM DLLs registered: MyLib.dll",   // Status bar text (optional)
+    statusClass: "com-ok"                            // "com-ok" (green) or "com-warning" (yellow)
+});</pre></div>
+
+<p>All parameters except <code>title</code> are optional. When a parameter is omitted or null, its corresponding section is hidden with the <code>d-none</code> class. The <code>paths</code> array and <code>listHtml</code> can be used together &mdash; paths are rendered first, followed by the list HTML.</p>
+
+<h3><code>#auditSuccessModal</code></h3>
+<p>A dedicated modal for the <b>Audit Log Saved</b> event. Reuses the same CSS classes as the import success modal but has its own HTML element for simplicity.</p>
+
+<h2>CSS Classes</h2>
+<p>All success modals share the same set of CSS classes defined under the <code>/* Import Success Modal */</code> section in <code>main.css</code>:</p>
+
+<table>
+<thead><tr><th>Class</th><th>Purpose</th></tr></thead>
+<tbody>
+<tr><td><code>.import-success-body</code></td><td>Modal body with centered text layout and 40 px top padding</td></tr>
+<tr><td><code>.import-success-checkmark</code></td><td>Container for the large green check icon</td></tr>
+<tr><td><code>.import-success-title</code></td><td>Bold heading below the check icon (1.3 rem)</td></tr>
+<tr><td><code>.import-success-libname</code></td><td>Primary name line (1.05 rem, semi-bold)</td></tr>
+<tr><td><code>.import-success-filecount</code></td><td>Secondary muted detail line (0.9 rem)</td></tr>
+<tr><td><code>.import-success-paths</code></td><td>Monospace path box with rounded background</td></tr>
+<tr><td><code>.import-success-paths .path-label</code></td><td>Uppercase label inside the path box (0.7 rem)</td></tr>
+<tr><td><code>.import-success-paths .path-value</code></td><td>Monospace path value (word-break enabled)</td></tr>
+<tr><td><code>.import-success-com-status</code></td><td>Status bar with rounded corners and colored border</td></tr>
+<tr><td><code>.import-success-com-status.com-ok</code></td><td>Green variant - success confirmation</td></tr>
+<tr><td><code>.import-success-com-status.com-warning</code></td><td>Yellow variant - warning notification</td></tr>
+</tbody>
+</table>
+
+<h2>Related</h2>
+<ul>
+  <li><a href="VisualIdentity.html">Visual Identity &amp; Assets</a> - Overall branding and icon system</li>
+  <li><a href="ImportingLibraries.html">Importing Libraries</a> - The import workflow that triggers the original success modal</li>
+  <li><a href="CreatingPackages.html">Creating Packages</a> - Package creation success dialog</li>
+  <li><a href="ExportingLibraries.html">Exporting Libraries</a> - Library and archive export success dialogs</li>
+  <li><a href="VersionRollback.html">Version Rollback</a> - Rollback success dialog</li>
+  <li><a href="IntegrityVerification.html">Integrity Verification</a> - Repair success dialogs</li>
+  <li><a href="LibraryAuditLog.html">Library Audit Log</a> - Audit log save success dialog</li>
+</ul>
+</div>
+<div class="footer">
+<p>Venus Library Manager Help</p>
+</div>
+</body>
+</html>

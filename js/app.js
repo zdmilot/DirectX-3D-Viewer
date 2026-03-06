@@ -227,34 +227,10 @@
 
     // -- File Open ---------------------------------------------------
     function openFileDialog() {
-        // Prefer File System Access API for richer file handle info
-        if (window.showOpenFilePicker) {
-            window.showOpenFilePicker({
-                types: [{
-                    description: 'DirectX / Hamilton 3D Files',
-                    accept: { 'application/octet-stream': ['.x', '.hxx'] }
-                }],
-                multiple: false
-            }).then(function (handles) {
-                const handle = handles[0];
-                return handle.getFile().then(function (file) {
-                    // Attempt to get containing directory for full path
-                    state._lastFileHandle = handle;
-                    try {
-                        loadUserFile(file, handle);
-                    } catch (loadErr) {
-                        console.error('[FileOpen] loadUserFile error:', loadErr);
-                    }
-                });
-            }).catch(function (err) {
-                // User cancelled — do nothing; API error — fall back to <input>
-                if (err.name === 'AbortError') return;
-                console.warn('[FileOpen] showOpenFilePicker failed, falling back:', err);
-                dom.fileInput.click();
-            });
-        } else {
-            dom.fileInput.click();
-        }
+        // Use a single, stable picker path to avoid double-prompt flows
+        // on browsers where showOpenFilePicker can fail after selection.
+        if (!dom.fileInput) return;
+        dom.fileInput.click();
     }
 
     function handleFileSelected(e) {

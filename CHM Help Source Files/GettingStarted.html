@@ -1,0 +1,100 @@
+<html>
+<head>
+    <title>Getting Started</title>
+    <link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+<div class="header">Getting Started</div>
+<div class="main">
+<div class="breadcrumb"><a href="Overview.html">Venus Library Manager</a> &raquo; Getting Started</div>
+
+<h2>Introduction</h2>
+<p>This guide walks you through the initial setup of Venus Library Manager and the most common workflows you will perform when managing Hamilton VENUS libraries.</p>
+
+<h2>Installation</h2>
+<p>Venus Library Manager is distributed as part of your Hamilton VENUS installation or as a standalone download. No separate installer is required - the application runs directly from its directory.</p>
+
+<h3>Directory Structure</h3>
+<p>The application directory contains:</p>
+<table>
+<thead><tr><th>Item</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>package.json</code></td><td>NW.js application manifest and Node.js dependency declarations</td></tr>
+<tr><td><code>cli.js</code></td><td>Command-line interface entry point (all CLI commands)</td></tr>
+<tr><td><code>cli-schema.json</code></td><td>JSON Schema for package specification files</td></tr>
+<tr><td><code>cli-spec-example.json</code></td><td>Example package specification file</td></tr>
+<tr><td><code>html/</code></td><td>GUI application HTML, CSS, and JavaScript files</td></tr>
+<tr><td><code>db/</code></td><td>Application database: settings, system library definitions, baseline hashes</td></tr>
+<tr><td><code>docs/</code></td><td>Technical reference documentation</td></tr>
+</tbody>
+</table>
+
+<h2>Launching the Application</h2>
+
+<h3>Graphical User Interface</h3>
+<p>Double-click the Venus Library Manager application shortcut or executable. The main window opens displaying your installed libraries as visual cards.</p>
+<div class="image-placeholder">PLACE IMAGE OF APPLICATION LAUNCH / MAIN WINDOW HERE</div>
+
+<h3>Command-Line Interface</h3>
+<p>Open a terminal (Command Prompt or PowerShell) and navigate to the Venus Library Manager directory:</p>
+<div class="code"><pre>cd "C:\Users\admin\Documents\GitHub\Library Manager"
+node cli.js help</pre></div>
+<p>This displays the full list of available CLI commands and options. See <a href="CLIReference.html">CLI Reference</a> for complete documentation.</p>
+
+<h2>First-Time Setup</h2>
+
+<h3>User Data Directory</h3>
+<p>Venus Library Manager stores its working data (installed library records, group assignments, navigation tree) in a <b>user data directory</b>. By default, this is located at:</p>
+<div class="code"><pre>C:\Program Files (x86)\HAMILTON\Library\VenusLibraryManager</pre></div>
+<p>This directory is created automatically on first run and seeded with empty JSON files for each data collection (<code>installed_libs.json</code>, <code>groups.json</code>, <code>tree.json</code>, <code>links.json</code>).</p>
+<p>You can change the user data directory location in the application settings or by passing <code>--db-path</code> on the CLI.</p>
+
+<h3>Package Store</h3>
+<p>Every imported <code>.hxlibpkg</code> file is automatically cached in the <b>package store</b> for future repair and version rollback. The default location is:</p>
+<div class="code"><pre>C:\Program Files (x86)\HAMILTON\Library\LibraryPackages</pre></div>
+<p>Packages are organized into subdirectories by library name, with timestamped filenames for version tracking. See <a href="VersionRollback.html">Version Rollback</a> for details.</p>
+
+<h2>Basic Workflows</h2>
+
+<h3>Import a Library Package</h3>
+<ol>
+  <li>Obtain a <code>.hxlibpkg</code> file from a library author or export</li>
+  <li>In the GUI: Use the Import tab and select the file, or drag-and-drop</li>
+  <li>Review the pre-install preview (metadata, file lists, install paths)</li>
+  <li>Confirm the import</li>
+  <li>Library files are extracted to <code>HAMILTON\Library\&lt;LibraryName&gt;</code></li>
+  <li>Demo method files are extracted to <code>HAMILTON\Methods\Library Demo Methods\&lt;LibraryName&gt;</code></li>
+</ol>
+<p>From the CLI:</p>
+<div class="code"><pre>node cli.js import-lib --file MyLibrary.hxlibpkg</pre></div>
+
+<h3>Export a Library</h3>
+<ol>
+  <li>In the GUI: Open the library detail modal and click <b>Export Library</b></li>
+  <li>Choose <b>Export Single Library</b> for a <code>.hxlibpkg</code>, or <b>Export with All Dependencies</b> for a <code>.hxlibarch</code> that includes all required dependency libraries</li>
+  <li>Choose a save location - the current on-disk files are packaged into the selected format</li>
+</ol>
+<p>From the CLI:</p>
+<div class="code"><pre>node cli.js export-lib --name "MyLibrary" --output MyLibrary.hxlibpkg</pre></div>
+
+<h3>Create a New Package</h3>
+<ol>
+  <li>In the GUI: Use the Library Packager to select source files and fill in metadata</li>
+  <li>Or create a JSON spec file and use the CLI:</li>
+</ol>
+<div class="code"><pre>node cli.js create-package --spec MyLib.spec.json --output MyLib.hxlibpkg</pre></div>
+<p>See <a href="CreatingPackages.html">Creating Packages</a> and <a href="PackageSpecSchema.html">Package Spec JSON Schema</a> for full details.</p>
+
+<h2>Next Steps</h2>
+<ul>
+  <li><a href="GUIOverview.html">GUI Overview</a> - Learn the graphical user interface</li>
+  <li><a href="PackageFormats.html">Package Formats</a> - Understand the package file structure</li>
+  <li><a href="CLIReference.html">CLI Reference</a> - Use the command-line interface</li>
+  <li><a href="IntegrityVerification.html">Integrity Verification</a> - Verify library file integrity</li>
+</ul>
+</div>
+<div class="footer">
+<p>Venus Library Manager Help</p>
+</div>
+</body>
+</html>

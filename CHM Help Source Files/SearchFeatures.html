@@ -1,0 +1,228 @@
+<html>
+<head>
+    <title>Search &amp; Filtering</title>
+    <link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+<div class="header">Search &amp; Filtering</div>
+<div class="main">
+<div class="breadcrumb"><a href="Overview.html">Venus Library Manager</a> &raquo; <a href="GUIOverview.html">GUI Overview</a> &raquo; Search &amp; Filtering</div>
+
+<h2>Overview</h2>
+<p>The Venus Library Manager search bar provides a powerful inline filtering system that goes beyond simple text queries. You can combine free-text search with structured <b>tag chips</b> (<code>#tag</code>) and <b>author chips</b> (<code>@author</code>) to precisely narrow your library results. All filter types can be mixed freely in a single query and are applied together.</p>
+<p>The search bar is located at the top of the main window. Press <code>Ctrl+F</code> from anywhere in the application to focus it instantly. When a search query is active, the UI enters <b>search mode</b>, temporarily suspending the active navigation tab and displaying consolidated results. Clearing the search restores the previously active tab.</p>
+
+<h2>Basic Text Search</h2>
+<p>Type any text directly into the search bar to perform a case-insensitive search across all library metadata:</p>
+<ul>
+  <li><b>Library name</b></li>
+  <li><b>Author</b> and <b>organization</b></li>
+  <li><b>Description</b></li>
+  <li><b>Tags</b></li>
+  <li><b>Public function names</b> parsed from <code>.hsl</code> files (including system libraries)</li>
+</ul>
+<p>Results update live as you type. Text tokens appear inline in the search bar alongside any tag or author chips, flowing together as a continuous stream.</p>
+
+<h2>Tag Chips (<code>#tag</code>)</h2>
+<p>Tag chips let you filter libraries by their assigned tags. A tag chip appears as a small colored pill with a <code>#</code> prefix displayed inside the search bar.</p>
+
+<h3>Creating a Tag Chip</h3>
+<ol>
+  <li>Type <code>#</code> followed by the tag name (for example: <code>#pipetting</code>).</li>
+  <li>Press <b>Space</b>, <b>Enter</b>, or <b>Tab</b> to commit the tag. The text is converted into an inline chip.</li>
+  <li>You can also click a tag badge directly on any library card to instantly create a <code>#tag</code> chip in the search bar.</li>
+</ol>
+<p>Tags do not allow spaces. Typing a space after the tag name is the quickest way to commit it.</p>
+
+<h3>Editing a Tag Chip</h3>
+<p>Click the label text of an existing tag chip. The chip transforms into an editable input field pre-filled with the current value. Edit the text and press <b>Space</b>, <b>Enter</b>, or <b>Tab</b> to confirm, or press <b>Escape</b> to cancel. If you clear the chip text completely and confirm, the chip is removed.</p>
+
+<h3>Removing a Tag Chip</h3>
+<ul>
+  <li><b>Click the &times; button</b> on the right side of the chip to remove it immediately.</li>
+  <li><b>Backspace twice:</b> When the text cursor is at the beginning of the input (position 0), press <b>Backspace</b> once to highlight the preceding chip in red. Press <b>Backspace</b> a second time to delete it. Moving the cursor or clicking elsewhere cancels the pending deletion.</li>
+  <li><b>Delete key:</b> When editing an inline text token and the cursor is at the end of the text, press <b>Delete</b> once to highlight the next chip in red. Press <b>Delete</b> again to remove it.</li>
+</ul>
+
+<h3>Tag Matching Behavior</h3>
+<p>When one or more tag chips are active, only libraries that match <b>all</b> specified tags are shown (AND logic). Tag matching is case-insensitive and uses substring matching on library tags. System libraries include virtual system tags (for example: <code>#system</code>), so tag filters work across both user-installed and system libraries.</p>
+
+<h2>Author Chips (<code>@author</code>)</h2>
+<p>Author chips let you filter libraries by author or organization name. An author chip appears as a small colored pill with an <code>@</code> prefix and a person icon, displayed inside the search bar.</p>
+
+<h3>Creating an Author Chip</h3>
+<ol>
+  <li>Type <code>@</code> followed by the author or organization name (for example: <code>@Hamilton Company</code>).</li>
+  <li>Press <b>Tab</b> or <b>Enter</b> to commit the author chip.</li>
+</ol>
+<div class="note">
+<p><b>Note:</b> Unlike tag chips, author chips <b>allow spaces</b> within the name (for example: <code>@Hamilton Company</code>). Because of this, the <b>Space</b> key does <em>not</em> commit author chips &mdash; only <b>Tab</b> or <b>Enter</b> will. However, the application tracks how many spaces are used in known author names from the publisher registry, and if you type more spaces than any known author contains, the chip is automatically committed for convenience.</p>
+</div>
+
+<h3>Editing an Author Chip</h3>
+<p>Click the label text of an existing author chip. The chip transforms into an editable input field pre-filled with the current value. Edit the text and press <b>Tab</b> or <b>Enter</b> to confirm, or press <b>Escape</b> to cancel. If you clear the text completely and confirm, the chip is removed.</p>
+
+<h3>Removing an Author Chip</h3>
+<p>Author chips are removed the same way as tag chips:</p>
+<ul>
+  <li>Click the <b>&times;</b> button on the chip.</li>
+  <li>Use the <b>Backspace twice</b> pattern from the main input.</li>
+  <li>Use the <b>Delete twice</b> pattern from an inline text editor.</li>
+</ul>
+
+<h3>Author Matching Behavior</h3>
+<p>When one or more author chips are active, a library must match <b>at least one</b> of the specified authors to be shown (OR logic among author filters). The match checks the library's <code>author</code> field, or its <code>organization</code> field when the chip icon displays a building/organization symbol. Matching is case-insensitive and uses substring matching.</p>
+<p>When author chips are combined with tag chips and text, all filter types must be satisfied together: the library must match all tag chips <b>AND</b> at least one author chip <b>AND</b> the text query.</p>
+
+<h2>Inline Text Editing</h2>
+<p>When you have a mix of text, tag chips, and author chips in the search bar, you may need to edit the text portions that are interspersed between chips. Instead of clearing the entire search, you can edit text tokens in place:</p>
+<ol>
+  <li><b>Click</b> on any text token displayed between chips. The text turns into an inline editor input sized to match the text width.</li>
+  <li>Edit the text as needed.</li>
+  <li>Press <b>Enter</b> or <b>Tab</b> to confirm the edit, or press <b>Escape</b> to cancel and revert.</li>
+  <li>The surrounding chips remain in their positions &mdash; only the clicked text segment is modified.</li>
+</ol>
+<p>If you delete all text from an inline text editor and confirm, the empty text token is automatically cleaned up.</p>
+
+<h2>Autocomplete Suggestions</h2>
+<p>When you begin typing a <code>#</code> or <code>@</code> prefix in the search bar, an autocomplete dropdown appears below the search input offering suggestions from known tags and authors.</p>
+
+<h3>How Autocomplete Works</h3>
+<ul>
+  <li><b>Tag autocomplete:</b> Type <code>#</code> followed by one or more characters. The dropdown shows all known tags that contain your typed text, sorted alphabetically. Each suggestion shows a <code>#</code> icon.</li>
+  <li><b>Author autocomplete:</b> Type <code>@</code> followed by one or more characters. The dropdown shows all known authors and organizations that contain your typed text, sorted alphabetically. Author entries show a person icon; organization entries show a building icon.</li>
+  <li>Suggestions are drawn from the <b>publisher registry</b>, which is automatically populated from all imported library metadata (see <a href="#publisher-registry">Publisher Registry</a> below).</li>
+  <li>The matching text within each suggestion is highlighted in <b>bold</b> so you can quickly identify the match.</li>
+</ul>
+
+<h3>Using the Autocomplete Dropdown</h3>
+<table>
+<thead><tr><th>Action</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><b>Arrow Down / Arrow Up</b></td><td>Navigate through the suggestions list. The selected item is visually highlighted.</td></tr>
+<tr><td><b>Enter</b> or <b>Tab</b></td><td>Accept the currently highlighted suggestion and insert it as a chip.</td></tr>
+<tr><td><b>Escape</b></td><td>Close the dropdown without selecting anything.</td></tr>
+<tr><td><b>Click</b></td><td>Click any suggestion to select and commit it immediately.</td></tr>
+</tbody>
+</table>
+<p>The dropdown closes automatically when the input loses focus, when the typed text no longer starts with <code>#</code> or <code>@</code>, or when there are no matching results.</p>
+
+<div class="tip">
+<p><b>Tip:</b> Autocomplete is the fastest way to search for authors with multi-word names. Type <code>@Ham</code> and select &ldquo;Hamilton Company&rdquo; from the dropdown instead of typing the full name.</p>
+</div>
+
+<a name="publisher-registry"></a>
+<h2>Publisher Registry</h2>
+<p>The publisher registry is a local index that tracks all known authors, organizations, and tags encountered across all imported libraries. It is stored as <code>publisher_registry.json</code> in the application's user data directory.</p>
+
+<h3>How the Registry Is Built</h3>
+<ul>
+  <li>Every time a library is imported (single package or archive), the library's <code>author</code>, <code>organization</code>, and <code>tags</code> fields are automatically registered.</li>
+  <li>The registry is also updated when libraries are saved, exported, or registered from unsigned sources.</li>
+  <li>The registry can be fully rebuilt from all currently installed libraries at any time (this happens automatically during startup if the registry file is missing or corrupt).</li>
+</ul>
+
+<h3>What the Registry Stores</h3>
+<table>
+<thead><tr><th>Field</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><b>publishers</b></td><td>An array of unique author names that have appeared in library metadata.</td></tr>
+<tr><td><b>organizations</b></td><td>An array of unique organization names that have appeared in library metadata.</td></tr>
+<tr><td><b>tags</b></td><td>An array of unique tags that have appeared in library metadata.</td></tr>
+</tbody>
+</table>
+<p>The registry is used to power autocomplete suggestions and to determine the maximum number of spaces any known author name contains (used for the auto-commit heuristic described in the Author Chips section above).</p>
+
+<h2>Keyboard Shortcuts Reference</h2>
+<p>The following keyboard shortcuts are available in the search bar:</p>
+
+<h3>Global</h3>
+<table>
+<thead><tr><th>Shortcut</th><th>Action</th></tr></thead>
+<tbody>
+<tr><td><code>Ctrl+F</code></td><td>Focus the search bar from anywhere in the application.</td></tr>
+<tr><td><code>Escape</code></td><td>Clear the search query and exit search mode (when the search bar is focused).</td></tr>
+</tbody>
+</table>
+
+<h3>While Typing in the Search Input</h3>
+<table>
+<thead><tr><th>Shortcut</th><th>Action</th></tr></thead>
+<tbody>
+<tr><td><code>Space</code></td><td>Commits a <code>#tag</code> chip (if the current input starts with <code>#</code>).</td></tr>
+<tr><td><code>Tab</code></td><td>Commits a <code>#tag</code> or <code>@author</code> chip. Also accepts the currently selected autocomplete suggestion.</td></tr>
+<tr><td><code>Enter</code></td><td>Commits a <code>#tag</code> or <code>@author</code> chip. Also accepts the currently selected autocomplete suggestion.</td></tr>
+<tr><td><code>Backspace</code> (at position 0)</td><td>First press highlights the preceding chip in red. Second press deletes it.</td></tr>
+<tr><td><code>Arrow Left</code> (at position 0)</td><td>Unfolds all chips and text back into raw editable text in the input field, placing the cursor at the end of the preceding token.</td></tr>
+<tr><td><code>Arrow Up</code></td><td>Move selection up in the autocomplete dropdown (when visible).</td></tr>
+<tr><td><code>Arrow Down</code></td><td>Move selection down in the autocomplete dropdown (when visible).</td></tr>
+<tr><td><code>Escape</code></td><td>Close the autocomplete dropdown without selecting (when visible). Or clear the search entirely.</td></tr>
+</tbody>
+</table>
+
+<h3>While Editing an Inline Text Token</h3>
+<table>
+<thead><tr><th>Shortcut</th><th>Action</th></tr></thead>
+<tbody>
+<tr><td><code>Enter</code> / <code>Tab</code></td><td>Confirm the edited text and close the inline editor.</td></tr>
+<tr><td><code>Escape</code></td><td>Cancel the edit and revert to the original text.</td></tr>
+<tr><td><code>Delete</code> (at end of text)</td><td>First press highlights the next chip in red. Second press deletes it.</td></tr>
+</tbody>
+</table>
+
+<h3>While Editing a Chip (Click-to-Edit Mode)</h3>
+<table>
+<thead><tr><th>Shortcut</th><th>Action</th></tr></thead>
+<tbody>
+<tr><td><code>Space</code></td><td>Commit the edited tag chip (tag chips only).</td></tr>
+<tr><td><code>Tab</code> / <code>Enter</code></td><td>Commit the edited tag or author chip.</td></tr>
+<tr><td><code>Escape</code></td><td>Cancel editing and revert to the previous chip value.</td></tr>
+</tbody>
+</table>
+
+<h2>Search Token Order</h2>
+<p>The search bar preserves the <b>exact order</b> in which you entered your tokens. If you type <code>pump</code>, then add <code>#liquid-handling</code>, then add <code>@Hamilton</code>, the display query shown in the header reflects that exact sequence. Tokens are never reordered or grouped by type.</p>
+
+<h2>Search Mode Behavior</h2>
+<p>When any search query is active (text, tags, or authors), the application enters search mode:</p>
+<ul>
+  <li>The currently active navigation tab is temporarily deselected.</li>
+  <li>All matching libraries are displayed in a flat, consolidated list regardless of grouping.</li>
+  <li>The active display query is shown in the search bar with all chips and text tokens rendered inline.</li>
+  <li>Clearing the search bar (removing all chips and text) exits search mode and restores the previously active tab.</li>
+</ul>
+
+<h2>Combined Filtering Logic</h2>
+<p>When multiple filter types are active simultaneously, they are combined as follows:</p>
+<table>
+<thead><tr><th>Filter Combination</th><th>Logic</th></tr></thead>
+<tbody>
+<tr><td>Multiple <code>#tag</code> chips</td><td><b>AND</b> &mdash; Library must match all specified tags.</td></tr>
+<tr><td>Multiple <code>@author</code> chips</td><td><b>OR</b> &mdash; Library must match at least one specified author or organization.</td></tr>
+<tr><td>Tags + Authors</td><td><b>AND</b> &mdash; Library must satisfy all tag filters AND at least one author filter.</td></tr>
+<tr><td>Tags + Authors + Text</td><td><b>AND</b> &mdash; Library must satisfy all tag filters, at least one author filter, and contain the text query in its searchable fields.</td></tr>
+</tbody>
+</table>
+
+<h2>Quick-Start Examples</h2>
+<table>
+<thead><tr><th>Query</th><th>What It Does</th></tr></thead>
+<tbody>
+<tr><td><code>pipette</code></td><td>Finds all libraries whose name, author, description, tags, or function names contain &ldquo;pipette&rdquo;.</td></tr>
+<tr><td><code>#liquid-handling</code></td><td>Finds all libraries tagged with &ldquo;liquid-handling&rdquo;.</td></tr>
+<tr><td><code>@Hamilton</code></td><td>Finds all libraries authored by &ldquo;Hamilton&rdquo; (or with &ldquo;Hamilton&rdquo; as the organization).</td></tr>
+<tr><td><code>#pipetting @Hamilton pump</code></td><td>Finds libraries tagged &ldquo;pipetting&rdquo;, authored by &ldquo;Hamilton&rdquo;, and containing &ldquo;pump&rdquo; in any searchable field.</td></tr>
+<tr><td><code>#system</code></td><td>Shows Hamilton system libraries (they carry the virtual <code>system</code> tag).</td></tr>
+</tbody>
+</table>
+
+<div class="note">
+<p><b>Note:</b> Typing a bare <code>#</code> or <code>@</code> followed immediately by a space does not create a chip &mdash; the prefix character is silently removed and no empty chip is created.</p>
+</div>
+
+</div>
+<div class="footer">
+<p>Venus Library Manager Help</p>
+</div>
+</body>
+</html>

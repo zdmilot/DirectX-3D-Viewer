@@ -1,0 +1,178 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<meta name="GENERATOR" content="Microsoft&reg; HTML Help Workshop 4.1">
+<!-- Sitemap 1.0 -->
+</HEAD><BODY>
+<OBJECT type="text/site properties">
+	<param name="ImageType" value="Folder">
+</OBJECT>
+<UL>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Venus Library Manager Help">
+		<param name="Local" value="index.html">
+		</OBJECT>
+	<UL>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="Overview">
+			<param name="Local" value="Overview.html">
+			</OBJECT>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="Getting Started">
+			<param name="Local" value="GettingStarted.html">
+			</OBJECT>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="GUI Overview">
+			<param name="Local" value="GUIOverview.html">
+			</OBJECT>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="Search &amp; Filtering">
+			<param name="Local" value="SearchFeatures.html">
+			</OBJECT>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="Splash Screen &amp; Startup Pipeline">
+			<param name="Local" value="SplashScreen.html">
+			</OBJECT>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="Core Concepts">
+			</OBJECT>
+		<UL>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="Package Formats">
+				<param name="Local" value="PackageFormats.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="Binary Container Format">
+				<param name="Local" value="BinaryContainerFormat.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="Package Spec JSON Schema">
+				<param name="Local" value="PackageSpecSchema.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="HSL File Architecture">
+				<param name="Local" value="HSLFileArchitecture.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="Data Model">
+				<param name="Local" value="DataModel.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="Integrity Verification">
+				<param name="Local" value="IntegrityVerification.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="Visual Identity &amp; Assets">
+				<param name="Local" value="VisualIdentity.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="Success Dialogs">
+				<param name="Local" value="SuccessDialogs.html">
+				</OBJECT>
+		</UL>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="Workflows">
+			</OBJECT>
+		<UL>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="Importing Libraries">
+				<param name="Local" value="ImportingLibraries.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="Exporting Libraries">
+				<param name="Local" value="ExportingLibraries.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="Creating Packages">
+				<param name="Local" value="CreatingPackages.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="GitHub Repository Link">
+				<param name="Local" value="GitHubRepository.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="Deleting Libraries">
+				<param name="Local" value="DeletingLibraries.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="Version Rollback">
+				<param name="Local" value="VersionRollback.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="Library Grouping">
+				<param name="Local" value="LibraryGrouping.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="VENUS Integration">
+				<param name="Local" value="VENUSIntegration.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="Library Audit Log">
+				<param name="Local" value="LibraryAuditLog.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="Unsigned Libraries">
+				<param name="Local" value="UnsignedLibraries.html">
+				</OBJECT>
+		</UL>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="CLI Reference">
+			<param name="Local" value="CLIReference.html">
+			</OBJECT>
+		<UL>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="list-libs">
+				<param name="Local" value="CLIListLibs.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="import-lib">
+				<param name="Local" value="CLIImportLib.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="import-archive">
+				<param name="Local" value="CLIImportArchive.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="export-lib">
+				<param name="Local" value="CLIExportLib.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="export-archive">
+				<param name="Local" value="CLIExportArchive.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="delete-lib">
+				<param name="Local" value="CLIDeleteLib.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="create-package">
+				<param name="Local" value="CLICreatePackage.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="list-versions">
+				<param name="Local" value="CLIListVersions.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="rollback-lib">
+				<param name="Local" value="CLIRollbackLib.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="generate-syslib-hashes">
+				<param name="Local" value="CLIGenerateSyslibHashes.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="verify-syslib-hashes">
+				<param name="Local" value="CLIVerifySyslibHashes.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="verify-package">
+				<param name="Local" value="CLIVerifyPackage.html">
+				</OBJECT>
+		</UL>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="Troubleshooting">
+			<param name="Local" value="Troubleshooting.html">
+			</OBJECT>
+	</UL>
+</UL>
+</BODY></HTML>

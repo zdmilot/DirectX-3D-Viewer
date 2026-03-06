@@ -1,0 +1,96 @@
+<html>
+<head>
+    <title>CLI: verify-package</title>
+    <link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+<div class="header">CLI: verify-package</div>
+<div class="main">
+<div class="breadcrumb"><a href="Overview.html">Venus Library Manager</a> &raquo; <a href="CLIReference.html">CLI Reference</a> &raquo; verify-package</div>
+
+<h2>Description</h2>
+<p>Verifies the integrity of a <code>.hxlibpkg</code> or <code>.hxlibarch</code> file without importing it. This command validates both the outer <a href="BinaryContainerFormat.html">binary container</a> (HMAC-SHA256 over the entire file) and the inner <code>signature.json</code> (per-file integrity hashes). This is useful for validating packages before distribution, after file transfer, or in CI/CD pipelines.</p>
+
+<h2>Usage</h2>
+<div class="code"><pre>node cli.js verify-package --file &lt;path&gt; [--json]</pre></div>
+
+<h2>Options</h2>
+<table>
+<thead><tr><th>Flag</th><th>Required</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>--file &lt;path&gt;</code></td><td><span class="badge badge-required">Required</span></td><td>Path to the <code>.hxlibpkg</code> file to verify</td></tr>
+<tr><td><code>--json</code></td><td>No</td><td>Print machine-readable JSON output instead of human-readable text</td></tr>
+</tbody>
+</table>
+
+<h2>Verification Process</h2>
+<ol>
+  <li>The <code>.hxlibpkg</code> file’s <a href="BinaryContainerFormat.html">binary container</a> is validated: magic bytes, HMAC-SHA256and payload length are checked. If the container is corrupted or tampered with, verification fails immediately.</li>
+  <li>The container is descrambled to recover the internal ZIP archive</li>
+  <li>The tool looks for a <code>signature.json</code> entry inside the internal ZIP</li>
+  <li>If no <code>signature.json</code> is found, the package is reported as <b>UNSIGNED</b> (exit code <code>0</code>)</li>
+  <li>If <code>signature.json</code> is present:
+    <ul>
+      <li>SHA-256 hashes are recomputed for every non-signature entry in the ZIP</li>
+      <li>Each recomputed hash is compared against the stored hash in <code>signature.json</code></li>
+      <li>The HMAC-SHA256 is recomputed from the file hash map and compared against the stored HMAC</li>
+    </ul>
+  </li>
+  <li>If all hashes and the HMAC match, the result is <b>VERIFIED</b> (exit code <code>0</code>)</li>
+  <li>If any hash or the HMAC does not match, the result is <b>FAILED</b> (exit code <code>1</code>)</li>
+</ol>
+
+<h2>Possible Outcomes</h2>
+<table>
+<thead><tr><th>Result</th><th>Exit Code</th><th>Meaning</th></tr></thead>
+<tbody>
+<tr><td><b>VERIFIED</b></td><td><code>0</code></td><td>Signature is present and valid - all file hashes match and the HMAC is correct</td></tr>
+<tr><td><b>UNSIGNED</b></td><td><code>0</code></td><td>No <code>signature.json</code> found - the package is a legacy or third-party package created before signing was implemented</td></tr>
+<tr><td><b>FAILED</b></td><td><code>1</code></td><td>One or more file hashes do not match, or the HMAC is invalid - the package may be corrupt or tampered with</td></tr>
+</tbody>
+</table>
+
+<h2>Examples</h2>
+<div class="code"><pre>:: Verify a package before importing
+node cli.js verify-package --file MyLibrary.hxlibpkg
+
+:: Machine-readable output for CI/CD pipelines
+node cli.js verify-package --file MyLibrary.hxlibpkg --json
+
+:: Verify a package after downloading from a network share
+node cli.js verify-package --file "\\server\share\packages\LibraryA.hxlibpkg"</pre></div>
+
+<h2>JSON Output Format</h2>
+<p>When <code>--json</code> is specified, the output is a JSON object:</p>
+<div class="code"><pre>{
+  "file": "MyLibrary.hxlibpkg",
+  "status": "VERIFIED",
+  "algorithm": "HMAC-SHA256",
+  "fileCount": 5,
+  "created": "2026-01-15T10:30:00.000Z"
+}</pre></div>
+
+<h2>Signature Format</h2>
+<p>The <code>signature.json</code> entry inside a signed <code>.hxlibpkg</code> contains:</p>
+<table>
+<thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>algorithm</code></td><td>string</td><td>Always <code>"HMAC-SHA256"</code></td></tr>
+<tr><td><code>created</code></td><td>string</td><td>ISO 8601 timestamp of when the signature was generated</td></tr>
+<tr><td><code>files</code></td><td>object</td><td>Map of <code>{ "entryName": "sha256hex", ... }</code> for every entry in the ZIP except <code>signature.json</code> itself</td></tr>
+<tr><td><code>hmac</code></td><td>string</td><td>HMAC-SHA256 computed over the canonical JSON representation of the <code>files</code> map</td></tr>
+</tbody>
+</table>
+
+<h2>Related</h2>
+<ul>
+  <li><a href="IntegrityVerification.html">Integrity Verification</a> - Overview of all integrity mechanisms</li>
+  <li><a href="CLIImportLib.html">CLI: import-lib</a> - Signature verification during import</li>
+  <li><a href="PackageFormats.html">Package Formats</a> - Package structure including <code>signature.json</code></li>
+</ul>
+</div>
+<div class="footer">
+<p>Venus Library Manager Help</p>
+</div>
+</body>
+</html>
