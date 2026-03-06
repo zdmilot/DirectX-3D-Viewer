@@ -580,6 +580,9 @@
             // like real polycarbonate covers.
             group.traverse(function (child) {
                 if (!child.isMesh) return;
+                // Disable frustum culling so small meshes (e.g. rack labels)
+                // remain visible at all zoom levels
+                child.frustumCulled = false;
                 var mats = Array.isArray(child.material) ? child.material : [child.material];
                 var isTransparent = false;
                 mats.forEach(function (m) {

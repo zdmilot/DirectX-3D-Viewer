@@ -628,6 +628,7 @@
             geo.computeVertexNormals();
 
             var mesh = new THREE.Mesh(geo, glassMat);
+            mesh.frustumCulled = false;
             return mesh;
         }
 
