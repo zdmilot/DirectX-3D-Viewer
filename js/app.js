@@ -227,7 +227,31 @@
 
     // -- File Open ---------------------------------------------------
     function openFileDialog() {
-        dom.fileInput.click();
+        // Prefer File System Access API for richer file handle info
+        if (window.showOpenFilePicker) {
+            window.showOpenFilePicker({
+                types: [{
+                    description: 'DirectX / Hamilton 3D Files',
+                    accept: { 'application/octet-stream': ['.x', '.hxx'] }
+                }],
+                multiple: false
+            }).then(function (handles) {
+                const handle = handles[0];
+                return handle.getFile().then(function (file) {
+                    // Attempt to get containing directory for full path
+                    state._lastFileHandle = handle;
+                    loadUserFile(file, handle);
+                });
+            }).catch(function (err) {
+                // User cancelled or API error — fall back to <input>
+                if (err.name !== 'AbortError') {
+                    console.warn('[FileOpen] showOpenFilePicker failed, falling back:', err);
+                    dom.fileInput.click();
+                }
+            });
+        } else {
+            dom.fileInput.click();
+        }
     }
 
     function handleFileSelected(e) {
@@ -238,7 +262,7 @@
         dom.fileInput.value = '';
     }
 
-    function loadUserFile(file) {
+    function loadUserFile(file, handle) {
         if (!HXXLoader.isXOrHXX(file.name)) {
             alert('Please select a .x or .hxx file.');
             return;
@@ -248,7 +272,13 @@
 
         // Track loaded file name and path for screenshot naming / display
         state.loadedFileName = file.name;
-        state.loadedFilePath = file.webkitRelativePath || file.name;
+        // Try to get the best available path: file.path (Electron/NW.js), webkitRelativePath, or just name
+        state.loadedFilePath = file.path || file.webkitRelativePath || file.name;
+
+        // If opened via File System Access API, try to resolve full path from directory
+        if (handle && window.showDirectoryPicker) {
+            _tryResolveFullPath(handle);
+        }
 
         // Clear previous model
         clearModel();
@@ -320,9 +350,29 @@
         const pathText = $('#viewer-file-path-text');
         const pathWrap = $('#viewer-file-path');
         if (pathText) {
-            const display = state.loadedFilePath || state.loadedFileName || 'No file loaded';
+            let display = state.loadedFilePath || state.loadedFileName || 'No file loaded';
+            // For server-loaded files (non blob/data URLs), show decoded URL as path
+            if (display === state.loadedFileName && state.lastLoadedUrl
+                && !/^blob:|^data:/i.test(state.lastLoadedUrl)) {
+                try { display = decodeURIComponent(state.lastLoadedUrl.split('?')[0]); } catch(e) {}
+            }
             pathText.textContent = display;
             if (pathWrap) pathWrap.title = display;
+        }
+    }
+
+    // Try to resolve full path via File System Access API directory handle
+    function _tryResolveFullPath(fileHandle) {
+        // The only reliable way to get a "path" in the browser is to ask the user
+        // to also grant access to a parent directory. We store a cached directory
+        // handle if the user has previously used one.
+        if (state._lastDirHandle) {
+            state._lastDirHandle.resolve(fileHandle).then(function (parts) {
+                if (parts) {
+                    state.loadedFilePath = parts.join('/');
+                    setFilenameDisplay();
+                }
+            }).catch(function () {});
         }
     }
 
