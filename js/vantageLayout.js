@@ -522,7 +522,8 @@
 
             fetch(filePath).then(function (resp) {
                 if (!resp.ok) throw new Error('HTTP ' + resp.status);
-                return isHxx ? resp.arrayBuffer() : resp.text();
+                // Always fetch as arrayBuffer to preserve binary .x files
+                return resp.arrayBuffer();
             }).then(function (data) {
                 if (isHxx) {
                     // Use HXXLoader to extract .x text from .hxx container
@@ -534,11 +535,11 @@
                         return result.xFileText;
                     });
                 }
-                return data; // already .x text
-            }).then(function (xText) {
-                if (!xText) return;
-                // Parse the .x text using THREE.XFileLoader
-                var blob = new Blob([xText], { type: 'text/plain' });
+                return data; // raw .x bytes (may be binary or text format)
+            }).then(function (xData) {
+                if (!xData) return;
+                // Create blob preserving original bytes (binary or text .x)
+                var blob = new Blob([xData], { type: 'application/octet-stream' });
                 var url = URL.createObjectURL(blob);
                 var manager = new THREE.LoadingManager();
                 var loader = new THREE.XFileLoader(manager);
