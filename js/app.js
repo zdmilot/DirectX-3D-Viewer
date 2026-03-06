@@ -60,6 +60,7 @@
         toolbarCollapsed: false,
         activeView: 'viewer',
         loadedFileName: 'test',
+        loadedFilePath: null,  // Full path or name of the loaded file for display
         lastLoadedUrl: null,   // URL of the last loaded .x file (for passing to placer)
         rawXFileContent: null, // Raw .x file text content for save/transform
     };
@@ -190,6 +191,7 @@
     // -- Load generated .x file from labware generator ---------------
     window._loadGeneratedXFile = function (url, name) {
         state.loadedFileName = name || 'labware.x';
+        state.loadedFilePath = name || 'labware.x';
         state.lastLoadedUrl = url;
         clearModel();
         const loading = $('#viewer-loading');
@@ -244,8 +246,9 @@
         const loading = $('#viewer-loading');
         const errorEl = $('#viewer-error');
 
-        // Track loaded file name for screenshot naming
+        // Track loaded file name and path for screenshot naming / display
         state.loadedFileName = file.name;
+        state.loadedFilePath = file.webkitRelativePath || file.name;
 
         // Clear previous model
         clearModel();
@@ -312,6 +315,14 @@
         const subtitle = document.querySelector('.navbar-subtitle');
         if (subtitle) {
             subtitle.textContent = 'FOR DIRECT3D';
+        }
+        // Update loaded file path in bottom bar
+        const pathText = $('#viewer-file-path-text');
+        const pathWrap = $('#viewer-file-path');
+        if (pathText) {
+            const display = state.loadedFilePath || state.loadedFileName || 'No file loaded';
+            pathText.textContent = display;
+            if (pathWrap) pathWrap.title = display;
         }
     }
 
@@ -469,6 +480,7 @@
 
         // ── Load the default .x model ────────────────────────
         console.log('[Viewer] Starting loadXFile...');
+        state.loadedFilePath = DEFAULT_X_FILENAME;
         setFilenameDisplay();
         state.lastLoadedUrl = DEFAULT_X_FILENAME;
         loadXFile(DEFAULT_X_FILENAME, loading, errorEl);
