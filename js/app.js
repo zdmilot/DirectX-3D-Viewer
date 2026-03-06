@@ -741,6 +741,11 @@
             panel.classList.toggle('is-active', panel.dataset.viewPanel === viewName);
         });
 
+        // Show settings button only for vantage layout applet
+        if (dom.btnSettings) {
+            dom.btnSettings.style.display = viewName === 'vantage' ? '' : 'none';
+        }
+
         // Initialize converter on first switch
         if (viewName === 'converter' && window.ConverterModule) {
             // Small delay to ensure panel has dimensions

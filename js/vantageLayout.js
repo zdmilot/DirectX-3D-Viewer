@@ -155,7 +155,7 @@
         renderer: null,
         controls: null,
         isDark: false,
-        gridVisible: true,
+        gridVisible: false,
         isPerspective: true,
         isPanning: false,
         toolbarCollapsed: false,
