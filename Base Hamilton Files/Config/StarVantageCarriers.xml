@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+
+Carrier type definitions to be used in HxLabwareEd2 during Microlab® STAR / VANTAGE multiflex carrier creation
+
+displayName - name that will be displayed in a button in multiflex carrier type selection view; must be UNIQUE per each carrier
+displayPartNumber - (optional) string value, part number that will be displayed under displayName
+dimensions - main carrier base dimensions, in "x,y,z" format
+imageFilePath - relative path (within Vector's Labware folder) that points to image representing carrier type
+modelFilePath - relative path (within Vector's Labware folder) that points to carrier DirectX model (*.x)
+sitePedestalOffsets - offsets, in "[x1,y1,z1];[x2,y2,z2];etc." format, used to represent center points for each pedestal position on a carrier
+sitePedestalTypes - pedestal types, in "[pos1type1,pos1type2,pos1type3];[pos2type1];etc" format, configuration for each pedestal position on a carrier
+modelOffsets - offsets, in "x,y,z" format, used for proper alignment of final 3D model around the template rectangle in the Deck Editor 
+modelEdgeOffsets - offsets, in "x,y,z" format, used for proper alignment of 3D carrier base model with actual pedestal positions
+
+-->
+
+<carrierConfig>
+
+	<carrier 
+		displayName="5 Position" 
+		displayPartNumber="188039"
+		dimensions="135,497,18"
+		imageFilePath="ML_STAR\MFXCreation\Base - 5 Position.png"
+		modelFilePath="ML_STAR\MFXCreation\Base - 5 Position.x"
+		sitePedestalOffsets="[67.5,435.5,0];[67.5,339.5,0];[67.5,243.5,0];[67.5,147.5,0];[67.5,51.5,0]"
+		sitePedestalTypes="[TurnTable,LidParkBack,Standard];[HeatCool,Standard];[HeatCool,Standard];[HeatCool,Standard];[HeatCool,LidPark,Standard]"
+		modelOffsets="0,0,0"
+		modelEdgeOffsets="0,-2.5,0" />
+	
+	<carrier 
+		displayName="4 Position" 
+		displayPartNumber="188039"
+		dimensions="135,497,18"
+		imageFilePath="ML_STAR\MFXCreation\Base - 4 Position.png"
+		modelFilePath="ML_STAR\MFXCreation\Base - 4 Position.x"
+		sitePedestalOffsets="[67.5,387.5,0];[67.5,291.5,0];[67.5,195.5,0];[67.5,99.5,0]"
+		sitePedestalTypes="[Standard];[Standard];[Standard];[Standard]"
+		modelOffsets="0,0,0"
+		modelEdgeOffsets="0,-3,0" />
+
+	<carrier 
+		displayName="4 Position (Shaker)" 
+		displayPartNumber="187001/55574-01"
+		dimensions="157.5,497,8"
+		imageFilePath="ML_STAR\MFXCreation\Base - 4 Position (Shaker).png"
+		modelFilePath="ML_STAR\MFXCreation\Base - 4 Position (Shaker).x"
+		sitePedestalOffsets="[78.75,418.05,0];[78.75,298.05,0];[78.75,178.05,0];[78.75,58.05,0]"
+		sitePedestalTypes="[LidParkBackShaker,StandardShaker];[HeatCoolShaker,LidParkShaker,StandardShaker];[HeatCoolShaker,LidParkShaker,StandardShaker];[HeatCoolShaker,LidParkShaker,StandardShaker]"
+		modelOffsets="0,0,0"
+		modelEdgeOffsets="0,-29.5,0" />
+
+	<carrier 
+		displayName="3 Position (Portrait)" 
+		displayPartNumber="188053"
+		dimensions="112.5,497,18"
+		imageFilePath="ML_STAR\MFXCreation\Base - 3 Position (Portrait).png"
+		modelFilePath="ML_STAR\MFXCreation\Base - 3 Position (Portrait).x"
+		sitePedestalOffsets="[65,393,0];[65,247,0];[65,101,0]"
+		sitePedestalTypes="[StandardPortrait];[StandardPortrait];[StandardPortrait]"
+		modelOffsets="0,0,0"
+		modelEdgeOffsets="0,-3.5,0" />
+
+</carrierConfig>

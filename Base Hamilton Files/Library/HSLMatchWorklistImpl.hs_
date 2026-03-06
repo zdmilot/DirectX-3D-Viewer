@@ -1,0 +1,947 @@
+// This is a part of the Match Worklist Library.
+// Copyright (C) by HAMILTON Bonaduz AG, CH-7402 Bonaduz.
+// All rights reserved.
+//
+// Modification History
+// 2006-03-22  bandenmatten : Initial file creation.
+// 2006-06-14  bandenmatten : Added device parameter 'ML_STAR' to functions MatchJobData and MatchCustomJobData.
+
+#ifndef __HSLMatchWorklistImpl_hs___
+#define __HSLMatchWorklistImpl_hs___	1
+
+// ----------------------------------------------------------------------------------------------------
+// Includes
+// ----------------------------------------------------------------------------------------------------
+
+#ifndef __HSLUtilLib2_hsl__
+	#include "HSLUtilLib2.hsl"
+#endif
+
+#ifndef __HSLUtilLib2Def_hs___
+	#include "HSLUtilLib2Def.hs_"
+#endif
+
+#ifndef __HSLUtilLib_hsl__
+	#include "HSLUtilLib.hsl"
+#endif
+
+#ifndef __HSLSeqLib_hsl__
+	#include "HSLSeqLib.hsl"
+#endif
+
+#ifndef  __HSLSynLib_hsl__
+	#include "HSLSynLib.hsl"
+#endif
+
+#ifndef __HSLStrLib_hsl__
+	#include "HSLStrLib.hsl"
+#endif
+
+#ifndef __HSLVectorDbWorklistManagement_hsl__
+	#include "HSLVectorDbWorklistManagement.hsl"
+#endif
+
+#ifndef __HSLVectorDbWorklistManagementDefs_hs___
+	#include "HSLVectorDbWorklistManagementDefs.hs_"
+#endif
+
+#ifndef  __HSLVectorDbTracking_hsl__
+	#include "HSLVectorDbTracking.hsl"
+#endif
+
+#ifndef  __HSLVectorDbTrackingDefs_hs___
+	#include "HSLVectorDbTrackingDefs.hs_"
+#endif
+
+#ifndef __HSLMatchWorklistDefs_hs___
+	#include "HSLMatchWorklistDefs.hs_"
+#endif
+
+// Implementation of the Match Worklist Library
+namespace MatchWorklist
+{
+
+	// --------------------------------------------------------------------------------------
+	// Tracing
+	// --------------------------------------------------------------------------------------
+
+	#define TRACE_MATCH_WORKLIST_FUNC			1								// Trace function start-end
+	//#define TRACE_MATCH_WORKLIST_PARAM			1								// Trace function params
+	//#define TRACE_MATCH_WORKLIST_CORE			1								// Trace function core
+
+	// ----------------------------------------------------------------------------------------------------
+	// Data 
+	// ----------------------------------------------------------------------------------------------------
+
+	static global variable g_matchWorklist_CriticalSection(0);				// Critical section, must be initialized to 0
+	static global variable g_matchWorklist_DefaultJobName("");				// Default job name, must be initialized to empty string ""
+	static object skippedJobIDsDict;													// Place to exchange IDs of skipped jobs between MatchJobData and MatchJobCustomData
+
+	// ----------------------------------------------------------------------------------------------------
+	// Constants
+	// ----------------------------------------------------------------------------------------------------
+
+	namespace Constants
+	{
+		static const variable lf("\010");											// Linefeed
+		static const variable crlf("\013\010");									// Carriage return linefeed 
+		static const variable helpFileShortName("HSLMatchWorklist");		// Help file short name
+		static const variable helpFileExtension(".chm");						// Help file extension
+		static const variable defaultJobNamePrefix("{");						// Prefix to mark default job name when used as a job name
+		static const variable defaultJobNamePostfix("}");						// Postfix to mark default job name when used as a job name
+		
+		static const variable traceSource("SYSTEM");																	// Trace source
+		static const variable traceActionMatchJobData("MatchWorklist::MatchJobData");						// Trace action
+		static const variable traceActionMatchCustomJobData("MatchWorklist::MatchCustomJobData");		// Trace action
+	}
+
+	// ----------------------------------------------------------------------------------------------------
+	// Translated strings
+	// ----------------------------------------------------------------------------------------------------
+
+	namespace TrStr
+	{
+		static const variable outputData								(Translate("Output data"));
+		static const variable odSourceSequence						(Translate("Source sequence"));
+		static const variable odTargetSequence						(Translate("Target sequence"));
+		static const variable odTargetVolume						(Translate("Target volume"));
+		static const variable odCustomData							(Translate("Custom data"));
+		static const variable sortCriterion							(Translate("Sort criterion"));
+		static const variable scDefault								(Translate("Default"));
+		static const variable scJobID									(Translate("Job ID"));
+		static const variable scJobPriority							(Translate("Job priority"));
+		static const variable scLoadingTime							(Translate("Loading time"));
+		static const variable scLabwareId							(Translate("Labware ID"));
+		static const variable scPositionId							(Translate("Position ID"));
+		static const variable scXCoord								(Translate("X coordinate"));
+		static const variable scYCoord								(Translate("Y coordinate"));
+		static const variable scZCoord								(Translate("Z coordinate"));
+	}
+
+	// ----------------------------------------------------------------------------------------------------
+	// Tracing
+	// ----------------------------------------------------------------------------------------------------
+
+	namespace TraceStatus
+	{
+		static const variable start(1);								// Action status for formated trace
+		static const variable complete(2);							// Action status for formated trace
+		static const variable error_(3);								// Action status for formated trace
+		static const variable progress(4);							// Action status for formated trace
+		static const variable completeWithError(5);				// Action status for formated trace
+	}
+
+	// ----------------------------------------------------------------------------------------------------
+	// Utility functions (Part I)
+	// ----------------------------------------------------------------------------------------------------
+
+	static function GetHelpFileName() variable					// Builds the library help file name
+	{
+		return(Constants::helpFileShortName + GetLanguage() + Constants::helpFileExtension);
+	}
+
+	// ----------------------------------------------------------------------------------------------------
+	// Error handling
+	// ----------------------------------------------------------------------------------------------------
+
+	namespace Error
+	{
+		static const variable majorID(0x34);						// Major error id
+
+		namespace MinorID													// Minor error ids
+		{
+			static const variable generalRuntimeError(0x0A);
+			//static const variable ....(0x1F)
+		}
+
+		namespace ErrorCode												// Error codes
+		{
+			static const variable unexpected							(0x0001);
+			static const variable failedToMatchJob					(0x0002);
+			static const variable failedToMatchJobCustomData	(0x0003);
+			static const variable invalidSortCriterion			(0x0004);
+			static const variable arraysMustHaveSameSize			(0x0005);
+
+			//static const variable ....(0xFFFF)					// If a new ErrorCode is added, function Error::MakeErrorDescription() has to be updated
+		}
+
+		namespace TrStr													// Translated error strings
+		{
+			static const variable unexpected							(Translate("Unexpected error."));
+			static const variable failedToMatchJob					(Translate("The specified job could not be matched."));
+			static const variable failedToMatchJobCustomData	(Translate("The specified job custom data could not be matched."));
+			static const variable invalidSortCriterion			(Translate("The specified sort criterion is invalid for the given output data.if"));
+			static const variable arraysMustHaveSameSize			(Translate("The specified arrays must have the same size."));
+			static const variable noErrorTextAvailable			(Translate("No error description available."));
+		}
+
+		// ----------------------------------------------------------------------------------------------------
+		// Error functions
+		// ----------------------------------------------------------------------------------------------------
+
+		static function MakeErrorDescription(
+			variable errorCode,
+			variable& additionalDescription) variable
+		{
+			variable description("");
+			variable errorNumber(0);
+
+			if (ErrorCode::unexpected == errorCode)
+				description = TrStr::unexpected;
+			else if (ErrorCode::failedToMatchJob == errorCode)
+				description = TrStr::failedToMatchJob;
+			else if (ErrorCode::failedToMatchJobCustomData == errorCode)
+				description = TrStr::failedToMatchJobCustomData;
+			else if (ErrorCode::invalidSortCriterion == errorCode)
+				description = TrStr::invalidSortCriterion;
+			else if (ErrorCode::arraysMustHaveSameSize == errorCode)
+				description = TrStr::arraysMustHaveSameSize;
+			//...		
+			//...
+			//... 
+			//...
+			//...
+			else
+			{
+				description = TrStr::noErrorTextAvailable;
+			}
+
+			// Generate the full description
+			if (additionalDescription != "")
+			{
+				description = description + Constants::crlf + Constants::crlf + additionalDescription;
+			}
+			return(description);
+		}
+
+		static function RaiseErrorInvalidSortCriterion(
+			variable& outputData,
+			variable& sortCriterion) void
+		{
+			variable errorDesc("");
+
+			errorDesc = TrStr::outputData + ": " + outputData + Constants::crlf + TrStr::sortCriterion + ": " + sortCriterion;
+			Util2::Error::RaiseRuntimeError(Error::majorID, Error::MinorID::generalRuntimeError, Error::ErrorCode::invalidSortCriterion,
+											Error::MakeErrorDescription(Error::ErrorCode::invalidSortCriterion, errorDesc), 
+											GetHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+	}
+
+	// ----------------------------------------------------------------------------------------------------
+	// Utility functions (Part II)
+	// ----------------------------------------------------------------------------------------------------
+
+	static function DecorateDefaultJobName() variable
+	{
+		variable methodFileName("");
+		object vectorDbTrackingObject;
+		object tableSchemaPars;
+		variable columnSize(50);
+
+		vectorDbTrackingObject = GetVectorDbTrackerObject();
+		tableSchemaPars = vectorDbTrackingObject.GetTableSchema(vectorDbTrackingObject.HxVectorDbTable_Job);
+		columnSize = tableSchemaPars.Item2(vectorDbTrackingObject.HxVectorDbParsKey_Job_JobName, vectorDbTrackingObject.HxVectorDbParsKey_TableSchema_ColumnSize);
+		columnSize = columnSize - StrGetLength(Constants::defaultJobNamePrefix) - StrGetLength(Constants::defaultJobNamePostfix);
+
+		methodFileName = GetMethodFileName();
+		if ("" == methodFileName)
+		{
+			methodFileName = GetWorkflowFileName();
+		}
+		StrMakeLower(methodFileName);
+		methodFileName = StrRight(methodFileName, columnSize);
+
+		return(Constants::defaultJobNamePrefix + methodFileName + Constants::defaultJobNamePostfix);
+	}
+
+	static global function MatchWorklist_InitCriticalSection() void
+	{
+		if (0 == g_matchWorklist_CriticalSection)
+		{
+			g_matchWorklist_CriticalSection = SynInitializeCriticalSection();
+			if (0 == g_matchWorklist_CriticalSection)
+			{
+				Util2::Error::RaiseRuntimeError(Error::majorID, Error::MinorID::generalRuntimeError, Error::ErrorCode::unexpected,
+												Error::MakeErrorDescription(Error::ErrorCode::unexpected, ""), 
+												GetHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+			}
+
+			#ifdef TRACE_MATCH_WORKLIST_CORE
+			FormatTrace("DEBUG", GetFunctionName(), TraceStatus::progress, "Initialized critical section object, id = ", g_matchWorklist_CriticalSection);
+			#endif
+		}
+	}
+
+	static function InitLibrary() void			// Library initialization function
+	{
+		// Initialize critical section object 
+		MatchWorklist_InitCriticalSection();
+
+		// Activate error handler
+		onerror goto Unexpected;
+
+		// Lock critical section
+		SynEnterCriticalSection(g_matchWorklist_CriticalSection);
+
+		// Init other data
+		if ("" == g_matchWorklist_DefaultJobName)
+		{
+			g_matchWorklist_DefaultJobName = DecorateDefaultJobName();
+		}
+		if (skippedJobIDsDict.IsNull())
+		{
+			skippedJobIDsDict.CreateObject("Scripting.Dictionary");
+		}
+
+		// Unlock critical section
+		SynLeaveCriticalSection(g_matchWorklist_CriticalSection);
+
+		return;
+
+		Unexpected:
+		{
+			// Unlock critical section
+			if (0 != g_matchWorklist_CriticalSection)
+				SynLeaveCriticalSection(g_matchWorklist_CriticalSection);
+
+			// Re-throw the error 
+			Util2::Error::RaiseLast();
+		}
+	} 
+
+	static function DelimitOrderByExpression(variable& orderByExpression) variable
+	{
+		if ("" != orderByExpression)
+			orderByExpression = orderByExpression + ",";
+		return(orderByExpression);
+	}
+
+	static function SquareBracketColumnName(variable& columnName) variable
+	{
+		return("[" + columnName + "]");
+	}
+
+	static function CheckSortingParams(variable& sortColumns[], variable& sortCriterions[], variable& sortDirections[]) void
+	{
+		variable i(0);											// Loop index
+		variable size(0);										// Array size
+		variable errorDesc("");								// Error description
+
+		if (sortColumns.GetSize() != sortCriterions.GetSize() ||
+			 sortColumns.GetSize() != sortDirections.GetSize())
+		{
+			errorDesc = "sortColumns" + Constants::crlf + "sortCriterions" + Constants::crlf + "sortDirections" + Constants::crlf;
+			Util2::Error::RaiseRuntimeError(Error::majorID, Error::MinorID::generalRuntimeError, Error::ErrorCode::arraysMustHaveSameSize,
+											Error::MakeErrorDescription(Error::ErrorCode::arraysMustHaveSameSize, errorDesc), 
+											GetHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+
+		size = sortColumns.GetSize();
+		for (i = 0; i < size; i++)
+		{
+			Util2::CheckValueTypeAndRange(sortColumns.ElementAt(i), hslString, Util2::ValueCheck::RangeStringNotEmpty,
+								errorDesc + "sortColumns[" + IStr(i) + "]");
+			Util2::CheckValueTypeAndRangeMinMax(sortCriterions.ElementAt(i), hslInteger, MatchWorklist_SortCriterion::Default, MatchWorklist_SortCriterion::ZCoord,
+								errorDesc + "sortCriterions[" + IStr(i) + "]");
+			Util2::CheckValueTypeAndRangeMinMax(sortDirections.ElementAt(i), hslInteger, MatchWorklist_SortDirection::Ascending, MatchWorklist_SortDirection::Descending,
+								errorDesc + "sortDirections[" + IStr(i) + "]");
+		}
+	}
+
+	static function BuildOrderByExpression(variable& sortColumns[], variable& sortCriterions[], variable& sortDirections[]) variable
+	{
+		variable i(0);											// Loop index
+		variable size(0);										// Array size
+		variable errorDesc("");								// Error description
+		variable orderByExpression("");
+
+		size = Util::Min(sortColumns.GetSize(), Util::Min(sortColumns.GetSize(), sortDirections.GetSize()));
+		for (i = 0; i < size; i++)
+		{
+			variable sortColumn("");
+			variable sortCriterion(0);
+			variable sortDirection(0);
+
+			sortColumn = sortColumns.ElementAt(i);
+			sortCriterion = sortCriterions.ElementAt(i);
+			sortDirection = sortDirections.ElementAt(i);
+			if (MatchWorklist_SortColumn::SourceSequence == sortColumn)
+			{
+				// SourceSequence
+
+				if (MatchWorklist_SortCriterion::JobID == sortCriterion)
+				{
+					orderByExpression = DelimitOrderByExpression(orderByExpression) + VectorDb_WorklistColumnName::jobID;
+				}
+				else if (MatchWorklist_SortCriterion::JobPriority == sortCriterion)
+				{
+					orderByExpression = DelimitOrderByExpression(orderByExpression) + VectorDb_WorklistColumnName::jobPriority;
+				}
+				else if (MatchWorklist_SortCriterion::LoadingTime == sortCriterion)
+				{
+					orderByExpression = DelimitOrderByExpression(orderByExpression) + VectorDb_WorklistColumnName::sourceLoadingTime;
+				}
+				else if (MatchWorklist_SortCriterion::LabwareId == sortCriterion)
+				{
+					orderByExpression = DelimitOrderByExpression(orderByExpression) + VectorDb_WorklistColumnName::sourceLabwareId;
+				}
+				else if (MatchWorklist_SortCriterion::PositionId == sortCriterion)
+				{
+					orderByExpression = DelimitOrderByExpression(orderByExpression) + VectorDb_WorklistColumnName::sourcePositionId;
+				}
+				else if (MatchWorklist_SortCriterion::XCoord == sortCriterion)
+				{
+					orderByExpression = DelimitOrderByExpression(orderByExpression) + VectorDb_WorklistColumnName::sourceXCoordinate;
+				}
+				else if (MatchWorklist_SortCriterion::YCoord == sortCriterion)
+				{
+					orderByExpression = DelimitOrderByExpression(orderByExpression) + VectorDb_WorklistColumnName::sourceYCoordinate;
+				}
+				else if (MatchWorklist_SortCriterion::ZCoord == sortCriterion)
+				{
+					orderByExpression = DelimitOrderByExpression(orderByExpression) + VectorDb_WorklistColumnName::sourceZCoordinate;
+				}
+				else if (MatchWorklist_SortCriterion::Default == sortCriterion)
+				{
+					Error::RaiseErrorInvalidSortCriterion(TrStr::odSourceSequence, TrStr::scDefault);
+				}
+			}
+			else if (MatchWorklist_SortColumn::TargetSequence == sortColumn)
+			{
+				// TargetSequence
+
+				if (MatchWorklist_SortCriterion::JobID == sortCriterion)
+				{
+					orderByExpression = DelimitOrderByExpression(orderByExpression) + VectorDb_WorklistColumnName::jobID;
+				}
+				else if (MatchWorklist_SortCriterion::JobPriority == sortCriterion)
+				{
+					orderByExpression = DelimitOrderByExpression(orderByExpression) + VectorDb_WorklistColumnName::jobPriority;
+				}
+				else if (MatchWorklist_SortCriterion::LoadingTime == sortCriterion)
+				{
+					orderByExpression = DelimitOrderByExpression(orderByExpression) + VectorDb_WorklistColumnName::targetLoadingTime;
+				}
+				else if (MatchWorklist_SortCriterion::LabwareId == sortCriterion)
+				{
+					orderByExpression = DelimitOrderByExpression(orderByExpression) + VectorDb_WorklistColumnName::targetLabwareId;
+				}
+				else if (MatchWorklist_SortCriterion::PositionId == sortCriterion)
+				{
+					orderByExpression = DelimitOrderByExpression(orderByExpression) + VectorDb_WorklistColumnName::targetPositionId;
+				}
+				else if (MatchWorklist_SortCriterion::XCoord == sortCriterion)
+				{
+					orderByExpression = DelimitOrderByExpression(orderByExpression) + VectorDb_WorklistColumnName::targetXCoordinate;
+				}
+				else if (MatchWorklist_SortCriterion::YCoord == sortCriterion)
+				{
+					orderByExpression = DelimitOrderByExpression(orderByExpression) + VectorDb_WorklistColumnName::targetYCoordinate;
+				}
+				else if (MatchWorklist_SortCriterion::ZCoord == sortCriterion)
+				{
+					orderByExpression = DelimitOrderByExpression(orderByExpression) + VectorDb_WorklistColumnName::targetZCoordinate;
+				}
+				else if (MatchWorklist_SortCriterion::Default == sortCriterion)
+				{
+					Error::RaiseErrorInvalidSortCriterion(TrStr::odTargetSequence, TrStr::scDefault);
+				}
+			}
+			else if (MatchWorklist_SortColumn::TargetVolume == sortColumn)
+			{
+				// TargetVolume
+
+				if (MatchWorklist_SortCriterion::JobID == sortCriterion)
+				{
+					orderByExpression = DelimitOrderByExpression(orderByExpression) + VectorDb_WorklistColumnName::jobID;
+				}
+				else if (MatchWorklist_SortCriterion::JobPriority == sortCriterion)
+				{
+					orderByExpression = DelimitOrderByExpression(orderByExpression) + VectorDb_WorklistColumnName::jobPriority;
+				}
+				else if (MatchWorklist_SortCriterion::LoadingTime == sortCriterion)
+				{
+					Error::RaiseErrorInvalidSortCriterion(TrStr::odTargetVolume , TrStr::scLoadingTime);
+				}
+				else if (MatchWorklist_SortCriterion::LabwareId == sortCriterion)
+				{
+					Error::RaiseErrorInvalidSortCriterion(TrStr::odTargetVolume, TrStr::scLabwareId);
+				}
+				else if (MatchWorklist_SortCriterion::PositionId == sortCriterion)
+				{
+					Error::RaiseErrorInvalidSortCriterion(TrStr::odTargetVolume, TrStr::scPositionId);
+				}
+				else if (MatchWorklist_SortCriterion::XCoord == sortCriterion)
+				{
+					Error::RaiseErrorInvalidSortCriterion(TrStr::odTargetVolume, TrStr::scXCoord);
+				}
+				else if (MatchWorklist_SortCriterion::YCoord == sortCriterion)
+				{
+					Error::RaiseErrorInvalidSortCriterion(TrStr::odTargetVolume, TrStr::scYCoord);
+				}
+				else if (MatchWorklist_SortCriterion::ZCoord == sortCriterion)
+				{
+					Error::RaiseErrorInvalidSortCriterion(TrStr::odTargetVolume, TrStr::scZCoord);
+				}
+				else if (MatchWorklist_SortCriterion::Default == sortCriterion)
+				{
+					orderByExpression = DelimitOrderByExpression(orderByExpression) + VectorDb_WorklistColumnName::targetVolume;
+				}
+			}
+			else
+			{
+				// <CustomDataName>
+
+				if (MatchWorklist_SortCriterion::JobID == sortCriterion)
+				{
+					Error::RaiseErrorInvalidSortCriterion(TrStr::odCustomData, TrStr::scJobID);
+				}
+				else if (MatchWorklist_SortCriterion::JobPriority == sortCriterion)
+				{
+					Error::RaiseErrorInvalidSortCriterion(TrStr::odCustomData, TrStr::scJobPriority);
+				}
+				else if (MatchWorklist_SortCriterion::LoadingTime == sortCriterion)
+				{
+					Error::RaiseErrorInvalidSortCriterion(TrStr::odCustomData, TrStr::scLoadingTime);
+				}
+				else if (MatchWorklist_SortCriterion::LabwareId == sortCriterion)
+				{
+					Error::RaiseErrorInvalidSortCriterion(TrStr::odCustomData, TrStr::scLabwareId);
+				}
+				else if (MatchWorklist_SortCriterion::PositionId == sortCriterion)
+				{
+					Error::RaiseErrorInvalidSortCriterion(TrStr::odCustomData, TrStr::scPositionId);
+				}
+				else if (MatchWorklist_SortCriterion::XCoord == sortCriterion)
+				{
+					Error::RaiseErrorInvalidSortCriterion(TrStr::odCustomData, TrStr::scXCoord);
+				}
+				else if (MatchWorklist_SortCriterion::YCoord == sortCriterion)
+				{
+					Error::RaiseErrorInvalidSortCriterion(TrStr::odCustomData, TrStr::scYCoord);
+				}
+				else if (MatchWorklist_SortCriterion::ZCoord == sortCriterion)
+				{
+					Error::RaiseErrorInvalidSortCriterion(TrStr::odCustomData, TrStr::scZCoord);
+				}
+				else if (MatchWorklist_SortCriterion::Default == sortCriterion)
+				{
+					orderByExpression = DelimitOrderByExpression(orderByExpression) + SquareBracketColumnName(sortColumn);
+				}
+			}
+
+			if (MatchWorklist_SortDirection::Ascending == sortDirection)
+			{
+				orderByExpression = orderByExpression + " ASC";
+			}
+			else if (MatchWorklist_SortDirection::Descending == sortDirection)
+			{
+				orderByExpression = orderByExpression + " DESC";
+			}
+		}
+
+		#ifdef TRACE_MATCH_WORKLIST_CORE
+		FormatTrace("DEBUG", GetFunctionName(), TraceStatus::progress, "orderByExpression = ", orderByExpression);
+		#endif
+
+		return(orderByExpression);
+	}
+
+	static function GetLabwareIdAndPositionId(		// Returns the labware and the position id in the deck layout, given a labware ID in the Vector Database
+		variable deckID, 										// [in]:  Deck ID in Vector Database (integer)
+		variable labwareID, 									// [in]:  Labware ID in Vector Database (integer)
+		variable& labwareId,									// [out]: Labware id in deck layout (string)
+		variable& positionId) variable					// [out]: Position id in deck layout (string)
+	{
+		// Init output params
+		labwareId = "";
+		positionId = "";
+
+		// Query labware and position id in the deck layout, given a labware ID in the Vector Database
+		if (0 < labwareID)
+		{
+			variable deckID_(0);
+			variable parentLabwareID_(0);
+			variable labwareId_("");
+			variable positionId_("");
+
+			VectorDb_Labware::GetLabwareByElementID(	labwareID,
+														deckID_,
+														parentLabwareID_,
+														positionId_,
+														0, // labwareLevel,
+														0, // barcode,
+														0, // volume,
+														0, // labwareState,
+														0, // userLabwareState,
+														0, // deckCoordinateX,
+														0, // deckCoordinateY,
+														0, // deckCoordinateZ,
+														0); // userLabwareTypeID);
+
+			VectorDb_Labware::GetLabwareByElementID(	parentLabwareID_,
+														0, // deckID,
+														0, // parentLabwareID,
+														labwareId_,
+														0, // labwareLevel,
+														0, // barcode,
+														0, // volume,
+														0, // labwareState,
+														0, // userLabwareState,
+														0, // deckCoordinateX,
+														0, // deckCoordinateY,
+														0, // deckCoordinateZ,
+														0); // userLabwareTypeID);
+			if (deckID_ == deckID)
+			{
+				// Set output params
+				labwareId = labwareId_;
+				positionId = positionId_;
+				return(hslTrue);
+			}
+		}
+		return(hslFalse);
+	}
+
+	// ----------------------------------------------------------------------------------------------------
+	// Interface functions
+	// ----------------------------------------------------------------------------------------------------
+
+	function MatchJobData(
+		device& ML_STAR,
+		variable& jobName,
+		variable  matchSourceSequence,
+		sequence& sourceSequence,
+		variable  matchTargetSequence,
+		sequence& targetSequence,
+		variable  matchTargetVolume,
+		variable& targetVolumes[],
+		variable& sortColumns[],
+		variable& sortCriterions[],
+		variable& sortDirections[]) variable
+	{
+		variable i(0);											// Loop index
+		variable size(0);										// Array size
+		variable errorDesc("");								// Error description
+		variable numberOfMatchedJobs(0);					// Number of matched jobs
+		variable skipJob(hslFalse);						// Indicates whether to skip a job
+
+		variable searchCondition("");
+		variable orderByExpression("");
+		variable queryJobAdditionalData(0);
+		variable queryJobLabwareData(0);
+
+		variable sourceLabwareID(0);
+		variable sourceLabwareId("");
+		variable sourcePositionId("");
+		variable targetLabwareID(0);
+		variable targetLabwareId("");
+		variable targetPositionId("");
+		variable targetVolume(0.0);
+
+		variable jobIDs[];
+		variable deckID(0);
+
+		// Trace start of function
+		#ifdef TRACE_MATCH_WORKLIST_FUNC
+		FormatTrace(Constants::traceSource, Constants::traceActionMatchJobData, TraceStatus::start);
+		#endif
+
+		// Dump input params
+		size = Util::Min(sortColumns.GetSize(), Util::Min(sortColumns.GetSize(), sortDirections.GetSize()));
+		#ifdef TRACE_MATCH_WORKLIST_PARAM
+		FormatTrace(Constants::traceSource, Constants::traceActionMatchJobData, TraceStatus::progress,	
+																	"jobName = ", jobName, 
+																	", matchSourceSequence = ", matchSourceSequence, 
+																	", matchTargetSequence = ", matchTargetSequence, 
+																	", matchTargetVolume = ", matchTargetVolume);
+		for (i = 0; i < size; i++)
+		{
+			FormatTrace(Constants::traceSource, Constants::traceActionMatchJobData, TraceStatus::progress,	
+																		"sortColumns[", i, "] = ", sortColumns.ElementAt(i), 
+																		", sortCriterions[", i, "] = ", sortCriterions.ElementAt(i), 
+																		", sortDirections[", i, "] = ", sortDirections.ElementAt(i));
+		}
+		#endif
+
+		// Activate error handler
+		onerror goto Unexpected;
+
+		// Init library
+		InitLibrary();
+
+		// Check input params to be valid.
+		errorDesc = Constants::traceActionMatchJobData + Constants::crlf;
+		Util2::CheckValueType(jobName, hslString, 
+							errorDesc + "jobName");
+		Util2::CheckValueTypeAndRangeMinMax(matchSourceSequence, hslInteger, 0, 1, 
+							errorDesc + "matchSourceSequence");
+		Util2::CheckValueTypeAndRangeMinMax(matchTargetSequence, hslInteger, 0, 1, 
+							errorDesc + "matchTargetSequence");
+		Util2::CheckValueTypeAndRangeMinMax(matchTargetVolume, hslInteger, 0, 1, 
+							errorDesc + "matchTargetVolume");
+		CheckSortingParams(sortColumns,sortCriterions,sortDirections);
+		if ("" == jobName)
+		{
+			jobName = g_matchWorklist_DefaultJobName;
+		}
+
+		// Init output params
+		SeqRemoveAll(sourceSequence);
+		SeqRemoveAll(targetSequence);
+		targetVolumes.SetSize(0);
+
+		// Reset dictionary used to exchange IDs of skipped jobs between MatchJobData and MatchJobCustomData
+		skippedJobIDsDict.RemoveAll();
+
+		// Check if we have to match anything at all
+		if (matchSourceSequence || matchTargetSequence || matchTargetVolume)
+		{
+			// Get deck ID
+			deckID = VectorDb_Deck::GetDeckID2(ML_STAR);
+
+			// Match loading information with worklist information of the given job
+
+			// Query all 'Assigned' jobs with the given job name, apply given sorting
+			searchCondition = VectorDb_WorklistColumnName::jobName + " = '" + jobName + "' AND " + VectorDb_WorklistColumnName::jobState + " = " + IStr(VectorDb_JobState::Assigned);
+			orderByExpression = BuildOrderByExpression(sortColumns, sortCriterions, sortDirections);
+			queryJobAdditionalData = hslTrue;
+			queryJobLabwareData = hslTrue;
+			jobIDs = VectorDb::GetJobIDs(searchCondition, orderByExpression, queryJobAdditionalData, queryJobLabwareData);
+
+			size = jobIDs.GetSize();
+			for (i = 0; i < size; i++)
+			{
+				// Get job data
+
+				sourceLabwareID = 0;
+				sourceLabwareId = "";
+				sourcePositionId = "";
+				targetLabwareID = 0;
+				targetLabwareId = "";
+				targetPositionId = "";
+				targetVolume = 0.0;
+	
+				if (!VectorDb::GetJob(jobIDs.ElementAt(i),
+											0, // jobName, 
+											0, // jobPriority, 
+											0, // jobState, 
+											0, // jobUserState,
+											sourceLabwareID,
+											0, // sourceBarcode, 
+											0, // sourceLabwareId, 
+											0, // sourcePositionId, 
+											0, // sourceRequired,
+											targetLabwareID,
+											0, // targetBarcode, 
+											0, // targetLabwareId, 
+											0, // targetPositionId, 
+											targetVolume))
+				{
+					// Failed to get job
+					errorDesc = jobName + " (" + IStr(jobIDs.ElementAt(i)) + ")";
+					Util2::Error::RaiseRuntimeError(Error::majorID, Error::MinorID::generalRuntimeError, Error::ErrorCode::failedToMatchJob,
+													Error::MakeErrorDescription(Error::ErrorCode::failedToMatchJob, errorDesc), 
+													GetHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+				}
+
+				// Reset falg indicating whether to skip current job
+				skipJob = hslFalse;
+
+				if(matchSourceSequence)
+				{
+					// Query labware and position id associated to this job's source labware
+					skipJob = !GetLabwareIdAndPositionId(deckID, sourceLabwareID, sourceLabwareId, sourcePositionId);
+				}
+				if(matchTargetSequence)
+				{
+					// Query labware and position id associated to this job's target labware
+					if(!skipJob)
+					{
+						skipJob = !GetLabwareIdAndPositionId(deckID, targetLabwareID, targetLabwareId, targetPositionId);
+					}
+				}
+
+				if(!skipJob)
+				{
+					if(matchSourceSequence)
+					{
+						sourceSequence.Add(sourceLabwareId,sourcePositionId);
+					}
+					if(matchTargetSequence)
+					{
+						targetSequence.Add(targetLabwareId,targetPositionId);
+					}
+					if(matchTargetVolume)
+					{
+						targetVolumes.AddAsLast(targetVolume);
+					}
+					numberOfMatchedJobs++;
+				}
+				else
+				{
+					// Add job to dictionary used to exchange IDs of skipped jobs between MatchJobData and MatchJobCustomData
+					if (!skippedJobIDsDict.Exists(jobIDs.ElementAt(i)))
+						skippedJobIDsDict.Add(jobIDs.ElementAt(i), 0);
+				}
+			}
+		}
+
+		// Reset indexes of output sequences
+		SeqResetSequenceIndexes(sourceSequence);
+		SeqResetSequenceIndexes(targetSequence);
+
+		// Trace completion of function
+		#ifdef TRACE_MATCH_WORKLIST_FUNC
+		FormatTrace(Constants::traceSource, Constants::traceActionMatchJobData, TraceStatus::complete);
+		#endif
+
+		// Return the number of matched jobs
+		return(numberOfMatchedJobs);
+
+		Unexpected:
+ 		{
+			// Trace completion with error of function
+			#ifdef TRACE_MATCH_WORKLIST_FUNC
+			FormatTrace(Constants::traceSource, Constants::traceActionMatchJobData, TraceStatus::completeWithError);
+			#endif
+
+			// Re-throw the error 
+			Util2::Error::RaiseLast();
+		}
+	} 
+
+	function MatchCustomJobData(
+		device& ML_STAR,
+		variable& jobName,
+		variable& customDataName,
+		variable& customDataArray[],
+		variable& sortColumns[],
+		variable& sortCriterions[],
+		variable& sortDirections[]) variable
+	{
+		variable i(0);											// Loop index
+		variable j(0);											// Loop index
+		variable size(0);										// Array size
+		variable errorDesc("");								// Error description
+		variable numberOfAdditionalData(0);
+		variable matchedAdditionalData(hslFalse);
+
+		variable searchCondition("");
+		variable orderByExpression("");
+		variable queryJobAdditionalData(0);
+		variable queryJobLabwareData(0);
+
+		variable additionalDataKeys[];
+		variable additionalDataValues[];
+
+		variable jobIDs[];
+		variable deckID(0);
+
+		// Trace start of function
+		#ifdef TRACE_MATCH_WORKLIST_FUNC
+		FormatTrace(Constants::traceSource, Constants::traceActionMatchCustomJobData, TraceStatus::start);
+		#endif
+
+		// Dump input params
+		size = Util::Min(sortColumns.GetSize(), Util::Min(sortColumns.GetSize(), sortDirections.GetSize()));
+		#ifdef TRACE_MATCH_WORKLIST_PARAM
+		FormatTrace(Constants::traceSource, Constants::traceActionMatchCustomJobData, TraceStatus::progress,	
+																	"jobName = ", jobName, 
+																	", customDataName = ", customDataName);
+		for (i = 0; i < size; i++)
+		{
+			FormatTrace(Constants::traceSource, Constants::traceActionMatchCustomJobData, TraceStatus::progress,	
+																		"sortColumns[", i, "] = ", sortColumns.ElementAt(i), 
+																		", sortCriterions[", i, "] = ", sortCriterions.ElementAt(i), 
+																		", sortDirections[", i, "] = ", sortDirections.ElementAt(i));
+		}
+		#endif
+
+		// Activate error handler
+		onerror goto Unexpected;
+
+		// Init library
+		InitLibrary();
+
+		// Check input params to be valid.
+		errorDesc = Constants::traceActionMatchCustomJobData + Constants::crlf;
+		Util2::CheckValueType(jobName, hslString, 
+							errorDesc + "jobName");
+		Util2::CheckValueTypeAndRange(customDataName, hslString, Util2::ValueCheck::RangeStringNotEmpty,
+							errorDesc + "customDataName");
+		CheckSortingParams(sortColumns,sortCriterions,sortDirections);
+		if ("" == jobName)
+		{
+			jobName = g_matchWorklist_DefaultJobName;
+		}
+
+		// Init output params
+		customDataArray.SetSize(0);
+
+		// Get deck ID
+		deckID = VectorDb_Deck::GetDeckID2(ML_STAR);
+
+		// Match loading information with worklist information of the given job
+
+		// Query all 'Assigned' jobs with the given job name, apply given sorting
+		searchCondition = VectorDb_WorklistColumnName::jobName + " = '" + jobName + "' AND " + VectorDb_WorklistColumnName::jobState + " = " + IStr(VectorDb_JobState::Assigned);
+		orderByExpression = BuildOrderByExpression(sortColumns, sortCriterions, sortDirections);
+		queryJobAdditionalData = hslTrue;
+		queryJobLabwareData = hslTrue;
+		jobIDs = VectorDb::GetJobIDs(searchCondition, orderByExpression, queryJobAdditionalData, queryJobLabwareData);
+
+		size = jobIDs.GetSize();
+		for (i = 0; i < size; i++)
+		{
+			// Check whether current job has been skipped by MatchJobData
+			if (!skippedJobIDsDict.Exists(jobIDs.ElementAt(i)))
+			{
+				// Current job has not been skipped by MatchJobData
+
+				// Get job additional data
+				matchedAdditionalData = hslFalse;
+				additionalDataKeys.SetSize(0);
+				additionalDataValues.SetSize(0);
+				numberOfAdditionalData = VectorDb::GetJobAdditionalData(jobIDs.ElementAt(i), additionalDataKeys, additionalDataValues);
+				for (j = 0; j < numberOfAdditionalData; j++)
+				{
+					if (additionalDataKeys.ElementAt(j) == customDataName)
+					{
+						customDataArray.AddAsLast(additionalDataValues.ElementAt(j));
+						matchedAdditionalData = hslTrue;
+					}
+				}
+				if (!matchedAdditionalData)
+				{
+					// Failed to match job additional data
+					Util2::Error::RaiseRuntimeError(Error::majorID, Error::MinorID::generalRuntimeError, Error::ErrorCode::failedToMatchJobCustomData,
+													Error::MakeErrorDescription(Error::ErrorCode::failedToMatchJobCustomData, customDataName), 
+													GetHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+				}
+			}
+		}
+
+		// Trace completion of function
+		#ifdef TRACE_MATCH_WORKLIST_FUNC
+		FormatTrace(Constants::traceSource, Constants::traceActionMatchCustomJobData, TraceStatus::complete);
+		#endif
+
+		// Return the number of matched job additional data
+		return(customDataArray.GetSize());
+
+		Unexpected:
+ 		{
+			// Trace completion with error of function
+			#ifdef TRACE_MATCH_WORKLIST_FUNC
+			FormatTrace(Constants::traceSource, Constants::traceActionMatchCustomJobData, TraceStatus::completeWithError);
+			#endif
+
+			// Re-throw the error 
+			Util2::Error::RaiseLast();
+		}
+	} 
+}
+
+#endif
+// $$author=ContainerAdministrator$$valid=1$$time=2025-09-09 20:31$$checksum=ea26d1ed$$length=099$$

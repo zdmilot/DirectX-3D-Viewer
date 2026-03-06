@@ -1,0 +1,30 @@
+// ======================================================================
+// This is the language dependant part of the HSL Sync Library.
+// Copyright (C) by HAMILTON Bonaduz AG, CH-7402 Bonaduz.
+// ======================================================================
+//
+// Modification History
+//
+// 2004-03-04  rfederspiel : Initial file creation.
+//
+// ======================================================================
+
+function StringTable()
+{
+	// IDE
+
+	// IDS
+	Insert(IDS::Connecting,										"Connecting to host with handle: "				);
+	Insert(IDS::HostName,										"Host Name: "											);
+	Insert(IDS::HostPort,										"Host Port: "											);
+	Insert(IDS::LocalPort,										"Local Port: "										   );
+	Insert(IDS::Protocol,										"Protocol: "											);
+	Insert(IDS::CloseConnection,								"Closing connection on handle: "					);
+	Insert(IDS::SendingData,									"Sending data on handle: "							);
+	Insert(IDS::Data,												" Data: "												);
+	Insert(IDS::WaitForData,									"Check for incoming data "							);
+	Insert(IDS::seconds,											" seconds"												);
+	Insert(IDS::GetData,											"Get data from handle: "						  	);
+	Insert(IDS::ResetBuffer,									"Buffer reset on handle: "						   );
+}
+// $$author=ContainerAdministrator$$valid=1$$time=2025-09-09 20:13$$checksum=70b84c48$$length=099$$

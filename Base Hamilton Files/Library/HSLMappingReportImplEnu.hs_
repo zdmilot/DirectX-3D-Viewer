@@ -1,0 +1,81 @@
+// ======================================================================
+// This is the language dependant part of the HSL Mapping Report Library.
+// Copyright (C) by HAMILTON Bonaduz AG, CH-7402 Bonaduz.
+// ======================================================================
+//
+// Modification History
+//
+//	2004-02-12   ubernhard :	Initial file creation.
+//	2007-08-10   ubernhard :	added several new IDE's and IDS's.
+//
+// Remarks: Don't translate placeholders like '%s', '%s1', '%s2', '%d' etc;
+//
+// ======================================================================
+
+function StringTable()
+{
+	// IDE
+	Insert(IDE::noError,											"No error."																		);
+	Insert(IDE::fatalError,										"Fatal error."																	);
+	Insert(IDE::invalidParameter,								"Invalid parameter."															);
+	Insert(IDE::invalidFileName,								"The specified file name is invalid."									);
+	Insert(IDE::invalidPath,									"The specified path name '%s' is invalid."							);
+	Insert(IDE::sampleTrackingDisabled,						"Sample tracking is disabled."											);
+	Insert(IDE::elementNotFound,								"The labware '%s' is not present."										);
+	Insert(IDE::failedToCreateReportFile,					"Failed to create the report mapping file for labware '%s'"		);
+	Insert(IDE::fileNameInvalidCharacter,					"Invalid character within given filename '%s' detected."			);
+	Insert(IDE::invalidFileExtension,						"Invalid file extension within given filename '%s' detected."	);
+	Insert(IDE::fileNotFound,									"> File '%s' not found."													);
+	Insert(IDE::failedToDeleteFile,							"> Failed to delete file '%s'"											);
+	Insert(IDE::unknownLabwareId,								"Labware identifier '%s1' unknown on instrument '%s2'."			);
+	Insert(IDE::emptyBarcode,									"Empty barcode is not allowed."											);
+	Insert(IDE::setElementBarcode_NotSupportedLabware,	"The labware '%s' is not supported by this step (wrong type)."	);
+	Insert(IDE::deviceWithoutDeck,							"No decklayout found for given device."								);
+	Insert(IDE::unknownPositionId, 							"The position identifier '%s1' for labware '%s2' is unknown."	);
+	Insert(IDE::noFilterSet,									"No filter set to filter wells."											);
+	Insert(IDE::writeRecordFailed, "\n\nAssumption:\n\nThe file opened to append contains either different column naming or different number of columns.\nMake sure that the number of columns and the naming does match with the existing Report Mapping File if using the mode 'Open file to append'.");
+	Insert(IDE::invalidPlaceHolderLabId,					"The placeholder <LabID> (used to generate the mapping filename) is not allowed to be used with mode 'Create on file'.");
+	Insert(IDE::invalidPlaceHolderBC,						"The placeholder <BC> (used to generate the mapping filename) is not allowed to be used with mode 'Create on file'.");
+	Insert(IDE::invalidPlaceHolderNo,						"The placeholder <No> (used to generate the mapping filename) is not allowed to be used with mode 'Open file to append'.");
+
+	// IDS
+	Insert(IDS::helpFileName,									"HSLMappingReportEnu.chm"													);
+	Insert(IDS::traceSource, 									"SYSTEM"																			);
+	Insert(IDS::traceGenerateMappingReport,				"HSLMapReport::GenerateMappingReport"									);
+	Insert(IDS::traceActionAddFilterSequence,				"HSLMapReport::AddFilterSequence"										);
+	Insert(IDS::traceActionRemoveAllFilterSequences,	"HSLMapReport::RemoveAllFilterSequences"								);
+	Insert(IDS::enableSampleTracking,						"To generate mapping files, sample tracking must be enabled."	);
+	Insert(IDS::traceActionGetListSeparator,				"HSLMapReport::GetListSeparator"											);
+	Insert(IDS::traceActionDeleteFile,						"HSLMapReport::DeleteFile"													);
+	Insert(IDS::listSeparator,									" > Used list-separator '%s'"												);
+	Insert(IDS::fileDeleted,									" > File '%s' successfully deleted"										);
+	Insert(IDS::filterSequence,								" > Filter sequence '%s' added"											);
+	Insert(IDS::generateReportFile,							" > Filtering data of labware '%s'"										);
+	Insert(IDS::reportFileGenerationFailed,				" > Failed to filter data of labware '%s'"							);
+	Insert(IDS::noElementFoundWithinTargetSeq,			" > No labware found within sequence '%s' to filter data."		);
+	Insert(IDS::createReportMappingFile,					" > Create report-mapping file '%s'"									);
+	Insert(IDS::reportMappingFileGenerationFailed,		" > Failed to create report-mapping file '%s'"						);
+	Insert(IDS::elementOfFilterSequence,					" > Add positions underlying sequence '%s'"							);
+	Insert(IDS::traceActionSetElementBarcode,				"HSLMapReport::SetElementBarcode"										);
+	Insert(IDS::setBarcodeOnLabId,							" > Set barcode '%s1' on labware '%s2'"								);
+	Insert(IDS::traceActionRemoveElement,					"HSLMapReport::RemoveElement"												);
+	Insert(IDS::removedElementFromDevice,					" > Removed element '%s1' from instrument '%s2'"					);
+
+	Insert(IDS::statusSum_NoError,							"Correct pipetting"															);
+	Insert(IDS::statusSum_WellNotUsed,						"Not used"																		);
+	Insert(IDS::statusSum_BarcodeWarning,					"Barcode warning"																);
+	Insert(IDS::statusSum_PipetteWarning,					"Pipetting warning"															);
+	Insert(IDS::statusSum_TransportWarning,				"Transport warning"															);		
+	Insert(IDS::statusSum_LoadWarning,						"Load warning"																	);
+	Insert(IDS::statusSum_WashWarning,						"Wash warning"																	);
+	Insert(IDS::statusSum_PreviousRunWarning,				"Previous Run warning"														);
+	Insert(IDS::statusSum_UnspecifiedWarning,				"Unspecified warning"														);
+	Insert(IDS::statusSum_BarcodeError,						"Barcode error"																);
+	Insert(IDS::statusSum_PipetteError,						"Pipetting error"																);
+	Insert(IDS::statusSum_TransportError,					"Transport error"																);
+	Insert(IDS::statusSum_LoadError,							"Load error"																	);
+	Insert(IDS::statusSum_WashError,							"Wash error"																	);
+	Insert(IDS::statusSum_PreviousRunError,				"Previous Run error"															);
+	Insert(IDS::statusSum_UnspecifiedError,				"Unspecified error"															);
+}
+// $$author=ContainerAdministrator$$valid=1$$time=2025-09-09 20:13$$checksum=d077fce7$$length=099$$

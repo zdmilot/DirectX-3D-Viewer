@@ -1,0 +1,731 @@
+//  ------------------------------------------------------------------------------------
+//  Hamilton Company Software Product.
+//  File: HSLSchedCCLibImpl.hs_
+//
+//  This is a part of the module HxSchedCompCmd.
+//  Implementation of the SchedCC Template Library.
+//
+//  File creation date:  2005-04-04 by GZa
+//  Last revision date:  2005-04-04 by GZa
+//
+//  Copyright (c) 2005 by Hamilton Bonaduz AG.
+//
+//
+//  Modification History
+//  --------------------
+//  1.00  2005-04-04 by GZa  Initial file creation.
+//  1.10  2006-08-29 by GZa  New functions added:
+//                              - SchedStartActivate
+//                              - SchedEndActivate
+//  ------------------------------------------------------------------------------------
+
+#pragma once
+
+namespace SchedCCLib
+{
+
+
+	namespace STR							// Include the StringTable library in its own namespace!
+	{
+		#ifndef __HSLStringTableLib_hsl__
+		#include "HSLStringTableLib.hs_"
+		#endif
+	}
+
+	// --------------------------------------------------------------------------------------
+	// Debugging
+	// --------------------------------------------------------------------------------------
+
+//	#define _DEBUG_SCHEDCC		1	// specifies the debug version of the SchedCC library
+
+
+
+	// ======================================================================================
+	// "Exported" functions, used by the generated code
+	// ======================================================================================
+
+	//
+	// Checks the parameters for an ActivateAt(..) call.
+	//
+	static function SchedPreActivateAt(
+		variable  YYYY,							// i: year (integer)
+		variable  MM,								// i: month (integer)
+		variable  DD,								// i: day of the month (integer)
+		variable  hh,								// i: hour (integer)
+		variable  mm,								// i: minute (integer)
+		variable  ss,								// i: second (integer)
+		variable  someMethodId,					// i: id of the registered method to be activated
+		variable  someTaskViewName,			// i: view name of task to be activated
+		variable& someTaskId,					// o resp i/o: id of activated method (task)
+		variable  inheritCancel ) void;		// i: cancel inheritance option
+
+
+	//
+	// Checks the parameters for an ActivateDelay(..), an ActivateAfter(..) or an ActivateBefore(..) call.
+	//
+	static function SchedPreActivate(
+		variable  somePeriod,					// i: relative time span (integer)
+		variable  anotherTask,					// i: id of already activated method (task)
+		variable  someMethodId,					// i: id of registered method to be activated or
+														//		id of already activated method (task)
+		variable  someTaskViewName,			// i: view name of task to be activated
+		variable& someTaskId,					// o resp. i/o: id of activated method (task)
+		variable  inheritCancel ) void;		// i: cancel inheritance option
+
+
+	//
+	// Checks the return value of an ActivateAt(..), an ActivateDelay(..), an ActivateAfter(..)
+	// or an ActivateBefore(..) call.
+	//
+	static function SchedPostActivate(
+		variable  retVal ) void;				// i: return value of the activate method call
+
+
+	// 
+	// Traces the start of an activate step.
+	//
+	static function SchedStartActivate() void;
+
+
+	// 
+	// Traces the end of an activate step.
+	//
+	static function SchedEndActivate() void;
+
+
+	//
+	// Cancels the specified task using the built-in function CancelTask.
+	//
+	static function SchedCancelTask(
+		variable taskId ) void;					// i: id of the task to cancel
+
+
+	//
+	// Checks the parameters for a RegisterMethod(..) call.
+	//
+	static function SchedPreSelectMethod(
+		variable  someMethod,					// i: file name of method to be selected
+		variable  someMethodViewName,			// i: view name of method to be selected
+		variable& someMethodId ) void;		// o resp. i: id of selected method
+
+
+	//
+	// Checks the return value of the RegisterMethod(..) call.
+	//
+	static function SchedPostSelectMethod(
+		variable  retVal ) void;		// i: return value of the select method call
+
+
+	// ======================================================================================
+	// Constants
+	// ======================================================================================
+	namespace Const
+	{
+		static const variable hxModuleName("HxSchedCompCmd");	// Hamilton module name
+		static const variable thisFileExtension(".hs_");		// file extension of this file
+		static const variable helpFileExtension(".chm");		// HTML Help file
+	}
+
+
+	// --------------------------------------------------------------------------------------
+	// Error Ids
+	// --------------------------------------------------------------------------------------
+
+	namespace IDE
+	{
+		static const variable noError						(0);						// No error.
+
+		static const variable firstCommon				(noError+1);
+		static const variable unexpectedError			(firstCommon + 0);	// Unecpected Error
+		static const variable invalidParam				(firstCommon + 1);	// A parameter is incorrect
+		static const variable lastCommon					(firstCommon + 1);		
+
+		static const variable last							( lastCommon );		// guard
+	}
+
+
+	// --------------------------------------------------------------------------------------
+	// String Ids
+	// --------------------------------------------------------------------------------------
+
+	namespace IDS
+	{
+		static const variable first						(IDE::last + 1);			// guard
+
+		// private: common strings
+		static const variable firstCommon				(first+0);
+		static const variable openingBracket			(firstCommon + 0);		// opening bracket 
+		static const variable closingBracket			(firstCommon + 1);		// closing bracket
+		static const variable point						(firstCommon + 2);		// point (.)
+		static const variable runtimeError				(firstCommon + 3);		// runtime error step ....
+		static const variable moduleShowName			(firstCommon + 4);		// the name of the STCC module
+		static const variable lastCommon 				(firstCommon + 4);
+
+		// private: step names
+		static const variable firstStepName				(lastCommon+1);
+		static const variable stepNameSelectMethod	(firstStepName+0);		// Step 'Select Method'
+		static const variable stepNameActivateTask	(firstStepName+1);		// Step 'Activate Task'
+		static const variable stepNameCancelTask		(firstStepName+2);		// Step 'Cancel Task'
+		static const variable lastStepName 				(firstStepName+2);
+
+		// private: Parameter validation, additional information
+		static const variable firstParamValid			(lastStepName+1);
+		static const variable paramYYYY					(firstParamValid+0);		// Invalid parameter 'Year'
+		static const variable paramMM						(firstParamValid+1);		// Invalid parameter 'Month'
+		static const variable paramDD						(firstParamValid+2);		// Invalid parameter 'Day'
+		static const variable paramhh						(firstParamValid+3);		// Invalid parameter 'Hour'
+		static const variable parammm 					(firstParamValid+4);		// Invalid parameter 'Minute'
+		static const variable paramss						(firstParamValid+5);		// Invalid parameter 'Second'
+		static const variable paramSomeMethodId		(firstParamValid+6);		// Invalid parameter 'Method id/Task id'
+		static const variable paramSomeTaskViewName	(firstParamValid+7);		// Invalid parameter 'Task view name'
+		static const variable paramInheritCancel		(firstParamValid+8);		// Invalid parameter 'Inherit cancel'
+		static const variable paramSomePeriod 			(firstParamValid+9);		// Invalid parameter 'Period'
+		static const variable paramAnotherTask			(firstParamValid+10);	// Invalid parameter 'Id of <Other Task>'
+		static const variable paramTaskId				(firstParamValid+11);	// Invalid parameter 'Task id'
+		static const variable paramSomeMethod			(firstParamValid+12);	// Invalid parameter 'HSL file name of method'
+		static const variable paramSomeMethodViewName (firstParamValid+13);	// Invalid parameter 'Method view name'
+		static const variable lastParamValid			(firstParamValid+13);
+
+
+		// private: step strings 'Activate Task'
+		static const variable firstStpActivateTask	(lastParamValid+1);
+		static const variable stpActivateTaskFailed	(firstStpActivateTask+0);
+		static const variable lastStpActivateTask		(firstStpActivateTask+0);
+
+		// private: step strings 'Cancel Task'
+		static const variable firstStpCancelTask		(lastStpActivateTask+1);
+		static const variable stpCancelTaskFailed		(firstStpCancelTask+0);
+		static const variable lastStpCancelTask		(firstStpCancelTask+0);
+
+		// private: step strings 'Select Method'
+		static const variable firstStpSelectMethod	(lastStpCancelTask+1);
+		static const variable stpSelectMethodFailed	(firstStpSelectMethod+0);
+		static const variable lastStpSelectMethod		(firstStpSelectMethod+0);
+
+		static const variable last							(lastStpSelectMethod);			// guard
+	}
+
+
+	// --------------------------------------------------------------------------------------
+	// FormatTrace 'actionStatus' definition
+	// --------------------------------------------------------------------------------------
+	namespace ActionStatus
+	{
+		static const variable start(1);					// action status for formated trace
+		static const variable complete(2);				// action status for formated trace
+		static const variable error_(3);					// action status for formated trace
+		static const variable progress(4);				// action status for formated trace
+		static const variable completeWithError(5);	// action status for formated trace
+	}
+
+
+
+	// ======================================================================================
+	// "Private" functions
+	// ======================================================================================
+
+	// --------------------------------------------------------------------------------------
+	// Library Initialization 
+	// --------------------------------------------------------------------------------------
+	static function InitSchedCCLibrary() variable;	// initializes the SchedCC library (only once)
+
+	static variable m_initializedLib(hslFalse);		// initialization state of the SchedCC library
+	static variable m_startAcitvateCalled(hslFalse);// hslTrue if the start of an activate step has
+																	// been traced using SchedStartActivate()
+																	// used for compatibility with old methods
+
+
+	// --------------------------------------------------------------------------------------
+	// Tracing
+	// --------------------------------------------------------------------------------------
+
+	static function TraceStatus(
+		variable stepNameStrTblId,
+		variable actionStatus) void;
+
+
+	// --------------------------------------------------------------------------------------
+	// Utilities (own implementation to prevent include if HSLUtilLib)
+	// --------------------------------------------------------------------------------------
+
+	namespace SchedCCUtil
+	{
+		static function IsString(			// returns true if the variable value is a string
+			variable var) variable;			// i: variable
+
+		static function IsNumber(			// returns true if the variable value is a number
+			variable var) variable;			// i: variable
+
+		static function IsInteger(			// returns true if the variable value is an integer
+			variable var) variable;			// i: variable
+	}
+
+
+	// --------------------------------------------------------------------------------------
+	// Exception/Error handling
+	// --------------------------------------------------------------------------------------
+
+	namespace Error
+	{
+		// Raises a runtime error. Generates a detailed description by using the passed arguments
+		static function RaiseRuntimeError(
+			variable  errorId,							// i: integer, the error id
+			variable  stepNameStrTblId,				// i: integer, string-ID of the step name
+			variable  errorDescriptionStrTblId,		// i: integer, string-ID of the error description
+			variable& additionalDescription,			// i: string, additional error description
+			variable& fileName,							// i: string, file name where the error is occured
+			variable& functionName,						// i: string, funciton name where the error is occured
+			variable& lineNumber) void;				// i: string, line number where the error is occured
+
+		
+		// Generates a descriptive string includes the file, function and line number.
+		// Return: Formatted string
+		static function GetLocationDescription(
+			variable& fileName,							// i: string, file name 		
+			variable& functionName,						// i: string, funciton name
+			variable& lineNumber) variable;			// i: string, line number 
+
+	}
+
+
+	
+
+// ======================================================================================
+// implementation
+
+// --------------------------------------------------------------------------------------
+	static function SchedPreActivateAt(
+		variable  YYYY,
+		variable  MM,
+		variable  DD,
+		variable  hh,
+		variable  mm,
+		variable  ss,
+		variable  someMethodId,
+		variable  someTaskViewName,
+		variable& someTaskId,
+		variable  inheritCancel ) void
+	{
+		InitSchedCCLibrary();
+
+
+		if( m_startAcitvateCalled == hslFalse )
+			TraceStatus(IDS::stepNameActivateTask, ActionStatus::start);
+
+		#ifdef _DEBUG_SCHEDCC
+		FormatTrace("DEBUG", GetFunctionName(), ActionStatus::progress,
+						"Parameters: YYYY='",	YYYY,				"' (", GetType(YYYY),			")",
+						", MM='",				MM,				"' (", GetType(MM),  			")",
+						", DD='",				DD,				"' (", GetType(DD),  			")",
+						", hh='",				hh,				"' (", GetType(hh),  			")",
+						", mm='",				mm,				"' (", GetType(mm),  			")",
+						", ss='",				ss,				"' (", GetType(ss),  			")",
+						", someMethodId='",	someMethodId,	"' (", GetType(someMethodId),	")",
+						", someTaskViewName='",	someTaskViewName,	"' (", GetType(someTaskViewName),	")",
+						", someTaskId='",		someTaskId,		"' (", GetType(someTaskId),	")",
+						", inheritCancel='",	inheritCancel,	"' (", GetType(inheritCancel),")");
+		#endif
+
+
+		// Parameter validation
+		if ( ! SchedCCUtil::IsInteger(YYYY) )
+		{
+			Error::RaiseRuntimeError(IDE::invalidParam, IDS::stepNameActivateTask,
+											 IDE::invalidParam,
+											 STR::StringTable::Load(IDS::paramYYYY),
+											 GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+		if ( ! SchedCCUtil::IsInteger(MM) )
+		{
+			Error::RaiseRuntimeError(IDE::invalidParam, IDS::stepNameActivateTask,
+											 IDE::invalidParam,
+											 STR::StringTable::Load(IDS::paramMM),
+											 GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+		if ( ! SchedCCUtil::IsInteger(DD) )
+		{
+			Error::RaiseRuntimeError(IDE::invalidParam, IDS::stepNameActivateTask,
+											 IDE::invalidParam,
+											 STR::StringTable::Load(IDS::paramDD),
+											 GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+		if ( ! SchedCCUtil::IsInteger(hh) )
+		{
+			Error::RaiseRuntimeError(IDE::invalidParam, IDS::stepNameActivateTask,
+											 IDE::invalidParam,
+											 STR::StringTable::Load(IDS::paramhh),
+											 GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+		if ( ! SchedCCUtil::IsInteger(mm) )
+		{
+			Error::RaiseRuntimeError(IDE::invalidParam, IDS::stepNameActivateTask,
+											 IDE::invalidParam,
+											 STR::StringTable::Load(IDS::parammm),
+											 GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+		if ( ! SchedCCUtil::IsInteger(ss) )
+		{
+			Error::RaiseRuntimeError(IDE::invalidParam, IDS::stepNameActivateTask,
+											 IDE::invalidParam,
+											 STR::StringTable::Load(IDS::paramss),
+											 GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+		if ( ! SchedCCUtil::IsInteger(someMethodId) )
+		{
+			Error::RaiseRuntimeError(IDE::invalidParam, IDS::stepNameActivateTask,
+											 IDE::invalidParam,
+											 STR::StringTable::Load(IDS::paramSomeMethodId),
+											 GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+		if ( ! SchedCCUtil::IsString(someTaskViewName) )
+		{
+			Error::RaiseRuntimeError(IDE::invalidParam, IDS::stepNameActivateTask,
+											 IDE::invalidParam,
+											 STR::StringTable::Load(IDS::paramSomeTaskViewName),
+											 GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+		if ( ! SchedCCUtil::IsInteger(inheritCancel) )
+		{
+			Error::RaiseRuntimeError(IDE::invalidParam, IDS::stepNameActivateTask,
+											 IDE::invalidParam,
+											 STR::StringTable::Load(IDS::paramInheritCancel),
+											 GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+	}
+
+
+
+// --------------------------------------------------------------------------------------
+	static function SchedPreActivate(
+		variable  somePeriod,
+		variable  anotherTask,
+		variable  someMethodId,
+		variable  someTaskViewName,
+		variable& someTaskId,
+		variable  inheritCancel ) void
+	{
+		InitSchedCCLibrary();
+
+
+		if( m_startAcitvateCalled == hslFalse )
+			TraceStatus(IDS::stepNameActivateTask, ActionStatus::start);
+
+		#ifdef _DEBUG_SCHEDCC
+		FormatTrace("DEBUG", functionName, ActionStatus::progress,
+						"Parameters: somePeriod='",somePeriod,			"' (", GetType(somePeriod),		")",
+						", anotherTask='",			anotherTask,		"' (", GetType(anotherTask),  	")",
+						", someMethodId='",			someMethodId,		"' (", GetType(someMethodId),  	")",
+						", someTaskViewName='",		someTaskViewName,	"' (", GetType(someTaskViewName),")",
+						", someTaskId='",				someTaskId,			"' (", GetType(someTaskId),  		")",
+						", inheritCancel='",			inheritCancel,		"' (", GetType(inheritCancel),  	")");
+		#endif
+
+
+		if ( ! SchedCCUtil::IsInteger(somePeriod) )
+		{
+			Error::RaiseRuntimeError(IDE::invalidParam, IDS::stepNameActivateTask,
+											 IDE::invalidParam,
+											 STR::StringTable::Load(IDS::paramSomePeriod),
+											 GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+		if ( ! SchedCCUtil::IsInteger(anotherTask) )
+		{
+			Error::RaiseRuntimeError(IDE::invalidParam, IDS::stepNameActivateTask,
+											 IDE::invalidParam,
+											 STR::StringTable::Load(IDS::paramAnotherTask),
+											 GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+		if ( ! SchedCCUtil::IsInteger(someMethodId) )
+		{
+			Error::RaiseRuntimeError(IDE::invalidParam, IDS::stepNameActivateTask,
+											 IDE::invalidParam,
+											 STR::StringTable::Load(IDS::paramSomeMethodId),
+											 GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+		if ( ! SchedCCUtil::IsString(someTaskViewName) )
+		{
+			Error::RaiseRuntimeError(IDE::invalidParam, IDS::stepNameActivateTask,
+											 IDE::invalidParam,
+											 STR::StringTable::Load(IDS::paramSomeTaskViewName),
+											 GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+		if ( ! SchedCCUtil::IsInteger(inheritCancel) )
+		{
+			Error::RaiseRuntimeError(IDE::invalidParam, IDS::stepNameActivateTask,
+											 IDE::invalidParam,
+											 STR::StringTable::Load(IDS::paramInheritCancel),
+											 GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+	}
+
+
+
+// --------------------------------------------------------------------------------------
+	static function SchedPostActivate(
+		variable  retVal ) void
+	{
+		if( retVal == 0 )
+		{
+			TraceStatus(IDS::stepNameActivateTask, ActionStatus::completeWithError);
+		
+			Error::RaiseRuntimeError(IDE::unexpectedError, IDS::stepNameActivateTask,
+											 IDE::unexpectedError,
+											 STR::StringTable::Load(IDS::stpActivateTaskFailed),
+											 GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+
+
+		if( m_startAcitvateCalled == hslFalse )
+			TraceStatus(IDS::stepNameActivateTask, ActionStatus::complete);
+	}
+
+
+
+// --------------------------------------------------------------------------------------
+	static function SchedStartActivate() void
+	{
+		InitSchedCCLibrary();
+
+		m_startAcitvateCalled = hslTrue;	// SchedPreActivate, SchedPreActivateAt and SchedPostActivate
+													// don't have to trace anymore start and end!
+
+
+		TraceStatus(IDS::stepNameActivateTask, ActionStatus::start);
+	}
+
+
+
+// --------------------------------------------------------------------------------------
+	static function SchedEndActivate() void
+	{
+		TraceStatus(IDS::stepNameActivateTask, ActionStatus::complete);
+
+		m_startAcitvateCalled = hslFalse;
+	}
+
+
+
+// --------------------------------------------------------------------------------------
+	static function SchedCancelTask(
+		variable taskId ) void
+	{
+		InitSchedCCLibrary();
+
+
+		TraceStatus(IDS::stepNameCancelTask, ActionStatus::start);
+
+		#ifdef _DEBUG_SCHEDCC
+		FormatTrace("DEBUG", GetFunctionName(), ActionStatus::progress,
+						"Parameters: taskId='", taskId, "' (", GetType(taskId), ")" );
+		#endif
+
+		// Parameter validation
+		if ( ! SchedCCUtil::IsInteger(taskId) )
+		{
+			Error::RaiseRuntimeError(IDE::invalidParam, IDS::stepNameCancelTask,
+											 IDE::invalidParam,
+											 STR::StringTable::Load(IDS::paramTaskId),
+											 GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+
+
+		if( CancelTask( taskId ) == 0 )
+		{
+			TraceStatus(IDS::stepNameCancelTask, ActionStatus::completeWithError);
+		
+			Error::RaiseRuntimeError(IDE::unexpectedError, IDS::stepNameCancelTask,
+											 IDE::unexpectedError,
+											 STR::StringTable::Load(IDS::stpCancelTaskFailed),
+											 GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+
+
+		TraceStatus(IDS::stepNameCancelTask, ActionStatus::complete);
+
+	}
+
+
+
+// --------------------------------------------------------------------------------------
+	static function SchedPreSelectMethod(
+		variable  someMethod,
+		variable  someMethodViewName,
+		variable& someMethodId ) void
+	{
+		InitSchedCCLibrary();
+
+
+		TraceStatus(IDS::stepNameSelectMethod, ActionStatus::start);
+
+		#ifdef _DEBUG_SCHEDCC
+		FormatTrace("DEBUG", GetFunctionName(), ActionStatus::progress,
+						"Parameters: someMethod='",	someMethod,				"' (", GetType(someMethod),			")",
+						", someMethodViewName='",	someMethodViewName,	"' (", GetType(someMethodViewName),	")",
+						", someMethodId='",			someMethodId,			"' (", GetType(someMethodId),  		")");
+		#endif
+
+
+		// Parameter validation
+		if ( ! SchedCCUtil::IsString(someMethod) )
+		{
+			Error::RaiseRuntimeError(IDE::invalidParam, IDS::stepNameSelectMethod,
+											 IDE::invalidParam,
+											 STR::StringTable::Load(IDS::paramSomeMethod),
+											 GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+		if ( ! SchedCCUtil::IsString(someMethodViewName) )
+		{
+			Error::RaiseRuntimeError(IDE::invalidParam, IDS::stepNameSelectMethod,
+											 IDE::invalidParam,
+											 STR::StringTable::Load(IDS::paramSomeMethodViewName),
+											 GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+
+	}
+
+
+
+// --------------------------------------------------------------------------------------
+	static function SchedPostSelectMethod(
+		variable  retVal ) void
+	{
+
+		if( retVal == 0 )
+		{
+			TraceStatus(IDS::stepNameSelectMethod, ActionStatus::completeWithError);
+		
+			Error::RaiseRuntimeError(IDE::unexpectedError, IDS::stepNameSelectMethod,
+											 IDE::unexpectedError,
+											 STR::StringTable::Load(IDS::stpSelectMethodFailed),
+											 GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+
+
+		TraceStatus(IDS::stepNameSelectMethod, ActionStatus::complete);
+	}
+
+
+
+	// --------------------------------------------------------------------------------------
+	// Library Initialization 
+	// --------------------------------------------------------------------------------------
+
+	static function InitSchedCCLibrary() variable
+	{
+		// initialize the SchedCC library once only
+		if ( ! m_initializedLib )
+		{
+			string fileWithPath("");
+			string extension(Const::thisFileExtension);
+			variable stringTableFileWithoutExtensions("");
+
+			fileWithPath = GetFileName();
+			stringTableFileWithoutExtensions = fileWithPath.Left(fileWithPath.GetLength() - extension.GetLength());
+
+			#ifdef _DEBUG_SCHEDCC
+			FormatTrace("DEBUG", GetFunctionName(), ActionStatus::progress,
+							"Init string table with: ", stringTableFileWithoutExtensions);
+			#endif
+
+			STR::StringTable::Init(stringTableFileWithoutExtensions);
+
+			#ifdef _DEBUG_SCHEDCC
+			STR::StringTable::Dump();
+			#endif
+
+			m_startAcitvateCalled = hslFalse;
+			m_initializedLib = hslTrue;
+		}
+		return(m_initializedLib);
+	}
+
+
+
+	// --------------------------------------------------------------------------------------
+	// Tracing
+	// --------------------------------------------------------------------------------------
+
+	static function TraceStatus(
+		variable stepNameStrTblId,
+		variable actionStatus) void
+	{
+		FormatTrace(STR::StringTable::Load(IDS::moduleShowName),
+						STR::StringTable::Load(stepNameStrTblId),
+						actionStatus);
+	}
+
+
+	// --------------------------------------------------------------------------------------
+	// Utilities
+	// --------------------------------------------------------------------------------------
+
+	static function SchedCCUtil::IsString(variable var) variable
+	{
+		return(hslString.Compare(GetType(var)) == 0);
+	}
+
+	static function SchedCCUtil::IsNumber(variable var) variable
+	{
+		return(hslString.Compare(GetType(var)) != 0);
+	}
+
+	static function SchedCCUtil::IsInteger(variable var) variable
+	{
+		if ( ! SchedCCUtil::IsNumber(var) )
+		{
+			return(hslFalse);
+		}
+		return(hslInteger.Compare(GetType(var)) == 0);
+	}
+
+
+	// --------------------------------------------------------------------------------------
+	// Exception handling
+	// --------------------------------------------------------------------------------------
+
+	static function Error::RaiseRuntimeError(
+		variable  errorId,
+		variable  stepNameStrTblId,
+		variable  errorDescriptionStrTblId,
+		variable& additionalDescription,
+		variable& fileName,
+		variable& functionName,
+		variable& lineNumber) void
+	{
+		variable description, helpFileName;
+
+		// initialize the library
+		InitSchedCCLibrary();
+
+		description = STR::StringTable::Load(IDS::moduleShowName) +
+					 	  "\n\n" + 
+						  STR::StringTable::Load(IDS::runtimeError) + 
+						  STR::StringTable::Load(IDS::openingBracket) + 
+						  STR::StringTable::Load(stepNameStrTblId) + 
+						  STR::StringTable::Load(IDS::closingBracket) + 
+						  STR::StringTable::Load(IDS::point) + 
+						  "\n" + Error::GetLocationDescription(fileName, functionName, lineNumber) + "\n\n" +
+						  STR::StringTable::Load(errorDescriptionStrTblId) + 
+						  "\n" + additionalDescription;
+
+		helpFileName = Const::hxModuleName + GetLanguage() + Const::helpFileExtension;
+
+		err.Raise(errorId, description, helpFileName);
+	}
+
+
+	static function Error::GetLocationDescription(
+		variable& fileName,
+		variable& functionName,
+		variable& lineNumber) variable
+	{
+		variable location;
+		location = fileName + "(" + lineNumber + ") : " + functionName + "().";
+		return( location );
+	}
+
+}
+
+
+
+// $$author=ContainerAdministrator$$valid=1$$time=2025-09-09 20:13$$checksum=d6a9abb5$$length=099$$

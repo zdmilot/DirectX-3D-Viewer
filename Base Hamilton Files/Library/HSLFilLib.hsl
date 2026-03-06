@@ -1,0 +1,433 @@
+// This is a part of the HSL File Library.
+// Copyright (C) by HAMILTON Bonaduz AG, CH-7402 Bonaduz.
+// All rights reserved.
+//
+// Modification History
+// 2001-06-26  bandenmatten : Removed onerror goto statements from library functions.
+// 2001-07-17  bandenmatten : Divided library into interface and implemenation.
+// 2001-07-30  bandenmatten : Decorated fileName in function FilFindFile() with text 
+//										delimiters "" if not already present.
+// 2001-11-19  bandenmatten : Added function FilGetMethodsPath, FilGetLogFilesPath.
+// 2002-01-07  bandenmatten : Set the delimiter in function FilFindFile from the default value 
+//										to the value "@".
+// 2002-03-04  bandenmatten : Added functions FilGetBinPath, FilGetLibraryPath.
+// 2002-03-21  bandenmatten : Added function FilGetConfigPath.
+// 2002-06-26  bandenmatten : Added function FilGetSystemPath.
+// 2002-07-06  bandenmatten : Made library language independant.
+// 2002-09-17  bandenmatten : Fixed a bug in FilFindFile.
+// 2002-12-05  bandenmatten : Specified return values for exported library functions.
+// 2004-04-01  bandenmatten : The file.Open() command newly creates an entry ColNameHeader=False in the schema.ini file 
+// 	  								--> Function FilFindFile() from the HSLFilLib.hsl library no longer needs to emit a dummy header line. 
+//										Fixed this bug.
+// 2007-07-02  bandenmatten : Removed define _FIL_WINNT.
+// 2009-12-04  bandenmatten : Added function FilGetLabwarePath.
+
+#ifndef __HSLFilLib_hsl__
+#define __HSLFilLib_hsl__	1
+
+// Interface to File library 
+#ifndef HSL_RUNTIME
+function FilReadString(file& fileObj) variable													{return(0);}
+function FilWriteString(file& fileObj, variable& stringObj) variable						{return(0);}
+function FilEof(file& fileObj) variable															{return(0);}
+function FilUpdateRecord(file& fileObj) variable												{return(0);}
+function FilRemoveFields(file& fileObj) void														{return;}
+function FilGetCommState(file& port) variable													{return(0);}
+function FilSetCommState(file& port, variable& cfgFile) variable							{return(0);}
+function FilGetCommTimeouts(file& port) variable												{return(0);}
+function FilSetCommTimeouts(file& port, variable& cfgFile) variable						{return(0);}
+function FilFindFile(variable& fileName) variable												{return(0);}
+function FilFindNextFile() variable																	{return(0);}
+function FilSearchPath(variable& fileName) variable											{return(0);}
+function FilIsNull(variable& value) variable														{return(0);}
+function FilFormatBarcodeFile(variable& dataSource, variable& dataTarget) variable	{return(0);}
+function FilGetBinPath() variable																	{return(0);}
+function FilGetLibraryPath() variable																{return(0);}
+function FilGetMethodsPath() variable																{return(0);}
+function FilGetLogFilesPath() variable																{return(0);}
+function FilGetConfigPath() variable																{return(0);}
+function FilGetLabwarePath() variable																{return(0);}
+function FilGetSystemPath() variable																{return(0);}
+#endif
+
+// Implementation of File library 
+#ifdef HSL_RUNTIME
+
+// Data 
+static const variable filCmdPrompt("cmd.exe");
+
+namespace Fil
+{
+
+	// --------------------------------------------------------------------------------------
+	// Error Ids
+	// --------------------------------------------------------------------------------------
+
+	namespace IDE
+	{
+		static const variable first(0);									// guard
+		static const variable noError(first);							// No error.
+		static const variable shellOutEchoFailed(first + 1);		// Failed to shell out echo command.
+		static const variable shellOutDirFailed(first + 2);		// Failed to shell out dir command.
+		static const variable shellOutDeleteFailed(first + 3);	// Failed to shell out delete command.
+		static const variable addFieldFailed(first + 4);			// Failed to add field to record.
+		static const variable readRecordFailed(first + 5);			// Failed to read record.
+		static const variable openFileFailed(first + 6);			// Failed to open file: 
+		static const variable closeFileFailed(first + 7);			// Failed to close file: 
+		static const variable last(first + 7);							// guard
+	}
+
+	// --------------------------------------------------------------------------------------
+	// String Ids
+	// --------------------------------------------------------------------------------------
+
+	namespace IDS
+	{
+		static const variable first(IDE::last + 1);					// guard
+		static const variable helpFileName(first + 1);				// help file name
+		static const variable last(first + 1);							// guard
+	}
+
+	#ifndef __HSLStringTableLib_hsl__
+	#include "HSLStringTableLib.hs_"
+	#endif
+
+	// --------------------------------------------------------------------------------------
+	// Library Initialization 
+	// --------------------------------------------------------------------------------------
+
+	static variable initializedLib(hslFalse);							// initialization state of the File Library
+	static function InitFileLibrary();									// initializes the File Library (only once)
+
+	// --------------------------------------------------------------------------------------
+	// Exception handling
+	// --------------------------------------------------------------------------------------
+
+	namespace Error
+	{
+		static function Raise(												// raises a runtime error
+			variable errorId,													// i: error id, one of IDE
+			variable& fileName,												// i: file name
+			variable& funcName,												// i: function name
+			variable& lineNumber)											// i: line number
+		{
+			variable description("");
+
+			// set error description
+			description = fileName + "(" + lineNumber + ") : " + funcName + "()\n" + StringTable::Load(errorId);
+			err.SetDescription(description);
+
+			// raise error
+			err.Raise(errorId, err.GetDescription(), StringTable::Load(IDS::helpFileName));
+		}
+
+		static function RaiseEx(
+			variable errorId,
+			variable errorDetail,
+			variable& fileName,
+			variable& funcName,
+			variable& lineNumber)
+		{
+			variable description("");
+
+			// set error description
+			description = fileName + "(" + lineNumber + ") : " + funcName + "()\n" + StringTable::Load(errorId) + errorDetail;
+			err.SetDescription(description);
+
+			// raise error
+			err.Raise(errorId, err.GetDescription(), StringTable::Load(IDS::helpFileName));
+		}
+	}
+
+	// --------------------------------------------------------------------------------------
+	// Functions
+	// --------------------------------------------------------------------------------------
+
+	static function InitFileLibrary()
+	{
+		// initialize the File Library once only
+		if (!initializedLib)
+		{
+			StringTable::Init("HSLFilLib");
+			//StringTable::Dump();
+			initializedLib = hslTrue;
+		}
+		return(initializedLib);
+	}
+}
+
+// Wrapper function  
+function FilReadString(file& fileObj) variable
+{
+	return(fileObj.ReadString());
+}
+
+// Wrapper function  
+function FilWriteString(file& fileObj, variable& stringObj) variable
+{
+	return(fileObj.WriteString(stringObj));
+}
+
+// Wrapper function  
+function FilEof(file& fileObj) variable
+{
+	return(fileObj.Eof());
+}
+
+// Wrapper function  
+function FilUpdateRecord(file& fileObj) variable
+{
+	return(fileObj.UpdateRecord());
+}
+
+// Wrapper function  
+function FilRemoveFields(file& fileObj) void
+{
+	fileObj.RemoveFields();
+}
+
+// Wrapper function  
+function FilGetCommState(file& port) variable
+{
+	return(GetCommState(port));
+}
+
+// Wrapper function  
+function FilSetCommState(file& port, variable& cfgFile) variable
+{
+	if ("" != cfgFile)
+		return(SetCommState(port, cfgFile));
+	else
+		return(SetCommState(port));
+}
+
+// Wrapper function  
+function FilGetCommTimeouts(file& port) variable
+{
+	return(GetCommTimeouts(port));
+}
+
+// Wrapper function  
+function FilSetCommTimeouts(file& port, variable& cfgFile) variable
+{
+	if ("" != cfgFile)
+		return(SetCommTimeouts(port, cfgFile));
+	else
+		return(SetCommTimeouts(port));
+}
+
+// Call this function to open a file search  
+static variable currentFile(0);
+static variable filFoundFiles[];
+function FilFindFile(variable& fileName) variable
+{
+	file f;
+	string fileNameStr;
+	variable fileNameVar;
+	variable foundFile;
+	variable tmpFile(GetLogFilesPath() + "\\FoundFiles_B0D0.txt");	// avoid file names that is too long
+
+	// initialize File Library
+	Fil::InitFileLibrary();
+
+	currentFile = 0;
+	filFoundFiles.SetSize(0);
+	fileNameStr = fileName;
+	fileNameVar = fileName;
+	if (fileNameStr.Find("\"") != 0)
+		 fileNameVar = "\"" + fileNameVar + "\"";
+	//ba 2004-04-01  begin
+	//if (!Shell(filCmdPrompt + " /c echo. > \"" + tmpFile + "\"", hslHide, hslSynchronous))
+	//	Fil::Error::Raise(Fil::IDE::shellOutEchoFailed, GetFileName(), GetFunctionName(), GetLineNumber());
+	//if (!Shell(filCmdPrompt + " /c dir " + fileNameVar + " /s /b >> \"" + tmpFile + "\"", hslHide, hslSynchronous))
+	if (!Shell(filCmdPrompt + " /c dir " + fileNameVar + " /s /b > \"" + tmpFile + "\"", hslHide, hslSynchronous))
+	//end
+		Fil::Error::Raise(Fil::IDE::shellOutDirFailed, GetFileName(), GetFunctionName(), GetLineNumber());
+	f.SetDelimiter("@");
+	if (!f.AddField(1, foundFile, hslString))
+		Fil::Error::Raise(Fil::IDE::addFieldFailed, GetFileName(), GetFunctionName(), GetLineNumber());
+	// do not evaluate the return code of the file Open function
+	if (!f.Open(tmpFile, hslRead))
+		Fil::Error::RaiseEx(Fil::IDE::openFileFailed, tmpFile, GetFileName(), GetFunctionName(), GetLineNumber());
+	while (!f.Eof())
+	{
+		if (!f.ReadRecord())
+			Fil::Error::Raise(Fil::IDE::readRecordFailed, GetFileName(), GetFunctionName(), GetLineNumber());
+		filFoundFiles.AddAsLast(foundFile);
+	}
+	if (f.Close())
+		Fil::Error::RaiseEx(Fil::IDE::closeFileFailed, tmpFile, GetFileName(), GetFunctionName(), GetLineNumber());
+	if (!Shell(filCmdPrompt + " /c del \"" + tmpFile + "\"", hslHide, hslSynchronous))
+		Fil::Error::Raise(Fil::IDE::shellOutDeleteFailed, GetFileName(), GetFunctionName(), GetLineNumber());
+	if (0 < filFoundFiles.GetSize())
+		return(filFoundFiles[currentFile]);
+	return("");
+}
+
+// Call this function to continue a file search from a previous 
+// call to FilFindFile 
+function FilFindNextFile() variable
+{
+	currentFile++;
+	if (currentFile < filFoundFiles.GetSize())
+		return(filFoundFiles[currentFile]);
+	return("");
+}
+
+// Wrapper function  
+function FilSearchPath(variable& fileName) variable
+{
+	return(SearchPath(fileName));
+}
+
+// Wrapper function  
+function FilGetBinPath() variable
+{
+	return(GetBinPath());
+}
+
+// Wrapper function  
+function FilGetLibraryPath() variable
+{
+	return(GetLibraryPath());
+}
+
+// Wrapper function  
+function FilGetMethodsPath() variable
+{
+	return(GetMethodsPath());
+}
+
+// Wrapper function  
+function FilGetLogFilesPath() variable
+{
+	return(GetLogFilesPath());
+}
+
+// Wrapper function  
+function FilGetConfigPath() variable
+{
+	return(GetConfigPath());
+}
+
+// Wrapper function  
+function FilGetLabwarePath() variable
+{
+	return(GetLabwarePath());
+}
+
+// Wrapper function  
+function FilGetSystemPath() variable
+{
+	return(GetSystemPath());
+}
+
+// Returns 'true' if the variable is a null value (SQL style Null) 
+function FilIsNull(variable& value) variable
+{
+	variable numType(hslTrue);
+	variable strType(hslTrue);
+	onerror goto NumError;
+	- value;
+	onerror goto StrError;
+	if (!numType)
+		value + "";
+	return(!numType && !strType);
+	NumError:
+	{
+		numType = hslFalse;
+		resume next;
+	}
+	StrError:
+	{
+		strType = hslFalse;
+		resume next;
+	}
+}
+
+//	Converts the weakly formated barcode file 'dataSource', written as ASCII text file 
+//	by the LoadCarrier step, into a strongly formated barcode file 'dataTarget' using 
+//	the following format:
+//	
+//	"Id"				record id (integer)
+//	"Specifier"		specifier (string), P = Position, C = Carrier
+//	"Position"		position (integer)
+//	"Barcode"		barcode (string)
+//	"Timestamp"		timestamp, YYYY-MM-DD hh:mm:ss (string)
+//	
+//	The strongly formated barcode file 'dataTarget' may be an ASCII text file, a 
+//	Microsoft Excel, or a Microsoft Access file.
+//	
+//	Examples:
+//	
+//	variable logPath("C:\\Program Files\\Hamilton\\logfiles\\");
+//	FilFormatBarcodeFile(logPath + "barcode_1.txt", logPath + "barcode__1.txt");
+//	FilFormatBarcodeFile(logPath + "barcode_1.txt", logPath + "barcode__1.xls barcode_1");
+//	FilFormatBarcodeFile(logPath + "barcode_1.txt", logPath + "barcode__1.mdb barcode_1");
+
+function FilFormatBarcodeFile(
+	variable& dataSource,
+	variable& dataTarget) variable
+{
+	file source;
+	file target;
+	variable id(0);
+	string specifier("");
+	variable position(0);
+	string barcode("");
+	string timestamp("");
+	variable index(0);
+	variable length(0);
+	string beginRecord("BEGIN_RECORD");
+	string endRecord("END_RECORD");
+	string recordEntry;
+	string fieldDelimiter("\t");
+
+	// initialize File Library
+	Fil::InitFileLibrary();
+
+	target.SetDelimiter(hslCSVDelimited);
+	target.AddField("Id", id, hslInteger);
+	target.AddField("Specifier", specifier, hslString);
+	target.AddField("Position", position, hslInteger);
+	target.AddField("Barcode", barcode, hslString);
+	target.AddField("Timestamp", timestamp, hslString);
+	if (!target.Open(dataTarget, hslAppend))
+		Fil::Error::RaiseEx(Fil::IDE::openFileFailed, dataTarget, GetFileName(), GetFunctionName(), GetLineNumber());
+	if (0 != target.Seek(0, hslLast))
+		target.ReadRecord();
+	if (!source.Open(dataSource, hslRead))
+		Fil::Error::RaiseEx(Fil::IDE::openFileFailed, dataSource, GetFileName(), GetFunctionName(), GetLineNumber());
+	while (!source.Eof())
+	{
+		recordEntry = source.ReadString();
+		length = recordEntry.GetLength();
+		if (0 <= recordEntry.Find(beginRecord))
+		{
+			recordEntry = recordEntry.Mid(beginRecord.GetLength() + 1, length);
+			timestamp = recordEntry;
+		}
+		else
+		{
+			if (-1 == recordEntry.Find(endRecord))
+			{
+				index = recordEntry.Find(fieldDelimiter);
+				specifier = recordEntry.Left(index);
+				recordEntry = recordEntry.Mid(index + 1, length);
+				index = recordEntry.Find(fieldDelimiter);
+				position = recordEntry.Left(index);
+				barcode = recordEntry.Mid(index + 1, length);
+				if (0 < barcode.GetLength())
+				{
+					id++;
+					target.WriteRecord();
+				}
+			}
+		}
+	}
+	return(hslTrue);
+}
+#endif
+
+#endif
+// $$author=ContainerAdministrator$$valid=1$$time=2025-09-09 20:13$$checksum=621f9ad5$$length=099$$

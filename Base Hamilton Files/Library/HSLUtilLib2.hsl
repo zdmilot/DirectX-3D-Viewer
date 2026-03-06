@@ -1,0 +1,1589 @@
+//  ------------------------------------------------------------------------------------
+//  Hamilton Company Software Product
+//  File: HSLUtilLib2.hsl
+//
+//  This is a part of the module HxUtilLib.
+//
+//  File creation date:  2006-02-14 by bandenmatten
+//
+//  Copyright (c) 2006 by Hamilton Bonaduz AG.
+//
+//
+//  Modification History
+//  --------------------
+//  1.00  2006-02-14 / bandenmatten  Copied base version from module HxStarDynDilLib.
+//  1.00  2006-04-03 / bandenmatten  Added functions:		- VarArrElementAt()
+//																			- SeqArrElementAt()
+//  1.00  2006-05-13 / bandenmatten  Renamed file: HSLUtilLib2.hs_ --> HSLUtilLib2.hsl
+//  1.00  2007-10-24 / bandenmatten  Changed functions TraceArray_X() to trace array indexes one-based and not zero-based (SCR#1307).
+//  1.00  2007-10-24 / bandenmatten  Changed functions TraceSequenceAndData_X() to trace array indexes one-based and not zero-based (SCR#1307).
+//
+//  ------------------------------------------------------------------------------------
+
+#ifndef __HSLUtilLib2_hsl__
+#define __HSLUtilLib2_hsl__	1
+
+// ----------------------------------------------------------------------------------------------------
+// Debug switches
+// ----------------------------------------------------------------------------------------------------
+
+//#define DEBUG_Util2     1		// Base debug traces
+//#define DEBUG_Util2Ex   1		// Extended debug traces (e.g. arrays / sequences)
+
+// ----------------------------------------------------------------------------------------------------
+// Interface to the Utility Library 2
+// ----------------------------------------------------------------------------------------------------
+
+//#define HSL_RUNTIME 1
+
+#ifndef HSL_RUNTIME
+namespace Util2
+{
+	function CheckValueType(
+		variable& valueToCheck,						// io:The value from which the type should be checked
+															//    If the value is type integer and checked as float the value will
+															//		be converted into a float.
+		variable& typeToCheck,						// i: The type to check, one of hslInteger, hslFloat or hslString
+		variable& addErrorDescription) void		// i: Addition error description added to the error-text if the check fails.
+	{}
+
+	function CheckValueRange(
+		variable& valueToCheck,						// i :The value from which the range should be checked
+															//    To perform the check the type is determined from this value.
+		variable rangeToCheck,						// i: The range to check, one of defined ranges in ValueCheck
+		variable& addErrorDescription) void		// i: Addition error description added to the error-text if the check fails.
+	{}
+
+	function CheckValueRangeMinMax(
+		variable& valueToCheck,						// i :The value from which the range should be checked
+															//    To perform the check the type is determined from this value.
+		variable minValue,							// i: Minimum of the  range to check, interpreted as count of chars for strings
+		variable maxValue,							// i: Minimum of the  range to check, interpreted as count of chars for strings
+		variable& addErrorDescription) void	// i: Addition error description added to the error-text if the check fails.
+	{}
+
+	function CheckValueTypeAndRange(
+		variable& valueToCheck,						// io:The value from which the type and range should be checked
+															//    If the value is type integer and check as float the value will
+															//		be converted into a float.
+		variable& typeToCheck,						// i: The type to check, one of hslInteger, hslFloat or hslString
+		variable rangeToCheck,						// i: The range to check, one of defined ranges in ValueCheck
+		variable& addErrorDescription) void		// i: Addition error description added to the error-text if the check fails.
+	{}
+
+	function CheckValueTypeAndRangeMinMax(
+		variable& valueToCheck,						// io:The value from which the type and range should be checked
+															//    If the value is type integer and check as float the value will
+															//		be converted into a float.
+		variable& typeToCheck,						// i: The type to check, one of hslInteger, hslFloat or hslString
+		variable  minValue,							// i: minimum valid value for passed number
+		variable  maxValue,							// i: maximum valid value for passed number
+		variable& addErrorDescription) void		// i: Addition error description added to the error-text if the check fails.
+	{}
+
+	function ToString(variable var) variable
+	{return(0);}
+
+	function RoundVolume(variable& volume) void
+	{}
+
+	function RoundVolumeUp(variable& volume) void
+	{}
+
+	function RoundVolumeDown(variable& volume) void
+	{}
+
+	function GetLabwarePosXYZ(
+		device&   deviceObj,							// i: The device from where to get the labware position.
+		variable& labwareId,							// i: The name of the labware item.
+		variable& positionId,						// i: The name of the position of the given labware item that should be converted to deck coordinates. If this strinng is empty, it defaults to the name of the first position in the default sequence of the given labware item.
+		variable& xCoord,								// o: A variable to retrieve the x-coordinate for the position of the given labware item.
+		variable& yCoord,								// o: A variable to retrieve the y-coordinate for the position of the given labware item.
+		variable& zCoord) void						// o: A variable to retrieve the z-coordinate for the position of the given labware item.
+	{}
+
+	namespace Error
+	{
+		function RaiseRuntimeError(				// raises a runtime error
+			variable majorID,							// i: major error ID
+			variable minorID,							// i: minor error ID
+			variable errorCode,						// i: error code
+			variable& errorDescription,			// i: error description
+			variable& helpFileName,					// i: help file name
+			variable& fileName,						// i: file name
+			variable& functionName,					// i: function name
+			variable& lineNumber) void				// i: line number
+		{}
+
+		function RaiseRuntimeErrorInclPrevErrDesc(// raises a runtime error
+			variable majorID,							// i: major error ID
+			variable minorID,							// i: minor error ID
+			variable errorCode,						// i: error code
+			variable& errorDescription,			// i: error description
+			variable& helpFileName,					// i: help file name
+			variable& fileName,						// i: file name
+			variable& functionName,					// i: function name
+			variable& lineNumber) void				// i: line number
+		{}
+
+		function RaiseLast() void					// re-throws the last runtime error
+		{}
+
+		function MakeHxResult(
+			variable majorID,
+			variable minorID,
+			variable errorCode) variable
+		{return(0);}
+	}
+
+	// --------------------------------------------------------------------------------------
+	// Array index checking
+	// --------------------------------------------------------------------------------------
+
+	function VarArrCheckIndex(						// Raises a runtime error with a detailed description if the specified index is invalid for the given array 
+		variable& varArray[],						// i: Array of variables
+		variable index,								// i: Array index to check (integer, one-based)
+		variable& varArrayName) void 				// i: Name of array (string)
+	{}
+
+	function SeqArrCheckIndex(						// Raises a runtime error with a detailed description if the specified index is invalid for the given array 
+		sequence& seqArray[],						// i: Array of sequences
+		variable index,								// i: Array index to check (integer, one-based)
+		variable& seqArrayName) void 				// i: name of array (string)
+	{}
+
+	function VarArrGetAt(							// Returns a copy of the array element at the given index, raises a runtime error with a detailed description if the specified index is invalid for the given array 
+		variable& varArray[],						// i: Array of variables
+		variable index,								// i: Array index (integer, one-based)
+		variable& varArrayName) variable 		// i: Name of array (string)
+	{return(0);}
+
+	function SeqArrGetAt(							// Returns a copy of the array element at the given index, raises a runtime error with a detailed description if the specified index is invalid for the given array 
+		sequence& seqArray[],						// i: Array of sequences
+		variable index,								// i: Array index (integer, one-based)
+		variable& seqArrayName) sequence 		// i: name of array (string)
+	{sequence s; return(s);}
+
+	// ----------------------------------------------------------------------------------------------------
+	// Debugging and tracing
+	// ----------------------------------------------------------------------------------------------------
+
+	namespace Debug
+	{
+		// Trace name, indexes and all LabIDs PosIDs of the sequence.
+		function TraceSequence(
+			sequence& sequenceObj) void			// i: sequence to trace
+		{}
+
+		function TraceSequenceAndData_1(
+			variable& description,
+			sequence& sequenceObj,
+			variable& array[]) void
+		{}
+
+		function TraceSequenceAndData_2(
+			variable& description,
+			sequence& sequenceObj,
+			variable& array_1[],
+			variable& array_2[]) void
+		{}
+
+		function TraceSequencesAndData_2(
+			variable& description,
+			sequence& sequenceObj_1,
+			sequence& sequenceObj_2,
+			variable& array_1[],
+			variable& array_2[]) void
+		{}
+
+		function TraceSequencesAndData_1(
+			variable& description,
+			sequence& sequenceObj_1,
+			sequence& sequenceObj_2,
+			variable& array[]) void
+		{}
+
+		// Sets the current settings to trace multiple arrays.
+		function SetTraceArraySettings(
+			variable indexWidth, 
+			variable elementWidth) void
+		{}
+
+		// Traces all elements of the given array.
+		function TraceArray(
+			variable& description,
+			variable& array[]) void
+		{}
+
+		// Traces all elements of the given arrays. Arrays must have same size.
+		function TraceArray_2(
+			variable& description,
+			variable& array_1[],
+			variable& array_2[]) void
+		{}
+
+		// Traces all elements of the given arrays. Arrays must have same size.
+		function TraceArray_3(
+			variable& description,
+			variable& array_1[],
+			variable& array_2[],
+			variable& array_3[]) void
+		{}
+
+		// Traces all elements of the given arrays. Arrays must have same size.
+		function TraceArray_4(
+			variable& description,
+			variable& array_1[],
+			variable& array_2[],
+			variable& array_3[],
+			variable& array_4[]) void
+		{}
+
+		// The Assert function evaluates its argument.
+		// In the the debug version of the pipetting library, if the result is 0, the function displays
+		// a diagnostic message and aborts the method. If the condition is nonzero, it does nothing.
+		// In the the release version of the pipetting library, the function does nothing.
+		//static function Assert(
+		//	variable expression,										// i: specifies a numeric expression that evaluates to nonzero or 0
+		//	variable location) void;								// i: location (string or number)
+	}
+}
+#endif	// HSL_RUNTIME
+
+// ----------------------------------------------------------------------------------------------------
+// Implementation of the Utility Library 2
+// ----------------------------------------------------------------------------------------------------
+
+#ifdef HSL_RUNTIME
+
+// ----------------------------------------------------------------------------------------------------
+// Includes
+// ----------------------------------------------------------------------------------------------------
+
+#ifndef  __HSLStrLib_hsl__
+	#include "HSLStrLib.hsl"
+#endif
+
+#ifndef  __HSLMthLib_hsl__
+	#include "HSLMthLib.hsl"
+#endif
+
+#ifndef  __HSLSynLib_hsl__
+	#include "HSLSynLib.hsl"
+#endif
+
+#ifndef  __HSLErrLib_hsl__
+	#include "HSLErrLib.hsl"
+#endif
+
+#ifndef  __HSLUtilLib2Def_hs___
+	#include "HSLUtilLib2Def.hs_"
+#endif
+
+#ifndef  __HSLUtilLibhsl__
+	#include "HSLUtilLib.hsl"
+#endif
+
+namespace Util2
+{
+	// ----------------------------------------------------------------------------------------------------
+	// Data 
+	// ----------------------------------------------------------------------------------------------------
+
+	// None
+
+	// ----------------------------------------------------------------------------------------------------
+	// Constants
+	// ----------------------------------------------------------------------------------------------------
+
+	namespace Constants
+	{
+		static const variable ModuleName("HSLUtilLib2");		// Used to generate the help-file name used during runtime
+		static const variable HelpFileExtension(".chm");		// Used to generate the help-file name used during runtime
+		static const variable VolumePrecision(1);					// Count of digits after decimal used to round any volume values zero may be used to round for zero digits.
+		static variable TraceArrayIndexWidth(4);					// The width of the index field in the TraceArray_X() functions
+		static variable TraceArrayElementWidth(25);				// The width of an element field in the TraceArray_X() functions
+	}
+
+	// ----------------------------------------------------------------------------------------------------
+	// Translated strings
+	// ----------------------------------------------------------------------------------------------------
+
+	namespace TrStr
+	{
+		static const variable ValueCheck_CheckedValue							(Translate("Inspected value: '%s1' (is of type '%s2')"));
+		static const variable ValueCheck_ExpectedType							(Translate("Expected type: '%s1'"));
+
+		static const variable ValueCheck_TypeInteger								(Translate("integer number"));
+		static const variable ValueCheck_TypeFloat								(Translate("decimal number"));
+		static const variable ValueCheck_TypeString								(Translate("string value"));					
+		static const variable ValueCheck_TypeNULL									(Translate("no type (null)"));					
+
+		static const variable ValueCheck_RangeCheckedValue						(Translate("Inspected value: '%s1'"));
+		static const variable ValueCheck_RangeExpected							(Translate("Expected range: '%s1'"));
+		static const variable ValueCheck_RangeExpectedMinMax					(Translate("Expected range: minimum='%s1', maximum='%s2'"));
+		static const variable ValueCheck_RangeExpectedMinMaxString			(Translate("Expected count of characters: minimum='%s1', maximum='%s2'"));
+
+		static const variable ValueCheck_RangeStringEmpty						(Translate("empty string"));
+		static const variable ValueCheck_RangeStringNotEmpty					(Translate("not empty string"));
+		static const variable ValueCheck_RangeNumberNotZero					(Translate("not equal to zero"));
+		static const variable ValueCheck_RangeNumberEqualToZero				(Translate("equal to zero"));
+		static const variable ValueCheck_RangeNumberLessOrEqualToZero		(Translate("less than or equal to zero"));
+		static const variable ValueCheck_RangeNumberLessOrEqualToMinusOne	(Translate("less than or equal to minus one"));
+		static const variable ValueCheck_RangeNumberLessThanZero				(Translate("less than zero"));
+		static const variable ValueCheck_RangeNumberGreaterThanZero			(Translate("greater than zero"));
+		static const variable ValueCheck_RangeNumberGreaterOrEqualToZero	(Translate("greater or equal to zero"));
+		static const variable ValueCheck_RangeNumberGreaterOrEqualToOne	(Translate("greater or equal to one"));
+		static const variable ValueCheck_RangeInvalid							(Translate("The passed range to check is invalid!"));
+
+		static const variable DebugDEBUG												(Translate("DEBUG"));
+		static const variable DebugName												(Translate("Name"));
+		static const variable DebugCurrent											(Translate("Current"));
+		static const variable DebugEnd												(Translate("End"));
+		static const variable DebugTotal												(Translate("Total"));
+		static const variable DebugElement											(Translate("Element"));
+		static const variable DebugErrorMustHaveSameSize1						(Translate("Error: Sequence(s) and array(s) must have same size."));
+		static const variable DebugEmptySequences									(Translate("Empty sequence(s) and array(s)."));
+		static const variable DebugSequence											(Translate("Sequence"));
+		static const variable DebugEmptyArray										(Translate("Empty array(s)."));
+		static const variable DebugErrorMustHaveSameSize2						(Translate("Error: Array(s) must have same size."));
+
+		static const variable ArrayIndexNotANumber								(Translate("Index of array '%s1' must be a positive integer number (actual type of array index is '%s2')."));
+		static const variable ArrayIndexNotAnInteger								(Translate("Index of array '%s1' must be a positive integer number (actual type of array index is '%s2')."));
+		static const variable ArrayIndexMustNotBeNegative						(Translate("Index of array '%s1' must be greater than or equal to one (actual value of array index is '%s2')."));
+		static const variable ArrayIndexMustNotBeGreaterThanArraySize		(Translate("Index of array '%s1' must be less than or equal to the size of the array (actual value of array index is '%s2', actual size of array is '%s3')."));
+
+		static const variable TypeInteger											(Translate("integer"));
+		static const variable TypeFloat												(Translate("float"));
+		static const variable TypeString												(Translate("string"));
+		static const variable TypeNull												(Translate("null"));
+	}
+
+	// ----------------------------------------------------------------------------------------------------
+	// Traceing
+	// ----------------------------------------------------------------------------------------------------
+
+	namespace TraceStatus
+	{
+		static const variable start(1);								// action status for formated trace
+		static const variable complete(2);							// action status for formated trace
+		static const variable error_(3);								// action status for formated trace
+		static const variable progress(4);							// action status for formated trace
+		static const variable completeWithError(5);				// action status for formated trace
+	}
+
+	// ----------------------------------------------------------------------------------------------------
+	// Functions
+	// ----------------------------------------------------------------------------------------------------
+
+	namespace Error
+	{
+		static const variable MajorID(0x63);						// Major error id
+
+		namespace MinorID		// Minor error ids
+		{
+			static const variable GeneralRuntimeError(0x01);
+			//static const variable ....(0x1F)
+		}
+
+		namespace ErrorCode	// Error codes
+		{
+			static const variable Unexpected                   (0x0001);
+			static const variable InvalidParameter        		(0x0002);
+			static const variable ValueCheckFailedType         (0x0003);
+			static const variable ValueCheckFailedRange        (0x0004);
+			static const variable LabwareError                 (0x0005);
+			static const variable ArrayIndexNotANumber         (0x0006);
+			static const variable ArrayIndexNotAnInteger       (0x0007);
+			static const variable ArrayIndexMustNotBeNegative  (0x0008);
+			static const variable ArrayIndexMustNotBeGreaterThanArraySize(0x0009);
+
+			//static const variable ....(0xFFFF)					// If a new ErrorCode is added the function Error::MakeErrorDescription()
+																				// must be extended also by a mapping to the error text
+		}
+
+		namespace TrStr		// Translated error strings
+		{
+			static const variable Unexpected							(Translate("Unexpected error."));
+			static const variable InvalidParameter					(Translate("The parameter is invalid:"));
+			static const variable ValueCheckFailedType         (Translate("Check of value failed!\nA value passed to function or read from a file has an invalid type."));
+			static const variable ValueCheckFailedRange        (Translate("Check of value failed!\nA value passed to function or read from a file is not within the expected range."));
+			static const variable LabwareError                 (Translate("Error during access of data for labware (LabwareId/PositonId)."));
+			static const variable NoErrorTextAvailable			(Translate("No error description available."));
+		}
+
+		// ----------------------------------------------------------------------------------------------------
+		// Error functions
+		// ----------------------------------------------------------------------------------------------------
+
+		static function MakeErrorDescription(
+			variable errorCode,
+			variable& additionalDescr) variable
+		{
+			variable description("");
+			variable errorNumber(0);
+
+			if (         ErrorCode::Unexpected == errorCode )
+				description = TrStr::Unexpected;
+			else if (    ErrorCode::InvalidParameter == errorCode )
+				description = TrStr::InvalidParameter;
+			else if (    ErrorCode::ValueCheckFailedType == errorCode )
+				description = TrStr::ValueCheckFailedType;
+			else if (    ErrorCode::ValueCheckFailedRange == errorCode )
+				description = TrStr::ValueCheckFailedRange;
+			else if (    ErrorCode::LabwareError == errorCode )
+				description = TrStr::LabwareError;
+			else if (    ErrorCode::ArrayIndexNotANumber == errorCode )
+				description = TrStr::ArrayIndexNotANumber;
+			else if (    ErrorCode::ArrayIndexNotAnInteger == errorCode )
+				description = TrStr::ArrayIndexNotAnInteger;
+			else if (    ErrorCode::ArrayIndexMustNotBeNegative == errorCode )
+				description = TrStr::ArrayIndexMustNotBeNegative;
+			else if (    ErrorCode::ArrayIndexMustNotBeGreaterThanArraySize == errorCode )
+				description = TrStr::ArrayIndexMustNotBeGreaterThanArraySize;
+			//...		
+			//...
+			//... To be extended if a new errorCode's are added
+			//...
+			//...
+			else
+			{
+				description = TrStr::NoErrorTextAvailable;
+			}
+
+			// Generate the full description
+			if ( additionalDescr != "" )
+			{
+				description = description + "\n\n"+additionalDescr;
+			}
+			return(description);
+		}
+
+		static function MakeHxResult(
+				variable major,
+				variable minor,
+				variable code) variable
+		{
+			variable hxResult(0);
+
+			// Check input params to be valid.
+			// Calling function Error::RaiseRuntimeError() here, raises the runtime error 'recursive or concurrent function call',
+			// --> fall through input params check.
+
+			// Make HxResult
+			hxResult = MthShiftLeft(minor & 0x1F, 24) | MthShiftLeft(major & 0xFF, 16) | (code & 0xFFFF);
+
+			#ifdef DEBUG_Util2
+				FormatTrace("DEBUG", GetFunctionName(), TraceStatus::progress, "major=", major, ", minor=", minor, ", code=", code, " -> HxResult=", hxResult);
+			#endif
+
+			return( hxResult );
+		}
+
+		static function RaiseRuntimeError(
+			variable majorID,
+			variable minorID,
+			variable errorCode,
+			variable& errorDescription,
+			variable& helpFileName,
+			variable& fileName,
+			variable& functionName,
+			variable& lineNumber) void
+		{
+			variable errorNumber(0);
+			variable description("");
+
+			description = fileName + "(" + lineNumber + ") : " + functionName + "().\n\n" + errorDescription;
+			err.SetDescription(description);
+
+			// Raise error
+			err.Raise(MakeHxResult(majorID, minorID, errorCode), err.GetDescription(), helpFileName);
+		}
+
+		static function RaiseLast() void
+		{
+			// re-raise error
+			err.Raise();
+		}
+
+		static function RaiseRuntimeErrorInclPrevErrDesc(
+			variable majorID,
+			variable minorID,
+			variable errorCode,
+			variable& errorDescription,
+			variable& helpFileName,
+			variable& fileName,
+			variable& functionName,
+			variable& lineNumber) void
+		{
+			if ( ErrMajor(err.GetId()) != MajorID )
+			{	
+				// Error not generated from this file e.g. EOF-error,
+				// generate error with ID from this module, include error text from previous error
+
+				variable extendedDescr;
+				extendedDescr = "--------------------\n" + err.GetDescription() + "--------------------";
+				if ( errorDescription != "" )
+				{
+					extendedDescr = errorDescription + "\n\n" + extendedDescr;
+				}
+
+				RaiseRuntimeError(majorID, minorID, errorCode, extendedDescr, helpFileName, fileName, functionName, lineNumber);
+			}
+			else
+			{
+				// The currenly set error is already from this module, re-raise
+				RaiseLast();
+			}
+		}
+	}
+
+	// ----------------------------------------------------------------------------------------------------
+	// Utility functions
+	// ----------------------------------------------------------------------------------------------------
+
+	static function ToString(variable var) variable
+	{
+		variable type;
+
+		type = GetType(var);
+		if (hslInteger.Compare(type) == 0)
+		{
+			var = IStr(var);
+		}
+		else
+		{
+			if (hslFloat.Compare(type) == 0)
+			{
+				var = FStr(var);
+			}
+			else
+			{
+				if (hslString.Compare(type) != 0)
+				{
+					// has no type, return an empty string
+					var = "";
+				}
+			}
+		}
+		return(var);
+	}
+
+	static function ToFixedWidthString(variable var, variable width) variable
+	{
+		variable varStr("");
+
+		varStr = ToString(var);
+		StrFillRight(varStr, " ", width);
+		return(varStr);
+	}
+
+	static function GetModuleHelpFileName() variable
+	{
+		variable helpFile("");
+		variable thisFilePath("");
+		variable lastBackSlashPos(-1);
+
+		// Note: The help for this library must be located in same directory as this file.
+		// Evaluate the path to concatniate it with the MolduleName+Extension.
+		thisFilePath = GetFileName();
+		lastBackSlashPos = StrReverseFind(thisFilePath, "\\");
+		if ( -1 < lastBackSlashPos )
+		{
+			thisFilePath = StrLeft(thisFilePath, lastBackSlashPos+1);
+		}
+
+		helpFile = thisFilePath + Constants::ModuleName + GetLanguage() + Constants::HelpFileExtension;		// current language
+		if ("" == SearchPath(helpFile))
+		{
+			helpFile = thisFilePath + Constants::ModuleName + "Enu" + Constants::HelpFileExtension;			// default language, fixed to enu
+			if ("" == SearchPath(helpFile))
+			{
+				helpFile = thisFilePath + Constants::ModuleName + Constants::HelpFileExtension;					// no language
+				if ("" == SearchPath(helpFile))
+				{
+					// no help file found within the search directory
+					// return the helpFileName with current language, but without path.
+					// Maybe its existing/found at other place or its registered and found by this way.
+					helpFile = Constants::ModuleName + GetLanguage() + Constants::HelpFileExtension;
+				}
+			}
+		}
+		
+		#ifdef DEBUG_Util2
+			FormatTrace("DEBUG", GetFunctionName(), TraceStatus::progress, "Module Help File: ", helpFile);
+		#endif
+
+		return( helpFile );
+	}
+
+	static function CheckValueType(
+		variable& valueToCheck,						// io:
+		variable& typeToCheck,						// i:
+		variable& addErrorDescription) void		// i:
+	{
+		string valueType("");
+
+		// Check input params to be valid
+		if (!Util::IsString(typeToCheck))
+		{
+			Error::RaiseRuntimeError(Error::MajorID, Error::MinorID::GeneralRuntimeError, Error::ErrorCode::InvalidParameter,
+											Error::MakeErrorDescription(Error::ErrorCode::InvalidParameter, "typeToCheck"), 
+											GetModuleHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+		if (ValueType::Integer != typeToCheck && ValueType::Float != typeToCheck && ValueType::String != typeToCheck)
+		{
+			Error::RaiseRuntimeError(Error::MajorID, Error::MinorID::GeneralRuntimeError, Error::ErrorCode::InvalidParameter,
+											Error::MakeErrorDescription(Error::ErrorCode::InvalidParameter, "typeToCheck"), 
+											GetModuleHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+		if (!Util::IsString(addErrorDescription))
+		{
+			Error::RaiseRuntimeError(Error::MajorID, Error::MinorID::GeneralRuntimeError, Error::ErrorCode::InvalidParameter,
+											Error::MakeErrorDescription(Error::ErrorCode::InvalidParameter, "addErrorDescription"), 
+											GetModuleHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+
+		// Check value type to be valid
+		valueType = GetType(valueToCheck);
+
+		if ( (hslFloat.Compare(typeToCheck) == 0) && (valueType.Compare(hslInteger) == 0) )
+		{
+			// We have an integer in hand but it should be checked as float
+			// Convert the in/out parameter to float.
+			valueToCheck = valueToCheck * 1.0;
+			valueType = GetType(valueToCheck);		// must be hslFloat now
+		}
+
+		if ( valueType.Compare(typeToCheck) != 0 )
+		{
+			// The value is not of same type as we must check, raise an error
+			variable strValueType, strCheckType;
+			variable strErrText, strTemp;
+
+			if ( valueType.Compare(hslInteger) == 0 )
+				strValueType = TrStr::ValueCheck_TypeInteger;
+			else if ( valueType.Compare(hslFloat) == 0 )
+				strValueType = TrStr::ValueCheck_TypeFloat;
+			else if ( valueType.Compare(hslString) == 0 )
+				strValueType = TrStr::ValueCheck_TypeString;
+			else
+				strValueType = TrStr::ValueCheck_TypeNULL;
+
+			if ( hslInteger.Compare(typeToCheck) == 0 )
+				strCheckType = TrStr::ValueCheck_TypeInteger;
+			else if ( hslFloat.Compare(typeToCheck) == 0 )
+				strCheckType = TrStr::ValueCheck_TypeFloat;
+			else if ( hslString.Compare(typeToCheck) == 0 )
+				strCheckType = TrStr::ValueCheck_TypeString;
+			else
+				strValueType = TrStr::ValueCheck_TypeNULL;
+
+			strTemp = TrStr::ValueCheck_CheckedValue;
+			StrReplace(strTemp, "%s1", ToString(valueToCheck));
+			StrReplace(strTemp, "%s2", strValueType);
+			strErrText = strTemp;
+
+			strTemp = TrStr::ValueCheck_ExpectedType;
+			StrReplace(strTemp, "%s1", strCheckType);
+			strErrText = strErrText + "\n" + strTemp;
+
+			strErrText = strErrText + "\n\n" + addErrorDescription;
+
+			Error::RaiseRuntimeError(Error::MajorID, Error::MinorID::GeneralRuntimeError, Error::ErrorCode::ValueCheckFailedType,
+											Error::MakeErrorDescription(Error::ErrorCode::ValueCheckFailedType, strErrText), 
+											GetModuleHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+	}
+
+	static function CheckValueRange(
+		variable& valueToCheck,						// i:
+		variable rangeToCheck,						// i:
+		variable& addErrorDescription) void		// i:
+	{
+		variable valueType, rangeCheckFailed, rangeCheckErrorText;
+
+		// Check input params to be valid
+		if (!Util::IsInteger(rangeToCheck))
+		{
+			Error::RaiseRuntimeError(Error::MajorID, Error::MinorID::GeneralRuntimeError, Error::ErrorCode::InvalidParameter,
+											Error::MakeErrorDescription(Error::ErrorCode::InvalidParameter, "rangeToCheck"), 
+											GetModuleHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+		if (rangeToCheck < ValueCheck::First || ValueCheck::Last < rangeToCheck)
+		{
+			Error::RaiseRuntimeError(Error::MajorID, Error::MinorID::GeneralRuntimeError, Error::ErrorCode::InvalidParameter, 
+											Error::MakeErrorDescription(Error::ErrorCode::InvalidParameter, "rangeToCheck"), 
+											GetModuleHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+		if (!Util::IsString(addErrorDescription))
+		{
+			Error::RaiseRuntimeError(Error::MajorID, Error::MinorID::GeneralRuntimeError, Error::ErrorCode::InvalidParameter, 
+											Error::MakeErrorDescription(Error::ErrorCode::InvalidParameter, "addErrorDescription"), 
+											GetModuleHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+
+		// Check value range to be valid
+		valueType = GetType(valueToCheck);
+
+		if ( ValueCheck::RangeNoCheck == rangeToCheck )
+		{
+			// No range check to perform
+			return;
+		}
+
+		rangeCheckFailed = hslFalse;
+		if ( hslString.Compare(valueType) == 0 )
+		{
+			if ( ValueCheck::RangeStringEmpty == rangeToCheck )
+			{
+				if ( StrGetLength(valueToCheck) != 0 )
+				{
+					rangeCheckFailed = hslTrue;
+					rangeCheckErrorText = TrStr::ValueCheck_RangeStringEmpty;
+				}
+			}
+			else if ( ValueCheck::RangeStringNotEmpty == rangeToCheck )
+			{
+				if ( StrGetLength(valueToCheck) < 1 )
+				{
+					rangeCheckFailed = hslTrue;
+					rangeCheckErrorText = TrStr::ValueCheck_RangeStringNotEmpty;
+				}
+			}
+			else
+			{
+				// unexpected range specified.
+				rangeCheckFailed = hslTrue;
+				rangeCheckErrorText = TrStr::ValueCheck_RangeInvalid;
+			}
+		}
+		else if ( hslInteger.Compare(GetType(valueToCheck)) == 0 || hslFloat.Compare(GetType(valueToCheck)) == 0 )
+		{
+			// float or integer
+			if ( ValueCheck::RangeNumberNotZero == rangeToCheck )
+			{
+				if (		( hslInteger.Compare(valueType) == 0 && !(valueToCheck != 0) )
+						|| ( hslFloat.Compare(valueType)   == 0 && !(valueToCheck != 0.0) ) )
+				{
+					rangeCheckFailed = hslTrue;
+					rangeCheckErrorText = TrStr::ValueCheck_RangeNumberNotZero;
+				}
+			}
+			else if ( ValueCheck::RangeNumberEqualToZero == rangeToCheck )
+			{
+				if (		( hslInteger.Compare(valueType) == 0 && !(valueToCheck == 0) )
+						|| ( hslFloat.Compare(valueType)   == 0 && !(valueToCheck == 0.0) ) )
+				{
+					rangeCheckFailed = hslTrue;
+					rangeCheckErrorText = TrStr::ValueCheck_RangeNumberEqualToZero;
+				}
+			}
+			else if ( ValueCheck::RangeNumberLessOrEqualToZero == rangeToCheck )
+			{
+				if (		( hslInteger.Compare(valueType) == 0 && !(valueToCheck <= 0) )
+						|| ( hslFloat.Compare(valueType)   == 0 && !(valueToCheck <= 0.0) ) )
+				{
+					rangeCheckFailed = hslTrue;
+					rangeCheckErrorText = TrStr::ValueCheck_RangeNumberLessOrEqualToZero;
+				}
+			}
+			else if ( ValueCheck::RangeNumberLessOrEqualToMinusOne == rangeToCheck )
+			{
+				if (		( hslInteger.Compare(valueType) == 0 && !(valueToCheck <= -1) )
+						|| ( hslFloat.Compare(valueType)   == 0 && !(valueToCheck <= -1.0) ) )
+				{
+					rangeCheckFailed = hslTrue;
+					rangeCheckErrorText = TrStr::ValueCheck_RangeNumberLessOrEqualToMinusOne;
+				}
+			}
+			else if ( ValueCheck::RangeNumberLessThanZero == rangeToCheck )
+			{
+				if (		( hslInteger.Compare(valueType) == 0 && !(valueToCheck < 0) )
+						|| ( hslFloat.Compare(valueType)   == 0 && !(valueToCheck < 0.0) ) )
+				{
+					rangeCheckFailed = hslTrue;
+					rangeCheckErrorText = TrStr::ValueCheck_RangeNumberLessThanZero;
+				}
+			}
+			else if ( ValueCheck::RangeNumberGreaterThanZero == rangeToCheck )
+			{
+				if (		( hslInteger.Compare(valueType) == 0 && !(valueToCheck > 0) )
+						|| ( hslFloat.Compare(valueType)   == 0 && !(valueToCheck > 0.0) ) )
+				{
+					rangeCheckFailed = hslTrue;
+					rangeCheckErrorText = TrStr::ValueCheck_RangeNumberGreaterThanZero;
+				}
+			}
+			else if ( ValueCheck::RangeNumberGreaterOrEqualToZero == rangeToCheck )
+			{
+				if (		( hslInteger.Compare(valueType) == 0 && !(valueToCheck >= 0) )
+						|| ( hslFloat.Compare(valueType)   == 0 && !(valueToCheck >= 0.0) ) )
+				{
+					rangeCheckFailed = hslTrue;
+					rangeCheckErrorText = TrStr::ValueCheck_RangeNumberGreaterOrEqualToZero;
+				}
+			}
+			else if ( ValueCheck::RangeNumberGreaterOrEqualToOne == rangeToCheck )
+			{
+				if (		( hslInteger.Compare(valueType) == 0 && !(valueToCheck >= 1) )
+						|| ( hslFloat.Compare(valueType)   == 0 && !(valueToCheck >= 1.0) ) )
+				{
+					rangeCheckFailed = hslTrue;
+					rangeCheckErrorText = TrStr::ValueCheck_RangeNumberGreaterOrEqualToOne;
+				}
+			}
+			else
+			{
+				// unexpected range specified.
+				rangeCheckFailed = hslTrue;
+				rangeCheckErrorText = TrStr::ValueCheck_RangeInvalid;
+			}
+		}
+		else
+		{
+			Error::RaiseRuntimeError(Error::MajorID, Error::MinorID::GeneralRuntimeError, Error::ErrorCode::Unexpected, 
+											Error::MakeErrorDescription(Error::ErrorCode::Unexpected, Translate("Unexpected type of variable (NULL)")), 
+											GetModuleHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+
+		if ( rangeCheckFailed )
+		{
+			variable strErrText, strTemp;
+
+			strTemp = TrStr::ValueCheck_RangeCheckedValue;
+			StrReplace(strTemp, "%s1", ToString(valueToCheck));
+			strErrText = strTemp;
+
+			strTemp = TrStr::ValueCheck_RangeExpected;
+			StrReplace(strTemp, "%s1", rangeCheckErrorText);
+			strErrText = strErrText + "\n" + strTemp;
+
+			strErrText = strErrText + "\n\n" + addErrorDescription;
+
+			Error::RaiseRuntimeError(Error::MajorID, Error::MinorID::GeneralRuntimeError, Error::ErrorCode::ValueCheckFailedRange, 
+											Error::MakeErrorDescription(Error::ErrorCode::ValueCheckFailedRange, strErrText), 
+											GetModuleHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+	}
+
+	static function CheckValueRangeMinMax(
+		variable& valueToCheck,						// i:
+		variable minValue,							// i:
+		variable maxValue,							// i:
+		variable& addErrorDescription) void		// i:
+	{
+
+		// Check input params to be valid
+		if (!Util::IsNumber(minValue))
+		{
+			Error::RaiseRuntimeError(Error::MajorID, Error::MinorID::GeneralRuntimeError, Error::ErrorCode::InvalidParameter, 
+											Error::MakeErrorDescription(Error::ErrorCode::InvalidParameter, "minValue"), 
+											GetModuleHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+		if (!Util::IsNumber(maxValue))
+		{
+			Error::RaiseRuntimeError(Error::MajorID, Error::MinorID::GeneralRuntimeError, Error::ErrorCode::InvalidParameter, 
+											Error::MakeErrorDescription(Error::ErrorCode::InvalidParameter, "maxValue"), 
+											GetModuleHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+		if (maxValue < minValue)
+		{
+			Error::RaiseRuntimeError(Error::MajorID, Error::MinorID::GeneralRuntimeError, Error::ErrorCode::InvalidParameter, 
+											Error::MakeErrorDescription(Error::ErrorCode::InvalidParameter, "maxValue"), 
+											GetModuleHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+		if (!Util::IsString(addErrorDescription))
+		{
+			Error::RaiseRuntimeError(Error::MajorID, Error::MinorID::GeneralRuntimeError, Error::ErrorCode::InvalidParameter, 
+											Error::MakeErrorDescription(Error::ErrorCode::InvalidParameter, "addErrorDescription"), 
+											GetModuleHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+
+		// Check value range to be valid
+		if ( hslString.Compare(GetType(valueToCheck)) == 0 )
+		{
+			if (StrGetLength(valueToCheck) < minValue || StrGetLength(valueToCheck) > maxValue )
+			{
+				variable strErrText, strTemp;
+
+				strTemp = TrStr::ValueCheck_RangeCheckedValue;
+				StrReplace(strTemp, "%s1", ToString(valueToCheck));
+				strErrText = strTemp;
+
+				strTemp = TrStr::ValueCheck_RangeExpectedMinMaxString;
+				StrReplace(strTemp, "%s1", ToString(minValue));
+				StrReplace(strTemp, "%s2", ToString(maxValue));
+				strErrText = strErrText + "\n" + strTemp;
+
+				strErrText = strErrText + "\n\n" + addErrorDescription;
+
+				Error::RaiseRuntimeError(Error::MajorID, Error::MinorID::GeneralRuntimeError, Error::ErrorCode::ValueCheckFailedRange, 
+												Error::MakeErrorDescription(Error::ErrorCode::ValueCheckFailedRange, strErrText), 
+												GetModuleHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+			}
+		}
+		else if ( hslInteger.Compare(GetType(valueToCheck)) == 0 || hslFloat.Compare(GetType(valueToCheck)) == 0 )
+		{
+			if (valueToCheck < minValue || valueToCheck > maxValue )
+			{
+				variable strErrText, strTemp;
+
+				strTemp = TrStr::ValueCheck_RangeCheckedValue;
+				StrReplace(strTemp, "%s1", ToString(valueToCheck));
+				strErrText = strTemp;
+
+				strTemp = TrStr::ValueCheck_RangeExpectedMinMax;
+				StrReplace(strTemp, "%s1", ToString(minValue));
+				StrReplace(strTemp, "%s2", ToString(maxValue));
+				strErrText = strErrText + "\n" + strTemp;
+
+				strErrText = strErrText + "\n\n" + addErrorDescription;
+
+				Error::RaiseRuntimeError(Error::MajorID, Error::MinorID::GeneralRuntimeError, Error::ErrorCode::ValueCheckFailedRange, 
+												Error::MakeErrorDescription(Error::ErrorCode::ValueCheckFailedRange, strErrText), 
+												GetModuleHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+			}
+		}
+		else
+		{
+			Error::RaiseRuntimeError(Error::MajorID, Error::MinorID::GeneralRuntimeError, Error::ErrorCode::Unexpected, 
+											Error::MakeErrorDescription(Error::ErrorCode::Unexpected, Translate("Unexpected type of variable (NULL)")), 
+											GetModuleHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+	}
+
+
+	static function CheckValueTypeAndRange(
+		variable& valueToCheck,					// io:
+		variable& typeToCheck,					// i:
+		variable rangeToCheck,					// i:
+		variable& addErrorDescription) void	// i:
+	{
+		CheckValueType(valueToCheck, typeToCheck, addErrorDescription);
+		CheckValueRange(valueToCheck, rangeToCheck, addErrorDescription);
+	}
+
+	static function CheckValueTypeAndRangeMinMax(
+		variable& valueToCheck,						// io:
+		variable& typeToCheck,						// i:
+		variable  minValue,							// i:
+		variable  maxValue,							// i:
+		variable& addErrorDescription) void		// i:
+	{
+		CheckValueType(valueToCheck, typeToCheck, addErrorDescription);
+		CheckValueRangeMinMax(valueToCheck, minValue, maxValue, addErrorDescription);
+	}
+
+	static function RoundVolume(variable& volume) void
+	{
+		volume = MthRound(volume, Constants::VolumePrecision);
+	}
+
+	static function RoundVolumeUp(variable& volume) void
+	{
+		volume = volume + 0.49999999 * (10^(-Constants::VolumePrecision));		// don't use 0.5000 because this rounds 300.0 to 300.1 (precission 1)
+		RoundVolume(volume);
+	}
+
+	static function RoundVolumeDown(variable& volume) void
+	{
+		volume = volume - 0.49999999 * (10^(-Constants::VolumePrecision));		// don't use 0.5000 because this rounds 300.0 to 299.9 (precission 1)
+		RoundVolume(volume);
+	}
+
+
+	static function GetLabwarePosXYZ(
+		device    deviceObj,		// i:
+		variable& labwareId,		// i:
+		variable& positionId,	// i:
+		variable& xCoord,			// o:
+		variable& yCoord,			// o:
+		variable& zCoord) void	// o:
+	{
+		variable arrPos[];
+
+		onerror goto LabwareError;
+
+		xCoord=-1; yCoord=-1; zCoord=-1;
+
+		if ( 0 == deviceObj.GetLabwarePosition(labwareId, arrPos, positionId) )
+		{
+			Error::RaiseRuntimeError(Error::MajorID, Error::MinorID::GeneralRuntimeError, Error::ErrorCode::Unexpected, 
+											Error::MakeErrorDescription(Error::ErrorCode::Unexpected, "GetLabwarePosition"), 
+											GetModuleHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+
+		xCoord = arrPos[0];
+		yCoord = arrPos[1];
+		zCoord = arrPos[2];
+
+		#ifdef DEBUG_Util2
+			FormatTrace("DEBUG", GetFunctionName(), TraceStatus::progress,
+							"LabID/PosID=", labwareId, "/", positionId, ": xCoord=", xCoord, ", yCoord=", yCoord, ", zCoord=", zCoord);
+		#endif		
+
+		return;
+
+		// --------------------------------------------------------
+		LabwareError:
+		{
+			Error::RaiseRuntimeErrorInclPrevErrDesc(Error::MajorID, Error::MinorID::GeneralRuntimeError, Error::ErrorCode::LabwareError, 
+																	Error::MakeErrorDescription(Error::ErrorCode::LabwareError, ""), 
+																	GetModuleHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+	}
+
+	// --------------------------------------------------------------------------------------
+	// Array index checking
+	// --------------------------------------------------------------------------------------
+
+	static function CheckArrayIndex(
+		variable size,
+		variable index,
+		variable& arrayName) void
+	{
+		variable type("");
+
+		// check index to be valid
+		type = GetType(index);
+		if (hslString.Compare(type) == 0)
+		{
+			// Index of array '%s1' must be a positive integer number (actual type of array index is '%s2').
+			variable errorDesc;
+			errorDesc = TrStr::ArrayIndexNotANumber;
+			StrReplace(errorDesc, "%s1", arrayName);
+			StrReplace(errorDesc, "%s2", TrStr::TypeString);
+			Error::RaiseRuntimeError(Error::MajorID, Error::MinorID::GeneralRuntimeError, Error::ErrorCode::ArrayIndexNotANumber, 
+											errorDesc,		// Don't use Error::MakeErrorDescription
+											GetModuleHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+		if (hslFloat.Compare(type) == 0)
+		{
+			// Index of array '%s1' must be a positive integer number (actual type of array index is '%s2').
+			variable errorDesc;
+			errorDesc = TrStr::ArrayIndexNotAnInteger;
+			StrReplace(errorDesc, "%s1", arrayName);
+			StrReplace(errorDesc, "%s2", TrStr::TypeFloat);
+			Error::RaiseRuntimeError(Error::MajorID, Error::MinorID::GeneralRuntimeError, Error::ErrorCode::ArrayIndexNotAnInteger, 
+											errorDesc,		// Don't use Error::MakeErrorDescription
+											GetModuleHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+		if ("" == type)
+		{
+			// Index of array '%s1' must be a positive integer number (actual type of array index is '%s2').
+			variable errorDesc;
+			errorDesc = TrStr::ArrayIndexNotANumber;
+			StrReplace(errorDesc, "%s1", arrayName);
+			StrReplace(errorDesc, "%s2", TrStr::TypeNull);
+			Error::RaiseRuntimeError(Error::MajorID, Error::MinorID::GeneralRuntimeError, Error::ErrorCode::ArrayIndexNotANumber, 
+											errorDesc,		// Don't use Error::MakeErrorDescription
+											GetModuleHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+		if (index <= 0)
+		{
+			// Index of array '%s1' must be greater than or equal to one (actual value of array index is '%s2').
+			variable errorDesc;
+			errorDesc = TrStr::ArrayIndexMustNotBeNegative;
+			StrReplace(errorDesc, "%s1", arrayName);
+			StrReplace(errorDesc, "%s2", IStr(index));
+			Error::RaiseRuntimeError(Error::MajorID, Error::MinorID::GeneralRuntimeError, Error::ErrorCode::ArrayIndexMustNotBeNegative, 
+											errorDesc,		// Don't use Error::MakeErrorDescription
+											GetModuleHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+		if (size < index)
+		{
+			// Index of array '%s1' must be smaller than the size of the array (actual value of array index is '%s2').
+			variable errorDesc;
+			errorDesc = TrStr::ArrayIndexMustNotBeGreaterThanArraySize;
+			StrReplace(errorDesc, "%s1", arrayName);
+			StrReplace(errorDesc, "%s2", IStr(index));
+			StrReplace(errorDesc, "%s3", IStr(size));
+			Error::RaiseRuntimeError(Error::MajorID, Error::MinorID::GeneralRuntimeError, Error::ErrorCode::ArrayIndexMustNotBeGreaterThanArraySize, 
+											errorDesc,		// Don't use Error::MakeErrorDescription
+											GetModuleHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+	}
+
+	static function VarArrCheckIndex(
+		variable& varArray[],
+		variable index,
+		variable& varArrayName) void
+	{
+		// check index to be valid
+		CheckArrayIndex(varArray.GetSize(), index, varArrayName);
+
+		// check other params to be valid
+		if (!Util::IsString(varArrayName))
+		{
+			Error::RaiseRuntimeError(Error::MajorID, Error::MinorID::GeneralRuntimeError, Error::ErrorCode::InvalidParameter, 
+											Error::MakeErrorDescription(Error::ErrorCode::InvalidParameter, "varArrayName"), 
+											GetModuleHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+	}
+
+	static function SeqArrCheckIndex(
+		sequence& seqArray[],
+		variable index,
+		variable& seqArrayName) void
+	{
+		// check index to be valid
+		CheckArrayIndex(seqArray.GetSize(), index, seqArrayName);
+
+		// check other params to be valid
+		if (!Util::IsString(seqArrayName))
+		{
+			Error::RaiseRuntimeError(Error::MajorID, Error::MinorID::GeneralRuntimeError, Error::ErrorCode::InvalidParameter, 
+											Error::MakeErrorDescription(Error::ErrorCode::InvalidParameter, "seqArrayName"), 
+											GetModuleHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+	}
+
+	static function VarArrGetAt(
+		variable& varArray[],
+		variable index,
+		variable& varArrayName) variable
+	{
+		// check index to be valid
+		CheckArrayIndex(varArray.GetSize(), index, varArrayName);
+
+		// check other params to be valid
+		if (!Util::IsString(varArrayName))
+		{
+			Error::RaiseRuntimeError(Error::MajorID, Error::MinorID::GeneralRuntimeError, Error::ErrorCode::InvalidParameter, 
+											Error::MakeErrorDescription(Error::ErrorCode::InvalidParameter, "varArrayName"), 
+											GetModuleHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+
+		return(varArray.GetAt(index - 1));
+	}
+
+	static function SeqArrGetAt(
+		sequence& seqArray[],
+		variable index,
+		variable& seqArrayName) sequence
+	{
+		// check index to be valid
+		CheckArrayIndex(seqArray.GetSize(), index, seqArrayName);
+
+		// check other params to be valid
+		if (!Util::IsString(seqArrayName))
+		{
+			Error::RaiseRuntimeError(Error::MajorID, Error::MinorID::GeneralRuntimeError, Error::ErrorCode::InvalidParameter, 
+											Error::MakeErrorDescription(Error::ErrorCode::InvalidParameter, "seqArrayName"), 
+											GetModuleHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+		
+		return(seqArray.GetAt(index - 1));
+	}
+
+	// ----------------------------------------------------------------------------------------------------
+	// Debug functions
+	// ----------------------------------------------------------------------------------------------------
+
+	namespace Debug
+	{
+		static function TraceSequence(sequence& sequenceObj) void
+		{
+			variable index(0), size(0);
+			variable currentBackup(-1);
+
+			currentBackup = sequenceObj.GetCurrentPosition();
+
+			size = sequenceObj.GetTotal();
+			FormatTrace(TrStr::DebugDEBUG, GetFunctionName(), TraceStatus::progress, TrStr::DebugName, ": '", sequenceObj.GetName(), "', ", TrStr::DebugCurrent, ": ", currentBackup, ", ", TrStr::DebugEnd, ": ", sequenceObj.GetCount(), ", ", TrStr::DebugTotal, ": ", size);
+			for (index=0; index<size; index++)
+			{
+				sequenceObj.SetCurrentPosition(index+1);
+				FormatTrace(TrStr::DebugDEBUG, GetFunctionName(), TraceStatus::progress, TrStr::DebugElement, " " + IStr(index+1), ": ", sequenceObj.GetLabwareId(), ".", sequenceObj.GetPositionId());
+			}
+
+			sequenceObj.SetCurrentPosition(currentBackup);
+		}
+
+		static function TraceSequenceAndData_1(
+				variable& description,
+				sequence& sequenceObj,
+				variable& array[]) void
+		{
+			variable index(0), size(0);
+			variable currentBackup(-1);
+
+			// Check input params to be valid
+			if (!Util::IsString(description))
+			{
+				Error::RaiseRuntimeError(Error::MajorID, Error::MinorID::GeneralRuntimeError, Error::ErrorCode::InvalidParameter, 
+												Error::MakeErrorDescription(Error::ErrorCode::InvalidParameter, "description"), 
+												GetModuleHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+			}
+
+			// Trace sequence and data
+			currentBackup = sequenceObj.GetCurrentPosition();
+
+			FormatTrace(TrStr::DebugDEBUG, GetFunctionName(), TraceStatus::progress, description);
+
+			size = sequenceObj.GetTotal();
+			if ( size != array.GetSize())
+			{
+				FormatTrace(TrStr::DebugDEBUG, GetFunctionName(), TraceStatus::progress, TrStr::DebugErrorMustHaveSameSize1);
+				return;
+			}
+
+			FormatTrace(TrStr::DebugDEBUG, GetFunctionName(), TraceStatus::progress, TrStr::DebugSequence, ": ", TrStr::DebugCurrent, ": ", currentBackup, ", ", TrStr::DebugEnd, ": ", sequenceObj.GetCount(), ", ", TrStr::DebugTotal, ": ", size);
+			if ( size == 0 )
+			{
+				FormatTrace(TrStr::DebugDEBUG, GetFunctionName(), TraceStatus::progress, TrStr::DebugEmptySequences);
+			}
+
+			for (index=0; index<size; index++)
+			{
+				sequenceObj.SetCurrentPosition(index+1);
+				FormatTrace(TrStr::DebugDEBUG, GetFunctionName(), TraceStatus::progress, TrStr::DebugElement, " ", IStr(index+1), ": ", sequenceObj.GetLabwareId(), ".", sequenceObj.GetPositionId(),
+																									" / array[", index + 1, "]=", array[index]);
+			}
+		
+			sequenceObj.SetCurrentPosition(currentBackup);
+		}
+
+		static function TraceSequenceAndData_2(
+				variable& description,
+				sequence& sequenceObj,
+				variable& array_1[],
+				variable& array_2[]) void
+		{
+			variable index(0), size(0);
+			variable currentBackup(-1);
+
+			// Check input params to be valid
+			if (!Util::IsString(description))
+			{
+				Error::RaiseRuntimeError(Error::MajorID, Error::MinorID::GeneralRuntimeError, Error::ErrorCode::InvalidParameter, 
+												Error::MakeErrorDescription(Error::ErrorCode::InvalidParameter, "description"), 
+												GetModuleHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+			}
+
+			// Trace sequence and data
+			currentBackup = sequenceObj.GetCurrentPosition();
+
+			FormatTrace(TrStr::DebugDEBUG, GetFunctionName(), TraceStatus::progress, description);
+
+			size = sequenceObj.GetTotal();
+			if ( size != array_1.GetSize() || size != array_1.GetSize())
+			{
+				FormatTrace(TrStr::DebugDEBUG, GetFunctionName(), TraceStatus::progress, TrStr::DebugErrorMustHaveSameSize1);
+				return;
+			}
+
+			FormatTrace(TrStr::DebugDEBUG, GetFunctionName(), TraceStatus::progress, TrStr::DebugSequence, ": ", TrStr::DebugCurrent, ": ", currentBackup, ", ", TrStr::DebugEnd, ": ", sequenceObj.GetCount(), ", ", TrStr::DebugTotal, ": ", size);
+			if ( size == 0 )
+			{
+				FormatTrace(TrStr::DebugDEBUG, GetFunctionName(), TraceStatus::progress, TrStr::DebugEmptySequences);
+			}
+
+			for (index=0; index<size; index++)
+			{
+				sequenceObj.SetCurrentPosition(index+1);
+				FormatTrace(TrStr::DebugDEBUG, GetFunctionName(), TraceStatus::progress, TrStr::DebugElement, " ", IStr(index+1), ": ", sequenceObj.GetLabwareId(), ".", sequenceObj.GetPositionId(),
+																									" / array_1[", index + 1, "]=", array_1[index], " / array_2[", index + 1, "]=", array_2[index]);
+			}
+		
+			sequenceObj.SetCurrentPosition(currentBackup);
+		}
+
+		static function TraceSequencesAndData_2(
+				variable& description,
+				sequence& sequenceObj_1,
+				sequence& sequenceObj_2,
+				variable& array_1[],
+				variable& array_2[]) void
+		{
+			variable index(0), size(0);
+			variable currentBackup1(-1), currentBackup2(-1);
+
+			// Check input params to be valid
+			if (!Util::IsString(description))
+			{
+				Error::RaiseRuntimeError(Error::MajorID, Error::MinorID::GeneralRuntimeError, Error::ErrorCode::InvalidParameter, 
+												Error::MakeErrorDescription(Error::ErrorCode::InvalidParameter, "description"), 
+												GetModuleHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+			}
+
+			// Trace sequence and data
+			currentBackup1 = sequenceObj_1.GetCurrentPosition();
+			currentBackup2 = sequenceObj_2.GetCurrentPosition();
+
+			FormatTrace(TrStr::DebugDEBUG, GetFunctionName(), TraceStatus::progress, description);
+
+			size = sequenceObj_1.GetTotal();
+			if ( size != array_1.GetSize() || size != array_2.GetSize() || size != sequenceObj_2.GetTotal() )
+			{
+				FormatTrace(TrStr::DebugDEBUG, GetFunctionName(), TraceStatus::progress, TrStr::DebugErrorMustHaveSameSize1);
+				return;
+			}
+
+			FormatTrace(TrStr::DebugDEBUG, GetFunctionName(), TraceStatus::progress, TrStr::DebugSequence, " 1: ", TrStr::DebugCurrent, ": ", currentBackup1, ", ", TrStr::DebugEnd, ": ", sequenceObj_1.GetCount(), ", ", TrStr::DebugTotal, ": ", size);
+			FormatTrace(TrStr::DebugDEBUG, GetFunctionName(), TraceStatus::progress, TrStr::DebugSequence, " 2: ", TrStr::DebugCurrent, ": ", currentBackup2, ", ", TrStr::DebugEnd, ": ", sequenceObj_2.GetCount(), ", ", TrStr::DebugTotal, ": ", size);
+			if ( size == 0 )
+			{
+				FormatTrace(TrStr::DebugDEBUG, GetFunctionName(), TraceStatus::progress, TrStr::DebugEmptySequences);
+			}
+
+			for (index=0; index<size; index++)
+			{
+				sequenceObj_1.SetCurrentPosition(index+1);
+				sequenceObj_2.SetCurrentPosition(index+1);
+				FormatTrace(TrStr::DebugDEBUG, GetFunctionName(), TraceStatus::progress, TrStr::DebugElement, " ", IStr(index+1), ": sequence_1=", sequenceObj_1.GetLabwareId(), ".", sequenceObj_1.GetPositionId(),
+																									" / sequence_2=", sequenceObj_2.GetLabwareId(), ".", sequenceObj_2.GetPositionId(),
+																									" / array_1[", index + 1, "]=", array_1[index], " / array_2[", index + 1, "]=", array_2[index]);
+			}
+		
+			sequenceObj_1.SetCurrentPosition(currentBackup1);
+			sequenceObj_2.SetCurrentPosition(currentBackup2);
+		}
+
+		static function TraceSequencesAndData_1(
+				variable& description,
+				sequence& sequenceObj_1,
+				sequence& sequenceObj_2,
+				variable& array[]) void
+		{
+			variable index(0), size(0);
+			variable currentBackup1(-1), currentBackup2(-1);
+
+			// Check input params to be valid
+			if (!Util::IsString(description))
+			{
+				Error::RaiseRuntimeError(Error::MajorID, Error::MinorID::GeneralRuntimeError, Error::ErrorCode::InvalidParameter, 
+												Error::MakeErrorDescription(Error::ErrorCode::InvalidParameter, "description"), 
+												GetModuleHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+			}
+
+			// Trace sequence and data
+			currentBackup1 = sequenceObj_1.GetCurrentPosition();
+			currentBackup2 = sequenceObj_2.GetCurrentPosition();
+
+			FormatTrace(TrStr::DebugDEBUG, GetFunctionName(), TraceStatus::progress, description);
+
+			size = sequenceObj_1.GetTotal();
+			if ( size != array.GetSize() || size != sequenceObj_2.GetTotal() )
+			{
+				FormatTrace(TrStr::DebugDEBUG, GetFunctionName(), TraceStatus::progress, TrStr::DebugErrorMustHaveSameSize1);
+				return;
+			}
+
+			FormatTrace(TrStr::DebugDEBUG, GetFunctionName(), TraceStatus::progress, TrStr::DebugSequence, " 1: ", TrStr::DebugCurrent, ": ", currentBackup1, ", ", TrStr::DebugEnd, ": ", sequenceObj_1.GetCount(), ", ", TrStr::DebugTotal, ": ", size);
+			FormatTrace(TrStr::DebugDEBUG, GetFunctionName(), TraceStatus::progress, TrStr::DebugSequence, " 2: ", TrStr::DebugCurrent, ": ", currentBackup2, ", ", TrStr::DebugEnd, ": ", sequenceObj_2.GetCount(), ", ", TrStr::DebugTotal, ": ", size);
+			if ( size == 0 )
+			{
+				FormatTrace(TrStr::DebugDEBUG, GetFunctionName(), TraceStatus::progress, TrStr::DebugEmptySequences);
+			}
+
+			for (index=0; index<size; index++)
+			{
+				sequenceObj_1.SetCurrentPosition(index+1);
+				sequenceObj_2.SetCurrentPosition(index+1);
+				FormatTrace(TrStr::DebugDEBUG, GetFunctionName(), TraceStatus::progress, TrStr::DebugElement, " ", IStr(index+1), ": sequence_1=", sequenceObj_1.GetLabwareId(), ".", sequenceObj_1.GetPositionId(),
+																									" / sequence_2=", sequenceObj_2.GetLabwareId(), ".", sequenceObj_2.GetPositionId(),
+																									" / array[", index + 1, "]=", array[index]);
+			}
+		
+			sequenceObj_1.SetCurrentPosition(currentBackup1);
+			sequenceObj_2.SetCurrentPosition(currentBackup2);
+		}
+
+		function SetTraceArraySettings(variable indexWidth, variable elementWidth) void
+		{
+			// Check input params to be valid
+			if (!Util::IsInteger(indexWidth))
+			{
+				Error::RaiseRuntimeError(Error::MajorID, Error::MinorID::GeneralRuntimeError, Error::ErrorCode::InvalidParameter, 
+												Error::MakeErrorDescription(Error::ErrorCode::InvalidParameter, "indexWidth"), 
+												GetModuleHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+			}
+			if (Util::IsNegative(indexWidth))
+			{
+				Error::RaiseRuntimeError(Error::MajorID, Error::MinorID::GeneralRuntimeError, Error::ErrorCode::InvalidParameter, 
+												Error::MakeErrorDescription(Error::ErrorCode::InvalidParameter, "indexWidth"), 
+												GetModuleHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+			}
+			if (!Util::IsInteger(elementWidth))
+			{
+				Error::RaiseRuntimeError(Error::MajorID, Error::MinorID::GeneralRuntimeError, Error::ErrorCode::InvalidParameter, 
+												Error::MakeErrorDescription(Error::ErrorCode::InvalidParameter, "elementWidth"), 
+												GetModuleHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+			}
+			if (Util::IsNegative(elementWidth))
+			{
+				Error::RaiseRuntimeError(Error::MajorID, Error::MinorID::GeneralRuntimeError, Error::ErrorCode::InvalidParameter, 
+												Error::MakeErrorDescription(Error::ErrorCode::InvalidParameter, "elementWidth"), 
+												GetModuleHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+			}
+
+			// Set trace array settings
+			Constants::TraceArrayIndexWidth = indexWidth;
+			Constants::TraceArrayElementWidth = elementWidth;
+		}
+
+		static function TraceArray(variable& description, variable& array[]) void
+		{
+			variable index(0), size(0);
+
+			// Check input params to be valid
+			if (!Util::IsString(description))
+			{
+				Error::RaiseRuntimeError(Error::MajorID, Error::MinorID::GeneralRuntimeError, Error::ErrorCode::InvalidParameter, 
+												Error::MakeErrorDescription(Error::ErrorCode::InvalidParameter, "description"), 
+												GetModuleHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+			}
+
+			// Trace array
+			FormatTrace(TrStr::DebugDEBUG, GetFunctionName(), TraceStatus::progress, description);
+
+			size = array.GetSize();
+			if ( size == 0 )
+			{
+				FormatTrace(TrStr::DebugDEBUG, GetFunctionName(), TraceStatus::progress, TrStr::DebugEmptyArray);
+			}
+
+			for (index=0; index<size; index++)
+			{
+				FormatTrace(TrStr::DebugDEBUG, GetFunctionName(), TraceStatus::progress, "[", index + 1, "]: ", array[index]);
+			}
+		}
+
+
+		static function TraceArray_2(variable& description, variable& array_1[], variable& array_2[]) void
+		{
+			variable index(0), size(0);
+
+			// Check input params to be valid
+			if (!Util::IsString(description))
+			{
+				Error::RaiseRuntimeError(Error::MajorID, Error::MinorID::GeneralRuntimeError, Error::ErrorCode::InvalidParameter, 
+												Error::MakeErrorDescription(Error::ErrorCode::InvalidParameter, "description"), 
+												GetModuleHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+			}
+
+			// Trace arrays
+			FormatTrace(TrStr::DebugDEBUG, GetFunctionName(), TraceStatus::progress, description);
+
+			size = array_1.GetSize();
+			if ( size != array_2.GetSize() )
+			{
+				FormatTrace(TrStr::DebugDEBUG, GetFunctionName(), TraceStatus::progress, TrStr::DebugErrorMustHaveSameSize2);
+				return;
+			}
+
+			if ( size == 0 )
+			{
+				FormatTrace(TrStr::DebugDEBUG, GetFunctionName(), TraceStatus::progress, TrStr::DebugEmptyArray);
+			}
+
+			for (index=0; index<size; index++)
+			{
+				FormatTrace(TrStr::DebugDEBUG, GetFunctionName(), TraceStatus::progress, 
+								"[", ToFixedWidthString(index + 1, Constants::TraceArrayIndexWidth), "]: ", 
+								ToFixedWidthString(array_1[index], Constants::TraceArrayElementWidth), " ",
+								ToFixedWidthString(array_2[index], Constants::TraceArrayElementWidth));
+			}
+		}
+
+
+		static function TraceArray_3(variable& description, variable& array_1[], variable& array_2[], variable& array_3[]) void
+		{
+			variable index(0), size(0);
+
+			// Check input params to be valid
+			if (!Util::IsString(description))
+			{
+				Error::RaiseRuntimeError(Error::MajorID, Error::MinorID::GeneralRuntimeError, Error::ErrorCode::InvalidParameter, 
+												Error::MakeErrorDescription(Error::ErrorCode::InvalidParameter, "description"), 
+												GetModuleHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+			}
+
+			// Trace arrays
+			FormatTrace(TrStr::DebugDEBUG, GetFunctionName(), TraceStatus::progress, description);
+
+			size = array_1.GetSize();
+			if ( size != array_2.GetSize() || size != array_3.GetSize())
+			{
+				FormatTrace(TrStr::DebugDEBUG, GetFunctionName(), TraceStatus::progress, TrStr::DebugErrorMustHaveSameSize2);
+				return;
+			}
+
+			if ( size == 0 )
+			{
+				FormatTrace(TrStr::DebugDEBUG, GetFunctionName(), TraceStatus::progress, TrStr::DebugEmptyArray);
+			}
+
+			for (index=0; index<size; index++)
+			{
+				FormatTrace(TrStr::DebugDEBUG, GetFunctionName(), TraceStatus::progress, 
+								"[", ToFixedWidthString(index + 1, Constants::TraceArrayIndexWidth), "]: ", 
+								ToFixedWidthString(array_1[index], Constants::TraceArrayElementWidth), " ",
+								ToFixedWidthString(array_2[index], Constants::TraceArrayElementWidth), " ", 
+								ToFixedWidthString(array_3[index], Constants::TraceArrayElementWidth));
+			}
+		}
+
+		static function TraceArray_4(variable& description, variable& array_1[], variable& array_2[], variable& array_3[], variable& array_4[]) void
+		{
+			variable index(0), size(0);
+
+			// Check input params to be valid
+			if (!Util::IsString(description))
+			{
+				Error::RaiseRuntimeError(Error::MajorID, Error::MinorID::GeneralRuntimeError, Error::ErrorCode::InvalidParameter, 
+												Error::MakeErrorDescription(Error::ErrorCode::InvalidParameter, "description"), 
+												GetModuleHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+			}
+
+			// Trace arrays
+			FormatTrace(TrStr::DebugDEBUG, GetFunctionName(), TraceStatus::progress, description);
+
+			size = array_1.GetSize();
+			if ( size != array_2.GetSize() || size != array_3.GetSize())
+			{
+				FormatTrace(TrStr::DebugDEBUG, GetFunctionName(), TraceStatus::progress, TrStr::DebugErrorMustHaveSameSize2);
+				return;
+			}
+
+			if ( size == 0 )
+			{
+				FormatTrace(TrStr::DebugDEBUG, GetFunctionName(), TraceStatus::progress, TrStr::DebugEmptyArray);
+			}
+
+			for (index=0; index<size; index++)
+			{
+				FormatTrace(TrStr::DebugDEBUG, GetFunctionName(), TraceStatus::progress, 
+								"[", ToFixedWidthString(index + 1, Constants::TraceArrayIndexWidth), "]: ", 
+								ToFixedWidthString(array_1[index], Constants::TraceArrayElementWidth), " ", 
+								ToFixedWidthString(array_2[index], Constants::TraceArrayElementWidth), " ", 
+								ToFixedWidthString(array_3[index], Constants::TraceArrayElementWidth), " ",
+								ToFixedWidthString(array_4[index], Constants::TraceArrayElementWidth));
+			}
+		}
+
+
+		//	static function Assert(variable expr,	
+		//								  			variable location) void
+		//	{
+		//		if ( ! expr )
+		//		{
+		//			if (IsInteger(location))
+		//				location = IStr(location);
+		//			if (IsFloat(location))
+		//				location = FStr(location);
+		//			FormatTrace(TrStr::DebugDEBUG, "Assert()", TraceStatus::progress, "Debug Assertion failed, Debug Error - " + location);
+		//			MessageBox("Debug Assertion failed:\nDebug Error - " + location, "DEBUG : Assert()", hslError | hslOKOnly);
+		//			abort;
+		//		}
+		//	}
+
+	}
+}
+#endif // HSL_RUNTIME
+
+#endif // __HSLUtilLib2_hsl__
+
+// $$author=ContainerAdministrator$$valid=1$$time=2025-09-09 20:13$$checksum=b7358704$$length=099$$

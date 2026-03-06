@@ -1,0 +1,15 @@
+// This is the language dependant part of the Microlab STAR Step Return Library.
+// Copyright (C) by HAMILTON Bonaduz AG, CH-7402 Bonaduz.
+// All rights reserved.
+//
+// Modification History
+// 2001-09-14  bandenmatten : Initial file creation.
+// 2001-12-19  bandenmatten : Set IDS::helpFileName correctly.
+
+function StringTable()
+{
+	Insert(IDE::noError,								"No error."												);
+	Insert(IDE::invalidParameter,					"The parameter is incorrect."						);
+	Insert(IDS::helpFileName,						"HSLMlStarStepReturnLibEnu.chm"					);
+}
+// $$author=ContainerAdministrator$$valid=1$$time=2025-09-09 20:31$$checksum=2b09e43d$$length=099$$

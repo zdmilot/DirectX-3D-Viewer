@@ -1,0 +1,519 @@
+// ======================================================================
+// This is a part of the HSLHamHeaterShaker Library.
+// Copyright (C) by HAMILTON Bonaduz AG, CH-7402 Bonaduz.
+// All rights reserved.
+// ======================================================================
+
+// Implements firmware commands
+// using the Vantage firmware protocol syntax (variable length numbers, quoted strings)
+
+#pragma once
+
+namespace HSLHamHeaterShaker
+{
+    //====================================================================
+    //
+    // Internal function isFirmwError()
+    //
+    //--------------------------------------------------------------------
+    // Description:
+    //    Check if an error is set in cmdResult string
+    //====================================================================
+    static function isFirmwError(variable funcId, string cmdResult, variable makeTrace)
+    {
+        variable rc(IDE::noError);
+
+        if(cmdResult.Find(m_fwNoError) == -1)
+        {
+            variable errId;
+            variable errText;
+            errId = getErrIdFromFirmwareError(cmdResult);
+            // string erXX was not found (answere command)
+            if(errId != IDE::noError)
+            {
+                rc = errId;
+
+                errText = StringTable::Load(errId);
+
+                // make an exception handling for errors which contains a %s part
+                if(errId == IDE::unknowFwError)
+                    StrReplace(errText, "%s", IStr(getFirmwErrorId(cmdResult)));
+                if(errId == IDE::commandSendTimeout)
+                    StrReplace(errText, "%s", cmdResult.Left(4));
+
+                if(makeTrace)
+                    errorCompleteTrace(funcId, errText);
+            }
+        }
+
+        return (rc);
+    }
+
+    //====================================================================
+    //
+    // Internal function startPlateLockCmd()
+    //
+    //--------------------------------------------------------------------
+    // Description:
+    //  Lock / Unlock the plate
+    //  Will make a short error handling on not init and step loss error
+    //====================================================================
+    static function startPlateLockCmd(variable funcId, variable deviceNumber, variable plateLock)
+    {
+        variable node;
+        variable command("LP");
+        variable parameter("lp");
+        string   cmdResult;
+
+        node = getNodeFromDeviceNumber(deviceNumber);
+        parameter = parameter + IStr(plateLock);
+
+        // lock / unlock plate
+        cmdResult = sendMsg(deviceNumber, command, parameter, m_usbMsgTimeout, hslTrue);
+
+        // check for init or staep lost error
+        // On step lost, this drive is lost the init state and must be initialized again
+        // The library internal initialization flag is set allready and must nod set again
+        if((cmdResult.Find(m_fwPlNotInitError) >= 0) || (cmdResult.Find(m_fwPlStepLostError) >= 0))
+        {
+            string cmdResult2;
+
+            // init drive again
+            cmdResult2 = sendMsg(deviceNumber, "LI", "", m_usbMsgTimeout, hslTrue);
+
+            // init has end success
+            if(cmdResult2.Find(m_fwNoError) >= 0)
+            {
+                // lock / unlock plate
+                cmdResult = sendMsg(deviceNumber, command, parameter, m_usbMsgTimeout, hslTrue);
+            }
+        }
+        return (cmdResult);
+    }
+
+    //====================================================================
+    //
+    // Internal function startShakingCmd()
+    //
+    //--------------------------------------------------------------------
+    // Description:
+    //  Start / Stop plate shaking
+    //  Will make a short error handling on not init and step loss error
+    //====================================================================
+    static function startShakingCmd(
+        variable funcId,
+        variable deviceNumber,
+        variable command,
+        variable parameter,
+        variable isStart)
+    {
+        string cmdResult;
+
+        // send command
+        cmdResult = sendMsg(deviceNumber, command, parameter, m_usbMsgTimeout, hslTrue);
+
+        // check for init or step lost error
+        // On step lost, this drive is lost the init state and must be initialized again
+        // The library internal initialization flag is set allready and must nod set again
+        if((cmdResult.Find(m_fwShNotInitError) >= 0) || (cmdResult.Find(m_fwShStepLostError) >= 0))
+        {
+            string cmdResult2;
+
+            // init drive again
+            cmdResult2 = sendMsg(deviceNumber, "SI", "", m_usbMsgTimeout, hslTrue);
+
+            // if not start, do not repeat the main command and return the really returned error
+            if(isStart)
+            {
+                // init has end success
+                if(cmdResult2.Find(m_fwNoError) >= 0)
+                {
+                    cmdResult = sendMsg(deviceNumber, command, parameter, m_usbMsgTimeout, hslTrue);
+                }
+            }
+        }
+        return (cmdResult);
+    }
+    //====================================================================
+    //
+    // Internal function setHHSSetting()
+    //
+    //--------------------------------------------------------------------
+    // Description:
+    // Check the given deviceNumber from a interface function
+    //====================================================================
+    static function setHHSSetting(variable funcId, variable deviceNumber, variable& hhsSetting)
+    {
+        string   cmdResult;
+        variable funcRc(IDE::noError);
+
+        hhsSetting = 0;
+        if(!isSimulate(0, deviceNumber, hslFalse))
+        {
+            variable startPos(-1);
+
+            // read the HHS settings
+            cmdResult = sendMsg(deviceNumber, "QU", "", m_usbMsgTimeout, hslTrue);
+            funcRc = isFirmwError(funcId, cmdResult, hslTrue);
+            if(0 < funcRc)
+                return (funcRc);
+
+            startPos = cmdResult.Find("au");
+            if(startPos >= 0 && cmdResult.GetLength() >= 25)
+            {
+                variable shaker;
+                variable heater;
+                // cmdResult auswerten
+                // format "TxQUau0 0 0 0 0 0 0 0 0 0"
+                shaker = cmdResult.Mid(startPos+2, 1);
+                heater = cmdResult.Mid(startPos+4, 1);
+                if(shaker == "1" && heater == "1")
+                    hhsSetting = m_shakingPropertyNothing;
+                else
+                    if(shaker == "1")
+                    hhsSetting = m_shakingPropertyOnlyHeat;
+                else
+                    if(heater == "1")
+                    hhsSetting = m_shakingPropertyOnlyShake;
+            }
+        }
+
+        onerror goto Unexpected;
+
+        SynEnterCriticalSection(m_hhsCriticalSection);
+        m_hhsSetting[deviceNumber-1] = hhsSetting;
+        SynLeaveCriticalSection(m_hhsCriticalSection);
+
+        return(funcRc);
+
+        Unexpected:
+        {
+            SynLeaveCriticalSection(m_hhsCriticalSection);
+            Error::RaiseLast();
+        }
+
+        return (funcRc);
+    }
+
+
+    //====================================================================
+    //
+    // Internal function getCurrentTemp()
+    //
+    //--------------------------------------------------------------------
+    // Description:
+    //    Read the current temperature of the specified HHS
+    //====================================================================
+    static function getCurrentTemp(variable deviceNumber, variable makeTrace)
+    {
+        variable temperature(0.0);
+        variable command("RT");
+        variable parameter("");
+        string   cmdResult;
+        variable startPos;
+        variable spacePos;
+
+        cmdResult = sendMsg(deviceNumber, command, parameter, m_usbMsgTimeout, makeTrace);
+
+        // format: rt# #
+        // example: T1RTid0283er00rt355 350
+        startPos = cmdResult.Find("rt");
+        spacePos = cmdResult.Find(" ");
+        if (startPos >= 0 && spacePos > startPos)
+        {
+            variable firstVal;
+            variable secVal;
+            variable averageVal;
+            variable length(cmdResult.GetLength());
+            // read both temperature and calculate the average
+            firstVal = FVal(cmdResult.Mid(startPos + 2, spacePos - startPos - 2));
+            secVal   = FVal(cmdResult.Mid(spacePos + 1, length - spacePos - 1));
+
+            // calculate the average in 1/10 degrees
+            averageVal = ((firstVal + secVal) / 2) /10;
+            temperature = MthRound(averageVal, 1);
+        }
+        return (temperature);
+    }
+
+    // --------------------------------------------------------------------------------------
+    // Firmware error check function
+    // --------------------------------------------------------------------------------------
+
+
+    //====================================================================
+    //
+    // Internal function getCurrentShakerRPM()
+    //
+    //--------------------------------------------------------------------
+    // Description:
+    //    Read the shaking speed of current HHS
+    //====================================================================
+    static function getCurrentShakerRPM(variable deviceNumber, variable makeTrace)
+    {
+        variable shakingSpeed(0);
+        variable command("RR");
+        string   parameter("");
+        string   cmdResult;
+        variable startPos(0);
+
+        // start request
+        cmdResult = sendMsg(deviceNumber, command, parameter, m_usbMsgTimeout, makeTrace);
+        // format: rr####
+        startPos = cmdResult.Find("rr");
+        if(startPos >= 0)
+        {
+            shakingSpeed = IVal(cmdResult.Mid((startPos+2), 4));
+        }
+        return (shakingSpeed);
+    }
+
+    //====================================================================
+    //
+    // Internal function getFirmwErrorId()
+    //
+    //--------------------------------------------------------------------
+    // Description:
+    //    Reads the firmware error number from cmdResult string and convert it to a number
+    //====================================================================
+    static function getFirmwErrorId(string cmdResult)
+    {
+        variable errNr(0);
+        variable startPos(0);
+        startPos = cmdResult.Find("er");
+
+        if((startPos >= 0) && ((startPos+4) <= cmdResult.GetLength()))
+        {
+            variable errNo;
+            errNo = cmdResult.Mid((startPos+2), 2);
+            errNr = IVal(errNo);
+        }
+        return (errNr);
+    }
+    
+    static function RequestFirmwareVersion(variable deviceNumber) string
+    {
+        string answString;
+        variable startPos(0);
+        string fwVers;
+
+        // read the firmware version of current node
+        answString = sendMsg(deviceNumber, "RF", "", m_usbInitTimeout, hslTrue);
+
+        startPos = answString.Find("rf\"");
+        if(startPos >= 0)
+        {
+            string part;
+            variable endQuote;
+            part = answString.Right(answString.GetLength()-(startPos+3));
+            endQuote = part.Find("\"");
+            if (endQuote >= 0)
+            {
+                fwVers = part.Left(endQuote);
+            }
+        }
+
+        return (fwVers);
+    }
+
+    static function WaitUntilShakerIsStoppedOrStopShaker(variable deviceNumber, variable timeout) void
+    {
+        string   cmdResult;
+
+        // wait until shaker drive is stopped
+        cmdResult = sendMsg(deviceNumber, "SW", "", timeout, hslTrue);
+
+        // shaker was started with StartShaker or StartAllShaker
+        if(cmdResult.Find(m_fwNoError) < 0)
+        {
+            // stop shaker
+            sendMsg(deviceNumber, "SC", "", m_usbMsgTimeout, hslTrue);
+        }
+    }
+    
+    static function StartTemperatureControler(
+        variable deviceNumber, 
+        variable temperature,
+        variable tempStartTimeOut,
+        variable tempToleranceRange,
+        variable tempSecurityRange
+        ) variable
+    {
+        variable funcRc;
+        variable cmdResult;
+        variable parameter("ta%s1tb%s2tc%s3td%s4");
+        
+        StrReplace(parameter, "%s1", normalizeParam(temperature, TemperateParam::paramLength));
+        StrReplace(parameter, "%s2", formatParam(tempStartTimeOut, TemperateParam::paramLength));
+        StrReplace(parameter, "%s3", normalizeParam(tempToleranceRange, TemperateParam::paramLength));
+        StrReplace(parameter, "%s4", normalizeParam(tempSecurityRange, TemperateParam::paramLength));
+        // set temperature
+        cmdResult = sendMsg(deviceNumber, "TA", parameter, tempStartTimeOut, hslTrue);
+
+        funcRc = isFirmwError(0, cmdResult, hslFalse);
+        return (funcRc);
+    }
+    
+    static function WaitUntilTargetTemperatureReached(variable deviceNumber, variable funcId, variable timeout) variable
+    {
+        variable funcRc;
+        variable cmdResult;
+        
+        // wait for temperature
+        cmdResult = sendMsg(deviceNumber, "TW", "", timeout, hslTrue);
+        funcRc = isFirmwError(funcId, cmdResult, hslTrue);
+        return (funcRc);
+    }
+    
+    static function SwitchOffTemperatureController(variable deviceNumber, variable funcId) variable
+    {
+        variable funcRc;
+        variable cmdResult;
+
+        cmdResult = sendMsg(deviceNumber, "TO", "", m_usbMsgTimeout, hslTrue);
+        funcRc = isFirmwError(funcId, cmdResult, hslTrue);
+        return (funcRc);
+    }
+    
+    static function RequestTemperatureControllerError(
+        variable deviceNumber, 
+        variable funcId, 
+        variable& controllerError) variable
+    {
+        variable funcRc;
+        string cmdResult;
+        variable startPos;
+
+        controllerError = 0;
+        cmdResult = sendMsg(deviceNumber, "QE", "", m_usbMsgTimeout, hslTrue);
+        funcRc = isFirmwError(funcId, cmdResult, hslTrue);
+        if(0 < funcRc)
+            return (funcRc);
+            
+        // format: qe##
+        startPos = cmdResult.Find("qe");
+
+        if((cmdResult.GetLength() < TemperateParam::tempStateRequestLength) || (startPos < 0))
+        {
+            variable errMsg;
+            // "Unknown format of firmware result string.\r\nExpected: '%s1'.\r\nReceived: '%s2'."
+            errMsg = StringTable::Load(IDE::unknownResultFormat);
+
+            StrReplace(errMsg, "%s1", "qe##");
+            StrReplace(errMsg, "%s2", cmdResult);
+
+            errorCompleteTrace(funcId, errMsg);
+            return (IDE::unknownResultFormat);
+        }
+
+        controllerError = IVal(cmdResult.Mid(startPos +2 , 2));
+        return (IDE::noError);
+    }
+    
+    static function TryParseSerialNumberFromResponse(string firmwareResponse, variable& serialNo) variable
+    {
+        //     format: qt"######/##/#### ######/##/####"  <part number>/<revision>/<serial number> of two assemblies
+        // usb format: qt######/##/#### ######/##/####    <part number>/<revision>/<serial number> of two assemblies
+        // part number can be 6+ digit number
+        // serial number can be 4+ digit number
+
+        variable startPos;
+        string qt;
+        variable qtIterator;
+        variable serialNumber("");
+        variable countOfSlashes(0); 
+        variable firmwareResponseLength(firmwareResponse.GetLength());
+        variable parameterLength(3);
+        
+        startPos = firmwareResponse.Find("qt\"");
+        if (startPos == -1)
+        {
+            startPos = firmwareResponse.Find("qt");
+            parameterLength = 2;
+        }
+
+        if(startPos < 0 || firmwareResponseLength < startPos + 29 + parameterLength)
+        {
+            return (hslFalse);
+        }
+
+        qt = firmwareResponse.Mid(startPos + parameterLength, firmwareResponse.GetLength() - startPos - parameterLength);
+
+        for (qtIterator = 0; qtIterator < qt.GetLength(); qtIterator++)
+        {   
+            variable character(qt.Mid(qtIterator,1));      
+
+            if (countOfSlashes < 2 && character == "/")
+            {
+                countOfSlashes++;    
+            }
+
+            if(countOfSlashes == 2 && character != "/" )
+            {
+                if(character == " ")
+                {
+                    break;
+                }
+                
+                serialNumber = serialNumber + character;
+            }
+        }
+        
+        serialNo = serialNumber;
+        return (hslTrue);
+    }
+    
+    // Returns the serial number or "0000" if the response is malformed.
+    static function RequestSerialNumber(variable deviceNumber, variable funcId) variable
+    {
+        string answString;
+        variable startPos;
+        variable serialNumber;
+        
+        serialNumber = "0000";
+        answString = sendMsg(deviceNumber, "QT", "", m_usbInitTimeout, hslTrue);
+
+        TryParseSerialNumberFromResponse(answString, serialNumber);
+        return (serialNumber);
+    }
+
+    // Returns 
+    //   hslTrue : temperature controller is heating up
+    //   hslFalse: temperature controller is switched off or the temperature has reached 
+    //             the supervision range
+    static function RequestHeatingUpState(variable deviceNumber) variable
+    {
+        string   cmdResult;
+        variable partResult("qd1");
+        variable isHeatingUp(hslFalse);
+
+        // ask if heater in state heating up
+        cmdResult = sendMsg(deviceNumber, "QD", "", m_usbMsgTimeout, hslFalse);
+        if(cmdResult.Find(partResult) >= 0)
+        {
+            isHeatingUp = hslTrue;
+        }
+
+        return (isHeatingUp);
+    }
+    
+    // Returns 
+    //   hslTrue : shaker drive is moving
+    //   hslFalse: shaker drive is not moving
+    static function RequestMovingStateShakerDrive(variable deviceNumber) variable
+    {
+        string   cmdResult;
+        variable partResult("rd1");
+        variable isMoving(hslFalse);
+    
+        // ask if shaker is running
+        cmdResult = sendMsg(deviceNumber, "RD", "", m_usbMsgTimeout, hslFalse);
+        if (cmdResult.Find(partResult) >= 0)
+        {
+            isMoving = hslTrue;
+        }
+        
+        return (isMoving);
+    }
+}
+// $$author=ContainerAdministrator$$valid=1$$time=2025-09-09 20:46$$checksum=ed404562$$length=099$$

@@ -6,6 +6,91 @@
 </HEAD><BODY>
 <UL>
 	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="batch validation">
+		<param name="Local" value="CLIReference.html#validation">
+		</OBJECT>
+
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="CLI, command-line interface">
+		<param name="Local" value="CLIReference.html">
+		</OBJECT>
+
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="CLI, convert">
+		<param name="Local" value="CLIReference.html#convert">
+		</OBJECT>
+
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="CLI, export-x">
+		<param name="Local" value="CLIReference.html#export-extract">
+		</OBJECT>
+
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="CLI, generate">
+		<param name="Local" value="CLIReference.html#generate">
+		</OBJECT>
+
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="CLI, generate-default">
+		<param name="Local" value="CLIReference.html#cmd-generate-default">
+		</OBJECT>
+
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="CLI, interactive mode">
+		<param name="Local" value="CLIReference.html">
+		</OBJECT>
+
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="CLI, inspection commands">
+		<param name="Local" value="CLIReference.html#inspection">
+		</OBJECT>
+
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="cli.js">
+		<param name="Local" value="CLIReference.html">
+		</OBJECT>
+
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="convert (CLI)">
+		<param name="Local" value="CLIReference.html#cmd-convert">
+		</OBJECT>
+
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="export-x (CLI)">
+		<param name="Local" value="CLIReference.html#cmd-export-x">
+		</OBJECT>
+
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="generate (CLI)">
+		<param name="Local" value="CLIReference.html#cmd-generate">
+		</OBJECT>
+
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="generate-default (CLI)">
+		<param name="Local" value="CLIReference.html#cmd-generate-default">
+		</OBJECT>
+
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="mirror (CLI transform)">
+		<param name="Local" value="CLIReference.html#convert">
+		</OBJECT>
+
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Node.js">
+		<param name="Local" value="CLIReference.html">
+		</OBJECT>
+
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="rotate (CLI transform)">
+		<param name="Local" value="CLIReference.html#convert">
+		</OBJECT>
+
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="SBS standard (CLI)">
+		<param name="Local" value="CLIReference.html#cmd-sbs">
+		</OBJECT>
+
+	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="3D Viewer">
 		<param name="Local" value="3DViewer.html">
 		</OBJECT>

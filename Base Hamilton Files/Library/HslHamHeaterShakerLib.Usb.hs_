@@ -1,0 +1,129 @@
+// ======================================================================
+// This is a part of the HSLHamHeaterShaker Library.
+// Copyright (C) by HAMILTON Bonaduz AG, CH-7402 Bonaduz.
+// All rights reserved.
+// ======================================================================
+
+#pragma once
+
+#include "HSLStrLib.hsl"
+#include "HSLSynLib.hsl"
+#include "HSLMthLib.hsl"
+
+#include "HslHamHeaterShakerLib.Common.hs_"
+
+// --------------------------------------------------------------------------------------
+// Implementation of Hamilton Heater Shaker library
+// --------------------------------------------------------------------------------------
+namespace HSLHamHeaterShaker
+{
+    //====================================================================
+    //
+    // Application function CreateUsbDevice()
+    //
+    //--------------------------------------------------------------------
+    // Description:
+    //  Initialize shaker/heater module on USB device.
+    //  Only NOT initialized nodes will be initialize, the function will
+    //  check first the initialization state before.
+    //....................................................................
+    // Parameters:
+    //  in : usedNode     : Node which must be create and initialized. (1 or 2)
+    //     out: deviceNumber : generated device number which must be used in all other functions
+    // ...................................................................
+    // return value:
+    //  noError(0)          :  all nodes are initialized successfull.
+    //  retErr(1)           :  initialisation failed
+    //  retNotInitErr(2)    :  needed node not initalized
+    //  retNotConnectErr(3) :  device not connected
+    //  Raise               :  An exception is throw on wrong parameter or time out
+    //  FirmErr             :  Firmware command error
+    //....................................................................
+    // Remarks:
+    //
+    //====================================================================
+    function CreateUsbDevice(
+        variable usedNode,                  // in:  node ID (1..8)
+        variable& deviceNumber) variable    // out: generated deviceNumber
+    {
+        variable funcRc(IDE::noError);
+        variable funcId(IDF::CreateUsbDevice);
+        variable isStarSimulate(hslFalse);
+        variable shakingProperty(0);
+        object    starObject;
+
+        versionTrace();
+        startTrace(funcId);
+
+        // check input parameter
+        checkIntegerInputRange(funcId, "usedNode", usedNode, m_firstUsbNode, m_lastUsbNode);
+
+        // initialize the library variables
+        funcRc = initHamHeaterShakerLib(funcId, deviceNumber, m_OFF);
+        if(0 < funcRc)
+            return (funcRc);
+
+        deviceNumber = saveAndCreateDeviceNumber(funcId, m_hhsUsbObjectName, starObject, isStarSimulate, usedNode);
+
+        // initialize the shaker
+        funcRc = initHamHeaterShakerLib(funcId, deviceNumber, m_ON);
+        if(0 < funcRc)
+            return (funcRc);
+
+        endTrace(funcId);
+        return (funcRc);
+
+    }
+
+
+
+    /****************************************************************************************
+    *
+    * Internal helper function declaration
+    *
+    ****************************************************************************************/
+
+
+    // --------------------------------------------------------------------------------------
+    // Communication functions
+    // --------------------------------------------------------------------------------------
+
+    //====================================================================
+    //
+    // Internal function sendToUsb()
+    //
+    //--------------------------------------------------------------------
+    // Description:
+    //  Sends a command to the corresponding device node via USB.
+    //====================================================================
+    static function sendToUsb(
+        variable deviceNumber,
+        variable command,
+        variable parameter,
+        variable timeOut)
+    {
+        variable node;
+        variable sendMsg("T");
+        variable receMsg;
+        string cmd(command);
+
+        node = getNodeFromDeviceNumber(deviceNumber);
+
+        sendMsg = sendMsg + IStr(node-1); // USB has an 0 bsed adderss node 0..7
+        sendMsg = sendMsg + command;
+        sendMsg = sendMsg + parameter;
+
+        if(isUsbTrace())
+            progressTrace(IDS::sendToUsb, IDS::sendMessageTitle, sendMsg);
+
+        receMsg = m_usbComObject.Request(sendMsg, timeOut);
+
+        // on request of firmware version do not trace the answer.
+        // Answer is traced as firmware version in function traceFirmwareVersion()
+        if(isUsbTrace() && (cmd.Find("RF") < 0))
+            progressTrace(IDS::sendToUsb, IDS::receiveMessageTitle, receMsg);
+
+        return (receMsg);
+    }
+}
+// $$author=ContainerAdministrator$$valid=1$$time=2025-09-09 20:13$$checksum=37fc80b6$$length=099$$

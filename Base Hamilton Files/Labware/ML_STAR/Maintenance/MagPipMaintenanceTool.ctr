@@ -1,0 +1,37 @@
+HxCfgFile,2;
+
+ConfigIsValid,Y;
+
+DataDef,CONTAINER,3,default,
+{
+1.DX, "18",
+1.DY, "18",
+1.DZ, "0",
+1.EqnOfVol, "h*324.0000",
+1.Max, "0.001",
+1.Min, "0",
+1.Shape, "1",
+Barcode.Unique, "0",
+Barcode.Value, "",
+BaseMM, "0",
+CategoryCnt, "0",
+Clearance, "5",
+Depth, "0.001",
+Description, "Container for MagPip maintenance tool",
+Dim.Dx, "18",
+Dim.Dy, "18",
+LS, "1",
+LSHt, "5",
+MaxDepth, "0",
+ReadOnly, "1",
+Segments, "1",
+Shape, "0",
+TchBase, "0",
+TchOff, "0",
+UseBndry, "0",
+ViewName, "Ctr for MagPip tool",
+Visible, "0",
+cLLD, "1"
+};
+
+* $$author=ContainerAdministrator$$valid=1$$time=2025-06-21 16:41$$checksum=1e30310d$$length=098$$

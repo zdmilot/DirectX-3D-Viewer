@@ -1,0 +1,691 @@
+// This is a part of the HSL Array Library.
+// Copyright (C) by HAMILTON Bonaduz AG, CH-7402 Bonaduz.
+// All rights reserved.
+//
+// Modification History
+// 2001-06-26  bandenmatten : Removed onerror goto statements from library functions.
+// 2001-07-17  bandenmatten : Divided library into interface and implemenation.
+// 2001-10-29  bandenmatten : Added functions VarArrInsertElementAt() and SeqArrInsertElementAt().
+// 2002-07-06  bandenmatten : Made library language independant.
+// 2002-12-05  bandenmatten : Specified return values for exported library functions.
+
+#ifndef __HSLArrLib_hsl__
+#define __HSLArrLib_hsl__	1
+
+// Interface to Array library 
+#ifndef HSL_RUNTIME
+function VarArrUpperBound() variable																		{return(0);}
+function VarArrGetSize(variable row) variable															{return(0);}
+function VarArrSetSize(variable row, variable newSize) void											{return;}
+function VarArrSetAt(variable row, variable column, variable& variableObj) void				{return;}
+function VarArrGetAt(variable row, variable column) variable										{return(0);}
+function VarArrElementAt(variable row, variable column) variable									{return(0);}
+function VarArrAdd(variable row, variable& variableObj) void										{return;}
+function VarArrInsertElementAt(variable row, variable column, variable& variableObj) void	{return;}
+function SeqArrUpperBound() variable																		{return(0);}
+function SeqArrGetSize(variable row) variable															{return(0);}
+function SeqArrSetSize(variable row, variable newSize) void											{return;}
+function SeqArrSetAt(variable row, variable column, sequence& sequenceObj)	void				{return;}
+function SeqArrGetAt(variable row, variable column, sequence& sequenceObj)	void				{return;}
+function SeqArrElementAt(variable row, variable column, sequence& sequenceObj) void			{return;}
+function SeqArrAdd(variable row, sequence& sequenceObj) void										{return;}
+function SeqArrInsertElementAt(variable row, variable column, sequence& sequenceObj) void	{return;}
+#endif
+
+// Implementation of Array library 
+#ifdef HSL_RUNTIME
+
+namespace Arr
+{
+
+	// --------------------------------------------------------------------------------------
+	// Error Ids
+	// --------------------------------------------------------------------------------------
+
+	namespace IDE
+	{
+		static const variable first(0);									// guard
+		static const variable noError(first);							// No error.
+		static const variable invalidRow(first + 1);					// The specified row is invalid.
+		static const variable last(first + 1);							// guard
+	}
+
+	// --------------------------------------------------------------------------------------
+	// String Ids
+	// --------------------------------------------------------------------------------------
+
+	namespace IDS
+	{
+		static const variable first(IDE::last + 1);					// guard
+		static const variable helpFileName(first + 1);				// help file name
+		static const variable last(first + 1);							// guard
+	}
+
+	#ifndef __HSLStringTableLib_hsl__
+	#include "HSLStringTableLib.hs_"
+	#endif
+
+	// --------------------------------------------------------------------------------------
+	// Library Initialization 
+	// --------------------------------------------------------------------------------------
+
+	static variable initializedLib(hslFalse);							// initialization state of the Array Library
+	static function InitArrayLibrary();									// initializes the Array Library (only once)
+
+	// --------------------------------------------------------------------------------------
+	// Exception handling
+	// --------------------------------------------------------------------------------------
+
+	namespace Error
+	{
+		static function Raise(												// raises a runtime error
+			variable errorId,													// i: error id, one of IDE
+			variable& fileName,												// i: file name
+			variable& funcName,												// i: function name
+			variable& lineNumber)											// i: line number
+		{
+			variable description("");
+
+			// set error description
+			description = fileName + "(" + lineNumber + ") : " + funcName + "()\n" + StringTable::Load(errorId);
+			err.SetDescription(description);
+
+			// raise error
+			err.Raise(errorId, err.GetDescription(), StringTable::Load(IDS::helpFileName));
+		}
+	}
+
+	// --------------------------------------------------------------------------------------
+	// Functions
+	// --------------------------------------------------------------------------------------
+
+	static function InitArrayLibrary()
+	{
+		// initialize the Array Library once only
+		if (!initializedLib)
+		{
+			StringTable::Init("HSLArrLib");
+			//StringTable::Dump();
+			initializedLib = hslTrue;
+		}
+		return(initializedLib);
+	}
+}
+
+// Data 
+static variable varArrUpperBound(11);
+static variable varArr0[];
+static variable varArr1[];
+static variable varArr2[];
+static variable varArr3[];
+static variable varArr4[];
+static variable varArr5[];
+static variable varArr6[];
+static variable varArr7[];
+static variable varArr8[];
+static variable varArr9[];
+static variable varArr10[];
+static variable varArr11[];
+static variable seqArrUpperBound(11);
+static sequence seqArr0[];
+static sequence seqArr1[];
+static sequence seqArr2[];
+static sequence seqArr3[];
+static sequence seqArr4[];
+static sequence seqArr5[];
+static sequence seqArr6[];
+static sequence seqArr7[];
+static sequence seqArr8[];
+static sequence seqArr9[];
+static sequence seqArr10[];
+static sequence seqArr11[];
+
+// Wrapper function  
+function VarArrUpperBound() variable
+{
+	return(varArrUpperBound);
+}
+
+// Wrapper function  
+function VarArrGetSize(variable row) variable
+{
+	variable size(0);
+
+	// initialize Array Library
+	Arr::InitArrayLibrary();
+
+	// validate input
+	if ((row < 0) || (varArrUpperBound < row))
+		Arr::Error::Raise(Arr::IDE::invalidRow, GetFileName(), GetFunctionName(), GetLineNumber());
+
+	if (0 == row)
+		size = varArr0.GetSize();
+	if (1 == row)
+		size = varArr1.GetSize();
+	if (2 == row)
+		size = varArr2.GetSize();
+	if (3 == row)
+		size = varArr3.GetSize();
+	if (4 == row)
+		size = varArr4.GetSize();
+	if (5 == row)
+		size = varArr5.GetSize();
+	if (6 == row)
+		size = varArr6.GetSize();
+	if (7 == row)
+		size = varArr7.GetSize();
+	if (8 == row)
+		size = varArr8.GetSize();
+	if (9 == row)
+		size = varArr9.GetSize();
+	if (10 == row)
+		size = varArr10.GetSize();
+	if (11 == row)
+		size = varArr11.GetSize();
+	return(size);
+}
+
+// Wrapper function  
+function VarArrSetSize(variable row, variable newSize) void
+{
+
+	// initialize Array Library
+	Arr::InitArrayLibrary();
+
+	// validate input
+	if ((row < 0) || (varArrUpperBound < row))
+		Arr::Error::Raise(Arr::IDE::invalidRow, GetFileName(), GetFunctionName(), GetLineNumber());
+
+	if (0 == row)
+		varArr0.SetSize(newSize);
+	if (1 == row)
+		varArr1.SetSize(newSize);
+	if (2 == row)
+		varArr2.SetSize(newSize);
+	if (3 == row)
+		varArr3.SetSize(newSize);
+	if (4 == row)
+		varArr4.SetSize(newSize);
+	if (5 == row)
+		varArr5.SetSize(newSize);
+	if (6 == row)
+		varArr6.SetSize(newSize);
+	if (7 == row)
+		varArr7.SetSize(newSize);
+	if (8 == row)
+		varArr8.SetSize(newSize);
+	if (9 == row)
+		varArr9.SetSize(newSize);
+	if (10 == row)
+		varArr10.SetSize(newSize);
+	if (11 == row)
+		varArr11.SetSize(newSize);
+	return;
+}
+
+// Wrapper function  
+function VarArrSetAt(variable row, variable column, variable& variableObj) void
+{
+
+	// initialize Array Library
+	Arr::InitArrayLibrary();
+
+	// validate input
+	if ((row < 0) || (varArrUpperBound < row))
+		Arr::Error::Raise(Arr::IDE::invalidRow, GetFileName(), GetFunctionName(), GetLineNumber());
+
+	if (0 == row)
+		varArr0.SetAt(column, variableObj);
+	if (1 == row)
+		varArr1.SetAt(column, variableObj);
+	if (2 == row)
+		varArr2.SetAt(column, variableObj);
+	if (3 == row)
+		varArr3.SetAt(column, variableObj);
+	if (4 == row)
+		varArr4.SetAt(column, variableObj);
+	if (5 == row)
+		varArr5.SetAt(column, variableObj);
+	if (6 == row)
+		varArr6.SetAt(column, variableObj);
+	if (7 == row)
+		varArr7.SetAt(column, variableObj);
+	if (8 == row)
+		varArr8.SetAt(column, variableObj);
+	if (9 == row)
+		varArr9.SetAt(column, variableObj);
+	if (10 == row)
+		varArr10.SetAt(column, variableObj);
+	if (11 == row)
+		varArr11.SetAt(column, variableObj);
+	return;
+}
+
+// Wrapper function  
+function VarArrGetAt(variable row, variable column) variable
+{
+
+	// initialize Array Library
+	Arr::InitArrayLibrary();
+
+	// validate input
+	if ((row < 0) || (varArrUpperBound < row))
+		Arr::Error::Raise(Arr::IDE::invalidRow, GetFileName(), GetFunctionName(), GetLineNumber());
+
+	if (0 == row)
+		return(varArr0.GetAt(column));
+	if (1 == row)
+		return(varArr1.GetAt(column));
+	if (2 == row)
+		return(varArr2.GetAt(column));
+	if (3 == row)
+		return(varArr3.GetAt(column));
+	if (4 == row)
+		return(varArr4.GetAt(column));
+	if (5 == row)
+		return(varArr5.GetAt(column));
+	if (6 == row)
+		return(varArr6.GetAt(column));
+	if (7 == row)
+		return(varArr7.GetAt(column));
+	if (8 == row)
+		return(varArr8.GetAt(column));
+	if (9 == row)
+		return(varArr9.GetAt(column));
+	if (10 == row)
+		return(varArr10.GetAt(column));
+	if (11 == row)
+		return(varArr11.GetAt(column));
+	Arr::Error::Raise(Arr::IDE::invalidRow, GetFileName(), GetFunctionName(), GetLineNumber());
+}
+
+// Wrapper function  
+function VarArrElementAt(variable row, variable column) variable
+{
+
+	// initialize Array Library
+	Arr::InitArrayLibrary();
+
+	// validate input
+	if ((row < 0) || (varArrUpperBound < row))
+		Arr::Error::Raise(Arr::IDE::invalidRow, GetFileName(), GetFunctionName(), GetLineNumber());
+
+	if (0 == row)
+		return(varArr0.ElementAt(column));
+	if (1 == row)
+		return(varArr1.ElementAt(column));
+	if (2 == row)
+		return(varArr2.ElementAt(column));
+	if (3 == row)
+		return(varArr3.ElementAt(column));
+	if (4 == row)
+		return(varArr4.ElementAt(column));
+	if (5 == row)
+		return(varArr5.ElementAt(column));
+	if (6 == row)
+		return(varArr6.ElementAt(column));
+	if (7 == row)
+		return(varArr7.ElementAt(column));
+	if (8 == row)
+		return(varArr8.ElementAt(column));
+	if (9 == row)
+		return(varArr9.ElementAt(column));
+	if (10 == row)
+		return(varArr10.ElementAt(column));
+	if (11 == row)
+		return(varArr11.ElementAt(column));
+	Arr::Error::Raise(Arr::IDE::invalidRow, GetFileName(), GetFunctionName(), GetLineNumber());
+}
+
+// Wrapper function  
+function VarArrAdd(variable row, variable& variableObj) void
+{
+
+	// initialize Array Library
+	Arr::InitArrayLibrary();
+
+	// validate input
+	if ((row < 0) || (varArrUpperBound < row))
+		Arr::Error::Raise(Arr::IDE::invalidRow, GetFileName(), GetFunctionName(), GetLineNumber());
+
+	if (0 == row)
+		varArr0.AddAsLast(variableObj);
+	if (1 == row)
+		varArr1.AddAsLast(variableObj);
+	if (2 == row)
+		varArr2.AddAsLast(variableObj);
+	if (3 == row)
+		varArr3.AddAsLast(variableObj);
+	if (4 == row)
+		varArr4.AddAsLast(variableObj);
+	if (5 == row)
+		varArr5.AddAsLast(variableObj);
+	if (6 == row)
+		varArr6.AddAsLast(variableObj);
+	if (7 == row)
+		varArr7.AddAsLast(variableObj);
+	if (8 == row)
+		varArr8.AddAsLast(variableObj);
+	if (9 == row)
+		varArr9.AddAsLast(variableObj);
+	if (10 == row)
+		varArr10.AddAsLast(variableObj);
+	if (11 == row)
+		varArr11.AddAsLast(variableObj);
+	return;
+}
+
+// Wrapper function  
+function VarArrInsertElementAt(variable row, variable column, variable& variableObj) void
+{
+
+	// initialize Array Library
+	Arr::InitArrayLibrary();
+
+	// validate input
+	if ((row < 0) || (varArrUpperBound < row))
+		Arr::Error::Raise(Arr::IDE::invalidRow, GetFileName(), GetFunctionName(), GetLineNumber());
+
+	if (0 == row)
+		varArr0.InsertElementAt(column, variableObj);
+	if (1 == row)
+		varArr1.InsertElementAt(column, variableObj);
+	if (2 == row)
+		varArr2.InsertElementAt(column, variableObj);
+	if (3 == row)
+		varArr3.InsertElementAt(column, variableObj);
+	if (4 == row)
+		varArr4.InsertElementAt(column, variableObj);
+	if (5 == row)
+		varArr5.InsertElementAt(column, variableObj);
+	if (6 == row)
+		varArr6.InsertElementAt(column, variableObj);
+	if (7 == row)
+		varArr7.InsertElementAt(column, variableObj);
+	if (8 == row)
+		varArr8.InsertElementAt(column, variableObj);
+	if (9 == row)
+		varArr9.InsertElementAt(column, variableObj);
+	if (10 == row)
+		varArr10.InsertElementAt(column, variableObj);
+	if (11 == row)
+		varArr11.InsertElementAt(column, variableObj);
+	return;
+}
+
+// Wrapper function  
+function SeqArrUpperBound() variable
+{
+	return(seqArrUpperBound);
+}
+
+// Wrapper function  
+function SeqArrGetSize(variable row) variable
+{
+	variable size(0);
+
+	// initialize Array Library
+	Arr::InitArrayLibrary();
+
+	// validate input
+	if ((row < 0) || (seqArrUpperBound < row))
+		Arr::Error::Raise(Arr::IDE::invalidRow, GetFileName(), GetFunctionName(), GetLineNumber());
+
+	if (0 == row)
+		size = seqArr0.GetSize();
+	if (1 == row)
+		size = seqArr1.GetSize();
+	if (2 == row)
+		size = seqArr2.GetSize();
+	if (3 == row)
+		size = seqArr3.GetSize();
+	if (4 == row)
+		size = seqArr4.GetSize();
+	if (5 == row)
+		size = seqArr5.GetSize();
+	if (6 == row)
+		size = seqArr6.GetSize();
+	if (7 == row)
+		size = seqArr7.GetSize();
+	if (8 == row)
+		size = seqArr8.GetSize();
+	if (9 == row)
+		size = seqArr9.GetSize();
+	if (10 == row)
+		size = seqArr10.GetSize();
+	if (11 == row)
+		size = seqArr11.GetSize();
+	return(size);
+}
+
+// Wrapper function  
+function SeqArrSetSize(variable row, variable newSize) void
+{
+
+	// initialize Array Library
+	Arr::InitArrayLibrary();
+
+	// validate input
+	if ((row < 0) || (seqArrUpperBound < row))
+		Arr::Error::Raise(Arr::IDE::invalidRow, GetFileName(), GetFunctionName(), GetLineNumber());
+
+	if (0 == row)
+		seqArr0.SetSize(newSize);
+	if (1 == row)
+		seqArr1.SetSize(newSize);
+	if (2 == row)
+		seqArr2.SetSize(newSize);
+	if (3 == row)
+		seqArr3.SetSize(newSize);
+	if (4 == row)
+		seqArr4.SetSize(newSize);
+	if (5 == row)
+		seqArr5.SetSize(newSize);
+	if (6 == row)
+		seqArr6.SetSize(newSize);
+	if (7 == row)
+		seqArr7.SetSize(newSize);
+	if (8 == row)
+		seqArr8.SetSize(newSize);
+	if (9 == row)
+		seqArr9.SetSize(newSize);
+	if (10 == row)
+		seqArr10.SetSize(newSize);
+	if (11 == row)
+		seqArr11.SetSize(newSize);
+	return;
+}
+
+// Wrapper function  
+function SeqArrSetAt(variable row, variable column, sequence& sequenceObj) void
+{
+
+	// initialize Array Library
+	Arr::InitArrayLibrary();
+
+	// validate input
+	if ((row < 0) || (seqArrUpperBound < row))
+		Arr::Error::Raise(Arr::IDE::invalidRow, GetFileName(), GetFunctionName(), GetLineNumber());
+
+	if (0 == row)
+		seqArr0.SetAt(column, sequenceObj);
+	if (1 == row)
+		seqArr1.SetAt(column, sequenceObj);
+	if (2 == row)
+		seqArr2.SetAt(column, sequenceObj);
+	if (3 == row)
+		seqArr3.SetAt(column, sequenceObj);
+	if (4 == row)
+		seqArr4.SetAt(column, sequenceObj);
+	if (5 == row)
+		seqArr5.SetAt(column, sequenceObj);
+	if (6 == row)
+		seqArr6.SetAt(column, sequenceObj);
+	if (7 == row)
+		seqArr7.SetAt(column, sequenceObj);
+	if (8 == row)
+		seqArr8.SetAt(column, sequenceObj);
+	if (9 == row)
+		seqArr9.SetAt(column, sequenceObj);
+	if (10 == row)
+		seqArr10.SetAt(column, sequenceObj);
+	if (11 == row)
+		seqArr11.SetAt(column, sequenceObj);
+	return;
+}
+
+// Wrapper function  
+function SeqArrGetAt(variable row, variable column, sequence& sequenceObj) void
+{
+
+	// initialize Array Library
+	Arr::InitArrayLibrary();
+
+	// validate input
+	if ((row < 0) || (seqArrUpperBound < row))
+		Arr::Error::Raise(Arr::IDE::invalidRow, GetFileName(), GetFunctionName(), GetLineNumber());
+
+	if (0 == row)
+		sequenceObj = seqArr0.GetAt(column);
+	if (1 == row)
+		sequenceObj = seqArr1.GetAt(column);
+	if (2 == row)
+		sequenceObj = seqArr2.GetAt(column);
+	if (3 == row)
+		sequenceObj = seqArr3.GetAt(column);
+	if (4 == row)
+		sequenceObj = seqArr4.GetAt(column);
+	if (5 == row)
+		sequenceObj = seqArr5.GetAt(column);
+	if (6 == row)
+		sequenceObj = seqArr6.GetAt(column);
+	if (7 == row)
+		sequenceObj = seqArr7.GetAt(column);
+	if (8 == row)
+		sequenceObj = seqArr8.GetAt(column);
+	if (9 == row)
+		sequenceObj = seqArr9.GetAt(column);
+	if (10 == row)
+		sequenceObj = seqArr10.GetAt(column);
+	if (11 == row)
+		sequenceObj = seqArr11.GetAt(column);
+	return;
+}
+
+// Wrapper function  
+function SeqArrElementAt(variable row, variable column, sequence& sequenceObj) void
+{
+
+	// initialize Array Library
+	Arr::InitArrayLibrary();
+
+	// validate input
+	if ((row < 0) || (seqArrUpperBound < row))
+		Arr::Error::Raise(Arr::IDE::invalidRow, GetFileName(), GetFunctionName(), GetLineNumber());
+
+	if (0 == row)
+		sequenceObj = seqArr0.ElementAt(column);
+	if (1 == row)
+		sequenceObj = seqArr1.ElementAt(column);
+	if (2 == row)
+		sequenceObj = seqArr2.ElementAt(column);
+	if (3 == row)
+		sequenceObj = seqArr3.ElementAt(column);
+	if (4 == row)
+		sequenceObj = seqArr4.ElementAt(column);
+	if (5 == row)
+		sequenceObj = seqArr5.ElementAt(column);
+	if (6 == row)
+		sequenceObj = seqArr6.ElementAt(column);
+	if (7 == row)
+		sequenceObj = seqArr7.ElementAt(column);
+	if (8 == row)
+		sequenceObj = seqArr8.ElementAt(column);
+	if (9 == row)
+		sequenceObj = seqArr9.ElementAt(column);
+	if (10 == row)
+		sequenceObj = seqArr10.ElementAt(column);
+	if (11 == row)
+		sequenceObj = seqArr11.ElementAt(column);
+	return;
+}
+
+// Wrapper function  
+function SeqArrAdd(variable row, sequence& sequenceObj) void
+{
+
+	// initialize Array Library
+	Arr::InitArrayLibrary();
+
+	// validate input
+	if ((row < 0) || (seqArrUpperBound < row))
+		Arr::Error::Raise(Arr::IDE::invalidRow, GetFileName(), GetFunctionName(), GetLineNumber());
+
+	if (0 == row)
+		seqArr0.AddAsLast(sequenceObj);
+	if (1 == row)
+		seqArr1.AddAsLast(sequenceObj);
+	if (2 == row)
+		seqArr2.AddAsLast(sequenceObj);
+	if (3 == row)
+		seqArr3.AddAsLast(sequenceObj);
+	if (4 == row)
+		seqArr4.AddAsLast(sequenceObj);
+	if (5 == row)
+		seqArr5.AddAsLast(sequenceObj);
+	if (6 == row)
+		seqArr6.AddAsLast(sequenceObj);
+	if (7 == row)
+		seqArr7.AddAsLast(sequenceObj);
+	if (8 == row)
+		seqArr8.AddAsLast(sequenceObj);
+	if (9 == row)
+		seqArr9.AddAsLast(sequenceObj);
+	if (10 == row)
+		seqArr10.AddAsLast(sequenceObj);
+	if (11 == row)
+		seqArr11.AddAsLast(sequenceObj);
+	return;
+}
+
+// Wrapper function  
+function SeqArrInsertElementAt(variable row, variable column, sequence& sequenceObj) void
+{
+
+	// initialize Array Library
+	Arr::InitArrayLibrary();
+
+	// validate input
+	if ((row < 0) || (seqArrUpperBound < row))
+		Arr::Error::Raise(Arr::IDE::invalidRow, GetFileName(), GetFunctionName(), GetLineNumber());
+
+	if (0 == row)
+		seqArr0.InsertElementAt(column, sequenceObj);
+	if (1 == row)
+		seqArr1.InsertElementAt(column, sequenceObj);
+	if (2 == row)
+		seqArr2.InsertElementAt(column, sequenceObj);
+	if (3 == row)
+		seqArr3.InsertElementAt(column, sequenceObj);
+	if (4 == row)
+		seqArr4.InsertElementAt(column, sequenceObj);
+	if (5 == row)
+		seqArr5.InsertElementAt(column, sequenceObj);
+	if (6 == row)
+		seqArr6.InsertElementAt(column, sequenceObj);
+	if (7 == row)
+		seqArr7.InsertElementAt(column, sequenceObj);
+	if (8 == row)
+		seqArr8.InsertElementAt(column, sequenceObj);
+	if (9 == row)
+		seqArr9.InsertElementAt(column, sequenceObj);
+	if (10 == row)
+		seqArr10.InsertElementAt(column, sequenceObj);
+	if (11 == row)
+		seqArr11.InsertElementAt(column, sequenceObj);
+	return;
+}
+#endif
+
+#endif
+// $$author=ContainerAdministrator$$valid=1$$time=2025-09-09 20:13$$checksum=21a7fd5a$$length=099$$

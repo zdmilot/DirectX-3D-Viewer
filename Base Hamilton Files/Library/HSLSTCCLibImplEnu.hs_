@@ -1,0 +1,60 @@
+//  ------------------------------------------------------------------------------------
+//  Hamilton Company Software Product
+//  File: HSLSTCCLibEnu.hs_
+//
+//  This is a part of the module HxSTCompCmd.
+//  Language dependant part of the STCC Template Library.
+//
+//  File creation date:  2004-03-16 by CJo
+//  Last revision date:  2004-03-16 by CJo
+//
+//  Copyright (c) 2004 by Hamilton Bonaduz AG.
+//
+//
+//  Modification History
+//  --------------------
+//  1.00  2004-03-16 by CJo  Initial file creation.
+//	 1.01  2006-09-19 by UBe  Changed moduleShowName from 'Sample Tracker Steps' to 'Data Handling Steps'
+//	 1.02  2007-08-08 by UBe  add invalidParam_arrSameSizeExp and stpGenMapFileParamExperiments
+//  ------------------------------------------------------------------------------------
+
+
+function StringTable()
+{
+	// Errors
+	Insert(IDE::noError,								"No error.");
+
+	Insert(IDE::unexpectedError,					"Unexpected error occured.");
+	Insert(IDE::invalidParam,						"Invalid parameter detected.");
+	Insert(IDE::invalidParam_sequence,			"Invalid parameter detected, the sequence is invalid.");
+	Insert(IDE::invalidParam_intExp,				"Invalid parameter detected, integer value expected.");
+	Insert(IDE::invalidParam_floatExp,			"Invalid parameter detected, float value expected.");
+	Insert(IDE::invalidParam_stringExp,			"Invalid parameter detected, string value expected.");
+	Insert(IDE::invalidParam_arrSameSizeExp,	"Invalid parameter detected, the specified arrays must have the same size.");
+
+	// common strings
+	Insert(IDS::openingBracket,					"<");
+	Insert(IDS::closingBracket,					">");
+	Insert(IDS::point,								".");
+	Insert(IDS::runtimeError,						"Runtime error in step ");
+	Insert(IDS::moduleShowName,					"Data Handling Steps");
+
+	// step names
+	Insert(IDS::stepNameGenMapFile,				"Generate Mapping File");
+	Insert(IDS::stepNameSetElementBC,			"Set Element Barcode");
+	Insert(IDS::stepNameRemoveElement,			"Remove Element");
+
+	// Parameter validation, additional information
+	Insert(IDS::paramLabwareID,					"Parameter 'Labware ID':\nFor the Labware ID a string value must be passed.");
+	Insert(IDS::paramPositionID_EmptyIsValid,	"Parameter 'Position ID':\nFor the Position ID a string value must be passed.\nPassing an empty string is also possible.");
+	Insert(IDS::paramBarcode,						"Parameter 'Barcode':\nFor the barcode a string value must be passed.");
+	Insert(IDS::paramSeqPosInvalidForSeq,		"Parameter 'Position Number for Sequence':\nThe passed number is invalid for passed sequence.");
+	Insert(IDS::paramSeqPosParamSeqPos,			"Parameter 'Position Number for Sequence':\nFor the position number a integer value must be passed.");
+
+	// step strings 'Generate Mapping File'
+	Insert(IDS::stpGenMapFileParamFile,			"Parameter 'Filename':\nFor the filename used to generate the mapping file(s) a string value must be passed.");
+	Insert(IDS::stpGenMapFileParamPath,			"Parameter 'Directory':\nIf a directory is passed it must be a string value.\nLeave it empty if the default directory should be used.");
+	Insert(IDS::stpGenMapFileParamExperiments,"Parameter 'Experiments':\nIf a variable or an array is passed, it must be of type string respectively array of type string."); 
+	Insert(IDS::arrayValueAtIndex,				"Array value at index [%s].");
+}
+// $$author=ContainerAdministrator$$valid=1$$time=2025-09-09 20:13$$checksum=81505dfb$$length=099$$

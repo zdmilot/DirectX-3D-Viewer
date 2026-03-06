@@ -1,0 +1,892 @@
+// This is a part of the HSL Sequence Library.
+// Copyright (C) by HAMILTON Bonaduz AG, CH-7402 Bonaduz.
+// All rights reserved.
+//
+// Modification History
+// 2001-06-26  bandenmatten : Removed onerror goto statements from library functions.
+// 2001-07-17  bandenmatten : Divided library into interface and implemenation.
+// 2001-07-30  bandenmatten : Added functions SeqReadFromFile() and SeqWriteToFile().
+// 2001-08-09  bandenmatten : Added function SeqGetName().
+// 2001-09-19  bandenmatten : Added function SeqInsertAt().
+// 2001-10-30  bandenmatten : Added function SeqCopySequence().
+// 2001-10-31  bandenmatten : Added function SeqSequenceRemoveAll().
+// 2002-02-22  bandenmatten : Added function SeqSetUsedPositions().
+// 2002-03-20  bandenmatten : Added function SeqLookupPosition().
+// 2002-06-11  bandenmatten : Made global objects seqSequenceObj_N static.
+// 2002-06-11  bandenmatten : File handling through ADO didn't recognize MDB, XLS, and TXT as 
+//										valid file extensions. Fixed this bug. 
+// 2002-06-17  bandenmatten : Removed function SeqIterateLabware().
+// 2002-06-17  bandenmatten : Added function SeqGetPositionCountForCurrLabware().
+// 2002-07-06  bandenmatten : Made library language independant.
+// 2002-07-23  bandenmatten : Added function SeqGetLabwareIds().
+// 2002-12-05  bandenmatten : Specified return values for exported library functions.
+// 2003-01-21  bandenmatten : Added function SeqAddEx().
+// 2003-01-30  bandenmatten : Moved the included libraries into the #ifdef HSL_RUNTIME block (optimization and exportcontrol).
+// 2003-07-23  bandenmatten : Added function SeqMPH48SortLike96().
+// 2004-06-13  jjenal       : Added function SeqEdit2().
+// 2005-12-13  bandenmatten : Added function SeqEqualSequences().
+// 2006-02-20  bandenmatten : Added function SeqResetSequenceIndexes().
+// 2006-02-20  bandenmatten : Added functions: 
+//													SeqSetProperty()
+//													SeqSetPropertyRange()
+//													SeqGetProperty()
+//													SeqRemoveProperty()
+//													SeqRemoveAllProperties()
+// 2006-10-05  bandenmatten : Replaced NullField error handling in function SeqWriteCurrentPosition() by testing for DBNull value.
+
+#ifndef __HSLSeqLib_hsl__
+#define __HSLSeqLib_hsl__	1
+
+//#define HSL_RUNTIME 1
+
+// Interface to Sequence library 
+#ifndef HSL_RUNTIME
+function SeqGetLabwareIds(sequence& sequenceObj, variable& labwareIds[]) variable		{return(0);}
+function SeqGetPositionCountForCurrLabware(sequence& sequenceObj) variable					{return(0);}
+function SeqGetTotal(sequence& sequenceObj) variable												{return(0);}
+function SeqGetName(sequence& sequenceObj) variable												{return(0);}
+function SeqGetNext(sequence& sequenceObj) variable												{return(0);}
+function SeqGetMax(sequence& sequenceObj) variable													{return(0);}
+function SeqSetMax(sequence& sequenceObj, variable max) variable								{return(0);}
+function SeqIncrement(sequence& sequenceObj, variable increment) variable					{return(0);}
+function SeqCopySequence(sequence& targetSequence, sequence& sourceSequence) void		{return;}
+function SeqOperatorAssignSeq(sequence& targetSequence, sequence& sourceSequence) void	{return;}
+function SeqOperatorInc(sequence& sequenceObj) variable											{return(0);}
+function SeqOperatorDec(sequence& sequenceObj) variable											{return(0);}
+function SeqRemoveAt(sequence& sequenceObj, variable position) void							{return;}
+function SeqRemoveAll(sequence& sequenceObj) void													{return;}
+function SeqInsertAt(sequence& sequenceObj, variable position, 
+	variable& labwareId, variable& positionId) void													{return;}
+function SeqAdd(sequence& sequenceObj, variable& labwareId, variable& positionId) void	{return;}
+function SeqAddEx(sequence& sequenceObj, variable& labwareId, variable& positionId, device& deviceContext) void	{return;}
+function SeqLookupPosition(
+	sequence& sequenceObj, 
+	variable& labwareId, 
+	variable& positionId, 
+	variable start,
+	variable forward) variable																				{return(0);}
+function SeqEdit(
+	sequence& sequenceObj, 
+	device& deviceContext, 
+	variable& title, 
+	variable& prompt,
+	variable timeout,
+	variable initFromCfg,
+	variable first,
+	variable last,
+	variable editable,
+	variable& cfgFile) void																					{return;}
+function SeqEdit2(
+	sequence& sequenceObj, 
+	device& deviceContext, 
+	variable& title, 
+	variable& prompt,
+	variable timeout,
+	variable sound,
+	variable initFromCfg,
+	sequence& editedSequenceObj, 
+	variable editable,
+	variable& cfgFile) void																					{return;}
+function SeqGetPositionId(sequence& sequenceObj) variable										{return(0);}
+function SeqGetLabwareId(sequence& sequenceObj) variable											{return(0);}
+function SeqGetUsedPositions(sequence& sequenceObj) variable									{return(0);}
+function SeqSetUsedPositions(sequence& sequenceObj, variable usedPositions) void			{return;}
+function SeqWriteCurrentPosition(
+	variable& dataSource, 
+	variable& layoutName, 
+	variable& sequenceName, 
+	variable& currentPosition)	variable																	{return(0);}
+function SeqReadCurrentPosition(
+	variable& dataSource, 
+	variable& layoutName, 
+	variable& sequenceName)	variable																		{return(0);}
+function SeqReadFromFile(
+	sequence& sequenceObj, 
+	device& deviceContext, 
+	variable indexesOnly, 
+	variable& cfgFile) variable																			{return(0);}
+function SeqWriteToFile(
+	sequence& sequenceObj, 
+	device& deviceContext, 
+	variable indexesOnly, 
+	variable& cfgFile) void																					{return;}
+function SeqMPH48SortLike96(
+	sequence& sequenceObj, 
+	variable Q1,
+	variable Q2,
+	variable Q3,
+	variable Q4) variable																					{return(0);}
+function SeqEqualSequences(sequence& sequenceObj_1, sequence& sequenceObj_2) variable	{return(0);}
+function SeqResetSequenceIndexes(sequence& sequenceObj) void									{return;}
+function SeqSetProperty(sequence& sequenceObj, variable position, variable& propertyName, variable& propertyValue) void {return;}
+function SeqSetPropertyRange(sequence& sequenceObj, variable startPosition, variable endPosition, variable& propertyName, variable& propertyValue) void {return;}
+function SeqGetProperty(sequence& sequenceObj, variable position, variable& propertyName) variable {return(0);}
+function SeqRemoveProperty(sequence& sequenceObj, variable position, variable& propertyName) void {return;}
+function SeqRemoveAllProperties(sequence& sequenceObj, variable position) void {return;}
+#endif
+
+// Sequence objects 
+static sequence seqSequenceObj_1;
+static sequence seqSequenceObj_2;
+static sequence seqSequenceObj_3;
+static sequence seqSequenceObj_4;
+
+// Implementation of Sequence library 
+#ifdef HSL_RUNTIME
+
+#ifndef __HSLStrLib_hsl__
+#include "HSLStrLib.hsl"
+#endif
+
+namespace Seq
+{
+
+	// --------------------------------------------------------------------------------------
+	// Error Ids
+	// --------------------------------------------------------------------------------------
+
+	namespace IDE
+	{
+		static const variable first(0);									// guard
+		static const variable noError(first);							// No error.
+		static const variable openFileFailed(first + 1);			// Failed to open file: 
+		static const variable last(first + 1);							// guard
+	}
+
+	// --------------------------------------------------------------------------------------
+	// String Ids
+	// --------------------------------------------------------------------------------------
+
+	namespace IDS
+	{
+		static const variable first(IDE::last + 1);					// guard
+		static const variable helpFileName(first + 1);				// help file name
+		static const variable last(first + 1);							// guard
+	}
+
+	#ifndef __HSLStringTableLib_hsl__
+	#include "HSLStringTableLib.hs_"
+	#endif
+
+	// --------------------------------------------------------------------------------------
+	// Library Initialization 
+	// --------------------------------------------------------------------------------------
+
+	static variable initializedLib(hslFalse);							// initialization state of the Sequence Library
+	static function InitSequenceLibrary();								// initializes the Sequence Library (only once)
+
+	// --------------------------------------------------------------------------------------
+	// Exception handling
+	// --------------------------------------------------------------------------------------
+
+	namespace Error
+	{
+		static function Raise(												// raises a runtime error
+			variable errorId,													// i: error id, one of IDE
+			variable& fileName,												// i: file name
+			variable& funcName,												// i: function name
+			variable& lineNumber)											// i: line number
+		{
+			variable description("");
+
+			// set error description
+			description = fileName + "(" + lineNumber + ") : " + funcName + "()\n" + StringTable::Load(errorId);
+			err.SetDescription(description);
+
+			// raise error
+			err.Raise(errorId, err.GetDescription(), StringTable::Load(IDS::helpFileName));
+		}
+
+		static function RaiseEx(
+			variable errorId,
+			variable errorDetail,
+			variable& fileName,
+			variable& funcName,
+			variable& lineNumber)
+		{
+			variable description("");
+
+			// set error description
+			description = fileName + "(" + lineNumber + ") : " + funcName + "()\n" + StringTable::Load(errorId) + errorDetail;
+			err.SetDescription(description);
+
+			// raise error
+			err.Raise(errorId, err.GetDescription(), StringTable::Load(IDS::helpFileName));
+		}
+	}
+
+	// --------------------------------------------------------------------------------------
+	// Functions
+	// --------------------------------------------------------------------------------------
+
+	static function InitSequenceLibrary()
+	{
+		// initialize the Sequence Library once only
+		if (!initializedLib)
+		{
+			StringTable::Init("HSLSeqLib");
+			//StringTable::Dump();
+			initializedLib = hslTrue;
+		}
+		return(initializedLib);
+	}
+}
+
+// Wrapper function  
+function SeqGetLabwareIds(sequence& sequenceObj, variable& labwareIds[]) variable
+{
+	return(sequenceObj.GetLabwareIds(labwareIds));
+}
+
+// Wrapper function  
+function SeqGetPositionCountForCurrLabware(sequence& sequenceObj) variable
+{
+	return(sequenceObj.GetPositionCountForCurrLabware());
+}
+
+// Wrapper function  
+function SeqGetTotal(sequence& sequenceObj) variable
+{
+	return(sequenceObj.GetTotal());
+}
+
+// Wrapper function  
+function SeqGetName(sequence& sequenceObj) variable
+{
+	return(sequenceObj.GetName());
+}
+
+// Wrapper function  
+function SeqGetNext(sequence& sequenceObj) variable
+{
+	return(sequenceObj.GetNext());
+}
+
+// Wrapper function  
+function SeqGetMax(sequence& sequenceObj) variable
+{
+	return(sequenceObj.GetMax());
+}
+
+// Wrapper function  
+function SeqSetMax(sequence& sequenceObj, variable max) variable
+{
+	return(sequenceObj.SetMax(max));
+}
+
+// Wrapper function  
+function SeqIncrement(sequence& sequenceObj, variable increment) variable
+{
+	return(sequenceObj.Increment(increment));
+}
+
+// Wrapper function  
+function SeqOperatorAssignSeq(sequence& targetSequence, sequence& sourceSequence) void
+{
+	targetSequence = sourceSequence;
+}
+
+// Wrapper function  
+function SeqCopySequence(sequence& targetSequence, sequence& sourceSequence) void
+{
+	targetSequence.CopySequence(sourceSequence);
+}
+
+// Wrapper function  
+function SeqOperatorInc(sequence& sequenceObj) variable
+{
+	return(sequenceObj++);
+}
+
+// Wrapper function  
+function SeqOperatorDec(sequence& sequenceObj) variable
+{
+	return(sequenceObj--);
+}
+
+// Wrapper function  
+function SeqRemoveAt(sequence& sequenceObj, variable position) void
+{
+	sequenceObj.RemoveAt(position);
+}
+
+// Wrapper function  
+function SeqRemoveAll(sequence& sequenceObj) void
+{
+	variable position;
+	variable total;
+	total = sequenceObj.GetTotal();
+	sequenceObj.SetCount(total);
+	sequenceObj.SetCurrentPosition(1);
+	for (position = total; 0 < position; position--)
+		sequenceObj.RemoveAt(position);
+	sequenceObj.SetCount(0);
+	sequenceObj.SetCurrentPosition(0);
+	sequenceObj.SetMax(0);
+}
+
+// Wrapper function  
+function SeqInsertAt(sequence& sequenceObj, variable position, 
+	variable& labwareId, variable& positionId) void
+{
+	sequenceObj.InsertAt(position, labwareId, positionId);
+}
+
+// Wrapper function  
+function SeqAdd(sequence& sequenceObj, variable& labwareId, variable& positionId) void
+{
+	sequenceObj.Add(labwareId, positionId);
+}
+
+// Wrapper function  
+function SeqAddEx(sequence& sequenceObj, variable& labwareId, variable& positionId, device& deviceContext) void
+{
+	sequenceObj.Add(labwareId, positionId, deviceContext);
+}
+
+// Wrapper function  
+function SeqLookupPosition(
+	sequence& sequenceObj, 
+	variable& labwareId, 
+	variable& positionId, 
+	variable start,
+	variable forward) variable
+{
+	return(sequenceObj.LookupPosition(labwareId, positionId, start, forward));
+}
+
+// Wrapper function  
+function SeqEdit(
+	sequence& sequenceObj, 
+	device& deviceContext, 
+	variable& title, 
+	variable& prompt,
+	variable timeout,
+	variable initFromCfg,
+	variable first,
+	variable last,
+	variable editable,
+	variable& cfgFile) void
+{
+	sequenceObj.Edit(deviceContext, title, prompt, timeout, initFromCfg, first, last, editable, cfgFile);
+}
+
+//>+JJ: 2005-06-13
+// Wrapper function  
+function SeqEdit2(
+	sequence& sequenceObj, 
+	device& deviceContext, 
+	variable& title, 
+	variable& prompt,
+	variable timeout,
+	variable sound,
+	variable initFromCfg,
+	sequence& editedSequenceObj, 
+	variable editable,
+	variable& cfgFile) void
+{
+	sequenceObj.Edit2(deviceContext, title, prompt, timeout, sound, initFromCfg, editedSequenceObj, editable, cfgFile);
+}
+//<+JJ: 2005-06-13
+
+
+// Wrapper function  
+function SeqGetPositionId(sequence& sequenceObj) variable
+{
+	return(sequenceObj.GetPositionId());
+}
+
+// Wrapper function  
+function SeqGetLabwareId(sequence& sequenceObj) variable
+{
+	return(sequenceObj.GetLabwareId());
+}
+
+// Wrapper function  
+function SeqGetUsedPositions(sequence& sequenceObj) variable
+{
+	return(sequenceObj.GetUsedPositions());
+}
+
+// Wrapper function  
+function SeqSetUsedPositions(sequence& sequenceObj, variable usedPositions) void
+{
+	sequenceObj.SetUsedPositions(usedPositions);
+}
+
+// Helper function  
+static function Seq__(variable& str)
+{
+	return(str);
+}
+
+// Helper function  
+// Returns the lesser of two supplied numeric (or string) expressions 
+// Identical with MthMin(), copied here to not have to include HSLMthLib.hsl 
+static function SeqMin(variable& number1, variable& number2)
+{
+	if (number1 <= number2)
+		return(number1);
+	return(number2);
+}
+
+// Break a data source name into components (file name, file extension, table name).  
+static function SeqSplitPath(
+	variable& dataSource, 
+	variable& fil, 
+	variable& ext,
+	variable& tab)
+{
+	string pathName;
+	string fileName;
+	string extension;
+	string path;
+	string table;
+	string str;
+	variable length;
+	variable offset;
+	variable index;
+
+	fil = ext = tab = "";
+	pathName = Seq__(dataSource);
+	length = pathName.GetLength();
+	index = StrReverseFind(pathName, "\\");
+	path = pathName.Mid(0, index + 1);
+	fileName = pathName.Mid(index + 1, length);
+	table = fileName;
+	StrTrimLeft(fileName, "");
+	StrTrimRight(fileName, "");
+	offset = StrReverseFind(fileName, ".");
+	str = fileName.Right(fileName.GetLength() - offset - 1);
+	index = str.Find(" ");
+	if (0 < index)
+	{
+		table = fileName.Mid(offset + index + 1, length);
+		fileName = fileName.Mid(0, offset + index + 1);
+	}
+	index = StrReverseFind(fileName, ".");
+	extension = fileName.Mid(index + 1, length);
+	StrTrimLeft(extension, "");
+	StrTrimRight(extension, "");
+	StrTrimLeft(table, "");
+	StrTrimRight(table, "");
+	StrTrimLeft(fileName, "");
+	StrTrimRight(fileName, "");
+
+	fil = fileName;
+	tab = table;
+	ext = extension;
+
+	#ifdef _DEBUG
+	Trace("fil = ", fil);
+	Trace("tab = ", tab);
+	Trace("ext = ", ext);
+	#endif
+	
+	return;
+}
+
+// Data source containing persisted current positions of sequences 
+static file seqDS;
+
+// Saves the current position from the memory to a file data source. 
+function SeqWriteCurrentPosition(
+	variable& dataSource, 
+	variable& layoutName, 
+	variable& sequenceName, 
+	variable& currentPosition)	variable
+{
+	string fileName;
+	string extension;
+	string table;
+	variable xlsDataSource;
+	variable mdbDataSource;
+	variable txtDataSource;
+	variable id(0);
+	variable lay(layoutName);
+	variable seq(sequenceName);
+	variable pos(currentPosition);
+	variable sqlStatement;
+	variable layouts[];
+
+	// initialize Sequence Library
+	Seq::InitSequenceLibrary();
+
+	SeqSplitPath(dataSource, fileName, extension, table);
+
+	xlsDataSource = ((extension.Compare("xls") == 0) || (extension.Compare("XLS") == 0));
+	mdbDataSource = ((extension.Compare("mdb") == 0) || (extension.Compare("MDB") == 0));
+	txtDataSource = (0 < table.GetLength()) && !xlsDataSource && !mdbDataSource;
+	if (txtDataSource)
+	{
+		StrReplace(table, ".","#");
+		StrReplace(table, ";","_");
+		StrReplace(table, ":","_");
+		StrReplace(table, "*","_");
+	}
+
+	sqlStatement = "SELECT * FROM [" + Seq__(table) + "] WHERE Layout ";
+	if (!mdbDataSource && "" == layoutName)
+		sqlStatement = sqlStatement + "IS NULL ";
+	else
+		sqlStatement = sqlStatement + "= '" + layoutName + "' ";
+	sqlStatement = sqlStatement + "AND Sequence = '" + sequenceName + "'";
+
+	seqDS.SetDelimiter(hslCSVDelimited);
+	seqDS.RemoveFields();
+	seqDS.AddField("Id", id, hslInteger);
+	seqDS.AddField("Layout", lay, hslString);
+	seqDS.AddField("Sequence", seq, hslString);
+	seqDS.AddField("CurrentPos", pos, hslInteger);
+	if (!seqDS.Open(dataSource, hslAppend, sqlStatement))
+		Seq::Error::RaiseEx(Seq::IDE::openFileFailed, dataSource, GetFileName(), GetFunctionName(), GetLineNumber());
+	if (xlsDataSource || mdbDataSource)
+	{
+		if (0 < seqDS.Seek(0, hslFirst))
+		{
+			sqlStatement = "UPDATE [" + Seq__(table) + "] SET CurrentPos = " + IStr(currentPosition) + " WHERE Layout ";
+			if (!mdbDataSource && "" == layoutName)
+				sqlStatement = sqlStatement + "IS NULL ";
+			else
+				sqlStatement = sqlStatement + "= '" + layoutName + "' ";
+			sqlStatement = sqlStatement + "AND Sequence = '" + sequenceName + "'";
+
+			seqDS.Open(dataSource, hslAppend, sqlStatement);
+		}
+		else
+		{
+			sqlStatement = "SELECT * FROM [" + Seq__(table) + "] ORDER BY Id ASC";
+			seqDS.Open(dataSource, hslAppend, sqlStatement);
+			if (0 < seqDS.Seek(0, hslLast))
+				seqDS.ReadRecord();
+			id = ++id;
+			lay = layoutName;
+			seq = sequenceName;
+			pos = currentPosition;
+			seqDS.WriteRecord();
+		}
+	}
+	else
+	{
+		if (0 < seqDS.Seek(0, hslFirst))
+		{
+			variable index;
+			variable upperBound;
+			variable ids[];
+			variable sequences[];
+			variable positions[];
+			seqDS.Open(dataSource, hslAppend);
+			while (!seqDS.Eof())
+			{
+				seqDS.ReadRecord();
+				ids.AddAsLast(id);
+				// the ISAM driver for text files returns a value 
+				// of type VT_NULL instead of an empty string of type VT_BSTR 
+				// -> so be prepared to handle a typeless variable 'lay'.
+				if (IsDBNull(lay))
+				{
+					lay = "";
+				}
+				layouts.AddAsLast(lay);
+				sequences.AddAsLast(seq);
+				if (layoutName == lay && sequenceName == seq)
+					positions.AddAsLast(currentPosition);
+				else
+					positions.AddAsLast(pos);
+			}
+			seqDS.Open(dataSource, hslWrite);
+			upperBound = SeqMin(SeqMin(layouts.GetSize(), sequences.GetSize()), positions.GetSize());
+			for (index = 0; index < upperBound; index++)
+			{
+				id = ids.ElementAt(index);
+				lay = layouts.ElementAt(index);
+				seq = sequences.ElementAt(index);
+				pos = positions.ElementAt(index);
+				seqDS.WriteRecord();
+			}
+		}
+		else
+		{
+			sqlStatement = "SELECT * FROM [" + Seq__(table) + "] ORDER BY Id ASC";
+			seqDS.Open(dataSource, hslAppend, sqlStatement);
+			if (0 < seqDS.Seek(0, hslLast))
+				seqDS.ReadRecord();
+			id = ++id;
+			lay = layoutName;
+			seq = sequenceName;
+			pos = currentPosition;
+			seqDS.WriteRecord();
+		}
+	}
+	return(hslTrue);
+}
+
+// Loads the current position from a file data source into memory. 
+function SeqReadCurrentPosition(
+	variable& dataSource, 
+	variable& layoutName, 
+	variable& sequenceName)	variable
+{
+	string fileName;
+	string extension;
+	string table;
+	variable xlsDataSource;
+	variable mdbDataSource;
+	variable txtDataSource;
+	variable pos(-1);
+	variable sqlStatement;
+
+	SeqSplitPath(dataSource, fileName, extension, table);
+
+	xlsDataSource = ((extension.Compare("xls") == 0) || (extension.Compare("XLS") == 0));
+	mdbDataSource = ((extension.Compare("mdb") == 0) || (extension.Compare("MDB") == 0));
+	txtDataSource = (0 < table.GetLength()) && !xlsDataSource && !mdbDataSource;
+	if (txtDataSource)
+	{
+		StrReplace(table, ".","#");
+		StrReplace(table, ";","_");
+		StrReplace(table, ":","_");
+		StrReplace(table, "*","_");
+	}
+
+	sqlStatement = "SELECT CurrentPos FROM [" + Seq__(table) + "] WHERE Layout ";
+	if (!mdbDataSource && "" == layoutName)
+		sqlStatement = sqlStatement + "IS NULL ";
+	else
+		sqlStatement = sqlStatement + "= '" + layoutName + "' ";
+	sqlStatement = sqlStatement + "AND Sequence = '" + sequenceName + "'";
+
+	seqDS.SetDelimiter(hslCSVDelimited);
+	seqDS.RemoveFields();
+	seqDS.AddField("CurrentPos", pos, hslInteger);
+	if (!seqDS.Open(dataSource, hslRead, sqlStatement))
+		return(-2);
+	while (!seqDS.Eof())
+	{
+		seqDS.ReadRecord();
+	}
+	return(pos);
+}
+
+// Wrapper function  
+function SeqReadFromFile(
+	sequence& sequenceObj, 
+	device& deviceContext, 
+	variable indexesOnly, 
+	variable& cfgFile)	variable
+{
+	return(sequenceObj.ReadFromFile(deviceContext, indexesOnly, cfgFile));
+}
+
+// Wrapper function  
+function SeqWriteToFile(
+	sequence& sequenceObj, 
+	device& deviceContext, 
+	variable indexesOnly, 
+	variable& cfgFile) void
+{
+	sequenceObj.WriteToFile(deviceContext, indexesOnly, cfgFile);
+}
+
+//New Function, 384 sort with MPH48 (sort like a 96):																
+function SeqMPH48SortLike96(
+	sequence& sequenceObj, 
+	variable Q1,
+	variable Q2,
+	variable Q3,
+	variable Q4) variable
+{
+	sequence	tempsequence;
+	variable checklength;
+	string 	labwarename;
+	variable labwarenames[];
+	variable quadrant;
+	variable currentquadrant;
+	variable position;
+	string 	strposition;
+	variable offset;
+	variable total;
+	variable persistoffset;
+	variable innerloop;
+	variable outerloop;
+	variable LoopCtr01;
+	variable NumberOfPlates;
+	variable ErrStatus01;
+
+	//Make a copy of the sequence object to tempsequence:
+	tempsequence.CopySequence( sequenceObj);
+
+
+	//first check that the sequence is > 383
+	checklength = sequenceObj.GetTotal();
+	if ( checklength < 384 )
+		{
+			return (0);
+		}
+
+
+	if ( checklength >= 384 ) //Case is for valid length sequences:
+
+	{
+			NumberOfPlates = checklength/384;
+			ErrStatus01 = sequenceObj.GetLabwareIds(labwarenames);
+
+			//Copy the "remove all positions" routine:
+				total = tempsequence.GetTotal();
+				tempsequence.SetCount(total);
+	   		tempsequence.SetCurrentPosition(1);
+				for (position = total; 0 < position; position--)
+					tempsequence.RemoveAt(position);
+				tempsequence.SetCount(0);
+				tempsequence.SetCurrentPosition(0);
+				tempsequence.SetMax(0);
+
+			// Loop over all positions, 384 positions at a time:
+			for ( LoopCtr01 = 0; LoopCtr01 < NumberOfPlates ; LoopCtr01++)
+			{
+			labwarename = labwarenames.GetAt( LoopCtr01 );
+
+			//Loop over four quadrants, setting start for each
+			for (quadrant = 1; quadrant < 5; quadrant++)
+				{
+				//Which rep of 4 are we on?
+				if ( quadrant == 1 )
+				currentquadrant = Q1;
+				if ( quadrant == 2 )
+				currentquadrant = Q2;		
+				if ( quadrant == 3 )
+				currentquadrant = Q3;
+				if ( quadrant == 4 )
+				currentquadrant = Q4;
+
+				//What is the starting position for this repitition?
+				if (currentquadrant == "A1")
+				{
+					position = 1;
+					offset = 1;
+				}
+				if (currentquadrant == "A2")
+				{
+					position = 2;
+					offset = 2;
+				}
+				if (currentquadrant == "B1")
+				{
+					position = 25;
+					offset = 25;
+				}
+				if (currentquadrant == "B2")
+				{
+					position = 26;
+					offset = 26;
+				}
+	
+				//Calculate the persistent offset for right/upper half of sequence:
+
+				persistoffset = offset + 12;
+
+				//Produce first 48 of new sequence:
+				for(outerloop = 0; outerloop < 8; outerloop++)
+					{
+					for(innerloop = 0; innerloop < 6; innerloop++)
+						{
+						strposition = IStr( position );
+						tempsequence.Add(labwarename, strposition);
+						position = position + 2;
+						}
+					position = (48 * outerloop) + offset;
+					}
+
+				//Calculate offsets and produce second 48 of new sequence:
+			position = persistoffset;
+			offset = persistoffset;
+
+				for(outerloop = 0; outerloop < 8; outerloop++)
+					{
+					for(innerloop = 0; innerloop < 6; innerloop++)
+						{
+							strposition = IStr( position );
+							tempsequence.Add(labwarename, strposition);
+							position = position + 2;
+						}
+						position = (48 * outerloop) + offset;
+					}
+			}	//End of LOOP over quadrant
+		}  	//End of FOR loop over plates
+	}  		//End of IF for multiple plates
+
+
+
+
+	//Set new sequence's pointer to 1:
+			sequenceObj.CopySequence( tempsequence );
+			sequenceObj.SetCurrentPosition(1);
+			return (1);
+
+}
+
+// Wrapper function  
+function SeqEqualSequences(sequence& sequenceObj_1, sequence& sequenceObj_2) variable
+{
+	return(sequenceObj_1.EqualsToSequence(sequenceObj_2));
+}
+
+//  Resets all sequence indexes
+function SeqResetSequenceIndexes(sequence& sequenceObj) void
+{
+	sequenceObj.SetCount(sequenceObj.GetTotal());
+	sequenceObj.SetCurrentPosition(1);
+	sequenceObj.SetMax(sequenceObj.GetTotal());
+}
+
+// Wrapper function  
+function SeqSetProperty(
+	sequence& sequenceObj, 
+	variable position, 
+	variable& propertyName, 
+	variable& propertyValue) void
+{
+	sequenceObj.SetSequenceProperty(position, propertyName, propertyValue);
+}
+
+// Wrapper function  
+function SeqSetPropertyRange(
+	sequence& sequenceObj, 
+	variable startPosition, 
+	variable endPosition, 
+	variable& propertyName, 
+	variable& propertyValue) void
+{
+	sequenceObj.SetSequencePropertyRange(startPosition, endPosition, propertyName, propertyValue);
+}
+
+// Wrapper function  
+function SeqGetProperty(
+	sequence& sequenceObj, 
+	variable position, 
+	variable& propertyName) variable
+{
+	return(sequenceObj.GetSequenceProperty(position, propertyName));
+}
+
+// Wrapper function  
+function SeqRemoveProperty(
+	sequence& sequenceObj, 
+	variable position, 
+	variable& propertyName) void
+{
+	sequenceObj.RemoveSequenceProperty(position, propertyName);
+}
+
+// Wrapper function  
+function SeqRemoveAllProperties(
+	sequence& sequenceObj, 
+	variable position) void
+{
+	sequenceObj.RemoveAllSequenceProperties(position);
+}
+
+#endif
+
+#endif
+// $$author=ContainerAdministrator$$valid=1$$time=2025-09-09 20:13$$checksum=d9ce3726$$length=099$$

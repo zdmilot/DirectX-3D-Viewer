@@ -1,0 +1,151 @@
+// This is a part of the HSL Error Library.
+// Copyright (C) by HAMILTON Bonaduz AG, CH-7402 Bonaduz.
+// All rights reserved.
+//
+// Modification History
+// 2001-06-26  bandenmatten : Removed onerror goto statements from library functions.
+// 2001-07-17  bandenmatten : Divided library into interface and implemenation.
+// 2001-08-08  bandenmatten : Added function ErrRaiseLast.
+// 2002-12-05  bandenmatten : Specified return values for exported library functions.
+// 2003-01-30  bandenmatten : Moved the included libraries into the #ifdef HSL_RUNTIME block (optimization and exportcontrol).
+// 2005-11-11  bandenmatten : Fixed error in function ErrMinor().
+
+#ifndef __HSLErrLib_hsl__
+#define __HSLErrLib_hsl__	1
+
+// Interface to Error library 
+#ifndef HSL_RUNTIME
+function ErrGetId() variable													{return(0);}
+function ErrSetId(variable number) void									{return;}
+function ErrGetDescription() variable										{return(0);}
+function ErrSetDescription(variable& description) void				{return;}
+function ErrGetDataAt(variable index) variable							{return(0);}
+function ErrSetDataAt(variable index, variable& variableObj) void	{return;}
+function ErrRaise(variable number, variable& description) void		{return;}
+function ErrRaiseLast() void													{return;}
+function ErrClear() void														{return;}
+function ErrMajor(variable hxr) variable									{return(0);}
+function ErrMinor(variable hxr) variable									{return(0);}
+function ErrCode(variable hxr) variable									{return(0);}
+function ErrDisplayError(variable& title) variable						{return(0);}
+#endif
+
+// Implementation of Error library 
+#ifdef HSL_RUNTIME
+
+#ifndef __HSLMthLib_hsl__
+#include "HSLMthLib.hsl"
+#endif
+#ifndef __HSLStrLib_hsl__
+#include "HSLStrLib.hsl"
+#endif
+
+// Wrapper function  
+function ErrGetId() variable
+{
+	return(err.GetId());
+}
+
+// Wrapper function  
+function ErrSetId(variable number) void
+{
+	err.SetId(number);
+}
+
+// Wrapper function  
+function ErrGetDescription() variable
+{
+	return(err.GetDescription());
+}
+
+// Wrapper function  
+function ErrSetDescription(variable& description) void
+{
+	err.SetDescription(description);
+}
+
+// Wrapper function  
+function ErrGetDataAt(variable index) variable
+{
+	variable data[];
+	data = err.GetData();
+	if (0 == index)
+		return(data.GetSize());
+	else
+		return(data.GetAt(index - 1));
+}
+
+// Wrapper function  
+function ErrSetDataAt(variable index, variable& variableObj) void
+{
+	variable data[];
+	data = err.GetData();
+	if (0 == index)
+		data.SetSize(variableObj);
+	else
+		data.SetAt(index - 1, variableObj);
+	err.SetData(data);
+}
+
+// Wrapper function  
+function ErrRaise(variable number, variable& description) void
+{
+	err.Raise(number, description);
+	// Don't catch errors 
+}
+
+// Wrapper function  
+function ErrRaiseLast() void
+{
+	err.Raise();
+	// Don't catch errors 
+}
+
+// Wrapper function  
+function ErrClear() void
+{
+	err.Clear();
+}
+
+// Extracts the major number out of an HxResult 
+function ErrMajor(variable hxr) variable
+{
+	return(MthShiftRight(hxr & 0x0FFFFFFF, 16) & 0x00FF);
+}
+
+// Extracts the minor number out of an HxResult 
+function ErrMinor(variable hxr) variable
+{
+	//>> 20051111
+	//return(MthShiftRight(hxr & 0x0FFFFFFF, 24) & 0x0F);
+	return(MthShiftRight(hxr & 0x0FFFFFFF, 24) & 0x1F);
+	//<< 20051111
+}
+
+// Extracts the error code out of an HxResult 
+function ErrCode(variable hxr) variable
+{
+	return((hxr) & 0xFFFF);
+}
+
+// Displays an error in a message box 
+function ErrDisplayError(variable& title) variable
+{
+	variable style, id;
+	string message;
+	style = hslError;
+	id = err.GetId();
+	message = "ERR: ";
+	message = message + StrHexIStr(ErrMajor(id));
+	message = message + ", ";
+	message = message + StrHexIStr(ErrMinor(id));
+	message = message + ", ";
+	message = message + StrHexIStr(ErrCode(id));
+	message = message + "\n\n";
+	message = message + err.GetDescription();
+	return(MessageBox(message, title, style));
+}
+#endif
+
+#endif
+// $$author=ContainerAdministrator$$valid=1$$time=2025-09-09 20:13$$checksum=82ca69bd$$length=099$$

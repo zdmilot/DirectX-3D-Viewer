@@ -1,0 +1,444 @@
+// This is a part of the Import Worklist Library.
+// Copyright (C) by HAMILTON Bonaduz AG, CH-7402 Bonaduz.
+// All rights reserved.
+//
+// Modification History
+// 2006-03-10  bandenmatten : Initial file creation.
+// 2006-09-19  bandenmatten : Added parameter 'removeJobStateFilter' to functions ImportMdbWorklist(), ImportXlsWorklist(), ImportTxtWorklist().
+// 2017-10-25  tmacias      : Added ImportXlsWorklist2 and ImportTxtWorklist2 to support range by row and sql distict
+
+#ifndef __HSLImportWorklist_hs___
+#define __HSLImportWorklist_hs___	1
+
+// Interface to the Import Worklist Library
+#ifndef HSL_RUNTIME
+namespace ImportWorklist
+{
+
+	function ImportMdbWorklist(
+		variable& fileName, 
+		variable& tableName,
+		variable& searchCondition,
+		variable& orderByExpression,
+		variable removeJobStateFilter,
+		variable importMode,
+		variable& sourceColumnNames[],
+		variable& sourceColumnTypes[],
+		variable& targetColumnNames[]) variable
+	{return(0);}
+
+	//--------------------------------------------------------------------------------------------------------------
+	//
+	// Description:
+	//
+	// The ImportMdbWorklist function imports worklist data from a Microsoft Access file into the Vector Database Worklist.
+	//
+	// Parameters:
+	//
+	// [in] fileName:
+	// The name of the Microsoft Access file (string). 
+	// The name of the file can be relative or absolute. 
+	// The file will be searched in the following directories in the following sequence:
+	// 1) in the current directory
+	// 2) in the directory that is listed under the registry key Methods
+	// 3) in the directory that is listed under the registry key Library
+	// 4) in the directories that are listed in the PATH environment variable.
+	//
+	// [in] tableName:
+	// The name of table in the Microsoft Access file to import (string). 
+	//
+	// [in] searchCondition:
+	// Specifies an SQL search condition to restrict the result set returned from the Microsoft Access file (string).
+	// Example :	searchCondition	=	"AssayName = 'HIV' AND Priority <= 5"
+	//
+	// [in] orderByExpression:
+	// Specifies an SQL sort expression to sort the result set returned from the Microsoft Access file (string).
+	// Example :	orderByExpression	=	"Priority ASC"
+	//
+	// [in] removeJobStateFilter:
+	// Specifies the state of the jobs that should be removed from the Vector Database table 'Job' prior to the worklist import as follows:
+	//
+	// 	Value		Description
+	// 	- 1		Don't remove jobs.
+	// 	0			Remove jobs in any state.
+	// 	1			Remove jobs in state 'unprocessed'.
+	// 	8			Remove jobs in state 'assigned'.
+	// 	128		Remove jobs in state 'processed'.
+	//
+	// [in] importMode:
+	// Indicates whether to import all (eventually filtered) records from the worklist data table or 
+	// to import only records, that have not yet been imported into the Vector database (integer; 0 = import all, 1 = import distinct). 
+	// Thereby the columns (Job, SourceBarcode) or (Job, SourceLabwareID, SourcePositionID) serve as criterion for duplicates.
+	//
+	// [in] sourceColumnNames:
+	// Array containing the name or ordinal number of the column in the worklist data source file (string or integer).
+	//
+	// [in] sourceColumnTypes:
+	// Array containing the type of the column in the worklist data source file (one of ImportWorklist_ColumnType).
+	//	The value ImportWorklist_ColumnType::Standard may be used for the Vector Database standard columns listed below.
+	//
+	// [in] targetColumnNames:
+	// Array containing the name of the column in the Vector Database Worklist (string).
+	// Supported Vector Database standard column names are:
+	//
+	//											JobName
+	//											JobPriority
+	//											JobState
+	//											JobUserState
+	//											SourceBarcode
+	//											SourceLabwareId
+	//											SourcePositionId
+	//											SourceRequired
+	//											TargetBarcode
+	//											TargetLabwareId
+	//											TargetPositionId
+	//											TargetVolume
+	//
+	// Target column names that don't match one of the standard column names listed above will interpreted as 
+	// custom columns.
+	//
+	// Return:
+	//
+	// The number of records imported into the Vector Database Worklist (integer).
+	//
+	//--------------------------------------------------------------------------------------------------------------
+
+	function ImportXlsWorklist2(
+		variable& fileName, 
+		variable& sheetName,
+		variable& searchCondition,
+		variable& orderByExpression,
+		variable& importFirstRow,
+      variable& importLastRow,
+		variable firstRowContainsColumnHeaders,
+		variable removeJobStateFilter,
+		variable importMode,
+		variable& sourceColumnNames[],
+		variable& sourceColumnTypes[],
+		variable& targetColumnNames[]) variable
+	{return(0);}
+
+   function ImportXlsWorklist(
+		variable& fileName, 
+		variable& sheetName,
+		variable& searchCondition,
+		variable& orderByExpression,
+		variable& importRange,
+		variable firstRowContainsColumnHeaders,
+		variable removeJobStateFilter,
+		variable importMode,
+		variable& sourceColumnNames[],
+		variable& sourceColumnTypes[],
+		variable& targetColumnNames[]) variable
+	{return(0);}
+
+	//--------------------------------------------------------------------------------------------------------------
+	//
+	// Description:
+	//
+	// The ImportXlsWorklist function imports worklist data from a Microsoft Excel file into the Vector Database Worklist.
+	//
+	// Parameters:
+	//
+	// [in] fileName:
+	// The name of the Microsoft Excel file (string). 
+	// The name of the file can be relative or absolute. 
+	// The file will be searched in the following directories in the following sequence:
+	// 1) in the current directory
+	// 2) in the directory that is listed under the registry key Methods
+	// 3) in the directory that is listed under the registry key Library
+	// 4) in the directories that are listed in the PATH environment variable.
+	//
+	// [in] sheetName:
+	// The name of worksheet in the Microsoft Excel file to import (string). 
+	//
+	// [in] searchCondition:
+	// Specifies an SQL search condition to restrict the result set returned from the Microsoft Excel file (string).
+	// Example :	searchCondition	=	"AssayName = 'HIV' AND Priority <= 5"
+	//
+	// [in] orderByExpression:
+	// Specifies an SQL sort expression to sort the result set returned from the Microsoft Excel file (string).
+	// Example :	orderByExpression	=	"Priority ASC"
+	//
+	// [in] importRange:
+	// Allows to specify the range of the table on the excel worksheet (string; may be empty), e.g. "D6:G12" or "MyNamedRange". 
+	// This is especially useful, if a table doesn't start at the top-left corner of the excel worksheet. 
+   //  value "" will import all records
+   // OR
+   // [in] importFirstRow, importLastRow ... row range for import, e.g. start at record 3 and end at record 13 = 10 records (record # does not include any header row)
+   //  values 1, -1 will import all records
+	//
+	// [in] firstRowContainsColumnHeaders:
+	// Indicates whether the first row of the worksheet contains column headers (integer; 0 = no header, 1 = header).
+	// If this flag is set to 'no header', the parameters 'searchCondition' and 'orderByExpression' must be the empty string and 
+	// the array 'sourceColumnNames' must address all source columns by its ordinal number.
+	//
+	// [in] removeJobStateFilter:
+	// Specifies the state of the jobs that should be removed from the Vector Database table 'Job' prior to the worklist import as follows:
+	//
+	// 	Value		Description
+	// 	- 1		Don't remove jobs.
+	// 	0			Remove jobs in any state.
+	// 	1			Remove jobs in state 'unprocessed'.
+	// 	8			Remove jobs in state 'assigned'.
+	// 	128		Remove jobs in state 'processed'.
+	//
+	// [in] importMode:
+	// Indicates whether to import all (eventually filtered) records from the worklist data table or 
+	// to import only records, that have not yet been imported into the Vector database (integer; 0 = import all, 1 = import distinct). 
+	// Thereby the columns (Job, SourceBarcode) or (Job, SourceLabwareID, SourcePositionID) serve as criterion for duplicates.
+	//
+	// [in] sourceColumnNames:
+	// Array containing the name or ordinal number of the column in the worklist data source file (string or integer).
+	//
+	// [in] sourceColumnTypes:
+	// Array containing the type of the column in the worklist data source file (one of ImportWorklist_ColumnType).
+	//	The value ImportWorklist_ColumnType::Standard may be used for the Vector Database standard columns listed below.
+	//
+	// [in] targetColumnNames:
+	// Array containing the name of the column in the Vector Database Worklist (string).
+	// Supported Vector Database standard column names are:
+	//
+	//											JobName
+	//											JobPriority
+	//											JobState
+	//											JobUserState
+	//											SourceBarcode
+	//											SourceLabwareId
+	//											SourcePositionId
+	//											SourceRequired
+	//											TargetBarcode
+	//											TargetLabwareId
+	//											TargetPositionId
+	//											TargetVolume
+	//
+	// Target column names that don't match one of the standard column names listed above will interpreted as 
+	// custom columns.
+	//
+	// Return:
+	//
+	// The number of records imported into the Vector Database Worklist (integer).
+	//
+	//--------------------------------------------------------------------------------------------------------------
+
+	function ImportTxtWorklist(
+		variable& fileName, 
+		variable& searchCondition,
+		variable& orderByExpression,
+		variable& delimiter,
+		variable& textDelimiter,
+		variable startImportAtLine,
+		variable firstRowContainsColumnHeaders,
+		variable removeJobStateFilter,
+		variable importMode,
+		variable& sourceColumnNames[],
+		variable& sourceColumnTypes[],
+		variable& targetColumnNames[]) variable
+	{return(0);}
+
+   function ImportTxtWorklist2(
+		variable& fileName, 
+		variable& searchCondition,
+		variable& orderByExpression,
+		variable& delimiter,
+		variable& textDelimiter,
+		variable startImportAtLine,
+      variable endImportAtLine,
+		variable firstRowContainsColumnHeaders,
+		variable removeJobStateFilter,
+		variable importMode,
+		variable& sourceColumnNames[],
+		variable& sourceColumnTypes[],
+		variable& targetColumnNames[]) variable
+    {return(0);}
+
+	//--------------------------------------------------------------------------------------------------------------
+	//
+	// Description:
+	//
+	// The ImportTxtWorklist function imports worklist data from a ASCII text file into the Vector Database Worklist.
+	//
+	// Parameters:
+	//
+	// [in] fileName:
+	// The name of the ASCII text file (string). 
+	// The name of the file can be relative or absolute. 
+	// The file will be searched in the following directories in the following sequence:
+	// 1) in the current directory
+	// 2) in the directory that is listed under the registry key Methods
+	// 3) in the directory that is listed under the registry key Library
+	// 4) in the directories that are listed in the PATH environment variable.
+	//
+	// [in] searchCondition:
+	// Specifies an SQL search condition to restrict the result set returned from the Microsoft Excel file (string).
+	// Example :	searchCondition	=	"AssayName = 'HIV' AND Priority <= 5"
+	//
+	// [in] orderByExpression:
+	// Specifies an SQL sort expression to sort the result set returned from the Microsoft Excel file (string).
+	// Example :	orderByExpression	=	"Priority ASC"
+	//
+	// [in] delimiter:
+	// Specifies the character that separates values in the ASCII text file (string).
+	// Can be one of the following predefined characters:
+	// 
+	// Character				Description
+	// hslTabDelimited		Values are delimited by tab stops
+	// hslCSVDelimited		Values are delimited by commas
+	// {*}						Values are delimited by the specified character {*}, e.g. ";"
+	//
+	// [in] textDelimiter:
+	// Specifies the character that is used to delimit string values (string).
+	// Can be one of the following predefined characters:
+	// 
+	// Character				Description
+	// "							Strings are delimited by double quotes
+	// '							Strings are delimited by single quotes
+	// {empty}					Strings are not delimited
+	//
+	// [in] startImportAtLine:
+	// Specifies the line at which to start the worklist data import (integer). 
+   //
+   // [in] endImportAtLine
+   // Specifies the line at which to end the worklist data import (integer).
+	//
+	// [in] firstRowContainsColumnHeaders:
+	// Indicates whether the first row of the ASCII text file contains column headers (integer; 0 = no header, 1 = header).
+	//
+	// [in] removeJobStateFilter:
+	// Specifies the state of the jobs that should be removed from the Vector Database table 'Job' prior to the worklist import as follows:
+	//
+	// 	Value		Description
+	// 	- 1		Don't remove jobs.
+	// 	0			Remove jobs in any state.
+	// 	1			Remove jobs in state 'unprocessed'.
+	// 	8			Remove jobs in state 'assigned'.
+	// 	128		Remove jobs in state 'processed'.
+	//
+	// [in] importMode:
+	// Indicates whether to import all (eventually filtered) records from the worklist data table or 
+	// to import only records, that have not yet been imported into the Vector database (integer; 0 = import all, 1 = import distinct). 
+	// Thereby the columns (Job, SourceBarcode) or (Job, SourceLabwareID, SourcePositionID) serve as criterion for duplicates.
+	//
+	// [in] sourceColumnNames:
+	// Array containing the name or ordinal number of the column in the worklist data source file (string or integer).
+	//
+	// [in] sourceColumnTypes:
+	// Array containing the type of the column in the worklist data source file (one of ImportWorklist_ColumnType).
+	//	The value ImportWorklist_ColumnType::Standard may be used for the Vector Database standard columns listed below.
+	//
+	// [in] targetColumnNames:
+	// Array containing the name of the column in the Vector Database Worklist (string).
+	// Supported Vector Database standard column names are:
+	//
+	//											JobName
+	//											JobPriority
+	//											JobState
+	//											JobUserState
+	//											SourceBarcode
+	//											SourceLabwareId
+	//											SourcePositionId
+	//											SourceRequired
+	//											TargetBarcode
+	//											TargetLabwareId
+	//											TargetPositionId
+	//											TargetVolume
+	//
+	// Target column names that don't match one of the standard column names listed above will interpreted as 
+	// custom columns.
+	//
+	// Return:
+	//
+	// The number of records imported into the Vector Database Worklist (integer).
+	//
+	//--------------------------------------------------------------------------------------------------------------
+
+	function SetColumnDefault(
+		variable defaultInteger, 
+		variable defaultFloat,
+		variable& defaultString) void
+	{}
+
+	//--------------------------------------------------------------------------------------------------------------
+	//
+	// Description:
+	//
+	// Sets the default value provided for a column when a value is not explicitly supplied during an import.
+	//
+	// Parameters:
+	//
+	// [in] defaultInteger:
+	// Default value for a column of type integer (integer).
+	//
+	// [in] defaultFloat:
+	// Default value for a column of type float (float).
+	//
+	// [in] defaultString:
+	// Default value for a column of type string (string).
+	//
+	// Return:
+	//
+	// None.
+	//
+	//--------------------------------------------------------------------------------------------------------------
+
+	function GetColumnDefault(
+		variable& defaultInteger, 
+		variable& defaultFloat,
+		variable& defaultString) void
+	{}
+
+	//--------------------------------------------------------------------------------------------------------------
+	//
+	// Description:
+	//
+	// Gets the default value provided for a column when a value is not explicitly supplied during an import.
+	//
+	// Parameters:
+	//
+	// [out] defaultInteger:
+	// Default value for a column of type integer (integer).
+	//
+	// [out] defaultFloat:
+	// Default value for a column of type float (float).
+	//
+	// [out] defaultString:
+	// Default value for a column of type string (string).
+	//
+	// Return:
+	//
+	// None.
+	//
+	//--------------------------------------------------------------------------------------------------------------
+
+	function SqlStr(
+		variable& value) variable
+	{return(0);}
+
+	//--------------------------------------------------------------------------------------------------------------
+	//
+	// Description:
+	//
+	// Converts given HSL value to an SQL value, e.g. 1 -> "1", 1.5 -> "1.5", ABC --> "'ABC'".
+	//
+	// Parameters:
+	//
+	// [in] value:
+	// HSL value (integer, float or string).
+	//
+	// Return:
+	//
+	// Returns given HSL value as SQL value (string).
+	//
+	//--------------------------------------------------------------------------------------------------------------
+}
+#endif
+
+// Implementation of to the Import Worklist Library
+#ifdef HSL_RUNTIME
+	#ifndef __HSLImportWorklistImpl_hs___
+		#include "HSLImportWorklistImpl.hs_"
+	#endif
+#endif
+
+#endif
+// $$author=ContainerAdministrator$$valid=1$$time=2025-09-09 20:13$$checksum=57143c9e$$length=099$$

@@ -1,0 +1,1322 @@
+//************************************************************************
+// use this framework as a template to write a HSL library
+// the following sections are required by all libraries:
+//
+// the following define ensures that the library is only included once per process
+#ifndef _HSL_PipetteWizard_hsl_
+#define _HSL_PipetteWizard_hsl_ 1
+
+
+// Note. to enable low level steps for a particular instrument/device that is installed
+// on your computer add a device statement - this is only used during library development
+// and is commented out in the final version of the library
+//device ML_Star;
+
+// the following section should declare your (public) methods 
+// these are the methods the user will have access to via the Method Editor
+#ifndef HSL_RUNTIME
+#include "HSLUtilLib.hsl"
+#include "HSLUtilLib2.hsl"
+#include "HSLArrLib.hsl"
+#include "HSLStrLib.hsl"
+#include "HSLSTCCLib.hs_"
+
+namespace PipetteWizard
+{
+function AddToSequence(device& dev, sequence& seq, sequence& source) variable { return(0); }
+function AddAllToSequence(device& dev, sequence& seq, sequence& source[]) variable { return(0); }
+function GetMaxTipVolume(device& dev, sequence& seq, variable propertyName, variable instrumentClass) variable { return(0); }
+function GetChannelCount(string channelPattern) variable { return(0); }
+
+function GetLabwareAndPosition(string labwareAccessName, string& labwareId, string& positionId) variable { return(0); }
+function GetLabware(string labwareAccessName, string& labwareId) variable { return(0); }
+function GetPositionAlphaNumValue(sequence iSequence, string& alphaId, string& numberId, variable& numberValue) variable { return(0); }
+
+function AddDateTimeToFilename(string fileName) { return(fileName); }
+function IsStringInArray(string var, variable varArray[]) { return(-1); }
+function IsArray2Equal(variable varArray[], variable varArray2[]) { return(0); }
+function IsArray2ContentEqual(variable varArray[], variable varArray2[]) { return(0); }
+function IsArray2SubsetOfFirstArray(variable varArray[], variable varArray2[], variable bRequiresSameOrder) { return(0); }
+function SplitPositionReturnValue(string returnValue, variable& labwareIds[], variable& positionIds[], variable& barcodes[], variable& presence[]) void {return;}
+function GetLabwarePositions(device& dev, variable labwareId, variable& labwareIds[], variable& positionIds[]) void {return;}
+function FindLabwarePosition(variable labwareId, variable positionId, variable& labwareIds[], variable& positionIds[]) variable { return(0); }
+
+function GetLabwareDimensionsFromSequence(device& dev, sequence iSequence, variable& rowCount, variable& colCount) variable { return(0); }
+function CopySequenceForLabwareId(device& dev, sequence iSequence, variable labwareid, sequence& outSequence) variable { return(0); }
+function CopySequencePositions(device& dev, sequence iSequence, variable labwareid, sequence& outSequence) variable { return(0); }
+function CopySequenceForAllLabware(device& dev, sequence iSequence, variable labwareIds[], variable startIndex, variable endIndex, sequence& outSequence) variable { return(0); }
+function CopySequenceFromCurrPosn(device& dev, sequence iSequence, variable forCurrentLabwareId, sequence& outSequence) variable { return(0); }
+
+function ReplicateSequenceByColumn(device& dev, sequence iSequence, variable repCnt, sequence tgtSequence, sequence& outSequence) variable { return(0); }
+function ReplicateSequenceByRow(device& dev, sequence iSequence, variable repCnt, sequence tgtSequence, sequence& outSequence) variable { return(0); }
+
+// sort: 0=X_ASC, 1=X_DEC, 2=Y_ASC, 3=Y_DES, 4=Z_ASC, 5=Z_DEC, 6=LabwareId_ASC, 7=LabwareId_DEC, 8=PositionId_ASC, 9=PositionId_DEC
+function SortSequence1(device& dev, sequence iSequence, variable sort1, string sortedName, sequence& sortedSequence) variable { return(0); }
+function SortSequence2(device& dev, sequence iSequence, variable sort1, variable sort2, string sortedName, sequence& sortedSequence) variable { return(0); }
+function SortSequence3(device& dev, sequence iSequence, variable sort1, variable sort2, variable sort3, string sortedName, sequence& sortedSequence) variable { return(0); }
+function SortSequenceForRepsBySample(device& dev, sequence iSequence, variable repCnt, variable sampleCount, variable tipCount, sequence& sortedSequence) variable { return(0); }
+function SortSequenceForRepsByInterleave(device& dev, sequence iSequence, variable repCnt, variable sampleCount, variable tipCount, sequence& sortedSequence) variable { return(0); }
+function SortSequence2ForEachLabware(device& dev, sequence iSequence, variable sort1, variable sort2, string sortedName, sequence& sortedSequence) variable { return(0); }
+
+function SortSequence2BySequenceOrder(sequence iSequence, variable labwareIds[], variable positionIds[], sequence& iSequence2) variable { return(0); }
+function ext_SortSequence2BySequenceOrder(sequence iSequence, variable lookupFromLabwareIds[], variable lookupFromPositionIds[], variable lookedIntoLabwareIds[], variable lookedIntoPositionIds[], sequence& iSequence2, variable lookupBaseMatchedIndexIds[],  variable lookupIntoMatchedIndexIds[]) variable { return(0); }
+function SortVolumes(variable inputSourceOrTargetBarcodes[], variable volumeValues[], variable sortedVolumeValues[]) variable { return(0); }
+}
+#endif
+
+
+// the following section is the runtime implementation of your library
+// this section includes the public and any private methods, variables etc.
+#ifdef HSL_RUNTIME
+#include "HSLUtilLib.hsl"
+#include "HSLUtilLib2.hsl"
+#include "HSLArrLib.hsl"
+#include "HSLStrLib.hsl"
+#include "HSLSTCCLib.hs_"
+#include "HSLTimLib.hsl"
+#include "HSLTrcLib.hsl"
+
+//#define _DEBUG 1
+
+namespace PipetteWizard
+{
+function StringTokenize(string inString, string token, variable& outStrings[]) void
+{
+   variable len;
+   variable index;
+   variable str;
+
+   outStrings.SetSize( 0 );   // first clear the out array
+   len = inString.GetLength( );
+   index = inString.Find( token );
+   while ( index != -1 )
+   {
+      str = inString.Mid(0, index); // string from current position, count         
+      outStrings.AddAsLast( str );
+     
+      inString = inString.Mid(index+1, len-index);
+      index = inString.Find( token );
+   }
+   // add last portion of inString
+   outStrings.AddAsLast(inString);
+}
+
+function SplitPositionReturnValue(string returnValue, variable& labwareIds[], variable& positionIds[], variable& barcodes[], variable& presence[])
+{
+   // returnValue = output from LoadCarrier step for ML_STAR
+   // format of positions returnValue:
+   // ErrFlag [Num, MainErr, SlaveErr, RecoveryId, Barcode, LabwareName, LabwarePos, Presence [Num, etc ...
+   // e.g.   0[01,00,00,0,Barcode01,SMP_CAR_24_17x100_A00_0001,1 ,1
+   // >> parse Barcode, LabwareName, LabwarePos and Presence
+
+   variable posnStrings[];
+   variable posnValues[];
+   variable cnt;
+   variable index;
+   string str;
+   variable currIndexBeingRead;
+
+
+   // first tokenize by '[' 
+   StringTokenize(returnValue, "[", posnStrings);
+   cnt = posnStrings.GetSize();
+
+   // start at index [1] (ignore ErrFlag) and tokenize by ','
+
+   barcodes.SetSize(cnt-1);
+   labwareIds.SetSize(cnt-1);
+   positionIds.SetSize(cnt-1);
+   presence.SetSize(cnt-1);
+   
+   for(index = 1; index<cnt; index++)
+   {
+      str = posnStrings.GetAt(index);
+      StringTokenize(str, ",", posnValues);
+
+      // assign return values
+	  currIndexBeingRead = IVal(posnValues[0])-1;
+	  
+	  barcodes.SetAt(currIndexBeingRead, posnValues[4]);
+      labwareIds.SetAt(currIndexBeingRead, posnValues[5]);
+      positionIds.SetAt(currIndexBeingRead, posnValues[6]);
+	  	  
+      if ( posnValues.GetSize() > 7 )
+         presence.SetAt(currIndexBeingRead, posnValues[7]);
+   }
+}
+
+function AddDateTimeToFilename(string path) 
+{ 
+   object fileObject;
+   string fileName;
+   string fileExt;
+   variable _date;
+   variable _time;
+
+   fileObject.CreateObject("Scripting.FileSystemObject");
+   fileName = fileObject.GetBaseName(path);
+   fileExt = fileObject.GetExtensionName(path);
+
+   _date = TimGetFormattedDate(Translate(""));
+   _time = TimGetFormattedTime(Translate("%H.%M"));
+
+   fileName = StrConcat8("", fileName, "_", _date, "_", _time, ".", fileExt);
+   Trace("AddDateTimeToFilename >> ", fileName);
+   return(fileName); 
+}
+
+// find <toFind> in array varArray and return array index
+function IsStringInArray(string var, variable varArray[]) 
+{ 
+   variable pos;
+   string s;
+
+   for (pos = 0; pos < varArray.GetSize(); pos++)
+   {
+      s = varArray.GetAt(pos);
+      if ( s.Compare( var ) == 0 ) return(pos);
+   }
+
+   return(-1); 
+}
+
+// (varArray == varArray2) ? 1 : 0
+function IsArray2Equal(variable varArray[], variable varArray2[]) 
+{ 
+   variable pos;
+   variable var;
+   variable var2;
+
+   onerror goto err1;
+
+   if ( varArray.GetSize() != varArray2.GetSize() )
+      return (0);
+   
+   for (pos = 0; pos < varArray.GetSize(); pos++)
+   {
+      var = varArray.GetAt(pos);
+      var2 = varArray2.GetAt(pos);
+      if ( var != var2 ) return(0);
+   }
+
+   return(1);
+   
+   err1:
+   {
+   return(0); 
+   }
+}
+
+// is content of varArray2 contained in varArray
+// size must be equal also
+function IsArray2ContentEqual(variable varArray[], variable varArray2[]) 
+{ 
+   variable pos;
+   string str;
+   variable found;
+
+   onerror goto err1;
+
+   if ( varArray.GetSize() != varArray2.GetSize() )
+      return (0);
+   
+   for (pos = 0; pos < varArray.GetSize(); pos++)
+   {
+      str = varArray2.GetAt(pos);
+      found = IsStringInArray(str, varArray);
+      if ( found == -1  ) return(0);
+   }
+
+   return(1);
+   
+   err1:
+   {
+   return(0);
+   } 
+}
+
+// is varArray2 a subset of varArray
+// sizes need not be equal(bur size of varArray2 cannot be greater than size of varArray)
+// param bRequiresSameOrder specifies whether content needs to be in same order
+function IsArray2SubsetOfFirstArray(variable varArray[], variable varArray2[], variable bRequiresSameOrder) 
+{ 
+   variable pos, curr_found_pos(-1);
+   string str;
+   variable found_pos;
+
+   onerror goto err1;
+
+   // sizes need not be equal but the size of the contained array cannot be larger than the size of the containing array.
+   if ((varArray2.GetSize() > varArray.GetSize()) || (varArray2.GetSize() == 0))
+      return (0);
+
+   if(bRequiresSameOrder == 1)
+   {   
+       for (pos = 0; pos < varArray2.GetSize(); pos++)
+       {
+          str = varArray2.GetAt(pos);
+          found_pos = IsStringInArray(str, varArray);
+          if ( found_pos == -1  ) 
+            return(0);
+          else
+          {
+            if( found_pos <= curr_found_pos )
+              return(0);
+            curr_found_pos = found_pos;
+          }
+       }
+   }
+   else
+   {
+       for (pos = 0; pos < varArray2.GetSize(); pos++)
+       {
+          str = varArray2.GetAt(pos);
+          found_pos = IsStringInArray(str, varArray);
+          if ( found_pos == -1  ) 
+            return(0);
+       }
+   }
+
+   return(1);
+   
+   err1:
+   {
+   return(0);
+   } 
+}
+
+// return the (labware id and) position id values for the given labwareId
+function GetLabwarePositions(device& dev, variable labwareId, variable& labwareIds[], variable& positionIds[])
+{
+   sequence source;
+   variable sourcePos;
+   variable pos;
+   variable L_id;
+   variable P_id;
+
+   source =dev.GetSequence( labwareId );
+
+   sourcePos = source.GetCurrentPosition();
+   source.SetCurrentPosition(1);
+   for (pos = 1; pos>0 && pos <= source.GetCount(); pos = source.Increment(1))
+   {
+      L_id = source.GetLabwareId();
+      P_id = source.GetPositionId();
+      positionIds.AddAsLast( P_id );
+      labwareIds.AddAsLast( L_id );
+   }
+   source.SetCurrentPosition(sourcePos);
+}
+
+// find index for matching pair: labwareId and positionId
+function FindLabwarePosition(variable labwareId, variable positionId, variable& labwareIds[], variable& positionIds[])
+{ 
+   variable pos;
+   variable L_id;
+   variable P_id;
+
+   for (pos = 0; pos < labwareIds.GetSize() && pos < positionIds.GetSize(); pos++)
+   {
+      L_id = labwareIds.GetAt(pos);
+      P_id = positionIds.GetAt(pos);
+      if ( (L_id == labwareId) && (P_id == positionId) )
+         return (pos);
+   }
+
+   return(-1); // not found
+}
+
+
+// add the positions in 'source' to the sequence 'seq'
+function AddToSequence(device& dev, sequence& seq, sequence& source)
+{ 
+   variable pos;
+   variable L_id;
+   variable P_id;
+   variable sourcePos;
+
+   sourcePos = source.GetCurrentPosition();
+   source.SetCurrentPosition(1);
+   for (pos = 1; pos>0 && pos <= source.GetCount(); pos = source.Increment(1))
+   {
+      L_id = source.GetLabwareId();
+      P_id = source.GetPositionId();
+      seq.Add( L_id, P_id, dev );
+   }
+
+   source.SetCurrentPosition(sourcePos);
+   seq.SetCurrentPosition(1);
+   return(seq.GetCount()); 
+}
+
+function AddAllToSequence(device& dev, sequence& seq, sequence& source[])
+{
+   variable pos;
+
+   for (pos = 0; pos < source.GetSize(); pos++)
+   {
+      AddToSequence(dev, seq, source[pos]);
+   }
+
+   return(seq.GetCount());
+}
+
+// using the sequence, get the tip enum property from the labware (propertyName) and lookup the maximum volume
+function GetMaxTipVolume(device& dev, sequence& seq, variable propertyName, variable instrumentClass)
+{
+   variable L_id;
+   variable tipEnumValue;
+   variable values[];
+   variable keys[];
+   variable maxVolume(0.0);
+   object tipTypeObj;
+   
+   L_id = seq.GetLabwareId();
+
+   // get the tip type enum from the sequence
+   keys.AddAsLast( propertyName );
+   values.AddAsLast("");
+   dev.GetLabwareData( L_id, keys, values );
+   tipEnumValue = IVal(values.GetAt(0));  // property values returned as type string
+   
+   if (0 == tipTypeObj.CreateObject("Hamilton.HxCoreTipTypes"))
+		Trace("Create Object Hamilton.HxCoreTipTypes failed"); 
+
+   tipTypeObj.SetInstrumentClass(instrumentClass);
+   maxVolume = tipTypeObj.GetMaxLiquidVolume(tipEnumValue);
+
+   return(maxVolume);
+}
+
+function GetChannelCount(string channelPattern) 
+{
+// assume that channelPattern is a string of 0|1 eg "1100"
+// return the number of active channels eg "1100" > return 2
+   variable i;
+   variable cnt(0);
+   string s;
+
+   for(i=0; i<channelPattern.GetLength(); i++)
+   {
+      s = channelPattern.Mid( i, 1 );
+      if ( s.Compare( "1" ) == 0 ) cnt = cnt + 1;
+   }
+
+   return(cnt); 
+}
+
+function GetLabwareAndPosition(string labwareAccessName, string& labwareId, string& positionId)
+{
+// labwareAccessName from sample tracking database e.g."ML_STAR\PLT_CAR_L5AC_0001\Nun_96_0001\A1"
+// return the labware id and position id > Nun_96_0001, A1
+// we have to assume that the string contains labware id and position id !!
+   variable ix;
+   variable cnt;
+   variable len;
+
+   Trace("GetLabwareAndPosition(", labwareAccessName, ")");
+
+   len = StrGetLength(labwareAccessName);
+   ix = StrReverseFind(labwareAccessName, "\\");
+   if ( ix == -1 ) return (-1);
+   else ix = ix + 1;
+   cnt = len - ix;
+   positionId = StrMid(labwareAccessName, ix, cnt);
+
+   labwareAccessName = StrLeft(labwareAccessName, len-cnt-1);
+   ix = StrReverseFind(labwareAccessName, "\\");
+   if ( ix == -1 ) return (-1);
+   else ix = ix + 1;
+   cnt = StrGetLength(labwareAccessName) - ix;
+   labwareId = StrMid(labwareAccessName, ix, cnt);
+
+   Trace(" >> ", labwareId, ", ", positionId);
+
+   return(0);
+}
+
+function GetLabware(string labwareAccessName, string& labwareId)
+{
+// labwareAccessName from sample tracking database e.g."ML_STAR\PLT_CAR_L5AC_0001\Nun_96_0001"
+// return the labware id > Nun_96_0001
+// we have to assume that the string contains only the labware id !!
+   variable ix;
+   variable cnt;
+   variable len;
+
+   Trace("GetLabware(", labwareAccessName, ")");
+
+   len = StrGetLength(labwareAccessName);
+   ix = StrReverseFind(labwareAccessName, "\\");
+   if ( ix == -1 ) return (-1);
+   else ix = ix + 1;
+   cnt = len - ix;
+   labwareId = StrMid(labwareAccessName, ix, cnt);
+
+   Trace(" >> ", labwareId);
+
+   return(0);
+}
+
+function GetLabwareDimensionsFromSequence(device& dev, sequence iSequence, variable& rowCount, variable& colCount)
+{
+// get the labware id from the sequence; get the labware from the deck layout (dev)
+// then get the rack dimensions rows,cols
+   string labwareid;
+   object decklayout;
+   object labware;
+   object rack;
+   variable pos;
+   
+   
+   onerror goto ErrHandler; 
+
+   pos = iSequence.GetCurrentPosition();
+   if ( pos < 1 )
+      iSequence.SetCurrentPosition( 1 );
+
+   labwareid = iSequence.GetLabwareId();
+   
+   decklayout = dev.GetDeckLayoutObject();
+   labware = decklayout.Labware(labwareid);
+
+   labware.GetObject("IRectRack", rack);
+
+   rowCount = rack.Rows();
+   colCount = rack.Columns();
+   //Trace(" >> ", rowCount, " x ", colCount);
+
+   labware.ReleaseObject();
+   rack.ReleaseObject();
+   decklayout.ReleaseObject();
+   
+   return(0);
+   
+   ErrHandler:
+   {
+      if ( !labware.IsNull() ) labware.ReleaseObject();
+      if ( !rack.IsNull() ) rack.ReleaseObject();
+      if ( !decklayout.IsNull() ) decklayout.ReleaseObject();
+      return (-1);
+   } 
+}
+
+function GetPositionAlphaNumValue(sequence iSequence, string& alphaId, string& numberId, variable& numberValue)
+{
+// get current position and return 'alpha' (A..Z) and numeric values e.g. A12 -> 'A', '12', 12
+
+   string P_id;
+   variable length;
+   variable pos; 
+   
+   pos = iSequence.GetCurrentPosition();
+   if ( pos < 1 )
+       return (0);  
+
+   P_id = iSequence.GetPositionId();
+   length = P_id.GetLength();
+   
+   alphaId = P_id.Left( 1 );
+   numberId = P_id.Mid(1, length-1); 
+   numberValue = IVal(numberId);
+
+   //Trace("GetPositionAlphaNumValue() ", alphaId, " ", numberId);
+
+   return(numberValue); 
+}
+
+
+
+
+function ReplicateSequenceByColumn(device& dev, sequence iSequence, variable repCnt, sequence tgtSequence, sequence& outSequence)
+{
+// copy source pattern (by column) to outSequence, replicate by repCnt
+   string alphaId;
+   string numberId;
+   variable numberValue;
+   variable SColValue;
+   variable inc;
+   variable ix;
+   string TId;
+   string TColId;
+   variable TColValue;
+   string TPosn;
+   variable pos;
+   variable L_id;
+   variable P_id;
+   variable TRowCnt;
+   variable TColCnt;
+
+   Trace("ReplicateSequenceByColumn()");
+
+   onerror goto ErrHandler;
+
+   GetLabwareDimensionsFromSequence(dev, tgtSequence, TRowCnt, TColCnt);
+
+   for (ix = 1; ix <= repCnt; ix++ )
+   {
+      //pos = tgtSequence.GetCurrentPosition();
+      //if ( pos < 1 ) return (ix-1);
+
+      // start column in target
+      pos = GetPositionAlphaNumValue(tgtSequence, TId, TColId, TColValue);
+      if ( pos < 1 )
+         return (ix-1);
+      L_id = tgtSequence.GetLabwareId();
+
+      // source   
+      iSequence.SetCurrentPosition(1);
+
+      GetPositionAlphaNumValue(iSequence, alphaId, numberId, numberValue);
+      SColValue = numberValue;
+
+      for (pos = 1; pos>0 && pos <= iSequence.GetCount(); pos = iSequence.Increment(1))
+      {
+         GetPositionAlphaNumValue(iSequence, alphaId, numberId, numberValue);
+         if ( numberValue != SColValue )
+         {
+         // new column
+            tgtSequence.Increment(TRowCnt);
+            pos = GetPositionAlphaNumValue(tgtSequence, TId, TColId, TColValue);
+            if ( pos < 1 )
+               return (ix-1);
+
+            L_id = tgtSequence.GetLabwareId();
+
+            //inc = numberValue - SColValue; need this if leaving blank columns between source pattern, for now we are not skipping columns
+            //TColValue = TColValue + inc;
+            //TColId = IStr(TColValue);
+            SColValue = numberValue;
+         }
+
+         TPosn = alphaId + TColId;
+         outSequence.Add(L_id, TPosn, dev);
+      }
+
+      tgtSequence.Increment(TRowCnt);
+   }
+
+   outSequence.SetCurrentPosition(1);  
+   #ifdef _DEBUG 
+   TrcTraceSequence(outSequence);
+   #endif
+   return(repCnt);
+   
+   ErrHandler:
+   {
+      return (-1);
+   } 
+}
+
+function ReplicateSequenceByRow(device& dev, sequence iSequence, variable repCnt, sequence tgtSequence, sequence& outSequence)
+{
+// copy source pattern (by row) to outSequence, replicate by repCnt
+   string alphaId;
+   string numberId;
+   string SRow;
+   variable numberValue;
+   variable inc;
+   variable ix;
+   string TId;
+   string TColId;
+   variable TColValue;
+   string TPosn;
+   variable pos;
+   variable L_id;
+   variable P_id;
+   variable TRowCnt;
+   variable TColCnt;
+
+   Trace("ReplicateSequenceByRow()");
+
+   onerror goto ErrHandler;
+
+   GetLabwareDimensionsFromSequence(dev, tgtSequence, TRowCnt, TColCnt);
+
+   for (ix = 1; ix <= repCnt; ix++ )
+   {
+      //pos = tgtSequence.GetCurrentPosition();
+      //if ( pos < 1 ) return (ix-1);
+
+      // start row in target
+      pos = GetPositionAlphaNumValue(tgtSequence, TId, TColId, TColValue);
+      if ( pos < 1 )
+         return (ix-1);
+      L_id = tgtSequence.GetLabwareId();
+
+      // source   
+      iSequence.SetCurrentPosition(1);
+      GetPositionAlphaNumValue(iSequence, alphaId, numberId, numberValue);
+      SRow = alphaId;
+
+      for (pos = 1; pos>0 && pos <= iSequence.GetCount(); pos = iSequence.Increment(1))
+      {
+         GetPositionAlphaNumValue(iSequence, alphaId, numberId, numberValue);
+         if ( alphaId.Compare( SRow ) != 0 )
+         {
+         // new row
+            SRow = alphaId;
+
+            tgtSequence.Increment(TColCnt);
+            pos = GetPositionAlphaNumValue(tgtSequence, TId, TColId, TColValue);
+            if ( pos < 1 )
+               return (ix-1);
+            L_id = tgtSequence.GetLabwareId();
+         }
+
+         TPosn = TId + numberId;
+         outSequence.Add(L_id, TPosn, dev);                 
+      }
+
+      tgtSequence.Increment(TColCnt);
+  }
+
+   outSequence.SetCurrentPosition(1);  
+   #ifdef _DEBUG 
+   TrcTraceSequence(outSequence);
+   #endif
+   return(repCnt);
+   
+   ErrHandler:
+   {
+      return (-1);
+   } 
+}
+
+
+function CopySequenceFromCurrPosn(device& dev, sequence iSequence, variable forCurrentLabwareId, sequence& outSequence)
+{
+// add positions from current position in iSequence to the outSequence
+
+   variable L_id;
+   variable P_id;
+   variable pos;
+   variable currPos;
+   variable posCnt;
+
+   Trace("CopySequenceFromCurrPosn()");
+   
+   onerror goto ErrHandler;
+
+   currPos = iSequence.GetCurrentPosition();
+   if ( currPos < 1)
+   {
+      currPos = 1;
+      iSequence.SetCurrentPosition(1);
+   }
+
+   if ( forCurrentLabwareId == 1 )
+      posCnt = iSequence.GetPositionCountForCurrLabware();
+   else
+      posCnt = iSequence.GetCount();
+
+   for (pos = currPos; pos>0 && pos <= posCnt; pos = iSequence.Increment(1))
+   {
+      L_id = iSequence.GetLabwareId();
+      P_id = iSequence.GetPositionId();
+      outSequence.Add( L_id, P_id, dev );
+   }
+   
+   outSequence.SetCurrentPosition(1); 
+   iSequence.SetCurrentPosition(currPos); 
+
+   #ifdef _DEBUG 
+   TrcTraceSequence(outSequence);
+   #endif
+   return(0);
+   
+   ErrHandler:
+   {
+      return (-1);
+   } 
+}
+
+
+function CopySequenceForLabwareId(device& dev, sequence iSequence, variable labwareid, sequence& outSequence)
+{
+// add all the positions from iSequence for labwareid to the outSequence
+
+   variable L_id;
+   variable P_id;
+   variable pos;
+   sequence iSequenceCopy;
+
+   Trace("CopySequenceForLabwareId()");
+   
+   onerror goto ErrHandler;
+
+   iSequence.SetCurrentPosition(1);
+   iSequenceCopy.CopySequence( iSequence);
+
+   for (pos = 1; pos>0 && pos <= iSequenceCopy.GetCount(); pos = iSequenceCopy.Increment(1))
+   {
+      L_id = iSequenceCopy.GetLabwareId();
+      if ( L_id == labwareid )
+      {
+         P_id = iSequenceCopy.GetPositionId();
+         outSequence.Add( L_id, P_id, dev );
+      }
+   }
+   
+   outSequence.SetCurrentPosition(1);  
+   #ifdef _DEBUG 
+   TrcTraceSequence(outSequence);
+   #endif
+   return(0);
+   
+   ErrHandler:
+   {
+      return (-1);
+   } 
+}
+
+function CopySequencePositions(device& dev, sequence iSequence, variable labwareid, sequence& outSequence)
+{
+// copy all positions from iSequence to outSequence (using labwareid)
+
+   variable P_id;
+   variable pos;
+   
+   Trace("CopySequencePositions()");
+
+   onerror goto ErrHandler;
+   
+   iSequence.SetCurrentPosition(1);
+
+   for (pos = 1; pos>0 && pos <= iSequence.GetCount(); pos = iSequence.Increment(1))
+   {
+      P_id = iSequence.GetPositionId();
+      outSequence.Add( labwareid, P_id, dev );
+   }
+   
+   outSequence.SetCurrentPosition(1);
+   #ifdef _DEBUG 
+   TrcTraceSequence(outSequence);
+   #endif
+   return(0);
+   
+   ErrHandler:
+   {
+      return (-1);
+   } 
+}
+
+function CopySequenceForAllLabware(device& dev, sequence iSequence, variable labwareIds[], variable startIndex, variable endIndex, sequence& outSequence)
+{
+// add all the positions from iSequence for each labwareid to the outSequence
+
+   variable L_id;
+   variable i;
+   sequence iSequenceCopy;
+
+   Trace("CopySequenceForAllLabware()");
+   
+   onerror goto ErrHandler;
+
+   iSequence.SetCurrentPosition(1);
+   iSequenceCopy.CopySequence( iSequence);
+
+   for (i = startIndex; (i <= endIndex) && (i < labwareIds.GetSize()); i++)
+   {
+      L_id = labwareIds.GetAt(i);
+      CopySequencePositions(dev, iSequence, L_id, outSequence);
+   }
+   
+   outSequence.SetCurrentPosition(1);  
+   #ifdef _DEBUG 
+   TrcTraceSequence(outSequence);
+   #endif
+   return(0);
+   
+   ErrHandler:
+   {
+      return (-1);
+   } 
+}
+
+
+
+// sequence sorting
+//
+//
+// We have to sort a deck sequence>> create a new sequence with the given 'sortedName' and save to the deck layout,
+// then return the new sequence (reference from the deck layout) 
+//
+// Use probeInLabware for sorting ...
+// Takes a sequence object (ISequence) for sorting, sorts the sequence and saves to the deck layout with the given 'sortedName'
+//
+function SortSequence1(device& dev, sequence iSequence, variable sort1, string sortedName, sequence& sortedSequence)
+{
+   object probeInLabware;
+   object hslProbeInLabware;
+   object decklayout;
+   object command;
+   variable cnt(0);
+   variable pos(0);
+   variable retVal;
+
+   decklayout = dev.GetDeckLayoutObject();
+   command = dev.GetCommandObject();
+
+   probeInLabware.CreateObject("HxProbeInLabware.HxProbeInLabware");
+   probeInLabware.GetObject("IHslProbeInLabware", hslProbeInLabware);
+
+   hslProbeInLabware.HslInitialize(decklayout, command);
+   hslProbeInLabware.HslSortSequence1(sort1, iSequence, sortedName);
+
+   retVal = dev.GetSequenceRef(sortedName, sortedSequence);
+
+   sortedSequence.SetCurrentPosition(1);
+   cnt = sortedSequence.GetCount();
+   pos = sortedSequence.GetCurrentPosition();
+   Trace("SortSequence1::Sorted sequence ", sortedName, ", count = ", cnt, ", position = ", pos); 
+   return(retVal);
+}
+
+function SortSequence2(device& dev, sequence iSequence, variable sort1, variable sort2, string sortedName, sequence& sortedSequence)
+{
+   object probeInLabware;
+   object hslProbeInLabware;
+   object decklayout;
+   object command;
+   variable cnt(0);
+   variable pos(0);
+   variable retVal(0);
+
+   Trace("SortSequence2::sort1 = ", sort1, ", sort2 = ", sort2); 
+
+   decklayout = dev.GetDeckLayoutObject();
+   command = dev.GetCommandObject();
+
+   probeInLabware.CreateObject("HxProbeInLabware.HxProbeInLabware");
+   probeInLabware.GetObject("IHslProbeInLabware", hslProbeInLabware);
+
+   hslProbeInLabware.HslInitialize(decklayout, command);
+   hslProbeInLabware.HslSortSequence2(sort1, sort2, iSequence, sortedName);
+
+   retVal = dev.GetSequenceRef(sortedName, sortedSequence);
+
+   sortedSequence.SetCurrentPosition(1);
+   cnt = sortedSequence.GetCount();
+   pos = sortedSequence.GetCurrentPosition();
+   Trace("SortSequence2::Sorted sequence ", sortedName, ", count = ", cnt, ", position = ", pos); 
+
+   #ifdef _DEBUG 
+   TrcTraceSequence(sortedSequence);
+   #endif
+   return(retVal);
+}
+
+function SortSequence2ForEachLabware(device& dev, sequence iSequence, variable sort1, variable sort2, string sortedName, sequence& sortedSequence)
+{
+   object probeInLabware;
+   object hslProbeInLabware;
+   object decklayout;
+   object command;
+   variable cnt(0);
+   variable pos(0);
+   variable currPos(1);
+   variable posCnt(0);
+   variable retVal(0);
+   variable labids[];
+   variable i;
+   sequence s1;
+   sequence s2;
+
+   Trace("SortSequence2ForEachLabware::sort1 = ", sort1, ", sort2 = ", sort2); 
+
+   decklayout = dev.GetDeckLayoutObject();
+   command = dev.GetCommandObject();
+
+   probeInLabware.CreateObject("HxProbeInLabware.HxProbeInLabware");
+   probeInLabware.GetObject("IHslProbeInLabware", hslProbeInLabware);
+
+   hslProbeInLabware.HslInitialize(decklayout, command);
+
+   currPos = iSequence.GetCurrentPosition();
+   iSequence.GetLabwareIds(labids);
+
+   for(i=0; i<labids.GetSize(); i++)
+   {
+      CopySequenceFromCurrPosn(dev, iSequence, 1, s1);
+      hslProbeInLabware.HslSortSequence2(sort1, sort2, s1, sortedName);
+      dev.GetSequenceRef(sortedName, s2);
+
+      AddToSequence(dev, sortedSequence, s2);      
+      
+      posCnt = iSequence.GetPositionCountForCurrLabware();
+      iSequence.SetCurrentPosition( posCnt+1 );
+      s1.DeleteLabware( labids[i] );
+      s2.DeleteLabware( labids[i] );
+   }
+   iSequence.SetCurrentPosition(currPos);
+
+   // now sortedSequence is sorted for sort1,sort2 and labware id/order has been maintained
+
+   sortedSequence.SetCurrentPosition(1);
+   cnt = sortedSequence.GetCount();
+   Trace("SortSequence2::Sorted sequence ", sortedName, ", count = ", cnt); 
+
+   #ifdef _DEBUG 
+   TrcTraceSequence(sortedSequence);
+   #endif
+   return(retVal);
+}
+
+function SortSequence3(device& dev, sequence iSequence, variable sort1, variable sort2, variable sort3, string sortedName, sequence& sortedSequence)
+{
+   object probeInLabware;
+   object hslProbeInLabware;
+   object decklayout;
+   object command;
+   variable cnt(0);
+   variable pos(0);
+   variable retVal;
+
+   Trace("SortSequence3::sort1 = ", sort1, ", sort2 = ", sort2, ", sort3 = ", sort3); 
+
+   decklayout = dev.GetDeckLayoutObject();
+   command = dev.GetCommandObject();
+
+   probeInLabware.CreateObject("HxProbeInLabware.HxProbeInLabware");
+   probeInLabware.GetObject("IHslProbeInLabware", hslProbeInLabware);
+
+   hslProbeInLabware.HslInitialize(decklayout, command);
+   hslProbeInLabware.HslSortSequence3(sort1, sort2, sort3, iSequence, sortedName);
+
+   retVal = dev.GetSequenceRef(sortedName, sortedSequence);
+
+   sortedSequence.SetCurrentPosition(1);
+   cnt = sortedSequence.GetCount();
+   pos = sortedSequence.GetCurrentPosition();
+   Trace("SortSequence3::Sorted sequence ", sortedName, ", count = ", cnt, ", position = ", pos);
+
+   #ifdef _DEBUG 
+   TrcTraceSequence(sortedSequence);
+   #endif
+   return(retVal);
+
+}
+
+// sort iSequence for replicas 
+//
+
+// sort replicates for pipetting by sample
+// i.e. samples A,B.C will replicate as AAA..,BBB..,CCC
+// sortedSequence will contain ( repCnt * each sample ) in sequence
+function SortSequenceForRepsBySample(device& dev, sequence iSequence, variable repCnt, variable sampleCount, variable tipCount, sequence& sortedSequence)
+{
+   variable i(0);
+   variable j(0);
+   variable total(0);
+   variable count(0);
+   variable xferCnt(0);
+   variable remaining(0);
+   variable sample(0);
+   variable L_id;
+   variable P_id;
+   sequence iSequenceCopy;
+   sequence iSequenceOut;
+
+   Trace("SortSequenceForRepsBySample()");
+
+   total = 0;//repCnt * sampleCount;  
+   remaining = sampleCount;
+   xferCnt = tipCount;
+
+   iSequenceCopy.CopySequence( iSequence);
+   iSequenceCopy.SetCurrentPosition(1);
+
+   
+   while ( total < (sampleCount*repCnt) )
+   {
+      if ( remaining < tipCount ) xferCnt = remaining;
+      for (i=1; i<=repCnt; i++) 
+      {
+         iSequenceCopy.SetCurrentPosition(total+i);
+         for (j=1; j <=xferCnt; j++) 
+         {
+            L_id = iSequenceCopy.GetLabwareId();
+            P_id = iSequenceCopy.GetPositionId();
+            iSequenceOut.Add( L_id, P_id, dev );
+            iSequenceCopy.Increment(repCnt);
+         }
+      }
+      total = total + (repCnt*xferCnt);
+      remaining = remaining - xferCnt;
+   }
+
+   sortedSequence.CopySequence(iSequenceOut);
+   sortedSequence.SetCurrentPosition(1);
+
+   #ifdef _DEBUG 
+   TrcTraceSequence(sortedSequence);
+   #endif
+}
+
+// sort replicates for pipetting by interleaving sample
+// i.e. samples A,B.C will replicate as ABC..,ABC..,ABC
+// sortedSequence will contain (samples) * repCnt
+
+function SortSequenceForRepsByInterleave(device& dev, sequence iSequence, variable repCnt, variable sampleCount, variable tipCount, sequence& sortedSequence)
+{
+   variable i(0);
+   variable j(0);
+   variable total(0);
+   variable count(0);
+   variable xferCnt(0);
+   variable remaining(0);
+   variable L_id;
+   variable P_id;
+   variable ix(0);
+   sequence iSequenceCopy;
+   sequence iSequenceInterleave;
+   variable pos(0);
+
+   Trace("SortSequenceForRepsByInterleave()");
+
+   total = repCnt * sampleCount;  
+   remaining = sampleCount;
+   xferCnt = tipCount;
+
+   iSequenceCopy.CopySequence( iSequence);
+   iSequenceCopy.SetCurrentPosition(1);
+
+// sort for transfer of maximum number of samples * repCnt (to support reuse of tips)
+   while ( count < total )
+   {
+      if ( remaining < tipCount) xferCnt = remaining;
+      
+      for (i=1; i<=repCnt; i++) 
+      {
+         pos = iSequenceCopy.GetCurrentPosition();
+
+         for (j=1; j <=xferCnt; j++) 
+         {
+            L_id = iSequenceCopy.GetLabwareId();
+            P_id = iSequenceCopy.GetPositionId();
+            iSequenceInterleave.Add( L_id, P_id, dev );
+            iSequenceCopy.Increment(1);
+            count++;
+         }
+          
+         iSequenceCopy.SetCurrentPosition(pos + sampleCount);  // next rep for samples
+            
+      }
+      
+      remaining = remaining - xferCnt;
+
+      // reset iSequenceCopy position for remaining samples
+      ix++;
+      iSequenceCopy.SetCurrentPosition((ix*xferCnt)+1);
+   }
+
+   // assign sortedSequence
+   sortedSequence.CopySequence(iSequenceInterleave);
+   sortedSequence.SetCurrentPosition(1);
+
+   #ifdef _DEBUG 
+   TrcTraceSequence(sortedSequence);
+   #endif
+}
+
+
+
+function FindPositionIndex(variable labwareId, variable positionId, variable labwareIds[], variable positionIds[])
+{
+   variable ix;
+   variable L_id;
+   variable P_id;
+
+   for(ix =0; ix< positionIds.GetSize(); ix++)
+   {
+      P_id = positionIds.GetAt(ix);
+      if ( P_id == positionId )
+      {
+         L_id = labwareIds.GetAt(ix);
+         if ( L_id == labwareId)
+            return (ix);
+      }
+   }
+   return (-1);   // no match
+}
+
+function LookupMatchingIndexId(variable lookupMatchedIndexId, variable lookupFromMatchedIndexIds[],  variable lookedIntoMatchedIndexIds[])
+{
+   variable ix;
+   variable lookupFromMatchedIndexId;
+   variable matchingIndexId;
+   variable foundPos(-1);
+
+   for(ix =0; ix< lookupFromMatchedIndexIds.GetSize(); ix++)
+   {
+      lookupFromMatchedIndexId = lookupFromMatchedIndexIds.GetAt(ix);
+      if ( lookupFromMatchedIndexId == lookupMatchedIndexId )
+      {
+         foundPos = ix;
+         break;
+      }
+   }
+
+   if(foundPos != -1)
+   {
+      matchingIndexId = lookedIntoMatchedIndexIds.GetAt(foundPos);
+      return(matchingIndexId);
+   }
+ 
+   return (-1);   // no match
+}
+
+function ext_SortSequence2BySequenceOrder(sequence iSequence, variable lookupFromLabwareIds[], variable lookupFromPositionIds[], variable lookedIntoLabwareIds[], variable lookedIntoPositionIds[], sequence& iSequence2, variable lookupFromMatchedIndexIds[],  variable lookedIntoMatchedIndexIds[])
+{ 
+   sequence sortedSequence;
+   variable L_id;
+   variable P_id;
+   variable pos;
+   variable index;
+   variable matchingIndexId;
+
+   if(iSequence.GetCount() > 0 && iSequence2.GetCount() > 0)
+   {
+       iSequence.SetCurrentPosition(1);
+
+       for (pos = 1; pos>0 && pos <= iSequence.GetCount(); pos = iSequence.Increment(1))
+       {
+          L_id = iSequence.GetLabwareId();
+          P_id = iSequence.GetPositionId();
+
+          index = FindPositionIndex(L_id, P_id, lookupFromLabwareIds, lookupFromPositionIds);
+          if ( index == -1 ) return (0);
+
+          matchingIndexId = LookupMatchingIndexId(index, lookupFromMatchedIndexIds, lookedIntoMatchedIndexIds);
+          if(matchingIndexId == -1) return(0);
+
+          L_id = lookedIntoLabwareIds.GetAt(matchingIndexId);
+          P_id = lookedIntoPositionIds.GetAt(matchingIndexId);
+      
+          sortedSequence.Add( L_id, P_id);
+       } 
+
+       iSequence2.CopySequence(sortedSequence);
+
+       iSequence2.SetCurrentPosition(1);
+   }
+
+   #ifdef _DEBUG 
+   TrcTraceSequence(sortedSequence);
+   #endif
+
+   return(0); 
+}
+
+function SortVolumes(variable matchedSourceOrTargetIndices[], variable volumeValues[], variable sortedVolumeValues[])
+{ 
+   variable lastMin(-1);
+   variable min;
+   variable minIndex(0);
+   variable currValue;
+   variable sortedIndices[];
+   variable _ix;
+   variable _iy;
+   variable cntOfMatchedSourceOrTargetIndices;
+
+   cntOfMatchedSourceOrTargetIndices = matchedSourceOrTargetIndices.GetSize();
+   if(cntOfMatchedSourceOrTargetIndices == 0)
+      return;
+
+   sortedVolumeValues.SetSize(0);
+  
+   min = matchedSourceOrTargetIndices.GetAt(0);
+   
+   for(_ix = 0; _ix < cntOfMatchedSourceOrTargetIndices; _ix++)          
+   {
+      if(matchedSourceOrTargetIndices.GetAt(_ix) != -1)
+      {
+	      for(_iy = 0; _iy < cntOfMatchedSourceOrTargetIndices; _iy++)
+	      {   
+             if(matchedSourceOrTargetIndices.GetAt(_iy) != -1)
+             {
+                 currValue = matchedSourceOrTargetIndices.GetAt(_iy);
+		         if(currValue > lastMin)
+		         {
+		            if(min == lastMin)
+		            {
+			           min = currValue;
+			           minIndex = _iy;
+			        }
+			        else
+			        {
+			           if(currValue < min)
+		               {
+				          min = currValue;
+				          minIndex = _iy;
+			           }
+			        }
+		         }
+             }
+          }
+	      sortedIndices.AddAsLast(minIndex);
+	      lastMin = min;
+      }
+   }
+   
+   if(sortedIndices.GetSize() > 0)
+   {
+       for(_ix=0; _ix < sortedIndices.GetSize(); _ix++)
+       {
+          sortedVolumeValues.AddAsLast(volumeValues.GetAt(sortedIndices.GetAt(_ix)));
+       }
+   }
+   
+   return(0); 
+}
+
+// SortSequence2BySequenceOrder()
+// labwareIds[] and positionIds[] contains the original iSequence order
+// iSequence is the sorted sequence that contains all positions in labwareIds[] and positionIds[]
+// >> sort iSequence2 in the same sort order
+//
+function SortSequence2BySequenceOrder(sequence iSequence, variable labwareIds[], variable positionIds[], sequence& iSequence2)
+{ 
+   sequence sortedSequence;
+   variable L_id;
+   variable P_id;
+   variable pos;
+   variable index;
+
+   iSequence.SetCurrentPosition(1);
+
+   for (pos = 1; pos>0 && pos <= iSequence.GetCount(); pos = iSequence.Increment(1))
+   {
+      L_id = iSequence.GetLabwareId();
+      P_id = iSequence.GetPositionId();
+
+      index = FindPositionIndex(L_id, P_id, labwareIds, positionIds);
+      if ( index == -1 ) return (0);
+
+      iSequence2.SetCurrentPosition( index+1 );
+      L_id = iSequence2.GetLabwareId();
+      P_id = iSequence2.GetPositionId();     
+      
+      sortedSequence.Add( L_id, P_id);
+   } 
+
+   iSequence2.CopySequence(sortedSequence);
+
+
+   #ifdef _DEBUG 
+   TrcTraceSequence(sortedSequence);
+   #endif
+
+   return(0); 
+}
+
+
+
+
+} 			// end namespace 
+
+#endif	// HSL_RUNTIME
+
+#endif	// _HSL_PipetteWizard_hsl_
+// $$author=ContainerAdministrator$$valid=1$$time=2025-09-09 20:13$$checksum=439b9cae$$length=099$$

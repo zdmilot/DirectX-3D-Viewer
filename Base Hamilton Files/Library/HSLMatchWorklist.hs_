@@ -1,0 +1,138 @@
+// This is a part of the Match Worklist Library.
+// Copyright (C) by HAMILTON Bonaduz AG, CH-7402 Bonaduz.
+// All rights reserved.
+//
+// Modification History
+// 2006-03-23  bandenmatten : Initial file creation.
+// 2006-06-14  bandenmatten : Added device parameter 'ML_STAR' to functions MatchJobData and MatchCustomJobData.
+
+#ifndef __HSLMatchWorklist_hs___
+#define __HSLMatchWorklist_hs___	1
+
+// Interface to the Match Worklist Library
+#ifndef HSL_RUNTIME
+namespace MatchWorklist
+{
+	function MatchJobData(
+		device& ML_STAR,
+		variable& jobName,
+		variable  matchSourceSequence,
+		sequence& sourceSequence,
+		variable  matchTargetSequence,
+		sequence& targetSequence,
+		variable  matchTargetVolume,
+		variable& targetVolumes[],
+		variable& sortColumns[],
+		variable& sortCriterions[],
+		variable& sortDirections[]) variable
+	{return(0);}
+
+	//--------------------------------------------------------------------------------------------------------------
+	//
+	// Description:
+	//
+	// The function MatchJobData matches loading information with worklist information 
+	// of the given job to generate standard output data for use in following pipetting steps. 
+	//
+	// Parameters:
+	//
+	// [in ] ML_STAR
+	// Device for which to match job data.
+	//
+	// [in ] jobName 
+	// Job name (string). If empty, defaults to {{{UniqueRunId}}}, where 
+	// UniqueRunId = Unique run identification, e.g. f562f7bc812949868e60b434f48e8f4d.
+	//
+	// [in ] matchSourceSequence
+	// Indicates whether to match the source sequence (integer; 0 = don't match, 1 = match)
+	//
+	// [out] sourceSequence
+	// Sequence to retrieve the matched source sequence (sequence)
+	//
+	// [in ] matchTargetSequence
+	// Indicates whether to match the target sequence (integer; 0 = don't match, 1 = match)
+	//
+	// [out] targetSequence
+	// Sequence to retrieve the matched target sequence (sequence)
+	//
+	// [in ] matchTargetVolume
+	// Indicates whether to match the target volume (integer; 0 = don't match, 1 = match)
+	//
+	// [out] targetVolumes[]
+	// Array to retrieve the matched target volume (array of variables)
+	//
+	// [in ] sortColumns[]
+	// Specifies the columns on which to sort (string, one of MatchWorklist_SortColumn). 
+	// The sequence of the sort columns defines the organization of the sorted result data.
+	//
+	// [in ] sortCriterions[]
+	// Specifies the criterion on which to sort (integer, one of MatchWorklist_SortCriterion).
+	//
+	// [in ] sortDirections[]
+	// Specifies the sort direction (integer, one of MatchWorklist_SortDirection).
+	//
+	// Return:
+	//
+	// The number of job data added to the output parameters (integer).
+	//
+	//--------------------------------------------------------------------------------------------------------------
+
+	function MatchCustomJobData(
+		device& ML_STAR,
+		variable& jobName,
+		variable& customDataName,
+		variable& customDataArray[],
+		variable& sortColumns[],
+		variable& sortCriterions[],
+		variable& sortDirections[]) variable
+	{return(0);}
+
+	//--------------------------------------------------------------------------------------------------------------
+	//
+	// Description:
+	//
+	// The function MatchCustomJobData matches loading information with worklist information 
+	// of the given job to generate custom output data for use in following pipetting steps. 
+	//
+	// Parameters:
+	//
+	// [in ] ML_STAR
+	// Device for which to match custom job data.
+	//
+	// [in ] jobName 
+	// Job name (string). If empty, defaults to {{{UniqueRunId}}}, where 
+	// UniqueRunId = Unique run identification, e.g. f562f7bc812949868e60b434f48e8f4d.
+	//
+	// [in ] customDataName
+	// Specifies the name of the custom data that should be matched (string).
+	//
+	// [out] customDataArray[]
+	// Array to retrieve the matched custom data for the given job (array of variables).
+	//
+	// [in ] sortColumns[]
+	// Specifies the columns on which to sort (string, one of MatchWorklist_SortColumn). 
+	// The sequence of the sort columns defines the organization of the sorted result data.
+	//
+	// [in ] sortCriterions[]
+	// Specifies the criterion on which to sort (integer, one of MatchWorklist_SortCriterion).
+	//
+	// [in ] sortDirections[]
+	// Specifies the sort direction (integer, one of MatchWorklist_SortDirection).
+	//
+	// Return:
+	//
+	// The number of job data added to the output parameters (integer).
+	//
+	//--------------------------------------------------------------------------------------------------------------
+}
+#endif
+
+// Implementation of to the Match Worklist Library
+#ifdef HSL_RUNTIME
+	#ifndef __HSLMatchWorklistImpl_hs___
+		#include "HSLMatchWorklistImpl.hs_"
+	#endif
+#endif
+
+#endif
+// $$author=ContainerAdministrator$$valid=1$$time=2025-09-09 20:31$$checksum=19998760$$length=099$$

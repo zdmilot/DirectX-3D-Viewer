@@ -1,0 +1,32 @@
+//  -------------------------------------------------------------------------------------
+//  Hamilton Company Software Product.
+//  File: HSLSchedLibImplEnu.hs_
+//
+//  File creation date:  2004-08-25 by GZa
+//  Last revision date:  2004-08-25 by GZa
+//
+//  Copyright (c) 2004 by Hamilton Bonaduz AG.
+//
+//
+//  Modification History
+//  --------------------
+//  1.00  2004-08-25 by GZa  Initial file creation.
+//  -------------------------------------------------------------------------------------
+
+function StringTable()
+{
+	// Errors
+	Insert(IDE::noError,						"No error.");
+
+	Insert(IDE::unexpectedError,			"Unexpected error occured.");
+	Insert(IDE::invalidParam,				"Invalid parameter detected.");
+
+	// common strings
+	Insert(IDS::openingBracket,			"<");
+	Insert(IDS::closingBracket,			">");
+	Insert(IDS::point,						".");
+	Insert(IDS::runtimeError,				"Runtime error ");
+	Insert(IDS::libraryShowName,			"Scheduler Library");
+}
+
+// $$author=ContainerAdministrator$$valid=1$$time=2025-09-09 20:13$$checksum=b835769c$$length=099$$

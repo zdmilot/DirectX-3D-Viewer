@@ -1,0 +1,924 @@
+// This is a part of the Microlab Star Deck Definition Library.
+// Copyright (C) by HAMILTON Bonaduz AG, CH-7402 Bonaduz.
+// All rights reserved.
+//
+// Modification History
+// 2006-03-26  bandenmatten : Initial file creation.
+// 2006-06-02  bandenmatten : Increased MlStarDeckDef::Constants::upperBoundOfSites from 54 to 55.
+// 2006-06-18  bandenmatten : Disabled function MlStarDeckDef::GetLoadedLabwareForCarrier() because 
+//										the called function VectorDb_Labware::IsLabwareLoadedByLabwareIdPositionId() 
+//										does not work as expected in V4.1. Function MlStarDeckDef::GetLoadedLabwareForCarrier2() 
+//										implements a workaround.
+// 2006-11-21  bandenmatten : SCR#1218 : If the deck layout contains a template without any labware placed on it, the template name
+//										does NOT appear in the list of template names returned by the function device.GetTemplateLabwareNames().
+//										Therefor the function MlStarDeckDef::Init() assumed that this labware is a rack and tried to get the 
+//										default sequence for a template --> Phoenix Error : 'Not implemented'. 
+//										Fixed this bug in function MlStarDeckDef::GetDefaultSequenceForLabware() (//>> 20061121).
+
+#ifndef __HSLMlStarDeckDef_hs___
+#define __HSLMlStarDeckDef_hs___	1
+
+//#define HSL_RUNTIME 1
+
+// Interface to the Tip Counting Library
+#ifndef HSL_RUNTIME
+namespace MlStarDeckDef
+{
+	function Init(
+		device& ML_STAR) void
+	{}
+
+	//--------------------------------------------------------------------------------------------------------------
+	//
+	// Description:
+	//
+	// Initializes / updates the deck definitions for the given instrument.
+	//
+	// Parameters:
+	//
+	// [in ] ML_STAR
+	// Instrument for which to initialize or update the deck definitions (device).
+	//
+	// Return:
+	//
+	// None.
+	//
+	//--------------------------------------------------------------------------------------------------------------
+
+	function GetCarrierAtDeckSite(
+		device& ML_STAR,
+		variable deckSite,
+		variable& carrierNames[]) variable
+	{return(0);}
+
+	//--------------------------------------------------------------------------------------------------------------
+	//
+	// Description:
+	//
+	// Retrieves carrier names given a deck site.
+	//
+	// Parameters:
+	//
+	// [in ] ML_STAR
+	// Instrument from which to get carrier names given a deck site (device).
+	//
+	// [in ] deckSite
+	// Deck site (integer, range [1, 54]).
+	//
+	// [out] carrierNames
+	// Array to retrieve carrier names given a deck site (array of strings).
+	//
+	// Return:
+	//
+	// The number of carrier names added to the output parameter 'carrierNames'.
+	//
+	//--------------------------------------------------------------------------------------------------------------
+
+	function GetLabwareAtDeckSite(
+		device& ML_STAR,
+		variable deckSite,
+		variable& carrierName,
+		variable& labwareNames[],
+		variable& templateSites[]) variable
+	{return(0);}
+
+	//--------------------------------------------------------------------------------------------------------------
+	//
+	// Description:
+	//
+	// Retrieves labware names given a deck site and carrier name.
+	//
+	// Parameters:
+	//
+	// [in ] ML_STAR
+	// Instrument from which to get labware names given deck site and a carrier name (device).
+	//
+	// [in ] deckSite
+	// Deck site (integer, range [1,54]).
+	//
+	// [in ] carrierName
+	// Carrier name (string).
+	//
+	// [out] labwareNames
+	// Array to retrieve labware names given a deck site and carrier name (array of strings).
+	//
+	// [out] templateSites
+	// Array to retrieve template sites associated to labware in labwareNames (array of strings, empty strings if the carrier doesn't represent a template).
+	//
+	// Return:
+	//
+	// The number of labware names added to the output parameter 'labwareNames'.
+	//
+	//--------------------------------------------------------------------------------------------------------------
+
+	function GetCarrierForLabware(
+		device& ML_STAR,
+		variable& labwareName,
+		variable& carrierName,
+		variable& deckSite,
+		variable& templateSite) variable
+	{return(0);}
+
+	//--------------------------------------------------------------------------------------------------------------
+	//
+	// Description:
+	//
+	// Retrieves the carrier name given a labware name.
+	//
+	// Parameters:
+	//
+	// [in ] ML_STAR
+	// Instrument from which to get the carrier name given a labware name (device).
+	//
+	// [in ] labwareName
+	// Labware name (string).
+	//
+	// [out] carrierName
+	// Variable to retrieve the carrier name given a labware name (string).
+	//
+	// [out] deckSite
+	// Variable to retrieve the deck site of the carrier (integer).
+	//
+	// [out] templateSite
+	// Variable to retrieve the template site of the labware on the carrier (string, empty string if the carrier doesn't represent a template).
+	//
+	// Return:
+	//
+	// Nonzero if the labware was found on a carrier, otherwise zero.
+	//
+	//--------------------------------------------------------------------------------------------------------------
+
+	//>> 20061018 (Function VectorDb_Labware::IsLabwareLoadedByLabwareIdPositionId() does not work as expected in V4.1)
+	/*
+	function GetLoadedLabwareForCarrier(
+		device& ML_STAR,
+		variable& carrierName,
+		variable checkBarcode,
+		variable& labwareNames[],
+		variable& positionNames[]) variable
+	{return(0);}
+	*/
+	function GetLoadedLabwareForCarrier2(
+		device& ML_STAR,
+		variable& carrierName,
+		sequence& loadedSampleSequence,
+		variable checkBarcode,
+		variable& labwareNames[],
+		variable& positionNames[]) variable
+	{return(0);}
+	//<< 20061018
+
+	//--------------------------------------------------------------------------------------------------------------
+	//
+	// Description:
+	//
+	// Retrieves labware and position names of loaded labware (without load error) given a carrier name.
+	//
+	// Parameters:
+	//
+	// [in ] ML_STAR
+	// Instrument from which to get labware and position names of loaded labware given a carrier name (device).
+	//
+	// [in ] carrierName
+	// Carrier name (string).
+	//
+	// [in ] checkBarcode
+	// If 'hslTrue', the labware must have a non-empty barcode.
+	//
+	// [out] labwareNames
+	// Array to retrieve labware names of loaded labware given a carrier name (array of strings).
+	//
+	// [out] positionNames
+	// Array to retrieve position names of loaded labware given a carrier name (array of strings).
+	//
+	// Return:
+	//
+	// The number of labware and position names added to the output parameter 'labwareNames' and 'positionNames' respectively.
+	//
+	//--------------------------------------------------------------------------------------------------------------
+
+	// Formats positions, e.g. A1 --> A01, 1 --> 0001.
+	static function FormatPosition(
+		string& position, 
+		variable alphaWidth,
+		variable numWidth) variable
+	{return(0);}
+}
+#endif
+
+#ifdef HSL_RUNTIME
+
+#ifndef __HSLMlStarCfgKeys_hs___
+	#include "HSLMlStarCfgKeys.hs_"
+#endif
+
+#ifndef __HSLUtilLib2_hsl__
+	#include "HSLUtilLib2.hsl"
+#endif
+
+#ifndef __HSLUtilLib2Def_hs___
+	#include "HSLUtilLib2Def.hs_"
+#endif
+
+#ifndef __HSLStrLib_hsl__
+	#include "HSLStrLib.hsl"
+#endif
+
+#ifndef __HSLVectorDbTracking_hsl__
+	#include "HSLVectorDbTracking.hsl"
+#endif
+
+#ifndef __HSLVectorDbTrackingDefs_hs___
+	#include "HSLVectorDbTrackingDefs.hs_"
+#endif
+
+// --------------------------------------------------------------------------------------
+// Deck Definition
+// --------------------------------------------------------------------------------------
+
+namespace MlStarDeckDef
+{
+	namespace Constants
+	{
+		// Deck geometry
+	 	variable deckRaster(22.5);													// Deck raster [mm], will be queried from instrument
+	 	variable baseOffsetOfX(100.0);											// X-offset of leftmost deck site [mm], will be queried from instrument
+	 	variable baseOffsetOfY(63.0);												// X-offset of leftmost deck site [mm], will be queried from instrument
+		const variable upperBoundOfSites(55);									// Upper bound of deck sites for carriers
+		const variable lowerBoundOfSites(1);									// Lower bound of deck sites for carriers
+
+		// Property keys
+		const variable carWidthTKey("MlStarCarWidthAsT");					// Key for labware data
+		const variable carIsLoadableKey("MlStarCarIsLoadable");			// Key for labware data
+
+		// Miscellaneous
+		const variable lf("\010");													// Linefeed
+		const variable crlf("\013\010");											// Carriage return linefeed 
+		const variable helpFileShortName("HSLMlStarDeckDef");				// Help file short name
+		const variable helpFileExtension(".chm");								// Help file extension
+		const variable templateDefaultName("default");						// Template default name
+
+		const variable traceActionInit("MlStarDeckDef::Init");															// Trace action
+		const variable traceActionGetCarrierAtDeckSite("MlStarDeckDef::GetCarrierAtDeckSite");					// Trace action
+		const variable traceActionGetLabwareAtDeckSite("MlStarDeckDef::GetLabwareAtDeckSite");					// Trace action
+		const variable traceActionGetCarrierForLabware("MlStarDeckDef::GetCarrierForLabware");					// Trace action
+		const variable traceActionGetLoadedLabwareForCarrier("MlStarDeckDef::GetLoadedLabwareForCarrier");	// Trace action
+	}
+
+	// Data 
+
+	variable instrumentName("");													// Name of the instrument which template-labware-names are stored in templateNamesArr and labwareNamesArr
+	variable templateNamesArr[];													// Template names 
+	variable labwareNamesArr[];													// Labware names 
+	variable positionNamesArr[];													// Position names
+	variable deckSitesArr[];														// Sites of carriers on deck
+	variable templateSitesArr[];													// Sites of labware on template
+	variable carrierWidthArr[];													// Carrier width [T]
+	object templateNamesDict;														// Index for templateNamesArr
+	object labwareNamesDict;														// Index for labwareNamesArr
+	object scriptControl;															// Script control
+
+	// Functions 
+
+	function Split(variable& str, variable& delimiter, variable& substrings[]) void
+	{
+		substrings.SetSize(0);
+		substrings = scriptControl.Eval("Split(\"" + str + "\", \"" + delimiter + "\")");
+	}
+
+	function GetDefaultSequenceForLabware(device& ML_STAR, variable& labwareName, sequence& defaultSequence) void
+	{
+		object deckLayout;
+		object editDeckLayout6;
+		object labware;
+		//>> 20061121
+		object template;
+		//<< 20061121
+		object editLabware5;
+		object defSequence;
+		variable count(0);
+		variable i(0);
+
+		deckLayout = ML_STAR.GetDeckLayoutObject();
+		deckLayout.GetObject2("{FC399424-0445-45FA-BB89-0F43205BB602}", editDeckLayout6);
+		labware = editDeckLayout6.Labware(labwareName);
+		labware.GetObject2("{39A3639F-97AB-444D-86D3-253122BD2202}", editLabware5);
+		//>> 20061121
+		labware.GetObject2("{708F8176-6A33-4C54-BDB4-F0A6845191D8}", template);
+		if (template.IsNull())
+		{
+			// it's not a template
+			//<< 20061121
+			editLabware5.DefaultSequence(defSequence);
+			count = defSequence.Count;
+			for (i = 1; i <= count; i++)
+			{
+				object seqItem;
+				seqItem = defSequence.Item(i);
+				defaultSequence.Add(seqItem.ObjectId, seqItem.PositionId);
+			}
+			defaultSequence.SetCount(defaultSequence.GetTotal());
+			defaultSequence.SetMax(defaultSequence.GetTotal());
+			defaultSequence.SetCurrentPosition(1);
+			//>> 20061121
+		}
+		//<< 20061121
+	}
+
+	function Init(device& ML_STAR) void
+	{
+		variable i(0);																	// Loop counter
+		variable size(0);																// Array size
+		variable site(0);																// A deck site
+		variable propertyKeys[];													// Place to retrieve property keys
+		variable propertyValues[];													//	Place to retrieve property values
+		variable labwareCoords[];													// Place to retrieve x-y-z-coordinates
+		variable labwareCoordX(0);													// An x-coordinate
+		variable templateName("");													// A template name
+		variable carWidthTValue(0);												// Carrier width [T]
+		variable carIsLoadableValue(hslFalse);									// Indicates whether a carrier is loadable
+		variable fieldDelimiter("");												// The field delimiter of the command associated to the device
+
+		// Check if the dictionaries have already been created
+		if (templateNamesDict.IsNull())
+		{
+			templateNamesDict.CreateObject("Scripting.Dictionary");
+		}
+		if (labwareNamesDict.IsNull())
+		{
+			labwareNamesDict.CreateObject("Scripting.Dictionary");
+		}
+		if (scriptControl.IsNull())
+		{
+			scriptControl.CreateObject("MSScriptControl.ScriptControl");
+			scriptControl.Language = "VBScript";
+		}
+
+		// Reset collections holding template labware names
+		instrumentName = "";
+		templateNamesArr.SetSize(0);
+		labwareNamesArr.SetSize(0);
+		positionNamesArr.SetSize(0);
+		deckSitesArr.SetSize(0);
+		templateSitesArr.SetSize(0);
+		carrierWidthArr.SetSize(0);
+		templateNamesDict.RemoveAll();
+		labwareNamesDict.RemoveAll();
+
+		// Get the field delimiter of the command associated to the device
+		fieldDelimiter = ML_STAR.GetCfgValueWithKey(MlStarCfgKey::wordSeparator);
+
+		// Get template labware names
+		ML_STAR.GetTemplateLabwareNames(templateNamesArr, labwareNamesArr);
+		size = templateNamesArr.GetSize();
+		for (i = 0; i < size; i++)
+		{
+			if (!templateNamesDict.Exists(templateNamesArr.ElementAt(i)))
+				templateNamesDict.Add(templateNamesArr.ElementAt(i), i);
+			if (!labwareNamesDict.Exists(labwareNamesArr.ElementAt(i)))
+				labwareNamesDict.Add(labwareNamesArr.ElementAt(i), i);
+		}
+
+		// Query deck geometry
+		Constants::deckRaster = 1.0 * ML_STAR.GetCfgValueWithKey(MlStarCfgKey::deckRaster);
+		Constants::baseOffsetOfX = 1.0 * ML_STAR.GetCfgValueWithKey(MlStarCfgKey::deckXOffset);
+		Constants::baseOffsetOfY = 1.0 * ML_STAR.GetCfgValueWithKey(MlStarCfgKey::deckYOffset);
+
+		// Remember instrument name for which template-labware-names are stored in 'templateNamesArr' and 'labwareNamesArr'
+		instrumentName = ML_STAR.GetInstrumentName();
+
+		// Iterate over template names and determine deck sites of templates/carriers
+		propertyKeys.AddAsLast(Constants::carWidthTKey);
+		propertyKeys.AddAsLast(Constants::carIsLoadableKey);
+		size = templateNamesArr.GetSize();
+		for (i = 0; i < size; i++)
+		{
+			templateName = templateNamesArr.ElementAt(i);
+			if (Constants::templateDefaultName == templateName && !templateNamesDict.Exists(labwareNamesArr.ElementAt(i)))
+			{
+				// Not really a template (template labware entries like (default, templateName) are skiped)
+				templateName = labwareNamesArr.ElementAt(i);
+			}
+
+			// Get template/carrier position and extended attributes
+			propertyValues.SetSize(0);
+			if (Constants::templateDefaultName != templateName)
+			{
+				ML_STAR.GetLabwarePositionEx(templateName, labwareCoords);
+				ML_STAR.GetLabwareData(templateName, propertyKeys, propertyValues);
+			}
+			if (0 < propertyValues.GetSize() && "" != propertyValues.ElementAt(0))
+			{
+				// Template/carrier supports key MlStarCarWidthAsT
+				carWidthTValue = IVal(propertyValues.ElementAt(0));
+			}
+			else
+			{
+				// Template/carrier doesn't support key MlStarCarWidthAsT
+				carWidthTValue = 0;
+			}
+			if (1 < propertyValues.GetSize() && "" != propertyValues.ElementAt(1))
+			{
+				// Template/carrier supports key MlStarCarIsLoadable
+				carIsLoadableValue = IVal(propertyValues.ElementAt(1)) != 0;
+			}
+			else
+			{
+				// Template/carrier doesn't support key MlStarCarIsLoadable
+				carIsLoadableValue = hslFalse;
+			}
+
+			// Check if the template/carrier has a nonzero  width and if it is loadable
+			if (0 < carWidthTValue && carIsLoadableValue)
+			{
+				// Template/carrier has a nonzero  width and is loadable
+				// --> determine the template/carrier's deck site
+				labwareCoordX = labwareCoords.GetAt(8);	// boundary 2 (right) x-coord
+				deckSitesArr.AddAsLast(Ceiling(1.0 * (labwareCoordX - Constants::baseOffsetOfX) / Constants::deckRaster));
+				carrierWidthArr.AddAsLast(carWidthTValue);
+
+				// --> determine the labware's template site
+				if (Constants::templateDefaultName != templateName)
+				{
+					sequence sequenceObj;
+					variable labwareName("");
+					variable templateSites[];
+					variable labwareNames[];
+					variable positionNames[];
+
+					labwareName = labwareNamesArr.ElementAt(i);
+					sequenceObj.Add(labwareName, "");
+					ML_STAR.GetPositionsLabwareNames(sequenceObj, templateName, templateSites, labwareNames, positionNames);
+					if (0 < templateSites.GetSize())
+					{
+						templateSitesArr.AddAsLast(templateSites.ElementAt(0));
+						positionNamesArr.AddAsLast("");
+					}
+					else
+					{
+						variable positions("");
+						variable currentPos(0);
+						sequence defaultSequence;
+
+						GetDefaultSequenceForLabware(ML_STAR, labwareName, defaultSequence);
+						for (currentPos = defaultSequence.SetCurrentPosition(1);
+							  0 < currentPos;
+							  currentPos = defaultSequence.Increment(1))
+						{
+							if ("" != positions)
+								positions = positions + fieldDelimiter;
+							positions = positions + defaultSequence.GetPositionId();
+						}
+						positionNamesArr.AddAsLast(positions);
+						templateSitesArr.AddAsLast("");
+					}
+				}
+			}
+			else
+			{
+				// Labware has zero  width or isn't loadable
+				deckSitesArr.AddAsLast(0);
+				templateSitesArr.AddAsLast("");
+				positionNamesArr.AddAsLast("");
+				carrierWidthArr.AddAsLast(0);
+			}
+			//Trace(templateNamesArr.ElementAt(i), "; ", labwareNamesArr.ElementAt(i), "; ", deckSitesArr.ElementAt(i), "; ", templateSitesArr.ElementAt(i), "; ", positionNamesArr.ElementAt(i));
+		}
+	}
+
+	function GetCarrierAtDeckSite(
+		device& ML_STAR,
+		variable deckSite,
+		variable& carrierNames[]) variable
+	{
+		variable i(0);																	// Loop counter
+		variable size(0);																// Array size
+		variable errorDesc("");														// Error description
+		variable templateName("");													// A template name
+		object uniqueTemplateNamesDict;											// Helper dictionary to keep track of unique template names
+
+		// Check input params to be valid.
+		errorDesc = Constants::traceActionGetCarrierAtDeckSite + Constants::crlf;
+		Util2::CheckValueTypeAndRangeMinMax(deckSite, hslInteger, Constants::lowerBoundOfSites, Constants::upperBoundOfSites, 
+							errorDesc + "deckSite");
+
+		// Check instrument for which template-labware-names are stored in templateNamesArr and labwareNamesArr
+		if (ML_STAR.GetInstrumentName() != instrumentName)
+		{
+			Init(ML_STAR);
+		}
+
+		// Init output params 
+		carrierNames.SetSize(0);
+
+		// Iterate of template names
+		uniqueTemplateNamesDict.CreateObject("Scripting.Dictionary");
+		uniqueTemplateNamesDict.Add(Constants::templateDefaultName, 0);
+		size = templateNamesArr.GetSize();
+		for (i = 0; i < size; i++)
+		{
+			if (deckSitesArr.ElementAt(i) - carrierWidthArr.ElementAt(i) + 1 <= deckSite && deckSite <= deckSitesArr.ElementAt(i))
+			{
+				templateName = templateNamesArr.ElementAt(i);
+				if (Constants::templateDefaultName == templateName && !templateNamesDict.Exists(labwareNamesArr.ElementAt(i)))
+				{
+					// Not really a template
+					templateName = labwareNamesArr.ElementAt(i);
+				}
+				if (!uniqueTemplateNamesDict.Exists(templateName))
+				{
+					carrierNames.AddAsLast(templateName);
+					uniqueTemplateNamesDict.Add(templateName, 0);
+				}
+			}
+		}
+		return(carrierNames.GetSize());
+	}
+
+	function GetLabwareAtDeckSite(
+		device& ML_STAR,
+		variable deckSite,
+		variable& carrierName,
+		variable& labwareNames[],
+		variable& templateSites[]) variable
+	{
+		variable i(0);																	// Loop counter
+		variable size(0);																// Array size
+		variable errorDesc("");														// Error description
+		variable templateName("");													// A template name
+		variable labwareName("");													// A labware name
+		object uniqueLabwareNamesDict;											// Helper dictionary to keep track of unique labware names
+
+		// Check input params to be valid.
+		errorDesc = Constants::traceActionGetLabwareAtDeckSite + Constants::crlf;
+		Util2::CheckValueTypeAndRangeMinMax(deckSite, hslInteger, Constants::lowerBoundOfSites, Constants::upperBoundOfSites, 
+							errorDesc + "deckSite");
+		Util2::CheckValueTypeAndRange(carrierName, hslString, Util2::ValueCheck::RangeStringNotEmpty,
+							errorDesc + "carrierName");
+
+		// Check instrument for which template-labware-names are stored in templateNamesArr and labwareNamesArr
+		if (ML_STAR.GetInstrumentName() != instrumentName)
+		{
+			Init(ML_STAR);
+		}
+
+		// Init output params 
+		labwareNames.SetSize(0);
+		templateSites.SetSize(0);
+
+		// Iterate of template names
+		if (0 < deckSite)
+		{
+			uniqueLabwareNamesDict.CreateObject("Scripting.Dictionary");
+			size = templateNamesArr.GetSize();
+			for (i = 0; i < size; i++)
+			{
+				if (deckSitesArr.ElementAt(i) - carrierWidthArr.ElementAt(i) + 1 <= deckSite && deckSite <= deckSitesArr.ElementAt(i))
+				{
+					templateName = templateNamesArr.ElementAt(i);
+					if (Constants::templateDefaultName == templateName && !templateNamesDict.Exists(labwareNamesArr.ElementAt(i)))
+					{
+						// Not really a template
+						templateName = labwareNamesArr.ElementAt(i);
+					}
+					if (templateName == carrierName)
+					{
+						labwareName = labwareNamesArr.ElementAt(i);
+						if (!uniqueLabwareNamesDict.Exists(labwareName))
+						{
+							labwareNames.AddAsLast(labwareName);
+							templateSites.AddAsLast(templateSitesArr.ElementAt(i));
+							uniqueLabwareNamesDict.Add(labwareName, 0);
+						}
+					}
+				}
+			}
+		}
+		return(labwareNames.GetSize());
+	}
+
+	function GetCarrierForLabware(
+		device& ML_STAR,
+		variable& labwareName,
+		variable& carrierName,
+		variable& deckSite,
+		variable& templateSite) variable
+	{
+		variable errorDesc("");														// Error description
+		variable templateName("");													// A template name
+
+		// Check input params to be valid.
+		errorDesc = Constants::traceActionGetCarrierForLabware + Constants::crlf;
+		Util2::CheckValueTypeAndRange(labwareName, hslString, Util2::ValueCheck::RangeStringNotEmpty,
+							errorDesc + "labwareName");
+
+		// Check instrument for which template-labware-names are stored in templateNamesArr and labwareNamesArr
+		if (ML_STAR.GetInstrumentName() != instrumentName)
+		{
+			Init(ML_STAR);
+		}
+
+		// Init output params 
+		carrierName = "";
+		deckSite = 0;
+		templateSite = "";
+
+		// Lookup labware name
+		if (labwareNamesDict.Exists(labwareName))
+		{
+			if (!templateNamesDict.Exists(labwareName))
+			{
+				variable i(0);
+
+				i = labwareNamesDict.Item(labwareName);
+
+				templateName = templateNamesArr.ElementAt(i);
+				if (Constants::templateDefaultName == templateName && !templateNamesDict.Exists(labwareNamesArr.ElementAt(i)))
+				{
+					// Not really a template
+					templateName = labwareNamesArr.ElementAt(i);
+				}
+				carrierName = templateName;
+				deckSite = deckSitesArr.ElementAt(i);
+				templateSite = templateSitesArr.ElementAt(i);
+				return(hslTrue);
+			}
+		}
+		return(hslFalse);
+	}
+
+	//>> 20061018 (Function VectorDb_Labware::IsLabwareLoadedByLabwareIdPositionId() does not work as expected in V4.1)
+	/*
+	function GetLoadedLabwareForCarrier(
+		device& ML_STAR,
+		variable& carrierName,
+		variable checkBarcode,
+		variable& labwareNames[],
+		variable& positionNames[]) variable
+	{
+		variable i(0);																	// Loop counter
+		variable size(0);																// Array size
+		variable errorDesc("");														// Error description
+		variable templateName("");													// A template name
+		variable labwareName("");													// A labware name
+		variable labwareBarcode("");												// A labware barcode
+		variable elementID(0);														// A labware ID (VectorDb)
+		variable deckID(0);															// A deck ID (VectorDb)
+		variable fieldDelimiter("");												// The field delimiter of the command associated to the device
+		object uniqueLabwareNamesDict;											// Helper dictionary to keep track of unique labware names
+
+		// Check input params to be valid.
+		errorDesc = Constants::traceActionGetLoadedLabwareForCarrier + Constants::crlf;
+		Util2::CheckValueTypeAndRange(carrierName, hslString, Util2::ValueCheck::RangeStringNotEmpty,
+							errorDesc + "carrierName");
+		Util2::CheckValueType(checkBarcode, hslInteger,
+							errorDesc + "checkBarcode");
+
+		// Check instrument for which template-labware-names are stored in templateNamesArr and labwareNamesArr
+		if (ML_STAR.GetInstrumentName() != instrumentName)
+		{
+			Init(ML_STAR);
+		}
+
+		// Init output params 
+		labwareNames.SetSize(0);
+		positionNames.SetSize(0);
+
+		// Get the field delimiter of the command associated to the device
+		fieldDelimiter = ML_STAR.GetCfgValueWithKey(MlStarCfgKey::wordSeparator);
+
+		// Get deck ID from VectorDb
+		deckID = VectorDb_Deck::GetDeckID(instrumentName);
+
+		// Iterate of template names
+		uniqueLabwareNamesDict.CreateObject("Scripting.Dictionary");
+		size = templateNamesArr.GetSize();
+		for (i = 0; i < size; i++)
+		{
+			templateName = templateNamesArr.ElementAt(i);
+			if (Constants::templateDefaultName == templateName && !templateNamesDict.Exists(labwareNamesArr.ElementAt(i)))
+			{
+				// Not really a template
+				templateName = labwareNamesArr.ElementAt(i);
+				if (templateName == carrierName)
+				{
+					labwareName = labwareNamesArr.ElementAt(i);
+					if (!uniqueLabwareNamesDict.Exists(labwareName))
+					{
+						variable p(0);								// Loop counter
+						variable positions("");					// Delimited positions string
+						variable positionName("");				// A position name
+						variable numberOfPositions(0);		// Number of poistions in delimited positions string
+						variable substrings[];					// Place to split delimited string in substrings
+
+						positions = positionNamesArr.ElementAt(i);
+						Split(positions, fieldDelimiter, substrings);
+						numberOfPositions = substrings.GetSize();
+						for (p = 0; p < numberOfPositions; p++)
+						{
+							// Check if labware is still loaded 
+							positionName = substrings.ElementAt(p);
+							elementID = VectorDb_Labware::IsLabwareLoadedByLabwareIdPositionId(deckID, labwareName, positionName);
+							if (0 < elementID)
+							{
+								// Labware is still loaded 
+
+								// Get labware barcode from VectorDb
+								labwareBarcode = VectorDb_Labware::GetLabwareBarcodeByElementID(elementID);
+
+								if (!checkBarcode || (checkBarcode && "" != labwareBarcode))
+								{
+									labwareNames.AddAsLast(labwareName);
+									positionNames.AddAsLast(positionName);
+								}
+							}
+						}
+						uniqueLabwareNamesDict.Add(labwareName, 0);
+					}
+				}
+			}
+			else
+			{
+				// A template
+				if (templateName == carrierName)
+				{
+					labwareName = labwareNamesArr.ElementAt(i);
+					if (!uniqueLabwareNamesDict.Exists(labwareName))
+					{
+						// Check if labware is still loaded 
+						elementID = VectorDb_Labware::IsLabwareLoadedByLabwareIdPositionId(deckID, labwareName, "");
+						if (0 < elementID)
+						{
+							// Labware is still loaded 
+
+							// Get labware barcode from VectorDb
+							labwareBarcode = VectorDb_Labware::GetLabwareBarcodeByElementID(elementID);
+
+							if (!checkBarcode || (checkBarcode && "" != labwareBarcode))
+							{
+								labwareNames.AddAsLast(labwareName);
+								positionNames.AddAsLast(templateSitesArr.ElementAt(i));
+								uniqueLabwareNamesDict.Add(labwareName, 0);
+							}
+						}
+					}
+				}
+			}
+		}
+		return(positionNames.GetSize());
+	}
+	*/
+	function GetLoadedLabwareForCarrier2(
+		device& ML_STAR,
+		variable& carrierName,
+		sequence& loadedSampleSequence,
+		variable checkBarcode,
+		variable& labwareNames[],
+		variable& positionNames[]) variable
+	{
+		variable i(0);																	// Loop counter
+		variable size(0);																// Array size
+		variable errorDesc("");														// Error description
+		variable templateName("");													// A template name
+		variable labwareName("");													// A labware name
+		variable labwareBarcode("");												// A labware barcode
+		variable elementID(0);														// A labware ID (VectorDb)
+		variable deckID(0);															// A deck ID (VectorDb)
+		variable fieldDelimiter("");												// The field delimiter of the command associated to the device
+		object uniqueLabwareNamesDict;											// Helper dictionary to keep track of unique labware names
+		object vectorDbTrackerObject;												// Vector Db Tracker Object
+
+		// Check input params to be valid.
+		errorDesc = Constants::traceActionGetLoadedLabwareForCarrier + Constants::crlf;
+		Util2::CheckValueTypeAndRange(carrierName, hslString, Util2::ValueCheck::RangeStringNotEmpty,
+							errorDesc + "carrierName");
+		Util2::CheckValueType(checkBarcode, hslInteger,
+							errorDesc + "checkBarcode");
+
+		// Check instrument for which template-labware-names are stored in templateNamesArr and labwareNamesArr
+		if (ML_STAR.GetInstrumentName() != instrumentName)
+		{
+			Init(ML_STAR);
+		}
+
+		// Init output params 
+		labwareNames.SetSize(0);
+		positionNames.SetSize(0);
+
+		// Get the field delimiter of the command associated to the device
+		fieldDelimiter = ML_STAR.GetCfgValueWithKey(MlStarCfgKey::wordSeparator);
+
+		// Get deck ID from VectorDb
+		deckID = VectorDb_Deck::GetDeckID(instrumentName);
+
+		// Get vector db tracker object
+		vectorDbTrackerObject = GetVectorDbTrackerObject();
+
+		// Iterate of template names
+		uniqueLabwareNamesDict.CreateObject("Scripting.Dictionary");
+		size = templateNamesArr.GetSize();
+		for (i = 0; i < size; i++)
+		{
+			templateName = templateNamesArr.ElementAt(i);
+			if (Constants::templateDefaultName == templateName && !templateNamesDict.Exists(labwareNamesArr.ElementAt(i)))
+			{
+				// Not really a template
+				templateName = labwareNamesArr.ElementAt(i);
+				if (templateName == carrierName)
+				{
+					labwareName = labwareNamesArr.ElementAt(i);
+					if (!uniqueLabwareNamesDict.Exists(labwareName))
+					{
+						variable p(0);								// Loop counter
+						variable positions("");					// Delimited positions string
+						variable positionName("");				// A position name
+						variable numberOfPositions(0);		// Number of poistions in delimited positions string
+						variable substrings[];					// Place to split delimited string in substrings
+
+						positions = positionNamesArr.ElementAt(i);
+						Split(positions, fieldDelimiter, substrings);
+						numberOfPositions = substrings.GetSize();
+						for (p = 0; p < numberOfPositions; p++)
+						{
+							// Check if labware is still loaded 
+							positionName = substrings.ElementAt(p);
+							if (0 != loadedSampleSequence.LookupPosition(labwareName, positionName, 1, hslTrue))
+							{
+								// Labware is still loaded 
+
+								// Get labware barcode from VectorDb
+								elementID = vectorDbTrackerObject.IsLabwareLoadedByLabwareIdPositionId(deckID, labwareName, positionName);
+								if (0 < elementID)
+								{
+									labwareBarcode = VectorDb_Labware::GetLabwareBarcodeByElementID(elementID);
+								}
+
+								if (!checkBarcode || (checkBarcode && "" != labwareBarcode))
+								{
+									labwareNames.AddAsLast(labwareName);
+									positionNames.AddAsLast(positionName);
+								}
+							}
+						}
+						uniqueLabwareNamesDict.Add(labwareName, 0);
+					}
+				}
+			}
+			else
+			{
+				// A template
+				if (templateName == carrierName)
+				{
+					labwareName = labwareNamesArr.ElementAt(i);
+					if (!uniqueLabwareNamesDict.Exists(labwareName))
+					{
+						// Check if labware is still loaded 
+						elementID = VectorDb_Labware::IsLabwareLoadedByLabwareId(deckID, labwareName);
+						if (0 < elementID)
+						{
+							// Labware is still loaded 
+
+							// Get labware barcode from VectorDb
+							labwareBarcode = VectorDb_Labware::GetLabwareBarcodeByElementID(elementID);
+
+							if (!checkBarcode || (checkBarcode && "" != labwareBarcode))
+							{
+								labwareNames.AddAsLast(labwareName);
+								positionNames.AddAsLast(templateSitesArr.ElementAt(i));
+								uniqueLabwareNamesDict.Add(labwareName, 0);
+							}
+						}
+					}
+				}
+			}
+		}
+		return(positionNames.GetSize());
+	}
+	//<< 20061018
+
+	function FormatPosition(
+		string& position, 
+		variable alphaWidth,
+		variable numWidth) variable
+	{
+		variable alpha("");
+		variable num("");
+		alpha = position.Mid(0, 1);
+		if (!StrIsDigit(alpha))
+		{
+			num = position.Mid(1, position.GetLength());
+			StrFillLeft(num, "0", alphaWidth);
+			position = StrConcat2(alpha, num);
+			position.MakeUpper();
+		}
+		else
+		{
+			StrFillLeft(position, "0", numWidth);
+		}
+		return(position);
+	}
+}
+
+#endif
+#endif
+// $$author=ContainerAdministrator$$valid=1$$time=2025-09-09 20:31$$checksum=bd81ab5a$$length=099$$

@@ -1,0 +1,2596 @@
+// This is a part of the Import Worklist Library.
+// Copyright (C) by HAMILTON Bonaduz AG, CH-7402 Bonaduz.
+// All rights reserved.
+//
+// Modification History
+// 2006-03-10  bandenmatten : Initial file creation.
+// 2006-08-22  bandenmatten : Added check whether we have something to import (0 < sourceColumnNames.GetSize()).
+// 2006-09-19  bandenmatten : Added parameter 'removeJobStateFilter' to functions ImportMdbWorklist(), ImportXlsWorklist(), ImportTxtWorklist().
+// 2006-09-20  bandenmatten : Added check whether Vector Database worklist management is enabled to functions ImportMdbWorklist(), ImportXlsWorklist(), ImportTxtWorklist().
+// 2012-03-20  ubernhard    : Within functions ImportMdbWorklist(), ImportXlsWorklist() and ImportTxtWorklist(), call InitHashTables() after RemoveAllJobs() [SCR#1524]
+// 2017-01-18  tmacias      : Added writing of column values to global arrays using HSLArrLib
+// 2017-10-25  tmacias      : Added ImportXlsWorklist2 and ImportTxtWorklist2 to support range by row and sql distict
+
+#ifndef __HSLImportWorklistImpl_hs___
+#define __HSLImportWorklistImpl_hs___	1
+
+// ----------------------------------------------------------------------------------------------------
+// Includes
+// ----------------------------------------------------------------------------------------------------
+
+#ifndef __HSLUtilLib2_hsl__
+	#include "HSLUtilLib2.hsl"
+#endif
+
+#ifndef __HSLUtilLib2Def_hs___
+	#include "HSLUtilLib2Def.hs_"
+#endif
+
+#ifndef __HSLUtilLib_hsl__
+	#include "HSLUtilLib.hsl"
+#endif
+
+#ifndef __HSLStrLib_hsl__
+	#include "HSLStrLib.hsl"
+#endif
+
+#ifndef  __HSLSynLib_hsl__
+	#include "HSLSynLib.hsl"
+#endif
+
+#ifndef __HSLVectorDbWorklistManagement_hsl__
+	#include "HSLVectorDbWorklistManagement.hsl"
+#endif
+
+#ifndef __HSLVectorDbWorklistManagementDefs_hs___
+	#include "HSLVectorDbWorklistManagementDefs.hs_"
+#endif
+
+#ifndef __HSLImportWorklistDefs_hs___
+	#include "HSLImportWorklistDefs.hs_"
+#endif
+
+#include "HSLArrLib.hsl"
+
+// Implementation of the Import Worklist Library
+namespace ImportWorklist
+{
+
+	// --------------------------------------------------------------------------------------
+	// Tracing
+	// --------------------------------------------------------------------------------------
+
+	#define TRACE_IMPORT_WORKLIST_FUNC			1								// Trace function start-end
+	//#define TRACE_IMPORT_WORKLIST_PARAM			1								// Trace function params
+	//#define TRACE_IMPORT_WORKLIST_CORE			1								// Trace function core
+
+	// ----------------------------------------------------------------------------------------------------
+	// Data 
+	// ----------------------------------------------------------------------------------------------------
+
+	// Specifies the value provided for the column when a value is not explicitly supplied during an import.
+	static global variable g_importWorklist_ColumnDefaultInteger(0);		// Default for custom columns of type integer
+	static global variable g_importWorklist_ColumnDefaultFloat(0.0);		// Default for custom columns of type float
+	static global variable g_importWorklist_ColumnDefaultString("");		// Default for custom columns of type string
+	static global variable g_importWorklist_CriticalSection(0);				// Critical section
+	static global variable g_importWorklist_DefaultJobName("");				// Default job name
+	static global variable g_importWorklist_Enabled(hslFalse);				// Indicates whether Vector Database worklist management is enabled
+
+	// ----------------------------------------------------------------------------------------------------
+	// Constants
+	// ----------------------------------------------------------------------------------------------------
+
+	namespace Constants
+	{
+		static const variable lf("\010");											// Linefeed
+		static const variable crlf("\013\010");									// Carriage return linefeed 
+		static const variable helpFileShortName("HSLImportWorklist");		// Help file short name
+		static const variable helpFileExtension(".chm");						// Help file extension
+		static const variable accessExtension(".mdb");							// Microsoft Access extension (LOWERCASE!)
+		static const variable excelExtension(".xls");							// Microsoft Excel extension (LOWERCASE!)
+      static const variable excelxExtension(".xlsx");							// Microsoft Excel extension (LOWERCASE!)
+		static const variable defaultJobNamePrefix("{");						// Prefix to mark default job name when used as a job name
+		static const variable defaultJobNamePostfix("}");						// Postfix to mark default job name when used as a job name
+	}
+
+	// ----------------------------------------------------------------------------------------------------
+	// Translated strings
+	// ----------------------------------------------------------------------------------------------------
+
+	namespace TrStr
+	{
+			static const variable expected							(Translate("Expected : "));
+			static const variable found								(Translate("Found : "));
+		
+			static const variable traceSource(Translate("Data Handling Steps"));									// Trace source
+			static const variable traceActionImportWorklist(Translate("Import Worklist"));					// Trace action
+			static const variable traceActionSetColumnDefault(Translate("Set Column Default"));				// Trace action
+			static const variable traceActionGetColumnDefault(Translate("Get Column Default"));				// Trace action
+	}
+
+	// ----------------------------------------------------------------------------------------------------
+	// Traceing
+	// ----------------------------------------------------------------------------------------------------
+
+	namespace TraceStatus
+	{
+		static const variable start(1);								// Action status for formated trace
+		static const variable complete(2);							// Action status for formated trace
+		static const variable error_(3);								// Action status for formated trace
+		static const variable progress(4);							// Action status for formated trace
+		static const variable completeWithError(5);				// Action status for formated trace
+	}
+
+	// ----------------------------------------------------------------------------------------------------
+	// Error handling
+	// ----------------------------------------------------------------------------------------------------
+
+	namespace Error
+	{
+		static const variable majorID(0x4E);						// Major error id
+
+		namespace MinorID													// Minor error ids
+		{
+			static const variable generalRuntimeError(0x0A);
+			//static const variable ....(0x1F)
+		}
+
+		namespace ErrorCode												// Error codes
+		{
+			static const variable unexpected							(0x0001);
+			static const variable invalidParameter					(0x0002);
+			static const variable fileNotFound						(0x0003);
+			static const variable unableToOpenFile					(0x0004);
+			static const variable failedToImportJob				(0x0005);
+			static const variable missingTypeForCustomColumn	(0x0006);
+			static const variable targetColumnAlreadyAssigned	(0x0007);
+			static const variable wrongFileFormat					(0x0008);
+			static const variable arraysMustHaveSameSize			(0x0009);
+			static const variable importWorklistDisabled			(0x000A);
+
+			//static const variable ....(0xFFFF)					// If a new ErrorCode is added, function Error::MakeErrorDescription() has to be updated
+		}
+
+		namespace TrStr													// Translated error strings
+		{
+			static const variable unexpected							(Translate("Unexpected error."));
+			static const variable invalidParameter					(Translate("The parameter is invalid:"));
+			static const variable fileNotFound						(Translate("The specified file was not found."));
+			static const variable unableToOpenFile					(Translate("The specified file could not be opened."));
+			static const variable failedToImportJob				(Translate("The specified job could not be imported."));
+			static const variable missingTypeForCustomColumn	(Translate("The specified custom column has no associated type."));
+			static const variable targetColumnAlreadyAssigned	(Translate("The specified target column has already been assigned to a source column."));
+			static const variable wrongFileFormat					(Translate("The specified file has a wrong format."));
+			static const variable arraysMustHaveSameSize			(Translate("The specified arrays must have the same size."));
+			static const variable importWorklistDisabled			(Translate("The Vector Database worklist management is disabled."));
+			static const variable noErrorTextAvailable			(Translate("No error description available."));
+		}
+
+		// ----------------------------------------------------------------------------------------------------
+		// Error functions
+		// ----------------------------------------------------------------------------------------------------
+
+		static function MakeErrorDescription(
+			variable errorCode,
+			variable& additionalDescription) variable
+		{
+			variable description("");
+			variable errorNumber(0);
+
+			if (ErrorCode::unexpected == errorCode)
+				description = TrStr::unexpected;
+			else if (ErrorCode::invalidParameter == errorCode)
+				description = TrStr::invalidParameter;
+			else if (ErrorCode::fileNotFound == errorCode)
+				description = TrStr::fileNotFound;
+			else if (ErrorCode::unableToOpenFile == errorCode)
+				description = TrStr::unableToOpenFile;
+			else if (ErrorCode::failedToImportJob == errorCode)
+				description = TrStr::failedToImportJob;
+			else if (ErrorCode::missingTypeForCustomColumn == errorCode)
+				description = TrStr::missingTypeForCustomColumn;
+			else if (ErrorCode::targetColumnAlreadyAssigned == errorCode)
+				description = TrStr::targetColumnAlreadyAssigned;
+			else if (ErrorCode::wrongFileFormat == errorCode)
+				description = TrStr::wrongFileFormat;
+			else if (ErrorCode::arraysMustHaveSameSize == errorCode)
+				description = TrStr::arraysMustHaveSameSize;
+			else if (ErrorCode::importWorklistDisabled == errorCode)
+				description = TrStr::importWorklistDisabled;
+			//...		
+			//...
+			//... 
+			//...
+			//...
+			else
+			{
+				description = TrStr::noErrorTextAvailable;
+			}
+
+			// Generate the full description
+			if (additionalDescription != "")
+			{
+				description = description + Constants::crlf + Constants::crlf + additionalDescription;
+			}
+			return(description);
+		}
+
+		static function MakeErrorDescriptionFailedToImportJob(
+			variable& sourceColumnNames[],
+			variable& sourceColumnValues[],
+			variable& targetCustomColumnNames[],
+			variable& targetCustomColumnValues[]) variable
+		{
+			variable i(0);											// Loop index
+			variable size(0);										// Array size
+			variable errorDesc("");								// Error description
+
+			size = Util::Min(sourceColumnNames.GetSize(), sourceColumnValues.GetSize());
+			for (i = 0; i < size; i++)
+			{
+				if ("" != errorDesc)
+					errorDesc = errorDesc + Constants::crlf;
+				errorDesc = errorDesc + sourceColumnNames.ElementAt(i) + " = " + Util2::ToString(sourceColumnValues.ElementAt(i));
+			}
+
+			size = Util::Min(targetCustomColumnNames.GetSize(), targetCustomColumnValues.GetSize());
+			for (i = 0; i < size; i++)
+			{
+				if ("" != errorDesc)
+					errorDesc = errorDesc + Constants::crlf;
+				errorDesc = errorDesc + targetCustomColumnNames.ElementAt(i) + " = " + Util2::ToString(targetCustomColumnValues.ElementAt(i));
+			}
+			return(errorDesc);
+		}
+	}
+
+	// ----------------------------------------------------------------------------------------------------
+	// Utility functions
+	// ----------------------------------------------------------------------------------------------------
+
+	static function GetHelpFileName() variable		// Builds the library help file name
+	{
+		return(Constants::helpFileShortName + GetLanguage() + Constants::helpFileExtension);
+	}
+
+	static global function ImportWorklist_InitCriticalSection() void
+	{
+		if (0 == g_importWorklist_CriticalSection)
+		{
+			g_importWorklist_CriticalSection = SynInitializeCriticalSection();
+			if (0 == g_importWorklist_CriticalSection)
+			{
+				Util2::Error::RaiseRuntimeError(Error::majorID, Error::MinorID::generalRuntimeError, Error::ErrorCode::unexpected,
+												Error::MakeErrorDescription(Error::ErrorCode::unexpected, ""), 
+												GetHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+			}
+
+			#ifdef TRACE_IMPORT_WORKLIST_CORE
+			FormatTrace("DEBUG", GetFunctionName(), TraceStatus::progress, "Initialized critical section object, id = ", g_importWorklist_CriticalSection);
+			#endif
+		}
+	}
+
+	static function InitLibrary() void			// Library initialization function
+	{
+		variable methodFileName("");
+
+		// Initialize critical section object 
+		ImportWorklist_InitCriticalSection();
+
+		// Activate error handler
+		onerror goto Unexpected;
+
+		// Lock critical section
+		SynEnterCriticalSection(g_importWorklist_CriticalSection);
+
+		// Init 
+		if ("" == g_importWorklist_DefaultJobName)
+		{
+			object vectorDbTrackingObject;
+			object tableSchemaPars;
+			variable columnSize(50);
+
+			vectorDbTrackingObject = GetVectorDbTrackerObject();
+			tableSchemaPars = vectorDbTrackingObject.GetTableSchema(vectorDbTrackingObject.HxVectorDbTable_Job);
+			columnSize = tableSchemaPars.Item2(vectorDbTrackingObject.HxVectorDbParsKey_Job_JobName, vectorDbTrackingObject.HxVectorDbParsKey_TableSchema_ColumnSize);
+			columnSize = columnSize - StrGetLength(Constants::defaultJobNamePrefix) - StrGetLength(Constants::defaultJobNamePostfix);
+
+			methodFileName = GetMethodFileName();
+			if ("" == methodFileName)
+			{
+				methodFileName = GetWorkflowFileName();
+			}
+			StrMakeLower(methodFileName);
+			methodFileName = StrRight(methodFileName, columnSize);
+			g_importWorklist_DefaultJobName = Constants::defaultJobNamePrefix + methodFileName + Constants::defaultJobNamePostfix;
+			g_importWorklist_Enabled = VectorDb::WorklistManagementEnabled();
+		}
+
+		// Unlock critical section
+		SynLeaveCriticalSection(g_importWorklist_CriticalSection);
+
+		return;
+
+		Unexpected:
+		{
+			// Unlock critical section
+			if (0 != g_importWorklist_CriticalSection)
+				SynLeaveCriticalSection(g_importWorklist_CriticalSection);
+
+			// Re-throw the error 
+			Util2::Error::RaiseLast();
+		}
+	} 
+
+	static function CheckColumnMapping(					// Checks the column mapping to be valid
+		variable& sourceColumnNames[],
+		variable& sourceColumnTypes[],
+		variable& targetColumnNames[],
+		variable firstRowContainsColumnHeaders) void
+	{
+		variable i(0);											// Loop index
+		variable size(0);										// Array size
+		variable errorDesc("");								// Error description
+
+		if (sourceColumnNames.GetSize() != sourceColumnTypes.GetSize() ||
+			sourceColumnNames.GetSize() != targetColumnNames.GetSize())
+		{
+			errorDesc = "sourceColumnNames" + Constants::crlf + "sourceColumnTypes" + Constants::crlf + "targetColumnNames" + Constants::crlf;
+			Util2::Error::RaiseRuntimeError(Error::majorID, Error::MinorID::generalRuntimeError, Error::ErrorCode::arraysMustHaveSameSize,
+											Error::MakeErrorDescription(Error::ErrorCode::arraysMustHaveSameSize, errorDesc), 
+											GetHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+
+		size = Util::Min(sourceColumnNames.GetSize(), targetColumnNames.GetSize());
+		for (i = 0; i < size; i++)
+		{
+			if (Util::IsString(sourceColumnNames.ElementAt(i)))
+			{
+				Util2::CheckValueTypeAndRange(sourceColumnNames.ElementAt(i), hslString, Util2::ValueCheck::RangeStringNotEmpty, 
+									errorDesc + "sourceColumnNames[" + IStr(i) + "]");
+			}
+			else if (Util::IsInteger(sourceColumnNames.ElementAt(i)))
+			{
+				Util2::CheckValueTypeAndRange(sourceColumnNames.ElementAt(i), hslInteger, Util2::ValueCheck::RangeNumberGreaterThanZero, 
+									errorDesc + "sourceColumnNames[" + IStr(i) + "]");
+			}
+			else if (Util::IsFloat(sourceColumnNames.ElementAt(i)))
+			{
+				Util2::CheckValueType(sourceColumnNames.ElementAt(i), hslInteger, 
+									errorDesc + "sourceColumnNames[" + IStr(i) + "]");
+			}
+
+			Util2::CheckValueTypeAndRangeMinMax(sourceColumnTypes.ElementAt(i), hslInteger, ImportWorklist_ColumnType::Standard, ImportWorklist_ColumnType::String, 
+								errorDesc + "sourceColumnTypes[" + IStr(i) + "]");
+
+			Util2::CheckValueTypeAndRange(targetColumnNames.ElementAt(i), hslString, Util2::ValueCheck::RangeStringNotEmpty, 
+								errorDesc + "targetColumnNames[" + IStr(i) + "]");
+		}
+	}
+
+	static function CheckFileFormat(						// Check file format to be valid
+		variable& fileName, 
+		variable& fileFormat) 
+	{
+		variable extension("");
+
+		StrTrimRight(fileName, "");
+		extension = StrRight(fileName, StrGetLength(fileFormat));
+		StrMakeLower(extension);
+		if (extension != fileFormat)
+		{
+			variable errorDesc("");								// Error description
+
+			errorDesc = TrStr::expected + fileFormat + Constants::crlf + TrStr::found + extension;
+			Util2::Error::RaiseRuntimeError(Error::majorID, Error::MinorID::generalRuntimeError, Error::ErrorCode::wrongFileFormat,
+											Error::MakeErrorDescription(Error::ErrorCode::wrongFileFormat, errorDesc), 
+											GetHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+	}
+
+	static function PathFindFileName(					// Searches a path for a file name
+		variable& fileName) variable
+	{
+		variable pathFileName("");
+
+		pathFileName = SearchPath(fileName);
+		if ("" == pathFileName)
+		{
+			Util2::Error::RaiseRuntimeError(Error::majorID, Error::MinorID::generalRuntimeError, Error::ErrorCode::fileNotFound,
+											Error::MakeErrorDescription(Error::ErrorCode::fileNotFound, fileName), 
+											GetHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+		return(pathFileName);
+	}
+
+	static function SourceColumnTypeToHSLTyp(		// Returns an HSL type (hslInteger, hslFloat, hslString) given a ImportWorklist_ColumnType value
+		variable& sourceColumnName, 
+		variable& sourceColumnType, 
+		variable& targetColumnName, 
+		object targetColumnTypeMap) variable
+	{
+		variable hslType("");
+
+		if(ImportWorklist_ColumnType::Standard == sourceColumnType)
+		{
+			if (targetColumnTypeMap.Exists(targetColumnName))
+			{
+				hslType = targetColumnTypeMap.Item(targetColumnName);
+			}
+			else
+			{
+				// Missing type for custom column
+				Util2::Error::RaiseRuntimeError(Error::majorID, Error::MinorID::generalRuntimeError, Error::ErrorCode::missingTypeForCustomColumn,
+												Error::MakeErrorDescription(Error::ErrorCode::missingTypeForCustomColumn, sourceColumnName), 
+												GetHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+			}
+		}
+		else if(ImportWorklist_ColumnType::Integer == sourceColumnType)
+		{
+			hslType = hslInteger;
+		}
+		else if(ImportWorklist_ColumnType::Float == sourceColumnType)
+		{
+			hslType = hslFloat;
+		}
+		else if(ImportWorklist_ColumnType::String == sourceColumnType)
+		{
+			hslType = hslString;
+		}
+		return(hslType);
+	}
+
+	static function IsDBNull(							// Returns a value indicating whether the specified variable contains a null value.
+		variable& value) variable
+	{
+		return("" == GetType(value));
+	}
+
+	static function InitHashTables(					// Initializes the given hash tables
+		variable importMode,								// [in]
+		variable& sourceColumnTypes[],				// [in]
+		variable& targetColumnNames[], 				// [in]
+		variable& targetCustomColumnNames[],  		// [out]
+		object& targetColumnTypeMap,  				// [out]
+		object& targetColumnIndexMap,					// [out]
+		object& jobMap) void								// [out]
+	{
+		variable i(0);										// Loop index
+		variable size(0);									// Array size
+		variable errorDesc("");							// Error description
+		variable targetColumnName("");				// A target column name 
+
+		targetColumnTypeMap.Add(VectorDb_WorklistColumnName::jobName, hslString);
+		targetColumnTypeMap.Add(VectorDb_WorklistColumnName::jobPriority, hslInteger);
+		targetColumnTypeMap.Add(VectorDb_WorklistColumnName::jobState, hslInteger);
+		targetColumnTypeMap.Add(VectorDb_WorklistColumnName::jobUserState, hslInteger);
+		targetColumnTypeMap.Add(VectorDb_WorklistColumnName::sourceBarcode, hslString);
+		targetColumnTypeMap.Add(VectorDb_WorklistColumnName::sourceLabwareId, hslString);
+		targetColumnTypeMap.Add(VectorDb_WorklistColumnName::sourcePositionId, hslString);
+		targetColumnTypeMap.Add(VectorDb_WorklistColumnName::sourceRequired, hslInteger);
+		targetColumnTypeMap.Add(VectorDb_WorklistColumnName::targetBarcode, hslString);
+		targetColumnTypeMap.Add(VectorDb_WorklistColumnName::targetLabwareId, hslString);
+		targetColumnTypeMap.Add(VectorDb_WorklistColumnName::targetPositionId, hslString);
+		targetColumnTypeMap.Add(VectorDb_WorklistColumnName::targetVolume, hslFloat);
+
+		size = Util::Min(sourceColumnTypes.GetSize(), targetColumnNames.GetSize());
+		for (i = 0; i < size; i++)
+		{
+			targetColumnName = targetColumnNames.ElementAt(i);
+
+			if (	VectorDb_WorklistColumnName::jobName == targetColumnName 				|| 
+					VectorDb_WorklistColumnName::jobPriority == targetColumnName 			|| 
+					VectorDb_WorklistColumnName::jobState == targetColumnName 				|| 
+					VectorDb_WorklistColumnName::jobUserState == targetColumnName 			|| 
+					VectorDb_WorklistColumnName::sourceBarcode == targetColumnName 		|| 
+					VectorDb_WorklistColumnName::sourceLabwareId == targetColumnName 		|| 
+					VectorDb_WorklistColumnName::sourcePositionId == targetColumnName 	|| 
+					VectorDb_WorklistColumnName::sourceRequired == targetColumnName 		|| 
+					VectorDb_WorklistColumnName::targetBarcode == targetColumnName 		|| 
+					VectorDb_WorklistColumnName::targetLabwareId == targetColumnName 		|| 
+					VectorDb_WorklistColumnName::targetPositionId == targetColumnName 	|| 
+					VectorDb_WorklistColumnName::targetVolume == targetColumnName)
+			{
+				// A Vector Database standard column
+				if (!targetColumnIndexMap.Exists(targetColumnName))
+				{
+					targetColumnIndexMap.Add(targetColumnName, i);
+
+					// Source column type must have value 'Standard' for standard columns
+					Util2::CheckValueTypeAndRangeMinMax(sourceColumnTypes.ElementAt(i), hslInteger, ImportWorklist_ColumnType::Standard, ImportWorklist_ColumnType::Standard, 
+										errorDesc + "sourceColumnTypes[" + IStr(i) + "]");
+				}
+				else
+				{
+					// Target column has already been assigned to a source column
+					Util2::Error::RaiseRuntimeError(Error::majorID, Error::MinorID::generalRuntimeError, Error::ErrorCode::targetColumnAlreadyAssigned,
+													Error::MakeErrorDescription(Error::ErrorCode::targetColumnAlreadyAssigned, targetColumnName), 
+													GetHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+				}
+			}
+			else
+			{
+				// A Vector Database custom column
+				if (!targetColumnIndexMap.Exists(targetColumnName))
+				{
+					targetColumnIndexMap.Add(targetColumnName, i);
+					targetCustomColumnNames.AddAsLast(targetColumnName);
+				}
+				else
+				{
+					// Target column has already been assigned to a source column
+					Util2::Error::RaiseRuntimeError(Error::majorID, Error::MinorID::generalRuntimeError, Error::ErrorCode::targetColumnAlreadyAssigned,
+													Error::MakeErrorDescription(Error::ErrorCode::targetColumnAlreadyAssigned, targetColumnName), 
+													GetHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+				}
+			}
+		}
+
+		// Import only records, that have not yet been imported into the Vector database
+		if (1 == importMode)
+		{
+			variable key("");
+			variable numberOfJobs(0);
+			variable jobName("");
+			variable sourceBarcode("");
+			variable sourceLabwareId("");
+			variable sourcePositionId("");
+			variable jobStateFilter(VectorDb_JobState::Filter_Any);
+
+			variable jobIDs[];
+			variable jobNames[];
+			variable jobPriorities[];
+			variable jobStates[];
+			variable jobUserStates[];
+			variable sourceLabwareIDs[];
+			variable sourceBarcodes[];
+			variable sourceLabwareIds[];
+			variable sourcePositionIds[];
+			variable sourceRequiredFlags[];
+			variable targetLabwareIDs[];
+			variable targetBarcodes[];
+			variable targetLabwareIds[];
+			variable targetPositionIds[];
+			variable targetVolumes[];
+
+			numberOfJobs = VectorDb::GetJobs(jobStateFilter,
+														jobIDs,jobNames,jobPriorities,jobStates,jobUserStates,
+														sourceLabwareIDs,sourceBarcodes,sourceLabwareIds,sourcePositionIds,sourceRequiredFlags,
+														targetLabwareIDs,targetBarcodes,targetLabwareIds,targetPositionIds,targetVolumes);
+			for (i = 0; i < numberOfJobs; i++)
+			{
+				jobName = jobNames.ElementAt(i);
+				sourceBarcode = sourceBarcodes.ElementAt(i);
+				sourceLabwareId = sourceLabwareIds.ElementAt(i);
+				sourcePositionId = sourcePositionIds.ElementAt(i);
+
+				// Check for DB null values
+				if (IsDBNull(jobName) || 0 == StrGetLength(jobName))
+					jobName = g_importWorklist_DefaultJobName;
+				if (IsDBNull(sourceBarcode))
+					sourceBarcode = "";
+				if (IsDBNull(sourceLabwareId))
+					sourceLabwareId = "";
+				if (IsDBNull(sourcePositionId))
+					sourcePositionId = "";
+
+				key = jobName + "_" + sourceBarcode + "_" + sourceLabwareId + "_" + sourcePositionId;
+				if (!jobMap.Exists(key))
+				{
+					jobMap.Add(key, 0);
+				}
+			}
+		}
+	}
+
+	static function UpdateHashTable(						// Updates the job hash table
+		variable importMode,								// [in]
+		variable& jobName,   							// [in]
+		variable& sourceBarcode,    					// [in]
+		variable& sourceLabwareId,    				// [in]
+		variable& sourcePositionId,					// [in]
+		object& jobMap) void								// [in]
+	{
+
+		// Import only records, that have not yet been imported into the Vector database
+		if (1 == importMode)
+		{
+			variable key("");
+
+			key = jobName + "_" + sourceBarcode + "_" + sourceLabwareId + "_" + sourcePositionId;
+			if (!jobMap.Exists(key))
+			{
+				jobMap.Add(key, 0);
+			}
+		}
+	}
+
+	static function InitJobData(						// Initializes the job data
+		variable importMode,								// [in]
+		object& jobMap,   								// [in]
+		variable& sourceColumnTypes[],   			// [in]
+		variable& sourceColumnValues[],   			// [in]
+		object& targetColumnIndexMap,   				// [in]
+		variable& targetCustomColumnNames[],  		// [in]
+		variable& targetCustomColumnValues[],  	// [out]
+		variable& jobName,   							// [out]
+		variable& jobState,    							// [out]
+		variable& jobUserState,    					// [out]
+		variable& jobPriority,    						// [out]
+		variable& sourceBarcode,    					// [out]
+		variable& sourceLabwareId,    				// [out]
+		variable& sourcePositionId,    				// [out]
+		variable& sourceRequired,    					// [out]
+		variable& targetBarcode,    					// [out]
+		variable& targetLabwareId,    				// [out]
+		variable& targetPositionId,    				// [out]
+		variable& targetVolume) variable   			// [out]
+	{
+		variable i(0);										// Loop index
+		variable size(0);									// Array size
+		variable sourceColumnValue(0);				// A source column value
+		variable sourceColumnType(0);					// A source column type
+		variable targetCustomColumnName(""); 		// A target custom column name
+
+		variable columnDefaultInteger(0); 			// Default value for a column of type integer
+		variable columnDefaultFloat(0); 				// Default value for a column of type float
+		variable columnDefaultString(0); 			// Default value for a column of type string
+
+		// Init local varaibles with the default values provided for a column when a value is not explicitly supplied during an import.
+		SynEnterCriticalSection(g_importWorklist_CriticalSection);
+		columnDefaultInteger = g_importWorklist_ColumnDefaultInteger;
+		columnDefaultFloat = g_importWorklist_ColumnDefaultFloat;
+		columnDefaultString = g_importWorklist_ColumnDefaultString;
+		SynLeaveCriticalSection(g_importWorklist_CriticalSection);
+
+		// Init output params
+		targetCustomColumnValues.SetSize(0);
+		jobName = "";
+		jobState = VectorDb_JobState::Unprocessed;
+		jobUserState = 0;
+		jobPriority = 0;
+		sourceBarcode = "";
+		sourceLabwareId = "";
+		sourcePositionId = "";
+		sourceRequired = 0;
+		targetBarcode = "";
+		targetLabwareId = "";
+		targetPositionId = "";
+		targetVolume = 0.0;
+
+		// Extract job data
+		if (targetColumnIndexMap.Exists(VectorDb_WorklistColumnName::jobName))
+		{
+			jobName = sourceColumnValues.ElementAt(targetColumnIndexMap.Item(VectorDb_WorklistColumnName::jobName));
+		}
+		if (targetColumnIndexMap.Exists(VectorDb_WorklistColumnName::jobState))
+		{
+			jobState = sourceColumnValues.ElementAt(targetColumnIndexMap.Item(VectorDb_WorklistColumnName::jobState));
+		}
+		if (targetColumnIndexMap.Exists(VectorDb_WorklistColumnName::jobUserState))
+		{
+			jobUserState = sourceColumnValues.ElementAt(targetColumnIndexMap.Item(VectorDb_WorklistColumnName::jobUserState));
+		}
+		if (targetColumnIndexMap.Exists(VectorDb_WorklistColumnName::jobPriority))
+		{
+			jobPriority = sourceColumnValues.ElementAt(targetColumnIndexMap.Item(VectorDb_WorklistColumnName::jobPriority));
+		}
+		if (targetColumnIndexMap.Exists(VectorDb_WorklistColumnName::sourceBarcode))
+		{
+			sourceBarcode = sourceColumnValues.ElementAt(targetColumnIndexMap.Item(VectorDb_WorklistColumnName::sourceBarcode));
+		}
+		if (targetColumnIndexMap.Exists(VectorDb_WorklistColumnName::sourceLabwareId))
+		{
+			sourceLabwareId = sourceColumnValues.ElementAt(targetColumnIndexMap.Item(VectorDb_WorklistColumnName::sourceLabwareId));
+		}
+		if (targetColumnIndexMap.Exists(VectorDb_WorklistColumnName::sourcePositionId))
+		{
+			sourcePositionId = sourceColumnValues.ElementAt(targetColumnIndexMap.Item(VectorDb_WorklistColumnName::sourcePositionId));
+		}
+		if (targetColumnIndexMap.Exists(VectorDb_WorklistColumnName::sourceRequired))
+		{
+			sourceRequired = sourceColumnValues.ElementAt(targetColumnIndexMap.Item(VectorDb_WorklistColumnName::sourceRequired));
+		}
+		if (targetColumnIndexMap.Exists(VectorDb_WorklistColumnName::targetBarcode))
+		{
+			targetBarcode = sourceColumnValues.ElementAt(targetColumnIndexMap.Item(VectorDb_WorklistColumnName::targetBarcode));
+		}
+		if (targetColumnIndexMap.Exists(VectorDb_WorklistColumnName::targetLabwareId))
+		{
+			targetLabwareId = sourceColumnValues.ElementAt(targetColumnIndexMap.Item(VectorDb_WorklistColumnName::targetLabwareId));
+		}
+		if (targetColumnIndexMap.Exists(VectorDb_WorklistColumnName::targetPositionId))
+		{
+			targetPositionId = sourceColumnValues.ElementAt(targetColumnIndexMap.Item(VectorDb_WorklistColumnName::targetPositionId));
+		}
+		if (targetColumnIndexMap.Exists(VectorDb_WorklistColumnName::targetVolume))
+		{
+			targetVolume = sourceColumnValues.ElementAt(targetColumnIndexMap.Item(VectorDb_WorklistColumnName::targetVolume));
+		}
+
+		size = targetCustomColumnNames.GetSize();
+		for (i = 0; i < size; i++)
+		{
+			targetCustomColumnName = targetCustomColumnNames.ElementAt(i);
+			if (targetColumnIndexMap.Exists(targetCustomColumnName))
+			{
+				// Check for DB null values
+				sourceColumnValue = sourceColumnValues.ElementAt(targetColumnIndexMap.Item(targetCustomColumnName));
+				if (IsDBNull(sourceColumnValue))
+				{
+					sourceColumnType = sourceColumnTypes.ElementAt(targetColumnIndexMap.Item(targetCustomColumnName));
+					if(ImportWorklist_ColumnType::Integer == sourceColumnType)
+					{
+						sourceColumnValue = columnDefaultInteger;
+					}
+					else if(ImportWorklist_ColumnType::Float == sourceColumnType)
+					{
+						sourceColumnValue = columnDefaultFloat;
+					}
+					else if(ImportWorklist_ColumnType::String == sourceColumnType)
+					{
+						sourceColumnValue = columnDefaultString;
+					}
+				}
+				targetCustomColumnValues.AddAsLast(sourceColumnValue);
+			}
+		}
+
+		// Check for DB null values
+		if (IsDBNull(jobName) || 0 == StrGetLength(jobName))
+		{
+			jobName = g_importWorklist_DefaultJobName;
+		}
+		if (IsDBNull(jobState))
+		{
+			jobState = VectorDb_JobState::Unprocessed;
+		}
+		if (IsDBNull(jobUserState))
+		{
+			jobUserState = 0;
+		}
+		if (IsDBNull(jobPriority))
+		{
+			jobPriority = 0;
+		}
+		if (IsDBNull(sourceBarcode))
+		{
+			sourceBarcode = columnDefaultString;
+		}
+		if (IsDBNull(sourceLabwareId))
+		{
+			sourceLabwareId = columnDefaultString;
+		}
+		if (IsDBNull(sourcePositionId))
+		{
+			sourcePositionId = columnDefaultString;
+		}
+		if (IsDBNull(sourceRequired))
+		{
+			sourceRequired = 0;
+		}
+		if (IsDBNull(targetBarcode))
+		{
+			targetBarcode = columnDefaultString;
+		}
+		if (IsDBNull(targetLabwareId))
+		{
+			targetLabwareId = columnDefaultString;
+		}
+		if (IsDBNull(targetPositionId))
+		{
+			targetPositionId = columnDefaultString;
+		}
+		if (IsDBNull(targetVolume))
+		{
+			targetVolume = 0.0;
+		}
+
+		// Check job data to be valid ?
+
+
+		// Import only records, that have not yet been imported into the Vector database
+		if (1 == importMode)
+		{
+			variable key("");
+
+			key = jobName + "_" + sourceBarcode + "_" + sourceLabwareId + "_" + sourcePositionId;
+			if (jobMap.Exists(key))
+			{
+				return(hslFalse);
+			}
+		}
+		return(hslTrue);
+	}
+
+	static function ToXlsSheetName(						// Adds a $ character at the end of the sheet name (if necessary)
+		variable& sheetName) variable
+	{
+		string tmpSheetName;
+
+		tmpSheetName = sheetName;
+		if ("$" != tmpSheetName.Right(1))
+			tmpSheetName = tmpSheetName + "$";
+		return(tmpSheetName);
+	}
+
+	static function BuildSqlCommandStringForMdb(		// Builds an SQL command string to restrict and/or sort the result set returned from the Microsoft Access worklist
+		variable& tableName, 
+		variable& searchCondition, 
+		variable& orderByExpression) variable
+
+	{
+		variable sqlCommandStr("");
+
+		sqlCommandStr = "select * from [" + tableName + "]";
+
+		if ("" != searchCondition)
+		{
+			sqlCommandStr = sqlCommandStr + " where " + searchCondition;
+		}
+
+		if ("" != orderByExpression)
+		{
+			sqlCommandStr = sqlCommandStr + " order by " + orderByExpression;
+		}
+		return(sqlCommandStr);
+	}
+
+	static function BuildSqlCommandStringForXls(		// Builds an SQL command string to restrict and/or sort the result set returned from the Microsoft Excel worklist
+		variable& sheetName, 
+		variable& searchCondition, 
+		variable& orderByExpression,
+		variable& importRange) variable
+
+	{
+		variable sqlCommandStr("");
+
+		if ("" == importRange)
+		{
+			sqlCommandStr = "select * from [" + sheetName + "]";
+		}
+		else
+		{
+			// Range defined by an absolute address, e.g. "D5:R1000"
+			// Sheet name must not be the name of a named range -> add a $ character at the end of the sheet name (if necessary)
+			sqlCommandStr = "select * from [" + ToXlsSheetName(sheetName) + importRange + "]";
+		}
+
+		if ("" != searchCondition)
+		{
+			sqlCommandStr = sqlCommandStr + " where " + searchCondition;
+		}
+
+		if ("" != orderByExpression)
+		{
+			sqlCommandStr = sqlCommandStr + " order by " + orderByExpression;
+		}
+		return(sqlCommandStr);
+	}
+
+   	static function BuildDistinctSqlCommandStringForXls(		// Builds an SQL command string to restrict and/or sort the result set returned from the Microsoft Excel worklist
+		variable& sheetName, 
+		variable& searchCondition, 
+		variable& orderByExpression,
+		variable& columnNames[]) variable
+
+	{
+		variable sqlCommandStr("");
+      variable size;
+      variable columnName;
+      variable i;
+      string s;
+
+      size = columnNames.GetSize();
+      sqlCommandStr = "select DISTINCT * FROM (SELECT * from [" + sheetName + "])";
+			
+
+		if ("" != searchCondition)
+		{
+			sqlCommandStr = sqlCommandStr + " where " + searchCondition;
+		}
+
+		if ("" != orderByExpression)
+		{
+			sqlCommandStr = sqlCommandStr + " order by " + orderByExpression;
+		}
+		return(sqlCommandStr);
+	}
+
+	// See VBScript 'Split' function.
+	static function Split(variable& str, variable& delimiter, variable& substrings[]) void
+	{
+		object scriptControl;
+
+		scriptControl.CreateObject("MSScriptControl.ScriptControl");
+		scriptControl.Language = "VBScript";
+
+		substrings.SetSize(0);
+		substrings = scriptControl.Eval("Split(\"" + str + "\", \"" + delimiter + "\")");
+	}
+
+	// Break a data source name into components (path name, file name, file extension, table name).  
+	static function SplitPath(
+		variable& dataSource, 			// [in] Full path and file name
+		variable& pth, 					// [out] Path name (string), e.g. "C:\Phoenix\SW\HxVectorDb\test\LibraryTest\"
+		variable& fil,  					// [out] File short name (string), e.g. "ImportWorklistFromCsv_1.csv"
+		variable& ext, 					// [out] File extension (string), e.g. "csv"
+		variable& tab) 					// [out] Table name (string), e.g. "ImportWorklistFromCsv_1.csv"
+	{
+		string pathName;
+		string fileName;
+		string extension;
+		string path;
+		string table;
+		string str;
+		variable length;
+		variable offset;
+		variable index;
+
+		pth = fil = ext = tab = "";
+		pathName = dataSource;
+		length = pathName.GetLength();
+		index = StrReverseFind(pathName, "\\");
+		path = pathName.Mid(0, index + 1);
+		fileName = pathName.Mid(index + 1, length);
+		table = fileName;
+		StrTrimLeft(fileName, "");
+		StrTrimRight(fileName, "");
+		offset = StrReverseFind(fileName, ".");
+		str = fileName.Right(fileName.GetLength() - offset - 1);
+		index = str.Find(" ");
+		if (0 < index)
+		{
+			table = fileName.Mid(offset + index + 1, length);
+			fileName = fileName.Mid(0, offset + index + 1);
+		}
+		index = StrReverseFind(fileName, ".");
+		extension = fileName.Mid(index + 1, length);
+		StrTrimLeft(extension, "");
+		StrTrimRight(extension, "");
+		StrTrimLeft(table, "");
+		StrTrimRight(table, "");
+		StrTrimLeft(fileName, "");
+		StrTrimRight(fileName, "");
+
+		pth = path;
+		fil = fileName;
+		tab = table;
+		ext = extension;
+
+		return;
+	}
+
+	static function BuildDistinctSqlCommandStringForCsv(		// Builds an SQL command string to restrict and/or sort the result set returned from the ASCII text worklist
+		variable& pathFileName, 							// [in] Path and file name (string)
+		variable& searchCondition, 						// [in] Search condition (string)
+		variable& orderByExpression,						// [in] Order by expression (string)
+		variable& pathName,									// [out] Path name (string), e.g. "C:\Phoenix\SW\HxVectorDb\test\LibraryTest\"
+		variable& fileShortName,							// [out] File short name (string), e.g. "ImportWorklistFromCsv_1.csv"
+		variable& extension,									// [out] File extension (string), e.g. "csv"
+		variable& tableName,                         // [in]  Column names for import
+      variable& columnNames[]) variable				// [out] Table name (string), e.g. "ImportWorklistFromCsv_1#csv"
+
+	{
+		variable sqlCommandStr("");
+      variable size;
+      variable columnName;
+      variable i;
+      string s;
+
+		pathName = "";
+		fileShortName = "";
+		extension = "";
+		tableName = "";
+		
+		SplitPath(pathFileName, pathName, fileShortName, extension, tableName);
+		StrReplace(tableName, ".","#");
+		StrReplace(tableName, ";","_");
+		StrReplace(tableName, ":","_");
+		StrReplace(tableName, "*","_");
+
+      size = columnNames.GetSize();
+      sqlCommandStr = "select DISTINCT * FROM (select * from [" + tableName + "])";
+
+
+		if ("" != searchCondition)
+		{
+			sqlCommandStr = sqlCommandStr + " where " + searchCondition;
+		}
+
+		if ("" != orderByExpression)
+		{
+			sqlCommandStr = sqlCommandStr + " order by " + orderByExpression;
+		}
+		return(sqlCommandStr);
+	}
+
+   static function BuildSqlCommandStringForCsv(// Builds an SQL command string to restrict and/or sort the result set returned from the ASCII text worklist
+		variable& pathFileName, 							// [in] Path and file name (string)
+		variable& searchCondition, 						// [in] Search condition (string)
+		variable& orderByExpression,						// [in] Order by expression (string)
+		variable& pathName,									// [out] Path name (string), e.g. "C:\Phoenix\SW\HxVectorDb\test\LibraryTest\"
+		variable& fileShortName,							// [out] File short name (string), e.g. "ImportWorklistFromCsv_1.csv"
+		variable& extension,									// [out] File extension (string), e.g. "csv"
+		variable& tableName) variable						// [out] Table name (string), e.g. "ImportWorklistFromCsv_1#csv"
+
+	{
+		variable sqlCommandStr("");
+
+		pathName = "";
+		fileShortName = "";
+		extension = "";
+		tableName = "";
+		
+		SplitPath(pathFileName, pathName, fileShortName, extension, tableName);
+		StrReplace(tableName, ".","#");
+		StrReplace(tableName, ";","_");
+		StrReplace(tableName, ":","_");
+		StrReplace(tableName, "*","_");
+
+      sqlCommandStr = "select * from [" + tableName + "]";
+
+		if ("" != searchCondition)
+		{
+			sqlCommandStr = sqlCommandStr + " where " + searchCondition;
+		}
+
+		if ("" != orderByExpression)
+		{
+			sqlCommandStr = sqlCommandStr + " order by " + orderByExpression;
+		}
+		return(sqlCommandStr);
+	}
+
+	static function UpdateSchemaForCsv(
+		variable& pathName,									// [in] Path name (string), e.g. "C:\Phoenix\SW\HxVectorDb\test\LibraryTest\"
+		variable& fileShortName,							// [in] File short name (string), e.g. "ImportWorklistFromCsv_1.csv"
+		variable& extension,									// [in] File extension (string), e.g. "csv"
+		variable& tableName,									// [in] Table name (string), e.g. "ImportWorklistFromCsv_1#csv"
+		variable firstRowContainsColumnHeaders, 		// [in] Indicates whether the first row of the ASCII text file contains column headers (integer; 0 = no header, 1 = header).
+		variable& textDelimiter) void						// [in] Text delimiter (string)
+	{
+		variable i(0);											// Loop index
+		string io("");											// Input output variable
+		variable entry_1[];									// Array to store schema entries belonging to the file/table specified 
+		variable entry_2[];									// Array to store schema entries NOT belonging to the file/table specified 
+		variable start(hslFalse);							// Indicates whether reading schema entries belonging to the file/table specified started
+		variable end(hslFalse);								// Indicates whether reading schema entries belonging to the file/table specified ended
+		file schema;											// The schema.ini file
+
+		// Read schema, fill entries into corresponding arrays
+		schema.SetDelimiter(hslAsciiText);
+		schema.AddField(1, io, hslString);
+		if (0 == schema.Open(pathName + "schema.ini", hslAppend))
+		{
+			Util2::Error::RaiseRuntimeError(Error::majorID, Error::MinorID::generalRuntimeError, Error::ErrorCode::unableToOpenFile,
+											Error::MakeErrorDescription(Error::ErrorCode::unableToOpenFile, pathName + "schema.ini"), 
+											GetHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+		while (!schema.Eof())
+		{
+			schema.ReadRecord();
+			StrTrimLeft(io, "");
+			StrTrimRight(io, "");
+			if (!start && !end && 
+				0 <= io.Find(fileShortName))				// Detect start of schema entries belonging to the file/table specified 
+			{
+				start = hslTrue;
+			}
+			else if (start && !end && 
+				0 == io.Find("["))							// Detect start of schema entries belonging to the file/table specified 
+			{
+				end = hslTrue;
+			}
+			if (start && !end)
+			{
+				if (io.GetLength() && 
+					io.Find("ColNameHeader") < 0 &&		// Skip ColNameHeader entry, will be regenerated in any case
+					io.Find("TextDelimiter") < 0)			// Skip TextDelimiter entry, will be regenerated in any case
+				{
+					entry_1.AddAsLast(io);
+				}
+			}
+			else
+			{
+				if (io.GetLength())
+				{
+					entry_2.AddAsLast(io);
+				}
+			}
+		}
+		if (0 == entry_1.GetSize())
+		{
+			entry_1.AddAsLast("[" + fileShortName + "]");
+		}
+		if ("" == textDelimiter)
+		{
+			entry_1.AddAsLast("TextDelimiter=None");
+		}
+		else if ("\"" != textDelimiter)
+		{
+			entry_1.AddAsLast("TextDelimiter=" + textDelimiter);
+		}
+
+		if (firstRowContainsColumnHeaders)
+		{
+			entry_1.AddAsLast("ColNameHeader=True");
+		}
+		else
+		{
+			entry_1.AddAsLast("ColNameHeader=False");
+		}
+		schema.Close();
+
+		// Regenerate schema from entries stored in the arrays
+		if (0 == schema.Open(pathName + "schema.ini", hslWrite))
+		{
+			Util2::Error::RaiseRuntimeError(Error::majorID, Error::MinorID::generalRuntimeError, Error::ErrorCode::unableToOpenFile,
+											Error::MakeErrorDescription(Error::ErrorCode::unableToOpenFile, pathName + "schema.ini"), 
+											GetHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+
+		for (i = 0; i < entry_1.GetSize(); i++)
+		{
+			io = entry_1.ElementAt(i);
+			io = io + Constants::lf;
+			schema.WriteRecord();
+		}
+
+		for (i = 0; i < entry_2.GetSize(); i++)
+		{
+			io = entry_2.ElementAt(i);
+			io = io + Constants::lf;
+			schema.WriteRecord();
+		}
+		schema.Close();
+	}
+
+static function CreateTemporaryFile(				// Copies the worklist input file to a temporary file (without the prolog lines) in the LogFiles directory, returns the path and file name of the temporary file
+		variable& pathFileName,								// [in] Path and file name of the worklist input file (string)
+		variable startImportAtLine,                  // [in] Specifies the line at which to start the worklist data import (integer)
+      variable endImportAtLine,                    // [in] Specifies the line at which to stop the worklist data import (integer); -1 = eof
+      variable copyHeaders) variable			      // [in] 1==copy first row (headers) | 0
+	{
+		variable line(0);										// Line counter
+		variable io("");										// Input output variable
+		file in;													// The input file
+		file out;												// The temporary output file
+
+		variable tmpPathFileName("");						// Path and file name of temporary output file, e.g. "C:\Phoenix\SW\Runmaster\LogFiles\~ImportWorklistFromCsv_1.csv"
+		variable pathName("");								// Path name, e.g. "C:\Phoenix\SW\HxVectorDb\test\LibraryTest\"
+		variable fileShortName("");						// File short name, e.g. "ImportWorklistFromCsv_1.csv"
+		variable extension("");								// File extension, e.g. "csv"
+		variable tableName("");								// Table name, e.g. "ImportWorklistFromCsv_1#csv"
+		
+		SplitPath(pathFileName, pathName, fileShortName, extension, tableName);
+
+		tmpPathFileName = GetLogFilesPath() + "\\~" + fileShortName;
+		in.SetDelimiter(hslAsciiText);
+		in.AddField(1, io, hslString);
+		if (0 == in.Open(pathFileName, hslRead))
+		{
+			Util2::Error::RaiseRuntimeError(Error::majorID, Error::MinorID::generalRuntimeError, Error::ErrorCode::unableToOpenFile,
+											Error::MakeErrorDescription(Error::ErrorCode::unableToOpenFile, pathFileName), 
+											GetHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+		out.SetDelimiter(hslAsciiText);
+		out.AddField(1, io, hslString);
+		if (0 == out.Open(tmpPathFileName, hslWrite))
+		{
+			Util2::Error::RaiseRuntimeError(Error::majorID, Error::MinorID::generalRuntimeError, Error::ErrorCode::unableToOpenFile,
+											Error::MakeErrorDescription(Error::ErrorCode::unableToOpenFile, tmpPathFileName), 
+											GetHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+		while (!in.Eof())
+		{
+			line++;
+			in.ReadRecord();
+         if ( line == 1 && copyHeaders == 1 )
+         {
+            if (0 < StrGetLength(io))
+				{
+					io = io + Constants::lf;
+					out.WriteRecord();
+				}
+         }
+			if (startImportAtLine <= line)
+			{
+            if ((endImportAtLine == -1) || (line <= endImportAtLine))   // TM: add endImportAtLine to support a range
+   				if (0 < StrGetLength(io))
+   				{
+   					io = io + Constants::lf;
+   					out.WriteRecord();
+   				}
+			}
+		}
+		in.Close();
+		out.Close();
+
+		return(tmpPathFileName);
+	}
+
+	static function DeleteFile(							// Deletes the file specified
+		variable& pathFileName) void						// [in] Path and file name of the temporary worklist output file (string)
+	{
+		object fso;												// File System Object
+
+		fso.CreateObject("Scripting.FileSystemObject");
+		if (fso.FileExists(pathFileName))
+			fso.DeleteFile(pathFileName);
+	}
+
+	static function BuildConnectionString(				// Builds the connection string to a Microsoft Excel or a ASCII text worklist
+		variable& dataSource, 								// [in] Data source (string)
+		variable& fileType, 									// [in] File type, "Excel" or "Text"
+		variable hdrNo) variable							// [in] HEADER=NO flag
+
+	{
+		variable connectionStr("");
+		object cfgFile;
+
+		cfgFile.CreateObject("HXCFGFILLib.HxCfgFile");
+		cfgFile.LoadFile(GetConfigPath() + "\\HxStandardLanguage.cfg");
+		connectionStr = cfgFile.GetDataDefValueAsString("ConnectionStrings", "default", fileType);
+		if (hdrNo)
+		{
+			variable i(0);
+			variable j(0);
+			variable size(0);
+			variable substrings1[];
+			variable substrings2[];
+			variable properties[];
+			variable values[];
+
+			Split(connectionStr, ";", substrings1);
+			size = substrings1.GetSize();
+			if (0 != size % 2)
+				size = size - 1;
+			for (i = 0; i < size; i++)
+			{
+				Split(substrings1.ElementAt(i), "=", substrings2);
+				for (j = 0; j < substrings2.GetSize(); j++)
+				{
+					StrTrimLeft(substrings2.ElementAt(j), "");
+					StrTrimRight(substrings2.ElementAt(j), "");
+					if (0 == j % 2)
+						properties.AddAsLast(substrings2.ElementAt(j));
+					else
+						values.AddAsLast(substrings2.ElementAt(j));
+				}
+			}
+			connectionStr = "";
+			for (i = 0; i < properties.GetSize(); i++)
+			{
+				if (properties.ElementAt(i) == "Extended Properties")
+					values.SetAt(i, "\"" + values.ElementAt(i) + ";HDR=NO;\"");
+				connectionStr = connectionStr + properties.ElementAt(i) + "=" + values.ElementAt(i) + ";";
+			}
+		}
+
+		connectionStr = connectionStr + "Data Source=" + dataSource + ";";
+		return(connectionStr);
+	}
+
+	// ----------------------------------------------------------------------------------------------------
+	// Interface functions
+	// ----------------------------------------------------------------------------------------------------
+
+	function ImportMdbWorklist(
+		variable& fileName, 
+		variable& tableName,
+		variable& searchCondition,
+		variable& orderByExpression,
+		variable removeJobStateFilter,
+		variable importMode,
+		variable& sourceColumnNames[],
+		variable& sourceColumnTypes[],
+		variable& targetColumnNames[]) variable
+	{
+		variable i(0);											// Loop index
+		variable size(0);										// Array size
+		variable errorDesc("");								// Error description
+		variable pathFileName("");							// Path and file name
+		variable pathFileTableName("");					// Path and file and table name
+		variable sqlCommandStr("");						// An SQL command string to restrict and/or sort the result set returned from the Microsoft Access file
+		variable connectionStr("");						// Connection string
+		variable sourceColumnValues[];					// Array to read source values from source files
+		variable sourceColumnName("");					// A source column name
+		variable sourceColumnType("");					// A source column type
+		variable targetColumnName("");					// A target column name
+		variable numberOfImportedRecords(0);			// Number of records imported into the Vector Database Worklist
+		variable targetCustomColumnNames[];  			// Array containing target custom column names
+		variable targetCustomColumnValues[];  			// Array containing target custom column values
+		object targetColumnTypeMap;						// Map, key = standard Vector Database column name, value = HSL type of standard Vector Database column
+		object targetColumnIndexMap;						// Map, key = standard Vector Database column name, value = index of associated source column in input array sourceColumnNames[]
+		object jobMap;											// Map, key = <JobName> + "_" + <SourceBarcode> + "_" + <SourceLabwareId> + "_" + <SourcePositionId> , value = 0
+		file sourceFile;										// Source file
+
+		variable jobID(0);
+		variable jobName("");
+		variable jobState(0);
+		variable jobUserState(0);
+		variable jobPriority(0);
+		variable sourceBarcode("");
+		variable sourceLabwareId("");
+		variable sourcePositionId("");
+		variable sourceRequired(0);
+		variable targetBarcode("");
+		variable targetLabwareId("");
+		variable targetPositionId("");
+		variable targetVolume(0.0);
+		variable additionalDataKey(0);
+		variable additionalDataValue(0);
+
+		// Trace start of function
+		#ifdef TRACE_IMPORT_WORKLIST_FUNC
+		FormatTrace(TrStr::traceSource, TrStr::traceActionImportWorklist, TraceStatus::start);
+		#endif
+
+		// Dump input params
+		size = Util::Min(sourceColumnNames.GetSize(), targetColumnNames.GetSize());
+		#ifdef TRACE_IMPORT_WORKLIST_PARAM
+		FormatTrace(TrStr::traceSource, TrStr::traceActionImportWorklist, TraceStatus::progress,	
+																	"fileName = ", fileName, 
+																	", tableName = ", tableName, 
+																	", searchCondition = ", searchCondition, 
+																	", orderByExpression = ", orderByExpression, 
+																	", removeJobStateFilter = ", removeJobStateFilter,
+																	", importMode = ", importMode);
+		for (i = 0; i < size; i++)
+		{
+			FormatTrace(TrStr::traceSource, TrStr::traceActionImportWorklist, TraceStatus::progress,	
+																		"sourceColumnNames[", i, "] = ", sourceColumnNames.ElementAt(i), 
+																		", sourceColumnTypes[", i, "] = ", sourceColumnTypes.ElementAt(i), 
+																		", targetColumnNames[", i, "] = ", targetColumnNames.ElementAt(i));
+		}
+		#endif
+
+		// Activate error handler
+		onerror goto Unexpected;
+
+		// Init library
+		InitLibrary();
+
+		// Check whether Vector Database worklist management is enabled.
+		if (!g_importWorklist_Enabled)
+		{
+			Util2::Error::RaiseRuntimeError(Error::majorID, Error::MinorID::generalRuntimeError, Error::ErrorCode::importWorklistDisabled,
+											Error::MakeErrorDescription(Error::ErrorCode::importWorklistDisabled, ""), 
+											GetHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+
+		// Check input params to be valid.
+		errorDesc = TrStr::traceActionImportWorklist + Constants::crlf;
+		Util2::CheckValueTypeAndRange(fileName, hslString, Util2::ValueCheck::RangeStringNotEmpty, 
+							errorDesc + "fileName");
+		Util2::CheckValueTypeAndRange(tableName, hslString, Util2::ValueCheck::RangeStringNotEmpty, 
+							errorDesc + "tableName");
+		Util2::CheckValueType(searchCondition, hslString, 
+							errorDesc + "searchCondition");
+		Util2::CheckValueType(orderByExpression, hslString, 
+							errorDesc + "orderByExpression");
+		Util2::CheckValueTypeAndRangeMinMax(removeJobStateFilter, hslInteger, -1, VectorDb_JobState::Processed, 
+							errorDesc + "removeJobStateFilter");
+		Util2::CheckValueTypeAndRangeMinMax(importMode, hslInteger, 0, 1, 
+							errorDesc + "importMode");
+
+		// Check column mapping to be valid.
+		CheckColumnMapping(sourceColumnNames, sourceColumnTypes, targetColumnNames, hslTrue);
+
+		// Check file format to be valid.
+		CheckFileFormat(fileName, Constants::accessExtension);
+
+		// Search the file specified
+		pathFileName = PathFindFileName(fileName);
+		pathFileTableName = pathFileName + " " + tableName;
+
+		// Check whether we should remove jobs from the Vector Database table 'Job' prior to the worklist import 
+		if (0 <= removeJobStateFilter)
+		{
+			// We should remove jobs from the Vector Database table 'Job' prior to the worklist import 
+			VectorDb::RemoveAllJobs(removeJobStateFilter);
+		}
+
+		// Init hash tables
+		targetColumnTypeMap.CreateObject("Scripting.Dictionary");
+		targetColumnIndexMap.CreateObject("Scripting.Dictionary");
+		jobMap.CreateObject("Scripting.Dictionary");
+      InitHashTables(importMode, sourceColumnTypes, targetColumnNames, targetCustomColumnNames, targetColumnTypeMap, targetColumnIndexMap, jobMap);
+
+		// Check whether we have something to import
+		if (0 == size)
+		{
+			// Nothing to import
+
+			// Trace completion of function
+			#ifdef TRACE_IMPORT_WORKLIST_FUNC
+			FormatTrace(TrStr::traceSource, TrStr::traceActionImportWorklist, TraceStatus::complete);
+			#endif
+
+			// Return the number of records imported into the Vector Database Worklist
+			return(numberOfImportedRecords);
+		}
+
+		// Import Microsoft Access worklist into Vector Database worklist
+		sourceColumnValues.SetSize(size);
+		for (i = 0; i < size; i++)
+		{
+			sourceColumnName = sourceColumnNames.ElementAt(i);
+			sourceColumnType = sourceColumnTypes.ElementAt(i);
+			targetColumnName = targetColumnNames.ElementAt(i);
+			sourceColumnType = SourceColumnTypeToHSLTyp(sourceColumnName, sourceColumnType, targetColumnName, targetColumnTypeMap);
+			sourceFile.AddField(sourceColumnName, sourceColumnValues.ElementAt(i), sourceColumnType);
+		}
+
+		// Build SQL command string to restrict and/or sort the result set returned from the Microsoft Access file
+		sqlCommandStr = BuildSqlCommandStringForMdb(tableName, searchCondition, orderByExpression);
+
+		// Open Microsoft Access worklist 
+		if (0 == sourceFile.Open(pathFileTableName, hslRead, sqlCommandStr, connectionStr))
+		{
+			Util2::Error::RaiseRuntimeError(Error::majorID, Error::MinorID::generalRuntimeError, Error::ErrorCode::unableToOpenFile,
+											Error::MakeErrorDescription(Error::ErrorCode::unableToOpenFile, pathFileName), 
+											GetHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+
+		// Read records
+		while (!sourceFile.Eof())
+		{
+			// Read the next record from the Microsoft Access worklist 
+			sourceFile.ReadRecord();
+
+         // populate global arrays
+         for (i = 0; i < sourceColumnValues.GetSize(); i++)
+            VarArrAdd(i, sourceColumnValues[i]);
+
+			// Init job data
+			if (InitJobData(importMode, 
+								jobMap, 
+								sourceColumnTypes,
+								sourceColumnValues, 
+								targetColumnIndexMap, 
+								targetCustomColumnNames, 
+								targetCustomColumnValues, 
+								jobName, 
+								jobState, 
+								jobUserState, 
+								jobPriority, 
+								sourceBarcode, 
+								sourceLabwareId, 
+								sourcePositionId, 
+								sourceRequired, 
+								targetBarcode, 
+								targetLabwareId, 
+								targetPositionId, 
+								targetVolume))
+			{
+				// Add job
+				jobID = VectorDb::AddJob(	jobName,jobPriority,jobState,jobUserState,
+													sourceBarcode,sourceLabwareId,sourcePositionId,sourceRequired,
+													targetBarcode,targetLabwareId,targetPositionId,targetVolume);
+				if (jobID <= 0)
+				{
+					// Failed to import job
+					errorDesc = Error::MakeErrorDescriptionFailedToImportJob(sourceColumnNames,sourceColumnValues,targetCustomColumnNames,targetCustomColumnValues);
+					Util2::Error::RaiseRuntimeError(Error::majorID, Error::MinorID::generalRuntimeError, Error::ErrorCode::failedToImportJob,
+													Error::MakeErrorDescription(Error::ErrorCode::failedToImportJob, errorDesc), 
+													GetHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+				}
+
+				// Add job additional data
+				size = Util::Min(targetCustomColumnNames.GetSize(), targetCustomColumnValues.GetSize());
+				for (i = 0; i < size; i++)
+				{
+					additionalDataKey = targetCustomColumnNames.ElementAt(i);
+					additionalDataValue = targetCustomColumnValues.ElementAt(i);
+					if (VectorDb::AddJobAdditionalData(jobID,additionalDataKey,additionalDataValue) == 0)
+					{
+						// Failed to import job
+						errorDesc = Error::MakeErrorDescriptionFailedToImportJob(sourceColumnNames,sourceColumnValues,targetCustomColumnNames,targetCustomColumnValues);
+						Util2::Error::RaiseRuntimeError(Error::majorID, Error::MinorID::generalRuntimeError, Error::ErrorCode::failedToImportJob,
+														Error::MakeErrorDescription(Error::ErrorCode::failedToImportJob, errorDesc), 
+														GetHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+					}
+				}
+
+				// Update hash tables
+				UpdateHashTable(importMode, jobName, sourceBarcode, sourceLabwareId, sourcePositionId, jobMap);
+
+				// Increment the number of records imported into the Vector Database Worklist
+				numberOfImportedRecords++;
+			}
+		}
+		sourceFile.Close();
+
+		// Trace completion of function
+		#ifdef TRACE_IMPORT_WORKLIST_FUNC
+		FormatTrace(TrStr::traceSource, TrStr::traceActionImportWorklist, TraceStatus::complete);
+		#endif
+
+		// Return the number of records imported into the Vector Database Worklist
+		return(numberOfImportedRecords);
+
+		Unexpected:
+ 		{
+			// Trace completion with error of function
+			#ifdef TRACE_IMPORT_WORKLIST_FUNC
+			FormatTrace(TrStr::traceSource, TrStr::traceActionImportWorklist, TraceStatus::completeWithError);
+			#endif
+
+			// Re-throw the error 
+			Util2::Error::RaiseLast();
+		}
+	} 
+
+	function ImportXlsWorklist(
+		variable& fileName, 
+		variable& sheetName,
+		variable& searchCondition,
+		variable& orderByExpression,
+		variable& importRange,
+		variable firstRowContainsColumnHeaders,
+		variable removeJobStateFilter,
+		variable importMode,
+		variable& sourceColumnNames[],
+		variable& sourceColumnTypes[],
+		variable& targetColumnNames[]) variable
+	{
+		variable i(0);											// Loop index
+		variable size(0);										// Array size
+		variable errorDesc("");								// Error description
+		variable pathFileName("");							// Path and file name
+		variable pathFileSheetName("");					// Path and file and sheet name
+		variable sqlCommandStr("");						// An SQL command string to restrict and/or sort the result set returned from the Microsoft Excel file
+		variable connectionStr("");						// Connection string
+		variable sourceColumnValues[];					// Array to read source values from source files
+		variable sourceColumnName("");					// A source column name
+		variable sourceColumnType("");					// A source column type
+		variable targetColumnName("");					// A target column name
+		variable numberOfImportedRecords(0);			// Number of records imported into the Vector Database Worklist
+		variable targetCustomColumnNames[];  			// Array containing target custom column names
+		variable targetCustomColumnValues[];  			// Array containing target custom column values
+		object targetColumnTypeMap;						// Map, key = standard Vector Database column name, value = HSL type of standard Vector Database column
+		object targetColumnIndexMap;						// Map, key = standard Vector Database column name, value = index of associated source column in input array sourceColumnNames[]
+		object jobMap;											// Map, key = <JobName> + "_" + <SourceBarcode> + "_" + <SourceLabwareId> + "_" + <SourcePositionId> , value = 0
+		file sourceFile;										// Source file
+
+		variable jobID(0);
+		variable jobName("");
+		variable jobState(0);
+		variable jobUserState(0);
+		variable jobPriority(0);
+		variable sourceBarcode("");
+		variable sourceLabwareId("");
+		variable sourcePositionId("");
+		variable sourceRequired(0);
+		variable targetBarcode("");
+		variable targetLabwareId("");
+		variable targetPositionId("");
+		variable targetVolume(0.0);
+		variable additionalDataKey(0);
+		variable additionalDataValue(0);
+
+		// Trace start of function
+		#ifdef TRACE_IMPORT_WORKLIST_FUNC
+		FormatTrace(TrStr::traceSource, TrStr::traceActionImportWorklist, TraceStatus::start);
+		#endif
+
+		// Dump input params
+		size = Util::Min(sourceColumnNames.GetSize(), targetColumnNames.GetSize());
+		#ifdef TRACE_IMPORT_WORKLIST_PARAM
+		FormatTrace(TrStr::traceSource, TrStr::traceActionImportWorklist, TraceStatus::progress,	
+																	"fileName = ", fileName, 
+																	", sheetName = ", sheetName, 
+																	", searchCondition = ", searchCondition, 
+																	", orderByExpression = ", orderByExpression, 
+																	", importRange = ", importRange, 
+																	", firstRowContainsColumnHeaders = ", firstRowContainsColumnHeaders, 
+																	", removeJobStateFilter = ", removeJobStateFilter,
+																	", importMode = ", importMode);
+		for (i = 0; i < size; i++)
+		{
+			FormatTrace(TrStr::traceSource, TrStr::traceActionImportWorklist, TraceStatus::progress,	
+																		"sourceColumnNames[", i, "] = ", sourceColumnNames.ElementAt(i), 
+																		", sourceColumnTypes[", i, "] = ", sourceColumnTypes.ElementAt(i), 
+																		", targetColumnNames[", i, "] = ", targetColumnNames.ElementAt(i));
+		}
+		#endif
+
+		// Activate error handler
+		onerror goto Unexpected;
+
+		// Init library
+		InitLibrary();
+
+		// Check whether Vector Database worklist management is enabled.
+		if (!g_importWorklist_Enabled)
+		{
+			Util2::Error::RaiseRuntimeError(Error::majorID, Error::MinorID::generalRuntimeError, Error::ErrorCode::importWorklistDisabled,
+											Error::MakeErrorDescription(Error::ErrorCode::importWorklistDisabled, ""), 
+											GetHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+
+		// Check input params to be valid.
+		// If 'firstRowContainsColumnHeaders' is set to 0 = 'no header', the parameters 'searchCondition' and 'orderByExpression' 
+		// must be the empty string and the array 'sourceColumnNames' must address all source columns by its ordinal number.
+		errorDesc = TrStr::traceActionImportWorklist + Constants::crlf;
+		Util2::CheckValueTypeAndRange(fileName, hslString, Util2::ValueCheck::RangeStringNotEmpty, 
+							errorDesc + "fileName");
+		Util2::CheckValueTypeAndRange(sheetName, hslString, Util2::ValueCheck::RangeStringNotEmpty, 
+							errorDesc + "sheetName");
+		Util2::CheckValueType(searchCondition, hslString, 
+							errorDesc + "searchCondition");
+		Util2::CheckValueType(orderByExpression, hslString, 
+							errorDesc + "orderByExpression");
+		Util2::CheckValueType(importRange, hslString, 
+							errorDesc + "importRange");
+		Util2::CheckValueTypeAndRangeMinMax(firstRowContainsColumnHeaders, hslInteger, 0, 1, 
+							errorDesc + "firstRowContainsColumnHeaders");
+		Util2::CheckValueTypeAndRangeMinMax(removeJobStateFilter, hslInteger, -1, VectorDb_JobState::Processed, 
+							errorDesc + "removeJobStateFilter");
+		Util2::CheckValueTypeAndRangeMinMax(importMode, hslInteger, 0, 1, 
+							errorDesc + "importMode");
+
+		// Check column mapping to be valid.
+		CheckColumnMapping(sourceColumnNames, sourceColumnTypes, targetColumnNames, firstRowContainsColumnHeaders);
+
+		// Check file format to be valid.
+		//CheckFileFormat(fileName, Constants::excelExtension);
+      //CheckFileFormat(fileName, Constants::excelxExtension);
+
+		// Search the file specified
+		pathFileName = PathFindFileName(fileName);
+		pathFileSheetName = pathFileName + " " + sheetName;
+
+		// Check whether we should remove jobs from the Vector Database table 'Job' prior to the worklist import 
+		if (0 <= removeJobStateFilter)
+		{
+			// We should remove jobs from the Vector Database table 'Job' prior to the worklist import 
+			VectorDb::RemoveAllJobs(removeJobStateFilter);
+		}
+
+		// Init hash tables
+		targetColumnTypeMap.CreateObject("Scripting.Dictionary");
+		targetColumnIndexMap.CreateObject("Scripting.Dictionary");
+		jobMap.CreateObject("Scripting.Dictionary");
+		InitHashTables(importMode, sourceColumnTypes, targetColumnNames, targetCustomColumnNames, targetColumnTypeMap, targetColumnIndexMap, jobMap);
+
+		// Check whether we have something to import
+		if (0 == size)
+		{
+			// Nothing to import
+
+			// Trace completion of function
+			#ifdef TRACE_IMPORT_WORKLIST_FUNC
+			FormatTrace(TrStr::traceSource, TrStr::traceActionImportWorklist, TraceStatus::complete);
+			#endif
+
+			// Return the number of records imported into the Vector Database Worklist
+			return(numberOfImportedRecords);
+		}
+
+		// Import Microsoft Excel worklist into Vector Database worklist
+		sourceColumnValues.SetSize(size);
+		for (i = 0; i < size; i++)
+		{
+			sourceColumnName = sourceColumnNames.ElementAt(i);
+			sourceColumnType = sourceColumnTypes.ElementAt(i);
+			targetColumnName = targetColumnNames.ElementAt(i);
+			sourceColumnType = SourceColumnTypeToHSLTyp(sourceColumnName, sourceColumnType, targetColumnName, targetColumnTypeMap);
+			sourceFile.AddField(sourceColumnName, sourceColumnValues.ElementAt(i), sourceColumnType);
+		}
+
+		// Build SQL command string to restrict and/or sort the result set returned from the Microsoft Excel file
+		sqlCommandStr = BuildSqlCommandStringForXls(sheetName, searchCondition, orderByExpression, importRange);
+
+		// Build connection string
+		if (!firstRowContainsColumnHeaders)
+		{
+			connectionStr = BuildConnectionString(pathFileName, "Excel", hslTrue);
+			pathFileSheetName = "";
+		}
+
+		// Open Microsoft Excel worklist 
+		if (0 == sourceFile.Open(pathFileSheetName, hslRead, sqlCommandStr, connectionStr))
+		{
+			Util2::Error::RaiseRuntimeError(Error::majorID, Error::MinorID::generalRuntimeError, Error::ErrorCode::unableToOpenFile,
+											Error::MakeErrorDescription(Error::ErrorCode::unableToOpenFile, pathFileName), 
+											GetHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+
+		// Read records
+		while (!sourceFile.Eof())
+		{
+			// Read the next record from the Microsoft Excel worklist 
+			sourceFile.ReadRecord();
+
+         // populate global arrays
+         for (i = 0; i < sourceColumnValues.GetSize(); i++)
+            VarArrAdd(i, sourceColumnValues[i]);
+
+			// Init job data
+			if (InitJobData(importMode, 
+								jobMap, 
+								sourceColumnTypes,
+								sourceColumnValues, 
+								targetColumnIndexMap, 
+								targetCustomColumnNames, 
+								targetCustomColumnValues, 
+								jobName, 
+								jobState, 
+								jobUserState, 
+								jobPriority, 
+								sourceBarcode, 
+								sourceLabwareId, 
+								sourcePositionId, 
+								sourceRequired, 
+								targetBarcode, 
+								targetLabwareId, 
+								targetPositionId, 
+								targetVolume))
+			{
+				// Add job
+				jobID = VectorDb::AddJob(	jobName,jobPriority,jobState,jobUserState,
+													sourceBarcode,sourceLabwareId,sourcePositionId,sourceRequired,
+													targetBarcode,targetLabwareId,targetPositionId,targetVolume);
+				if (jobID <= 0)
+				{
+					// Failed to import job
+					errorDesc = Error::MakeErrorDescriptionFailedToImportJob(sourceColumnNames,sourceColumnValues,targetCustomColumnNames,targetCustomColumnValues);
+					Util2::Error::RaiseRuntimeError(Error::majorID, Error::MinorID::generalRuntimeError, Error::ErrorCode::failedToImportJob,
+													Error::MakeErrorDescription(Error::ErrorCode::failedToImportJob, errorDesc), 
+													GetHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+				}
+
+				// Add job additional data
+				size = Util::Min(targetCustomColumnNames.GetSize(), targetCustomColumnValues.GetSize());
+				for (i = 0; i < size; i++)
+				{
+					additionalDataKey = targetCustomColumnNames.ElementAt(i);
+					additionalDataValue = targetCustomColumnValues.ElementAt(i);
+					if (VectorDb::AddJobAdditionalData(jobID,additionalDataKey,additionalDataValue) == 0)
+					{
+						// Failed to import job
+						errorDesc = Error::MakeErrorDescriptionFailedToImportJob(sourceColumnNames,sourceColumnValues,targetCustomColumnNames,targetCustomColumnValues);
+						Util2::Error::RaiseRuntimeError(Error::majorID, Error::MinorID::generalRuntimeError, Error::ErrorCode::failedToImportJob,
+														Error::MakeErrorDescription(Error::ErrorCode::failedToImportJob, errorDesc), 
+														GetHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+					}
+				}
+
+				// Update hash tables
+				UpdateHashTable(importMode, jobName, sourceBarcode, sourceLabwareId, sourcePositionId, jobMap);
+
+				// Increment the number of records imported into the Vector Database Worklist
+				numberOfImportedRecords++;
+			}
+		}
+		sourceFile.Close();
+
+		// Trace completion of function
+		#ifdef TRACE_IMPORT_WORKLIST_FUNC
+		FormatTrace(TrStr::traceSource, TrStr::traceActionImportWorklist, TraceStatus::complete);
+		#endif
+
+		// Return the number of records imported into the Vector Database Worklist
+      Trace("# records imported ", numberOfImportedRecords);
+		return(numberOfImportedRecords);
+
+		Unexpected:
+ 		{
+			// Trace completion with error of function
+			#ifdef TRACE_IMPORT_WORKLIST_FUNC
+			FormatTrace(TrStr::traceSource, TrStr::traceActionImportWorklist, TraceStatus::completeWithError);
+			#endif
+
+			// Re-throw the error 
+			Util2::Error::RaiseLast();
+		}
+	} 
+
+
+   function ImportXlsWorklist2(
+		variable& fileName, 
+		variable& sheetName,
+		variable& searchCondition,
+		variable& orderByExpression,
+		variable& importFirstRow,
+      variable& importLastRow,
+		variable firstRowContainsColumnHeaders,
+		variable removeJobStateFilter,
+		variable importMode,
+		variable& sourceColumnNames[],
+		variable& sourceColumnTypes[],
+		variable& targetColumnNames[]) variable
+	{
+		variable i(0);											// Loop index
+		variable size(0);										// Array size
+		variable errorDesc("");								// Error description
+		variable pathFileName("");							// Path and file name
+		variable pathFileSheetName("");					// Path and file and sheet name
+		variable sqlCommandStr("");						// An SQL command string to restrict and/or sort the result set returned from the Microsoft Excel file
+		variable connectionStr("");						// Connection string
+		variable sourceColumnValues[];					// Array to read source values from source files
+		variable sourceColumnName("");					// A source column name
+		variable sourceColumnType("");					// A source column type
+		variable targetColumnName("");					// A target column name
+		variable numberOfImportedRecords(0);			// Number of records imported into the Vector Database Worklist
+		variable targetCustomColumnNames[];  			// Array containing target custom column names
+		variable targetCustomColumnValues[];  			// Array containing target custom column values
+		object targetColumnTypeMap;						// Map, key = standard Vector Database column name, value = HSL type of standard Vector Database column
+		object targetColumnIndexMap;						// Map, key = standard Vector Database column name, value = index of associated source column in input array sourceColumnNames[]
+		object jobMap;											// Map, key = <JobName> + "_" + <SourceBarcode> + "_" + <SourceLabwareId> + "_" + <SourcePositionId> , value = 0
+		file sourceFile;										// Source file
+
+		variable jobID(0);
+		variable jobName("");
+		variable jobState(0);
+		variable jobUserState(0);
+		variable jobPriority(0);
+		variable sourceBarcode("");
+		variable sourceLabwareId("");
+		variable sourcePositionId("");
+		variable sourceRequired(0);
+		variable targetBarcode("");
+		variable targetLabwareId("");
+		variable targetPositionId("");
+		variable targetVolume(0.0);
+		variable additionalDataKey(0);
+		variable additionalDataValue(0);
+      variable recordIndex(0);
+
+		sheetName = ToXlsSheetName(sheetName);
+
+		// Trace start of function
+		#ifdef TRACE_IMPORT_WORKLIST_FUNC
+		FormatTrace(TrStr::traceSource, TrStr::traceActionImportWorklist, TraceStatus::start);
+		#endif
+
+		// Dump input params
+		size = Util::Min(sourceColumnNames.GetSize(), targetColumnNames.GetSize());
+		#ifdef TRACE_IMPORT_WORKLIST_PARAM
+		FormatTrace(TrStr::traceSource, TrStr::traceActionImportWorklist, TraceStatus::progress,	
+																	"fileName = ", fileName, 
+																	", sheetName = ", sheetName, 
+																	", searchCondition = ", searchCondition, 
+																	", orderByExpression = ", orderByExpression, 
+																	", importStart = ", importFirstRow, 
+                                                   ", importLast = ", importLastRow, 
+																	", firstRowContainsColumnHeaders = ", firstRowContainsColumnHeaders, 
+																	", removeJobStateFilter = ", removeJobStateFilter,
+																	", importMode = ", importMode);
+		for (i = 0; i < size; i++)
+		{
+			FormatTrace(TrStr::traceSource, TrStr::traceActionImportWorklist, TraceStatus::progress,	
+																		"sourceColumnNames[", i, "] = ", sourceColumnNames.ElementAt(i), 
+																		", sourceColumnTypes[", i, "] = ", sourceColumnTypes.ElementAt(i), 
+																		", targetColumnNames[", i, "] = ", targetColumnNames.ElementAt(i));
+		}
+		#endif
+
+		// Activate error handler
+		onerror goto Unexpected;
+
+		// Init library
+		InitLibrary();
+
+		// Check whether Vector Database worklist management is enabled.
+		if (!g_importWorklist_Enabled)
+		{
+			Util2::Error::RaiseRuntimeError(Error::majorID, Error::MinorID::generalRuntimeError, Error::ErrorCode::importWorklistDisabled,
+											Error::MakeErrorDescription(Error::ErrorCode::importWorklistDisabled, ""), 
+											GetHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+
+		// Check input params to be valid.
+		// If 'firstRowContainsColumnHeaders' is set to 0 = 'no header', the parameters 'searchCondition' and 'orderByExpression' 
+		// must be the empty string and the array 'sourceColumnNames' must address all source columns by its ordinal number.
+		errorDesc = TrStr::traceActionImportWorklist + Constants::crlf;
+		Util2::CheckValueTypeAndRange(fileName, hslString, Util2::ValueCheck::RangeStringNotEmpty, errorDesc + "fileName");
+		Util2::CheckValueTypeAndRange(sheetName, hslString, Util2::ValueCheck::RangeStringNotEmpty, errorDesc + "sheetName");
+		Util2::CheckValueType(searchCondition, hslString, errorDesc + "searchCondition");
+		Util2::CheckValueType(orderByExpression, hslString, errorDesc + "orderByExpression");
+		Util2::CheckValueType(importFirstRow, hslInteger, errorDesc + "importFirstRow");
+      Util2::CheckValueType(importLastRow, hslInteger, errorDesc + "importLastRow");
+		Util2::CheckValueTypeAndRangeMinMax(firstRowContainsColumnHeaders, hslInteger, 0, 1, errorDesc + "firstRowContainsColumnHeaders");
+		Util2::CheckValueTypeAndRangeMinMax(removeJobStateFilter, hslInteger, -1, VectorDb_JobState::Processed, errorDesc + "removeJobStateFilter");
+		Util2::CheckValueTypeAndRangeMinMax(importMode, hslInteger, 0, 1, errorDesc + "importMode");
+
+		// Check column mapping to be valid.
+		CheckColumnMapping(sourceColumnNames, sourceColumnTypes, targetColumnNames, firstRowContainsColumnHeaders);
+
+		// Check file format to be valid.
+		//CheckFileFormat(fileName, Constants::excelExtension);
+      //CheckFileFormat(fileName, Constants::excelxExtension);
+
+		// Search the file specified
+		pathFileName = PathFindFileName(fileName);
+		pathFileSheetName = pathFileName + " " + sheetName;
+
+		// Check whether we should remove jobs from the Vector Database table 'Job' prior to the worklist import 
+		if (0 <= removeJobStateFilter)
+		{
+			// We should remove jobs from the Vector Database table 'Job' prior to the worklist import 
+			VectorDb::RemoveAllJobs(removeJobStateFilter);
+		}
+
+		// Init hash tables
+		targetColumnTypeMap.CreateObject("Scripting.Dictionary");
+		targetColumnIndexMap.CreateObject("Scripting.Dictionary");
+		jobMap.CreateObject("Scripting.Dictionary");
+		InitHashTables(importMode, sourceColumnTypes, targetColumnNames, targetCustomColumnNames, targetColumnTypeMap, targetColumnIndexMap, jobMap);
+
+		// Check whether we have something to import
+		if (0 == size)
+		{
+			// Nothing to import
+
+			// Trace completion of function
+			#ifdef TRACE_IMPORT_WORKLIST_FUNC
+			FormatTrace(TrStr::traceSource, TrStr::traceActionImportWorklist, TraceStatus::complete);
+			#endif
+
+			// Return the number of records imported into the Vector Database Worklist
+			return(numberOfImportedRecords);
+		}
+
+		// Import Microsoft Excel worklist into Vector Database worklist
+		sourceColumnValues.SetSize(size);
+		for (i = 0; i < size; i++)
+		{
+			sourceColumnName = sourceColumnNames.ElementAt(i);
+			sourceColumnType = sourceColumnTypes.ElementAt(i);
+			targetColumnName = targetColumnNames.ElementAt(i);
+			sourceColumnType = SourceColumnTypeToHSLTyp(sourceColumnName, sourceColumnType, targetColumnName, targetColumnTypeMap);
+			sourceFile.AddField(sourceColumnName, sourceColumnValues.ElementAt(i), sourceColumnType);
+		}
+
+		// Build SQL command string to restrict and/or sort the result set returned from the Microsoft Excel file
+      // TM: highjack ImportMode for 'Distinct' .... 1= Select Distinct | 0 = Select *
+      if ( importMode == 1 )
+         sqlCommandStr = BuildDistinctSqlCommandStringForXls(sheetName, searchCondition, orderByExpression, sourceColumnNames);
+      else
+         sqlCommandStr = BuildSqlCommandStringForXls(sheetName, searchCondition, orderByExpression, "");
+
+		// Build connection string
+		if (!firstRowContainsColumnHeaders)
+		{
+			connectionStr = BuildConnectionString(pathFileName, "Excel", hslTrue);
+			pathFileSheetName = "";
+		}
+
+		// Open Microsoft Excel worklist 
+		if (0 == sourceFile.Open(pathFileSheetName, hslRead, sqlCommandStr, connectionStr))
+		{
+			Util2::Error::RaiseRuntimeError(Error::majorID, Error::MinorID::generalRuntimeError, Error::ErrorCode::unableToOpenFile,
+											Error::MakeErrorDescription(Error::ErrorCode::unableToOpenFile, pathFileName), 
+											GetHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+
+		// Read records
+      recordIndex = 0;
+		while (!sourceFile.Eof())
+		{
+			// Read the next record from the Microsoft Excel worklist 
+         sourceFile.ReadRecord();
+         recordIndex = recordIndex + 1;
+         while ( recordIndex < importFirstRow )
+         {
+			   sourceFile.ReadRecord();
+            recordIndex = recordIndex + 1;
+         }
+         
+         if ( importLastRow > -1 && recordIndex > importLastRow ) break; // done
+
+         // populate global arrays
+         for (i = 0; i < sourceColumnValues.GetSize(); i++)
+            VarArrAdd(i, sourceColumnValues[i]);
+
+			// Init job data
+			if (InitJobData(importMode, 
+								jobMap, 
+								sourceColumnTypes,
+								sourceColumnValues, 
+								targetColumnIndexMap, 
+								targetCustomColumnNames, 
+								targetCustomColumnValues, 
+								jobName, 
+								jobState, 
+								jobUserState, 
+								jobPriority, 
+								sourceBarcode, 
+								sourceLabwareId, 
+								sourcePositionId, 
+								sourceRequired, 
+								targetBarcode, 
+								targetLabwareId, 
+								targetPositionId, 
+								targetVolume))
+			{
+				// Add job
+				jobID = VectorDb::AddJob(	jobName,jobPriority,jobState,jobUserState,
+													sourceBarcode,sourceLabwareId,sourcePositionId,sourceRequired,
+													targetBarcode,targetLabwareId,targetPositionId,targetVolume);
+				if (jobID <= 0)
+				{
+					// Failed to import job
+					errorDesc = Error::MakeErrorDescriptionFailedToImportJob(sourceColumnNames,sourceColumnValues,targetCustomColumnNames,targetCustomColumnValues);
+					Util2::Error::RaiseRuntimeError(Error::majorID, Error::MinorID::generalRuntimeError, Error::ErrorCode::failedToImportJob,
+													Error::MakeErrorDescription(Error::ErrorCode::failedToImportJob, errorDesc), 
+													GetHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+				}
+
+				// Add job additional data
+				size = Util::Min(targetCustomColumnNames.GetSize(), targetCustomColumnValues.GetSize());
+				for (i = 0; i < size; i++)
+				{
+					additionalDataKey = targetCustomColumnNames.ElementAt(i);
+					additionalDataValue = targetCustomColumnValues.ElementAt(i);
+					if (VectorDb::AddJobAdditionalData(jobID,additionalDataKey,additionalDataValue) == 0)
+					{
+						// Failed to import job
+						errorDesc = Error::MakeErrorDescriptionFailedToImportJob(sourceColumnNames,sourceColumnValues,targetCustomColumnNames,targetCustomColumnValues);
+						Util2::Error::RaiseRuntimeError(Error::majorID, Error::MinorID::generalRuntimeError, Error::ErrorCode::failedToImportJob,
+														Error::MakeErrorDescription(Error::ErrorCode::failedToImportJob, errorDesc), 
+														GetHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+					}
+				}
+
+				// Update hash tables
+				UpdateHashTable(importMode, jobName, sourceBarcode, sourceLabwareId, sourcePositionId, jobMap);
+
+				// Increment the number of records imported into the Vector Database Worklist
+				numberOfImportedRecords++;
+			}
+		}
+		sourceFile.Close();
+
+		// Trace completion of function
+		#ifdef TRACE_IMPORT_WORKLIST_FUNC
+		FormatTrace(TrStr::traceSource, TrStr::traceActionImportWorklist, TraceStatus::complete, "# records imported ", numberOfImportedRecords);
+		#endif
+
+		// Return the number of records imported into the Vector Database Worklist
+      //Trace("# records imported ", numberOfImportedRecords);
+		return(numberOfImportedRecords);
+
+		Unexpected:
+ 		{
+			// Trace completion with error of function
+			#ifdef TRACE_IMPORT_WORKLIST_FUNC
+			FormatTrace(TrStr::traceSource, TrStr::traceActionImportWorklist, TraceStatus::completeWithError);
+			#endif
+
+			// Re-throw the error 
+			Util2::Error::RaiseLast();
+		}
+	} 
+
+
+	function ImportTxtWorklist2(
+		variable& fileName, 
+		variable& searchCondition,
+		variable& orderByExpression,
+		variable& delimiter,
+		variable& textDelimiter,
+		variable startImportAtLine,
+      variable endImportAtLine,
+		variable firstRowContainsColumnHeaders,
+		variable removeJobStateFilter,
+		variable importMode,
+		variable& sourceColumnNames[],
+		variable& sourceColumnTypes[],
+		variable& targetColumnNames[]) variable
+	{
+		variable i(0);											// Loop index
+		variable size(0);										// Array size
+		variable errorDesc("");								// Error description
+		variable pathFileName("");							// Path and file name
+		variable pathName("");								// Path name, e.g. "C:\Phoenix\SW\HxVectorDb\test\LibraryTest\"
+		variable fileShortName("");						// File short name, e.g. "ImportWorklistFromCsv_1.csv"
+		variable extension("");								// File extension, e.g. "csv"
+		variable tableName("");								// Table name, e.g. "ImportWorklistFromCsv_1#csv"
+		variable sqlCommandStr("");						// An SQL command string to restrict and/or sort the result set returned from the ASCII text file
+		variable connectionStr("");						// Connection string
+		variable sourceColumnValues[];					// Array to read source values from source files
+		variable sourceColumnName("");					// A source column name
+		variable sourceColumnType("");					// A source column type
+		variable targetColumnName("");					// A target column name
+		variable numberOfImportedRecords(0);			// Number of records imported into the Vector Database Worklist
+		variable targetCustomColumnNames[];  			// Array containing target custom column names
+		variable targetCustomColumnValues[];  			// Array containing target custom column values
+		object targetColumnTypeMap;						// Map, key = standard Vector Database column name, value = HSL type of standard Vector Database column
+		object targetColumnIndexMap;						// Map, key = standard Vector Database column name, value = index of associated source column in input array sourceColumnNames[]
+		object jobMap;											// Map, key = <JobName> + "_" + <SourceBarcode> + "_" + <SourceLabwareId> + "_" + <SourcePositionId> , value = 0
+		file sourceFile;										// Source file
+
+		variable jobID(0);
+		variable jobName("");
+		variable jobState(0);
+		variable jobUserState(0);
+		variable jobPriority(0);
+		variable sourceBarcode("");
+		variable sourceLabwareId("");
+		variable sourcePositionId("");
+		variable sourceRequired(0);
+		variable targetBarcode("");
+		variable targetLabwareId("");
+		variable targetPositionId("");
+		variable targetVolume(0.0);
+		variable additionalDataKey(0);
+		variable additionalDataValue(0);
+		variable numberOfLinesToBeImported;
+		variable recordIndex(0);
+
+		// Trace start of function
+		#ifdef TRACE_IMPORT_WORKLIST_FUNC
+		FormatTrace(TrStr::traceSource, TrStr::traceActionImportWorklist, TraceStatus::start);
+		#endif
+
+		// Dump input params
+		size = Util::Min(sourceColumnNames.GetSize(), targetColumnNames.GetSize());
+		#ifdef TRACE_IMPORT_WORKLIST_PARAM
+		FormatTrace(TrStr::traceSource, TrStr::traceActionImportWorklist, TraceStatus::progress,	
+																	"fileName = ", fileName, 
+																	", searchCondition = ", searchCondition, 
+																	", orderByExpression = ", orderByExpression, 
+																	", delimiter = ", delimiter, 
+																	", textDelimiter = ", textDelimiter, 
+																	", startImportAtLine = ", startImportAtLine, 
+																	", firstRowContainsColumnHeaders = ", firstRowContainsColumnHeaders, 
+																	", removeJobStateFilter = ", removeJobStateFilter,
+																	", importMode = ", importMode);
+		for (i = 0; i < size; i++)
+		{
+			FormatTrace(TrStr::traceSource, TrStr::traceActionImportWorklist, TraceStatus::progress,	
+																		"sourceColumnNames[", i, "] = ", sourceColumnNames.ElementAt(i), 
+																		", sourceColumnTypes[", i, "] = ", sourceColumnTypes.ElementAt(i), 
+																		", targetColumnNames[", i, "] = ", targetColumnNames.ElementAt(i));
+		}
+		#endif
+
+		// Activate error handler
+		onerror goto Unexpected;
+
+		// Init library
+		InitLibrary();
+
+		// Check whether Vector Database worklist management is enabled.
+		if (!g_importWorklist_Enabled)
+		{
+			Util2::Error::RaiseRuntimeError(Error::majorID, Error::MinorID::generalRuntimeError, Error::ErrorCode::importWorklistDisabled,
+											Error::MakeErrorDescription(Error::ErrorCode::importWorklistDisabled, ""), 
+											GetHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+
+		// Check input params to be valid.
+		// If 'firstRowContainsColumnHeaders' is set to 0 = 'no header', the parameters 'searchCondition' and 'orderByExpression' 
+		// must be the empty string and the array 'sourceColumnNames' must address all source columns by its ordinal number.
+		errorDesc = TrStr::traceActionImportWorklist + Constants::crlf;
+		Util2::CheckValueTypeAndRange(fileName, hslString, Util2::ValueCheck::RangeStringNotEmpty, 
+							errorDesc + "fileName");
+		Util2::CheckValueType(searchCondition, hslString, 
+							errorDesc + "searchCondition");
+		Util2::CheckValueType(orderByExpression, hslString, 
+							errorDesc + "orderByExpression");
+		Util2::CheckValueTypeAndRangeMinMax(delimiter, hslString, 1, 1, 
+							errorDesc + "delimiter");
+		Util2::CheckValueTypeAndRangeMinMax(textDelimiter, hslString, 0, 1, 
+							errorDesc + "textDelimiter");
+		Util2::CheckValueTypeAndRange(startImportAtLine, hslInteger, Util2::ValueCheck::RangeNumberGreaterThanZero, 
+							errorDesc + "startImportAtLine");
+		Util2::CheckValueTypeAndRangeMinMax(firstRowContainsColumnHeaders, hslInteger, 0, 1, 
+							errorDesc + "firstRowContainsColumnHeaders");
+		Util2::CheckValueTypeAndRangeMinMax(removeJobStateFilter, hslInteger, -1, VectorDb_JobState::Processed, 
+							errorDesc + "removeJobStateFilter");
+		Util2::CheckValueTypeAndRangeMinMax(importMode, hslInteger, 0, 1, 
+							errorDesc + "importMode");
+
+		// Check column mapping to be valid.
+		CheckColumnMapping(sourceColumnNames, sourceColumnTypes, targetColumnNames, firstRowContainsColumnHeaders);
+
+		// Check file format to be valid.
+		//CheckFileFormat(fileName, Constants::textExtension);
+
+		// Search the file specified
+		pathFileName = PathFindFileName(fileName);
+
+		// Check if we should start import at a line greater than one
+		if (1 < startImportAtLine)
+		{
+			// Copy the worklist input file to a temporary file (without the prolog lines) in the LogFiles directory
+			if ( firstRowContainsColumnHeaders == 1 )
+			{
+			   startImportAtLine++;
+			   endImportAtLine++;
+			}
+			pathFileName = CreateTemporaryFile(pathFileName, startImportAtLine, endImportAtLine, firstRowContainsColumnHeaders);
+		}
+		
+		if(endImportAtLine > -1)
+			numberOfLinesToBeImported = endImportAtLine - startImportAtLine + 1;
+
+		
+		// Check whether we should remove jobs from the Vector Database table 'Job' prior to the worklist import 
+		if (0 <= removeJobStateFilter)
+		{
+			// We should remove jobs from the Vector Database table 'Job' prior to the worklist import 
+			VectorDb::RemoveAllJobs(removeJobStateFilter);
+		}
+
+		// Init hash tables
+		targetColumnTypeMap.CreateObject("Scripting.Dictionary");
+		targetColumnIndexMap.CreateObject("Scripting.Dictionary");
+		jobMap.CreateObject("Scripting.Dictionary");
+		InitHashTables(importMode, sourceColumnTypes, targetColumnNames, targetCustomColumnNames, targetColumnTypeMap, targetColumnIndexMap, jobMap);
+
+		// Check whether we have something to import
+		if (0 == size)
+		{
+			// Nothing to import
+
+			// Trace completion of function
+			#ifdef TRACE_IMPORT_WORKLIST_FUNC
+			FormatTrace(TrStr::traceSource, TrStr::traceActionImportWorklist, TraceStatus::complete);
+			#endif
+
+			// Return the number of records imported into the Vector Database Worklist
+			return(numberOfImportedRecords);
+		}
+
+		// Import ASCII text worklist into Vector Database worklist
+		sourceColumnValues.SetSize(size);
+		for (i = 0; i < size; i++)
+		{
+			sourceColumnName = sourceColumnNames.ElementAt(i);
+			sourceColumnType = sourceColumnTypes.ElementAt(i);
+			targetColumnName = targetColumnNames.ElementAt(i);
+			sourceColumnType = SourceColumnTypeToHSLTyp(sourceColumnName, sourceColumnType, targetColumnName, targetColumnTypeMap);
+			sourceFile.AddField(sourceColumnName, sourceColumnValues.ElementAt(i), sourceColumnType);
+		}
+
+		// Build SQL command string to restrict and/or sort the result set returned from the ASCII text file
+      if ( importMode == 1 )
+		   sqlCommandStr = BuildDistinctSqlCommandStringForCsv(	pathFileName, searchCondition, orderByExpression,
+																	pathName, fileShortName, extension, tableName, sourceColumnNames);
+      else
+		   sqlCommandStr = BuildSqlCommandStringForCsv(	pathFileName, searchCondition, orderByExpression,
+																	pathName, fileShortName, extension, tableName);
+
+		// Build connection string
+		if (!firstRowContainsColumnHeaders)
+		{
+			connectionStr = BuildConnectionString(pathName, "Text", hslTrue);
+		}
+
+		// Set flag that indicates whether the first row of the ASCII text file contains column headers (ColNameHeader).
+		// Set delimiter that is used to delimit string values (TextDelimiter).
+		if (!firstRowContainsColumnHeaders || "\"" != textDelimiter)
+		{
+			UpdateSchemaForCsv(pathName, fileShortName, extension, tableName, firstRowContainsColumnHeaders, textDelimiter);
+		}
+
+		// Set delimiter that separates values in the ASCII text file 
+		sourceFile.SetDelimiter(delimiter);
+
+		// Open ASCII text worklist 
+		if (0 == sourceFile.Open(pathFileName, hslRead, sqlCommandStr, connectionStr))
+		{
+			Util2::Error::RaiseRuntimeError(Error::majorID, Error::MinorID::generalRuntimeError, Error::ErrorCode::unableToOpenFile,
+											Error::MakeErrorDescription(Error::ErrorCode::unableToOpenFile, pathFileName), 
+											GetHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+
+		// Read records
+		while (!sourceFile.Eof())
+		{
+			// Read the next record from the ASCII text worklist 
+			sourceFile.ReadRecord();
+			recordIndex = recordIndex + 1;
+
+			if ( endImportAtLine > -1 && recordIndex > numberOfLinesToBeImported ) 
+				break;
+
+         // populate global arrays
+         for (i = 0; i < sourceColumnValues.GetSize(); i++)
+            VarArrAdd(i, sourceColumnValues[i]);
+
+			// Init job data
+			if (InitJobData(importMode, 
+								jobMap, 
+								sourceColumnTypes,
+								sourceColumnValues, 
+								targetColumnIndexMap, 
+								targetCustomColumnNames, 
+								targetCustomColumnValues, 
+								jobName, 
+								jobState, 
+								jobUserState, 
+								jobPriority, 
+								sourceBarcode, 
+								sourceLabwareId, 
+								sourcePositionId, 
+								sourceRequired, 
+								targetBarcode, 
+								targetLabwareId, 
+								targetPositionId, 
+								targetVolume))
+			{
+				// Add job
+				jobID = VectorDb::AddJob(	jobName,jobPriority,jobState,jobUserState,
+													sourceBarcode,sourceLabwareId,sourcePositionId,sourceRequired,
+													targetBarcode,targetLabwareId,targetPositionId,targetVolume);
+				if (jobID <= 0)
+				{
+					// Failed to import job
+					errorDesc = Error::MakeErrorDescriptionFailedToImportJob(sourceColumnNames,sourceColumnValues,targetCustomColumnNames,targetCustomColumnValues);
+					Util2::Error::RaiseRuntimeError(Error::majorID, Error::MinorID::generalRuntimeError, Error::ErrorCode::failedToImportJob,
+													Error::MakeErrorDescription(Error::ErrorCode::failedToImportJob, errorDesc), 
+													GetHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+				}
+
+				// Add job additional data
+				size = Util::Min(targetCustomColumnNames.GetSize(), targetCustomColumnValues.GetSize());
+				for (i = 0; i < size; i++)
+				{
+					additionalDataKey = targetCustomColumnNames.ElementAt(i);
+					additionalDataValue = targetCustomColumnValues.ElementAt(i);
+					if (VectorDb::AddJobAdditionalData(jobID,additionalDataKey,additionalDataValue) == 0)
+					{
+						// Failed to import job
+						errorDesc = Error::MakeErrorDescriptionFailedToImportJob(sourceColumnNames,sourceColumnValues,targetCustomColumnNames,targetCustomColumnValues);
+						Util2::Error::RaiseRuntimeError(Error::majorID, Error::MinorID::generalRuntimeError, Error::ErrorCode::failedToImportJob,
+														Error::MakeErrorDescription(Error::ErrorCode::failedToImportJob, errorDesc), 
+														GetHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+					}
+				}
+
+				// Update hash tables
+				UpdateHashTable(importMode, jobName, sourceBarcode, sourceLabwareId, sourcePositionId, jobMap);
+
+				// Increment the number of records imported into the Vector Database Worklist
+				numberOfImportedRecords++;
+			}
+		}
+		sourceFile.Close();
+
+
+		// Check if we have to delete the temporary worklist inputfile
+		if (1 < startImportAtLine)
+		{
+			// Copy the worklist input file to a temporary file (without the prolog lines) in the LogFiles directory
+			DeleteFile(pathFileName);
+		}
+
+		// Trace completion of function
+		#ifdef TRACE_IMPORT_WORKLIST_FUNC
+		FormatTrace(TrStr::traceSource, TrStr::traceActionImportWorklist, TraceStatus::complete, "# records imported ", numberOfImportedRecords);
+		#endif
+
+		// Return the number of records imported into the Vector Database Worklist
+      //Trace("# records imported ", numberOfImportedRecords);
+		return(numberOfImportedRecords);
+
+		Unexpected:
+ 		{
+			// Trace completion with error of function
+			#ifdef TRACE_IMPORT_WORKLIST_FUNC
+			FormatTrace(TrStr::traceSource, TrStr::traceActionImportWorklist, TraceStatus::completeWithError);
+			#endif
+
+			// Re-throw the error 
+			Util2::Error::RaiseLast();
+		}
+	} 
+
+   function ImportTxtWorklist(
+		variable& fileName, 
+		variable& searchCondition,
+		variable& orderByExpression,
+		variable& delimiter,
+		variable& textDelimiter,
+		variable startImportAtLine,
+		variable firstRowContainsColumnHeaders,
+		variable removeJobStateFilter,
+		variable importMode,
+		variable& sourceColumnNames[],
+		variable& sourceColumnTypes[],
+		variable& targetColumnNames[]) variable
+   {
+      return(ImportTxtWorklist2(fileName, searchCondition, orderByExpression,	delimiter, textDelimiter,	startImportAtLine, -1,	
+                                firstRowContainsColumnHeaders, removeJobStateFilter, importMode,
+                                sourceColumnNames, sourceColumnTypes, targetColumnNames));
+   }
+
+	function SetColumnDefault(
+		variable defaultInteger, 
+		variable defaultFloat,
+		variable& defaultString) void
+	{
+		variable errorDesc("");								// Error description
+
+		// Trace start of function
+		#ifdef TRACE_IMPORT_WORKLIST_FUNC
+		FormatTrace(TrStr::traceSource, TrStr::traceActionSetColumnDefault, TraceStatus::start);
+		#endif
+
+		// Dump input params
+		#ifdef TRACE_IMPORT_WORKLIST_PARAM
+		FormatTrace(TrStr::traceSource, TrStr::traceActionSetColumnDefault, TraceStatus::progress,	
+																	"defaultInteger = ", defaultInteger, 
+																	", defaultFloat = ", defaultFloat, 
+																	", defaultString = ", defaultString);
+		#endif
+
+		// Activate error handler
+		onerror goto Unexpected;
+
+		// Init library
+		InitLibrary();
+
+		// Lock critical section
+		SynEnterCriticalSection(g_importWorklist_CriticalSection);
+
+		// Check input params to be valid
+		errorDesc = TrStr::traceActionSetColumnDefault + Constants::crlf;
+		Util2::CheckValueType(defaultInteger, hslInteger, 
+							errorDesc + "defaultInteger");
+		Util2::CheckValueType(defaultFloat, hslFloat, 
+							errorDesc + "defaultFloat");
+		Util2::CheckValueType(defaultString, hslString, 
+							errorDesc + "defaultString");
+
+		// Set column defaults
+		g_importWorklist_ColumnDefaultInteger = defaultInteger;
+		g_importWorklist_ColumnDefaultFloat = defaultFloat;
+		g_importWorklist_ColumnDefaultString = defaultString;
+
+		// Trace completion of function
+		#ifdef TRACE_IMPORT_WORKLIST_FUNC
+		FormatTrace(TrStr::traceSource, TrStr::traceActionSetColumnDefault, TraceStatus::complete);
+		#endif
+
+		// Unlock critical section
+		SynLeaveCriticalSection(g_importWorklist_CriticalSection);
+
+		// Return 
+		return;
+
+		Unexpected:
+ 		{
+			// Unlock critical section
+			if (0 != g_importWorklist_CriticalSection)
+				SynLeaveCriticalSection(g_importWorklist_CriticalSection);
+
+			// Trace completion with error of function
+			#ifdef TRACE_IMPORT_WORKLIST_FUNC
+			FormatTrace(TrStr::traceSource, TrStr::traceActionSetColumnDefault, TraceStatus::completeWithError);
+			#endif
+
+			// Re-throw the error 
+			Util2::Error::RaiseLast();
+		}
+	} 
+
+	function GetColumnDefault(
+		variable& defaultInteger, 
+		variable& defaultFloat,
+		variable& defaultString) void
+	{
+		variable errorDesc("");								// Error description
+
+		// Trace start of function
+		#ifdef TRACE_IMPORT_WORKLIST_FUNC
+		FormatTrace(TrStr::traceSource, TrStr::traceActionGetColumnDefault, TraceStatus::start);
+		#endif
+
+		// Dump input params
+		#ifdef TRACE_IMPORT_WORKLIST_PARAM
+		FormatTrace(TrStr::traceSource, TrStr::traceActionGetColumnDefault, TraceStatus::progress,	
+																	"defaultInteger = ", defaultInteger, 
+																	", defaultFloat = ", defaultFloat, 
+																	", defaultString = ", defaultString);
+		#endif
+
+		// Activate error handler
+		onerror goto Unexpected;
+
+		// Init library
+		InitLibrary();
+
+		// Lock critical section
+		SynEnterCriticalSection(g_importWorklist_CriticalSection);
+
+		// Check input params to be valid
+		// Nothing to check
+
+		// Get column defaults
+		defaultInteger = g_importWorklist_ColumnDefaultInteger;
+		defaultFloat = g_importWorklist_ColumnDefaultFloat;
+		defaultString = g_importWorklist_ColumnDefaultString;
+
+		// Trace completion of function
+		#ifdef TRACE_IMPORT_WORKLIST_FUNC
+		FormatTrace(TrStr::traceSource, TrStr::traceActionGetColumnDefault, TraceStatus::complete);
+		#endif
+
+		// Unlock critical section
+		SynLeaveCriticalSection(g_importWorklist_CriticalSection);
+
+		// Return 
+		return;
+
+		Unexpected:
+ 		{
+			// Unlock critical section
+			if (0 != g_importWorklist_CriticalSection)
+				SynLeaveCriticalSection(g_importWorklist_CriticalSection);
+
+			// Trace completion with error of function
+			#ifdef TRACE_IMPORT_WORKLIST_FUNC
+			FormatTrace(TrStr::traceSource, TrStr::traceActionGetColumnDefault, TraceStatus::completeWithError);
+			#endif
+
+			// Re-throw the error 
+			Util2::Error::RaiseLast();
+		}
+	} 
+
+	function SqlStr(
+		variable& value) variable
+	{
+		variable errorDesc("");								// Error description
+		variable sqlValue("");								// SQL value
+
+		// Activate error handler
+		onerror goto Unexpected;
+
+		// Init library
+		InitLibrary();
+
+		// Lock critical section
+		SynEnterCriticalSection(g_importWorklist_CriticalSection);
+
+		// Check input params to be valid
+		// Nothing to check
+
+		// 
+		if (Util::IsString(value))
+		{
+			sqlValue = "'" + value + "'";
+		}
+		else if (Util::IsInteger(value))
+		{
+			sqlValue = IStr(value);
+		}
+		else if (Util::IsFloat(value))
+		{
+			sqlValue = FStr(value);
+		}
+		else if (IsDBNull(value))
+		{
+			sqlValue = "NULL";
+		}
+
+		// Unlock critical section
+		SynLeaveCriticalSection(g_importWorklist_CriticalSection);
+
+		// Return 
+		return(sqlValue);
+
+		Unexpected:
+ 		{
+			// Unlock critical section
+			if (0 != g_importWorklist_CriticalSection)
+				SynLeaveCriticalSection(g_importWorklist_CriticalSection);
+
+			// Re-throw the error 
+			Util2::Error::RaiseLast();
+		}
+	}
+}
+
+#endif
+// $$author=ContainerAdministrator$$valid=1$$time=2025-09-09 20:13$$checksum=a2bf3e1e$$length=099$$

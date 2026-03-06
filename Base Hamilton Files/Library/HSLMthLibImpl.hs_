@@ -1,0 +1,373 @@
+// This is a part of the HSL Math Library.
+// Copyright (C) by HAMILTON Bonaduz AG, CH-7402 Bonaduz.
+// All rights reserved.
+//
+// Modification History
+// 2001-06-26  bandenmatten : Removed onerror goto statements from library functions.
+// 2001-08-23  bandenmatten : Renamed file HSLMthLibImpl.hsl -> HSLMthLibImpl.hs_.
+// 2002-02-22  bandenmatten : Added functions MthBitwiseNOT and MthBitwiseXOR.
+// 2002-12-05  bandenmatten : Specified return values for exported library functions.
+// 2004-02-16  bandenmatten : Fixed overflow in function MthRound().
+// 2004-02-25  bandenmatten : Added functions MthFFloor() and MthFCeiling().
+// 2006-09-07  bandenmatten : Declared functions MthLessThanOrEaqual(), MthEaqual(), 
+//										MthNotEaqual() and MthGreaterThanOrEaqual() as static (error in writing).
+// 2006-09-07  bandenmatten : Added functions MthLessThanOrEqual(), MthEqual(), MthNotEqual() and MthGreaterThanOrEqual().
+
+#ifndef __HSLMthLibImpl_hsl__
+#define __HSLMthLibImpl_hsl__	1
+
+// Implementation of Math functions 
+
+// Performs a bitwise disjunction on two expressions 
+function MthBitwiseOR(variable number1, variable number2) variable
+{
+	return(number1 | number2);
+}
+
+// Performs a bitwise conjunction on two expressions 
+function MthBitwiseAND(variable number1, variable number2) variable
+{
+	return(number1 & number2);
+}
+
+// Performs a bitwise NOT (negation) on an expression.
+function MthBitwiseNOT(variable number) variable
+{
+	return(- number - 1);
+}
+
+// Performs a bitwise exclusive OR on two expressions 
+function MthBitwiseXOR(variable number1, variable number2) variable
+{
+	return(MthBitwiseNOT(number1 & number2) & (number1 | number2));
+}
+
+// Performs a logical disjunction on two expressions 
+function MthLogicalOR(variable number1, variable number2) variable
+{
+	return(number1 || number2);
+}
+
+// Performs a logical conjunction on two expressions 
+function MthLogicalAND(variable number1, variable number2) variable
+{
+	return(number1 && number2);
+}
+
+// Performs a logical negation on an expression 
+function MthLogicalNOT(variable number) variable
+{
+	return(!number);
+}
+
+// Returns a Boolean value indicating the result of the comparison 
+function MthLessThan(variable number1, variable number2) variable
+{
+	return(number1 < number2);
+}
+
+// Returns a Boolean value indicating the result of the comparison 
+function MthLessThanOrEqual(variable number1, variable number2) variable
+{
+	return(number1 <= number2);
+}
+
+// Returns a Boolean value indicating the result of the comparison 
+static function MthLessThanOrEaqual(variable number1, variable number2) variable
+{
+	return(number1 <= number2);
+}
+
+// Returns a Boolean value indicating the result of the comparison 
+function MthEqual(variable number1, variable number2) variable
+{
+	return(number1 == number2);
+}
+
+// Returns a Boolean value indicating the result of the comparison 
+static function MthEaqual(variable number1, variable number2) variable
+{
+	return(number1 == number2);
+}
+
+// Returns a Boolean value indicating the result of the comparison 
+function MthNotEqual(variable number1, variable number2) variable
+{
+	return(number1 != number2);
+}
+
+// Returns a Boolean value indicating the result of the comparison 
+static function MthNotEaqual(variable number1, variable number2) variable
+{
+	return(number1 != number2);
+}
+
+// Returns a Boolean value indicating the result of the comparison 
+function MthGreaterThan(variable number1, variable number2) variable
+{
+	return(number1 > number2);
+}
+
+// Returns a Boolean value indicating the result of the comparison 
+function MthGreaterThanOrEqual(variable number1, variable number2) variable
+{
+	return(number1 >= number2);
+}
+
+// Returns a Boolean value indicating the result of the comparison 
+static function MthGreaterThanOrEaqual(variable number1, variable number2) variable
+{
+	return(number1 >= number2);
+}
+
+// Returns the value of a base expression taken to a specified power 
+function MthPow(variable base, variable exponent) variable
+{
+	return(base^exponent);
+}
+
+// Increments the value of a number by one 
+function MthInc(variable& number) variable
+{
+	return(number++);
+}
+
+// Decrements the value of a number by one 
+function MthDec(variable& number) variable
+{
+	return(number--);
+}
+
+// Returns the lesser of two supplied numeric (or string) expressions 
+function MthMin(variable number1, variable number2) variable
+{
+	if (number1 <= number2)
+		return(number1);
+	return(number2);
+}
+
+// Returns the greater of two supplied numeric (or string) expressions 
+function MthMax(variable number1, variable number2) variable
+{
+	if (number1 <= number2)
+		return(number2);
+	return(number1);
+}
+
+ 
+//	Returns a number rounded to a specified number of decimal places.
+//	Parameters:
+//	number = numeric expression being rounded
+//	numDecimalPlaces = number indicating how many places to the right of 
+//	the decimal are included in the rounding. If 0, integers are returned 
+//	by the Round function.
+
+function MthRound(variable number, variable numDecimalPlaces) variable
+{
+	variable integerPart(0.0);
+	variable fractionalPart(0.0);
+	variable result(0.0);
+	integerPart = Floor(number, hslTrue);
+	fractionalPart = number - integerPart;
+	result = integerPart + Floor((10.0^numDecimalPlaces) * fractionalPart + 0.5) / (10.0^numDecimalPlaces);
+	if (0 == numDecimalPlaces)
+		return(Floor(result));
+	else
+		return(result);
+}
+
+// Returns the sine of an angle 
+function MthSin(variable number) variable
+{
+	return(Sin(number));
+}
+
+// Returns the cosine of an angle 
+function MthCos(variable number) variable
+{
+	return(Cos(number));
+}
+
+// Returns the tangent of an angle 
+function MthTan(variable number) variable
+{
+	return(Tan(number));
+}
+
+// Returns the arcsine of a number 
+function MthASin(variable number) variable
+{
+	return(ASin(number));
+}
+
+// Returns the arccosine of a number 
+function MthACos(variable number) variable
+{
+	return(ACos(number));
+}
+
+// Returns the arctangent of a number 
+function MthATan(variable number) variable
+{
+	return(ATan(number));
+}
+
+// Returns e (the base of natural logarithms) raised to a power 
+function MthExp(variable number) variable
+{
+	return(Exp(number));
+}
+
+// Returns the natural logarithm of a number 
+function MthLog(variable number) variable
+{
+	return(Log(number));
+}
+
+// Returns the logarithm of a number 
+function MthLog10(variable number) variable
+{
+	return(Log10(number));
+}
+
+// Returns the next highest integer that is greater than or equal to the specified numeric expression 
+function MthCeiling(variable number) variable
+{
+	return(Ceiling(number));
+}
+
+// Returns the nearest integer that is less than or equal to the specified numeric expression 
+function MthFloor(variable number) variable
+{
+	return(Floor(number));
+}
+
+// Returns a float value representing the next highest integer that is greater than or equal to the specified numeric expression 
+function MthFCeiling(variable number) variable
+{
+	return(Ceiling(number, hslTrue));
+}
+
+// Returns a float value representing the nearest integer that is less than or equal to the specified numeric expression 
+function MthFFloor(variable number) variable
+{
+	return(Floor(number, hslTrue));
+}
+
+// Bitwise right-shift operator 
+function MthShiftRight(variable number, variable numBits) variable
+{
+	return(Floor(number / (2^numBits)));
+}
+
+// Bitwise left-shift operator 
+function MthShiftLeft(variable number, variable numBits) variable
+{
+	return(Floor(number * (2^numBits)));
+}
+
+#define DBL_MIN 2.2250738585072014E-308	// min positive value, from 'float.h' 
+
+// The R01-Generator 
+static variable r01Seed(471111);		// random number 
+static variable r01Module(2147483399);	// module 
+static variable r01Factor(40692);		// factor 
+static variable r01Inverse(0);			// helper variable 
+static variable r01Mod(0);				// helper variable 
+static variable r01Div(0);				// helper variable 
+static variable r01Init(hslFalse);		// helper variable 
+
+// The transformation to the uniform distribution 
+static variable uRandLow(0);			// lower bound 
+static variable uRandHigh(0);			// upper bound 
+
+// The transformation to the exponential distribution 
+static variable eRandMean(0);			// mean value 
+
+// The transformation to the normal distribution 
+static variable nRandMean(0);			// mean value 
+static variable nRandStdDev(0);			// standard deviation 
+
+// Initializes the random number generator 
+function MthR01Init(variable module, variable factor, variable seed) void
+{
+	r01Seed     = seed % module;
+	r01Module   = module;
+	r01Factor   = factor;
+	r01Inverse  = 1.0 / (1.0 * r01Module);
+	r01Div      = r01Module / r01Factor;
+	r01Mod      = r01Module % r01Factor;
+	return;
+}
+
+// Draws a new random number 
+function MthR01Draw() variable
+{
+	variable k;
+	if (r01Init == hslFalse)
+	{
+		MthR01Init(r01Module, r01Factor, r01Seed);
+		r01Init = hslTrue;
+	}
+	k = r01Seed / r01Div;
+	r01Seed = r01Factor * (r01Seed - k * r01Div) - k * r01Mod;
+	if (r01Seed < 0)
+		r01Seed = r01Seed + r01Module;
+	return(1.0 * r01Seed * r01Inverse);
+}
+
+// Initializes the uniform transformation 
+function MthURandInit(variable low, variable high) void
+{
+	uRandLow = low;
+	uRandHigh = high;
+	return;
+}
+
+// Draws a new random number from the uniform distribution 
+function MthURandDraw() variable
+{
+	return(uRandLow + Floor((uRandHigh - uRandLow) * MthR01Draw()));
+}
+
+// Initializes the exponential transformation 
+function MthERandInit(variable mean) void
+{
+	eRandMean = mean;
+	return;
+}
+
+function MthERandDraw() variable
+{
+	variable r01;
+	r01 = MthR01Draw();
+	if (r01 == 0.0)
+		r01 = DBL_MIN;
+	return(- eRandMean * Log(r01));
+}
+
+// Initializes the normal transformation 
+function MthNRandInit(variable mean, variable standardDev) void
+{
+	nRandMean = mean;
+	nRandStdDev = standardDev;
+	return;
+}
+
+// Draws a new random number from the normal distribution 
+function MthNRandDraw() variable
+{
+	variable v1, v2, w;
+	w = 1.0;
+	while (w >= 1.0)
+	{
+		v1 = 2.0 * MthR01Draw() - 1.0;
+		v2 = 2.0 * MthR01Draw() - 1.0;
+		w = v1^2.0 + v2^2.0;
+	}
+	w = (-2.0 * Log(w) / w)^0.5;
+	return(nRandMean + nRandStdDev * v1 * w);
+}
+
+#endif
+// $$author=ContainerAdministrator$$valid=1$$time=2025-09-09 20:13$$checksum=3e11d2d0$$length=099$$

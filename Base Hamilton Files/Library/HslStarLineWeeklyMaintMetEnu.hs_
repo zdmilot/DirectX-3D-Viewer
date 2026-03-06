@@ -1,0 +1,84 @@
+/****************************************************************************************************
+*  
+*   Library for Methods of Microlab 2006 STARline Maintenance
+*   Copyright © by HAMILTON Bonaduz AG, CH-7402 Bonaduz.
+*   All rights reserved.
+*
+*   Language dependant part of the Microlab STARline Weekly Maintenance
+*
+*   Modification History
+*
+*   2005-04-21  Alessandro Carrara : Initial file creation.
+*   2006-09-27  Werner Barmettler    Update file 
+*   2006-09-27  Werner Barmettler  : Add DC Wash Station Weekly
+*   2006-09-27  Werner Barmettler  : Add BVS Weekly
+*   2006-09-27  Werner Barmettler  : Add 96/384 Wash Station Weekly
+*   2008-07-24  Claudio Jörg       : - Added 5ml Channel strings, updated old channels strings for 1000ul Channels.
+*                                    - Removed several unused strings
+*   2010-01-21  Claudio Jörg       : - Changed naming for 'maintenance needles' to teaching needles.
+*                                    - Prepared 'dlgCheckTightness1000ulText' and 'dlgCheckClld1000ulText' to contain
+*                                      a placeholder for count of required needles. 
+*   2010-12-02  Thomas Benz        : CO-RE 96 Tadm Head added
+*   2012-08-21  Thomas benz        : Easy Puncher added
+*
+****************************************************************************************************/
+
+function StringTable()
+{
+   Insert(IDS::dlgCheckAutoloadTrayTitle,     "Weekly maintenance - autoload tray");
+   Insert(IDS::dlgCheckAutoloadTrayText,      "Make sure that there is no carrier on the autoload tray\nand press OK to continue.\n\nCancel will abort the weekly maintenance.");
+   Insert(IDS::dlgRemoveCarriersTitle,        "Weekly maintenance - carriers");
+   Insert(IDS::dlgRemoveCarriersText,         "Remove all carriers from autoload tray, clean all carriers\nand press OK to continue.\n\n(See Operator's Manual for use of cleaning,\ndisinfecting and decontaminating fluids.)\n\nCancel will abort the weekly maintenance.");
+   Insert(IDS::dlgTipWasteTitle,              "Weekly maintenance - tip waste");
+   Insert(IDS::dlgTipWasteText,               "Open the front cover, clean the teaching needles and return them to their correct positions, corresponding to channels positions.\nEmpty and clean the tip waste and press OK to continue.\n\n(See Operator's Manual for use of cleaning,\ndisinfecting and decontaminating fluids.)");
+   Insert(IDS::dlgDeckCleaningTitle,          "Weekly maintenance - deck");
+   Insert(IDS::dlgDeckCleaningText,           "Open the front cover and clean the deck.\nCheck the autoload protection ribbon and clean it with a lint-free cloth or Q-tips.\nPress OK to continue.\n\n(See Operator's Manual for use of cleaning,\ndisinfecting and decontaminating fluids.)");
+   Insert(IDS::dlgCloseCoverTitle,            "Weekly maintenance - close cover");
+   Insert(IDS::dlgCloseCoverText,             "Close the front cover and press OK to continue.\n\nCancel will abort the weekly maintenance.");
+   Insert(IDS::dlgErrorTitle,                 "Weekly maintenance - error");
+   Insert(IDS::dlgWarningTitle,               "Weekly maintenance - warning");
+   Insert(IDS::dlgCannotRunWithSimulator,     "Can not run method in simulator mode.");
+   Insert(IDS::dlgDeckWasteTitle,             "Weekly maintenance - deck and tip waste");
+   Insert(IDS::dlgDeckWasteText,              "Do you want to execute the weekly maintenance for deck and waste?");
+   Insert(IDS::dlgCheckTightness1000ulTitle,  "Weekly Maintenance - Tightness Check 1000µl Channel");
+   Insert(IDS::dlgCheckTightness1000ulText,   "Do you want to execute the 1000µl Channel tightness check?");
+   Insert(IDS::dlgCheckClld1000ulTitle,       "Weekly Maintenance - cLLD Check 1000µl Channel");
+   Insert(IDS::dlgCheckClld1000ulText,        "Do you want to execute the 1000µl Channel cLLD check?");
+   Insert(IDS::dlgExecute3rdTitle,            "Weekly Maintenance - Needle Wash Station");
+   Insert(IDS::dlgExecute3rdText,             "Do you want to execute the 3rd Generation Wash Station maintenance?");
+   Insert(IDS::dlgExecuteCrTitle,             "Weekly Maintenance - CR Wash Station");
+   Insert(IDS::dlgExecuteCrText,              "Do you want to execute the CR Wash Station maintenance?");
+   Insert(IDS::dlgExecute96Title,             "Weekly Maintenance - 96 Wash Station");
+   Insert(IDS::dlgExecute96Text,              "Do you want to execute the 96 Wash Station maintenance?");
+   Insert(IDS::dlgExecuteDcTitle,             "Weekly Maintenance - DC Wash Station");
+   Insert(IDS::dlgExecuteDcText,              "Do you want to execute the DC Wash Station maintenance?");
+   Insert(IDS::dlgExecuteBvsTitle,            "Weekly  Maintenance - BVS/CVS");
+   Insert(IDS::dlgExecuteBvsText,             "Do you want to execute the BVS/CVS maintenance?");
+   Insert(IDS::dlgStatusIncompleteTitle,      "Weekly maintenance - incomplete");
+   Insert(IDS::dlgStatusIncompleteText,       "Weekly maintenance execute not completed \n\n For details see the StarLineWeekly Maintenance report");
+   Insert(IDS::dlgStatusSuccessfulTitle,      "Weekly maintenance - successful");
+   Insert(IDS::dlgStatusSuccessfulText,       "Weekly maintenance execute successfully completed");
+   Insert(IDS::dlgStatusFailedTitle,          "Weekly maintenance - failed");
+   Insert(IDS::dlgStatusFailedText,           "Weekly maintenance execute failed \n\n For details see the StarLineWeekly Maintenance report");
+   Insert(IDS::dlgRemoveCarriersHandTitle,    "Weekly maintenance - carriers");
+   Insert(IDS::dlgRemoveCarriersHandText,     "Remove all carriers from the deck, clean all carriers\nand press OK to continue.\n\n(See Operator's Manual for use of cleaning,\ndisinfecting and decontaminating fluids.)\n\nCancel will abort the weekly maintenance.");
+   Insert(IDS::dlgAutoladBarcodeTitle,        "Weekly maintenance - autoload");
+   Insert(IDS::dlgAutoladBarcodeText,         "Check the laser scanner window and clean it with a lint-free cloth or Q-tips lightly soaked in Ethanol (70%), then press OK to continue.");
+   Insert(IDS::dlgExecute_96_384_Title,       "Weekly  Maintenance - 96/384 Wash Station");
+   Insert(IDS::dlgExecute_96_384_Text,        "Do you want to execute the 96/384 Wash Station maintenance?");
+   Insert(IDS::dlgCheckTightness5mlTitle, 	 "Weekly Maintenance - Tightness Check 5ml Channel");
+   Insert(IDS::dlgCheckTightness5mlText,  	 "Do you want to execute the 5ml Channel tightness check?");
+   Insert(IDS::dlgCheckClld5mlTitle,       	 "Weekly Maintenance - cLLD Check 5ml Channel");
+   Insert(IDS::dlgCheckClld5mlText,        	 "Do you want to execute the 5ml Channel cLLD check?");
+   Insert(IDS::dlgCheckTightness96TadmHeadTitle,	 "Weekly Maintenance - Tightness Check CO-RE 96 TADM Head");
+   Insert(IDS::dlgCheckTightness96TadmHeadText, 	 "Do you want to execute the CO-RE 96 TADM Head tightness check? \n\nMake sure that the CO-RE 96 TADM Head maintenance tool is installed.");
+   Insert(IDS::dlgExecuteEasyPuncherTitle,    "Weekly Maintenance - easyPunch");
+   Insert(IDS::dlgExecuteEasyPuncherText,     "Do you want to execute the easyPunch maintenance?");
+   Insert(IDS::dlgCleanChannelsTitle,         "Weekly maintenance - pipetting channels cleaning");
+   Insert(IDS::dlgCleanChannelsText,          "Open the front cover, clean the pipetting channels with a lint-free cloth or Q-tips lightly soaked in Ethanol (70%).\nCheck the autoload protection ribbon and clean it with a lint-free cloth or Q-tips.\nPress OK to continue.");
+   Insert(IDS::dlgCoreHead96Title,            "Clean CORE 96 Head");
+   Insert(IDS::dlgCoreHead96Text,             "Open the front cover, clean the 96 Head \nPress OK to continue.\n\n(See Operator's Manual for use of cleaning,\ndisinfecting and decontaminating fluids.)\n\nCancel will abort the maintenance.");
+   Insert(IDS::dlgCoreHead384Title,           "Clean CORE 384 Head");
+   Insert(IDS::dlgCoreHead384Text,            "Open the front cover, clean the 384 Head.\nPress OK to continue.\n\n(See Operator's Manual for use of cleaning,\ndisinfecting and decontaminating fluids.)\n\nCancel will abort the maintenance.");
+}
+// $$author=ContainerAdministrator$$valid=1$$time=2025-09-09 20:31$$checksum=5f33dd87$$length=099$$

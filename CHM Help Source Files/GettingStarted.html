@@ -74,6 +74,20 @@
 </ol>
 <p>See <a href="LabwareGenerator.html">Integra Generator</a> for full details.</p>
 
+<h2>Using the CLI</h2>
+<p>All GUI operations can also be performed from the command line using <b>cli.js</b>. Run <code>node cli.js --help</code> to see all available commands, or start the interactive prompt with <code>node cli.js</code>.</p>
+<table>
+<thead><tr><th>Common task</th><th>CLI command</th></tr></thead>
+<tbody>
+<tr><td>Export a <code>.x</code> file as OBJ</td><td><code>node cli.js export-x model.x model.obj</code></td></tr>
+<tr><td>Convert an STL to <code>.x</code></td><td><code>node cli.js convert part.stl part.x --rotate-x -90</code></td></tr>
+<tr><td>Generate a 96-well plate <code>.x</code></td><td><code>node cli.js generate-default plate96.x --rows 8 --cols 12 --sbs</code></td></tr>
+<tr><td>Generate from XML labware definition</td><td><code>node cli.js generate MyPlate.xml MyPlate.x</code></td></tr>
+<tr><td>Batch-validate a labware directory</td><td><code>node cli.js --batch C:\Hamilton\Labware</code></td></tr>
+</tbody>
+</table>
+<p>See <a href="CLIReference.html">CLI Reference</a> for complete documentation of all commands, flags, and workflow examples.</p>
+
 <h2>Theme Toggle</h2>
 <p>Click the moon icon (<i>&#9790;</i>) in the top-right navigation bar to switch between light and dark rendering modes. All viewports adapt simultaneously.</p>
 

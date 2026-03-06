@@ -1,0 +1,71 @@
+/****************************************************************************************************
+*  
+*   Library for Methods of Microlab 2006 STARline Maintenance
+*   Copyright © by HAMILTON Bonaduz AG, CH-7402 Bonaduz.
+*
+*   All rights reserved.
+*
+*   Language dependant part of the Microlab STARline Daily Maintenance
+*
+*   Modification History
+*
+*   2005-04-21  Alessandro Carrara : Initial file creation.
+*   2006-09-27  Werner Barmettler    Update file 
+*   2006-09-27  Werner Barmettler  : Add DC Wash Station Weekly
+*   2006-09-27  Werner Barmettler  : Add BVS Weekly
+*   2006-09-27  Werner Barmettler  : Add 96/384 Wash Station Weekly
+*   2008-07-18  Claudio Jörg       : - Added 5ml Channel strings, updated old channels strings for 1000ul Channels.
+*                                    - Removed several unused strings
+*   2010-01-21  Claudio Jörg       : - Changed naming for 'maintenance needles' to teaching needles.
+*                                    - Prepared 'dlgCheckTightness1000ulText' and 'dlgCheckClld1000ulText' to contain
+*                                      a placeholder for count of required needles. 
+*   2010-12-02  Thomas benz        : CO-RE 96 Tadm Head added
+*   2012-08-21  Thomas benz        : Easy Puncher added
+*
+****************************************************************************************************/
+
+function StringTable()
+{
+	Insert(IDS::dlgCheckDeckCleaningTitle,    "Daily maintenance - deck");
+	Insert(IDS::dlgCheckDeckCleaningText,     "Open the front cover and check if the deck needs to be cleaned.\n\nIf the deck is clean, press OK to continue.\n\nIf the deck needs to be cleaned, press Cancel to abort the daily maintenance.\nInstead, proceed with the weekly maintenance.");
+	Insert(IDS::dlgTipWasteTitle,             "Daily maintenance - tip waste");
+	Insert(IDS::dlgTipWasteText,              "Make sure teaching needles are in the correct positions, corresponding to channels positions.\nEmpty the tip waste and press OK to continue.\n\nCancel will abort the daily maintenance.");
+	Insert(IDS::dlgCloseCoverTitle,           "Daily maintenance - close cover");
+	Insert(IDS::dlgCloseCoverText,            "Close the front cover and press OK to continue.\n\nCancel will abort the daily maintenance.");
+	Insert(IDS::dlgErrorTitle,                "Daily maintenance - error");
+	Insert(IDS::dlgWarningTitle,              "Daily maintenance - warning");
+	Insert(IDS::dlgCannotRunWithSimulator,    "Can not run method in simulator mode.");
+	Insert(IDS::dlgDeckWasteTitle,				"Daily maintenance - deck and tip waste");
+	Insert(IDS::dlgDeckWasteText,				    "Do you want to execute the daily maintenance for deck and waste?");
+	Insert(IDS::dlgCheckTightness1000ulTitle,  "Daily Maintenance - Tightness Check 1000µl Channel");
+    Insert(IDS::dlgCheckTightness1000ulText,  "Do you want to execute the 1000µl Channel tightness check?");
+    Insert(IDS::dlgCheckClld1000ulTitle,      "Daily Maintenance - cLLD Check 1000µl Channel");
+    Insert(IDS::dlgCheckClld1000ulText,       "Do you want to execute the 1000µl Channel cLLD check?");
+	Insert(IDS::dlgExecute3rdTitle,				 "Daily Maintenance - Needle Wash Station");
+	Insert(IDS::dlgExecute3rdText,				 "Do you want to execute the 3rd Generation Wash Station maintenance?");
+	Insert(IDS::dlgExecuteCrTitle,				 "Daily Maintenance - CR Wash Station");
+	Insert(IDS::dlgExecuteCrText,					 "Do you want to execute the CR Wash Station maintenance?");
+	Insert(IDS::dlgExecute96Title,				 "Daily Maintenance - 96 Wash Station");
+	Insert(IDS::dlgExecute96Text,					 "Do you want to execute the 96 Wash Station maintenance?");
+	Insert(IDS::dlgExecuteDcTitle,				 "Daily Maintenance - DC Wash Station");
+	Insert(IDS::dlgExecuteDcText,					 "Do you want to execute the DC Wash Station maintenance?");
+	Insert(IDS::dlgExecuteBvsTitle,				 "Daily Maintenance - BVS/CVS");
+	Insert(IDS::dlgExecuteBvsText,				 "Do you want to execute the BVS/CVS maintenance?");
+	Insert(IDS::dlgStatusIncompleteTitle,		 "Daily maintenance - incomplete");
+	Insert(IDS::dlgStatusIncompleteText,		 "Daily maintenance execute not completed \n\n For details see the StarLineDailyMaintenance report");
+	Insert(IDS::dlgStatusSuccessfulTitle,		 "Daily maintenance - successful");
+	Insert(IDS::dlgStatusSuccessfulText,		 "Daily maintenance execute successfully completed");
+	Insert(IDS::dlgStatusFailedTitle,		    "Daily maintenance - failed");
+	Insert(IDS::dlgStatusFailedText,				 "Daily maintenance execute failed \n\n For details see the StarLineDailyMaintenance report");
+	Insert(IDS::dlgExecute_96_384_Title,		 "Daily Maintenance - 96/384 Wash Station");
+	Insert(IDS::dlgExecute_96_384_Text,			 "Do you want to execute the 96/384 Wash Station maintenance?");
+	Insert(IDS::dlgCheckTightness5mlTitle,		 "Daily Maintenance - Tightness Check 5ml Channel");
+	Insert(IDS::dlgCheckTightness5mlText,		 "Do you want to execute the 5ml Channel tightness check?");
+	Insert(IDS::dlgCheckClld5mlTitle,			 "Daily Maintenance - cLLD Check 5ml Channel");
+	Insert(IDS::dlgCheckClld5mlText,				 "Do you want to execute the 5ml Channel cLLD check?");
+	Insert(IDS::dlgCheckTightness96TadmHeadTitle,	"Daily Maintenance - Tightness Check CO-RE 96 TADM Head");
+	Insert(IDS::dlgCheckTightness96TadmHeadText,	"Do you want to execute the CO-RE 96 TADM Head tightness check? \n\nMake sure that the CO-RE 96 TADM Head maintenance tool is installed.");
+    Insert(IDS::dlgExecuteEasyPuncherTitle,   "Daily Maintenance - easyPunch");
+    Insert(IDS::dlgExecuteEasyPuncherText,    "Do you want to execute the easyPunch maintenance?");
+}
+// $$author=ContainerAdministrator$$valid=1$$time=2025-09-09 20:31$$checksum=501ce204$$length=101$$

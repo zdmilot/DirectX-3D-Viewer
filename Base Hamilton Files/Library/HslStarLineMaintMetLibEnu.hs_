@@ -1,0 +1,292 @@
+/****************************************************************************************************
+*  
+*   Library for Methods of Microlab 2006 STARline Maintenance
+*   Copyright © by HAMILTON Bonaduz AG, CH-7402 Bonaduz.
+*
+*   All rights reserved.
+*
+*   Language dependant part of the Microlab STARline Maintenance
+*
+*   Modification History
+*
+*   2005-04-21  Alessandro Carrara : Initial file creation.
+*   2006-03-14  Werner Barmettler  : Add Nanopipettor
+*   2006-08-18  Werner Barmettler  : Add DC Wash Station Daily
+*   2006-09-08  Werner Barmettler  : Add BVS Daily
+*   2006-09-08  Werner Barmettler  : Add 96/384 Wash Station Daily
+*   2006-10-03  Werner Barmettler  : Removed Nanopipettor
+*   2006-12-20  Fernando Garcia    : Added timer waiting text
+*   2007-07-05  Fernando Garcia    : SCR #1284: changed wording of allowed BVS connection COM ports
+*   2008-07-01  Thomas Benz        : Nano pipettor added
+*   2010-01-25  Claudio Jörg       : Changed naming used for Nano Pipettor cleaning solution to use "ProClin 300 0.05%" (SCR 1433)
+*   2010-12-02  Thomas Benz        : CO-RE 96 Tadm Head added
+*   2012-10-03  Thomas Benz        : EasyPunch added
+*   2013-03-12  Thomas Benz        : EasyPunch: some text dependent of operator manual updated.
+*   2013-06-14  Thomas Benz        : dlgWashRinseContFullText and dlgWashCrWashFullDailyText Text enlaget with 'empty waste'
+*   2016-05-19  Thomas Benz        : easyPunchDlgCleanFrame, easyPunchDlgCleanDeck and easyPunchDlgCleanHead Text updated
+*   2020-03-27  Urban Bernhard     : ECO 11002070 - changed user prompts of BVS/CVS
+*   2023-03-17  Urban Bernhard     : Renamed duplicate resource definition dlgDailyBVSWash1Text to dlgWeeklyBVSWash1Text 
+****************************************************************************************************/
+
+function StringTable()
+{
+   Insert(IDE::firmwareCommandFailed,                 "Firmware command <%s1> with parameter <%s2> failed! - return value <%s3>");
+   Insert(IDE::fileCopyFailed,                        "%s1 (%s2) : Failed to shell out copy command");
+   Insert(IDE::fileOpenFailed,                        "%s1 (%s2) : Failed to open report file");
+   Insert(IDE::cfgAutoloadMissing,                    "Autoload not available");
+   Insert(IDE::timerSetError,                         "Set timer failed");
+   Insert(IDE::timerWaitError,                        "Wait timer failed");
+   Insert(IDE::unknownChannel,                        "Unknown channel");
+   Insert(IDE::templateFileNotExist,                  "No template file found");
+   Insert(IDE::hardwareError,                         "Hardware error from pump unit received.\n\nEither valve-drive or liquid-level sensor defective.");
+   Insert(IDE::noWashFluidError,                      "Either no wash liquid available or waste container full.");
+   Insert(IDE::unexpectedInstrumentError,             "Unexpected instrument error received -> Method abort");
+   Insert(IDE::parseFirmwareCommandFailed,            "Interpretation of firmware command result <%s1> failed. Parameter <%s2> not found");
+ 
+   Insert(IDS::trcDialogOK,                           "Dialog <%s> -> button <OK> pressed");
+   Insert(IDS::trcDialogCancel,                       "Dialog <%s> -> aborted by button <Cancel>");
+   Insert(IDS::trcInstrName,                          "Instrument Name: ");
+   Insert(IDS::trcUserSwVersion,                      "User Software Version: ");
+   Insert(IDS::trcOperator,                           "Operator:");
+   Insert(IDS::trcInstrSerialNo,                      "Instrument Serial No: ");
+   Insert(IDS::trcInstrNoOfChannels1000ul,            "Instrument Number of 1000µl Channels: ");
+   Insert(IDS::procStateSuccessful,                   "successful");
+   Insert(IDS::procStateFailed,                       "failed");
+   Insert(IDS::checkSuccessful,                       "successful");//old PASSED
+   Insert(IDS::checkFailed,                           "failed");// old FAILED
+   Insert(IDS::buildOverPressure1000ulFailed,         "Tightness check 1000µl channel no. %s - build over pressure failed  > ");
+   Insert(IDS::dropOverPressure1000ulFailed,          "Tightness check 1000µl channel no. %s - drop check over pressure failed  > ");
+   Insert(IDS::buildUnderPressure1000ulFailed,        "Tightness check 1000µl channel no. %s - build under pressure failed  > ");
+   Insert(IDS::dropUnderPressure1000ulFailed,         "Tightness check 1000µl channel no. %s - drop check under pressure failed  > ");
+   Insert(IDS::cLLDcheck1000ulAirFailed,              "Capacitive LLD check 1000µl channel no. %s - air check failed");
+   Insert(IDS::cLLDcheck1000ulBlockFailed,            "Capacitive LLD check 1000µl channel no. %s - block check failed");
+   Insert(IDS::testSum,                               "Test summary :");
+   Insert(IDS::channel1000ul,                         "1000µl Channel no. ");
+   Insert(IDS::tightnessCheckFailed,                  "tightness check failed");
+   Insert(IDS::cLLDCheckFailed,                       "cLLD check failed");
+   Insert(IDS::measuredLeakage,                       "measured leakage: %s Pa");
+   Insert(IDS::reachedPressure,                       "reached pressure: %s Pa (relative to ambient)");
+   Insert(IDS::trcTypeOfPumps,                        "Pump Type: ");
+   Insert(IDS::dlgCheckWashModulesTitle,              "Needle Wash Station - Wash Modules");
+   Insert(IDS::dlgCheckWashModulesText,               "Make sure that needles are installed!");
+   Insert(IDS::dlgWashRinseContFullTitle,             "Maintenance - CR Wash Station - Wash procedure");
+   Insert(IDS::dlgWashRinseContFullText,              "Empty any remaining liquid of the waste container.\n\nPlease put into Wash Container (red) 6l of water and 60ml of Wash Station Cleaner solution.\n\nNote: the maintenance procedure takes about 40 minutes.");
+   Insert(IDS::dlgWashRinseContEmptyTitle,            "Maintenance - CR Wash Station - Empty procedure");
+   Insert(IDS::dlgWashRinseContEmptyText,             "Please empty the wash(red)/waste container and rinse it with distilled water.");
+   Insert(IDS::dlgLoadNeedlesTitle,                   "Needles");
+   Insert(IDS::dlgLoadNeedlesText,                    "Please load the needles");
+   Insert(IDS::checkNotInstalled,                     "not installed");
+   Insert(IDS::checkNotPerformed,                     "not performed");
+   Insert(IDS::checkInstalled,                        "installed");
+   Insert(IDS::noChannelsInstalled,                   "no channels installed");
+   Insert(IDS::procStateIncomplete,                   "incomplete");
+   Insert(IDS::trcDialogYes,                          "Dialog <%s> -> button <Yes> pressed");
+   Insert(IDS::trcDialogNo,                           "Dialog <%s> -> button <No> pressed");
+   Insert(IDS::dlgWash96Wash1Title,                   "Maintenance - 96 Wash Station - Wash procedure");
+   Insert(IDS::dlgWash96Wash1Text,                    "Please put into Wash Container 3l of water and 30ml of Wash Station Cleaner solution.");
+   Insert(IDS::dlgWash96Wash6Title,                   "Maintenance - 96 Wash Station - Rinse procedure");
+   Insert(IDS::dlgWash96Wash6Text,                    "Please empty the wash container and rinse it with distilled water.\n\nPlease put into Wash Container 3l of distilled water.");
+   Insert(IDS::dlgWash96Wash8Title,                   "Maintenance - 96 Wash Station - Empty procedure");
+   Insert(IDS::dlgWash96Wash8Text,                    "Please empty the wash/waste container and rinse it with distilled water.");
+   Insert(IDS::dlgWash3rdWash1Title,                  "Needle Wash Station - Wash procedure");
+   Insert(IDS::dlgWash3rdWash1Text,                   "Please put into both Wash Containers (red) 3l of water and 30ml of Wash Station Cleaner solution.\n\nNote: the maintenance procedure takes about 40 minutes.");
+   Insert(IDS::dlgWash3rdWash6Title,                  "Needle Wash Station - Empty procedure");
+   Insert(IDS::dlgWash3rdWash6Text,                   "Please empty both wash containers (red), the waste container and rinse them with distilled water.\n\n All wash containers (red) and waste container to be replaced in their correct positions.");
+   Insert(IDS::traceSource,                           "SYSTEM");
+   Insert(IDS::traceActionCORE96HeadWashMaint,        "Maintenance - CO-RE 96 Head Washer");
+   Insert(IDS::titleErrorHandling,                    "Maintenance - Error handling");
+   Insert(IDS::errorDuringCORE96HeadWashMaint,        "Error during maintenance procedure of CO-RE 96 Head Washer.");
+   Insert(IDS::errorIgnoredByOperator,                "Error ignored by operator. Method continue.");
+   Insert(IDS::errorRetry,                            "Error handling - step repeated by the operator.");
+   Insert(IDS::trcDialogAbort,                        "Dialog <%s> -> button <Abort> pressed");
+   Insert(IDS::trcDialogRetry,                        "Dialog <%s> -> button <Retry> pressed");
+   Insert(IDS::trcDialogIgnore,                       "Dialog <%s> -> button <Ignore> pressed");
+   Insert(IDS::dlgWash3rdWashRinseTitle,              "Needle Wash Station - Rinse procedure");
+   Insert(IDS::dlgWash3rdWashRinseText,               "Please rinse both wash containers (red) with distilled water. \n\n Please put into both wash containers (red) 3l of distilled water.");
+   Insert(IDS::dlgWash3rdWashFullDailyTitle,          "Needle Wash Station - Wash procedure");
+   Insert(IDS::dlgWash3rdWashFullDailyText,           "Please put into both Wash Containers (red) 2l of water and 20ml of Wash Station Cleaner solution. \n\nNote: the maintenance procedure takes about 15 minutes.");
+   Insert(IDS::dlgWashCrWashFullDailyTitle,           "Maintenance - CR Wash Station - Wash procedure");
+   Insert(IDS::dlgWashCrWashFullDailyText,            "Empty any remaining liquid of the waste container.\n\nPlease put into Wash Container (red) 4l of water and 40ml of Wash Station Cleaner solution. \n\nNote: the maintenance procedure takes about 15 minutes.");
+   Insert(IDS::dlgWashCrWashRinseTitle,               "Maintenance - CR Wash Station - Rinse procedure");
+   Insert(IDS::dlgWashCrWashRinseText,                "Please rinse the wash container (red) with distilled water. \n\n Please put into wash container (red) 3l of distilled water.");
+
+   Insert(IDS::dlgDailyDCWash1Title,                  "Daily Maintenance - DC Wash Station - Wash procedure");
+   Insert(IDS::dlgDailyDCWash1Text,                   "Please fill Wash Container with 3l of water and 30ml of cleaner solution.");
+   Insert(IDS::dlgDailyDCWash2Title,                  "Daily Maintenance - DC Wash Station - Rinse procedure");
+   Insert(IDS::dlgDailyDCWash2Text,                   "Please empty the Wash Container and rinse it with distilled water.\n\nPlease fill Wash Container with 3l of distilled water.");
+   Insert(IDS::dlgDailyDCWash3Title,                  "Daily Maintenance - DC Wash Station - Empty procedure");
+   Insert(IDS::dlgDailyDCWash3Text,                   "Please empty the Wash Container and rinse it with distilled water.\n\nPlease empty Waste Container and rinse it with distilled water.");
+   Insert(IDS::traceActionDailyDCWashStation,         "Daily Maintenance - DC Wash Station");
+   Insert(IDS::errorDuringDailyDCWashStationMaint,    "Error during maintenance procedure of DC Wash Station.");
+
+   Insert(IDS::dlgWeeklyDCWash1Title,                 "Weekly Maintenance - DC Wash Station - Wash procedure");
+   Insert(IDS::dlgWeeklyDCWash1Text,                  "Please fill Wash Container with 3l of water and 30ml of cleaner solution.");
+   Insert(IDS::dlgWeeklyDCWash2Title,                 "Weekly Maintenance - DC Wash Station - Rinse procedure");
+   Insert(IDS::dlgWeeklyDCWash2Text,                  "Please empty the Wash Container and rinse it with distilled water.\n\nPlease fill Wash Container with 3l of distilled water.");
+   Insert(IDS::dlgWeeklyDCWash3Title,                 "Weekly Maintenance - DC Wash Station - Empty procedure");
+   Insert(IDS::dlgWeeklyDCWash3Text,                  "Please empty the Wash Container and rinse it with distilled water.\n\nPlease empty Waste Container and rinse it with distilled water.");
+   Insert(IDS::traceActionWeeklyDCWashStation,        "Weekly Maintenance - DC Wash Station");
+   Insert(IDS::errorDuringWeeklyDCWashStationMaint,   "Error during maintenance procedure of DC Wash Station.");
+
+   Insert(IDS::dlgDaily_96_384_Wash1Title,                 "Daily Maintenance - 96/384 Wash Station - Wash procedure");
+   Insert(IDS::dlgDaily_96_384_Wash1Text,                  "Please fill both Wash Container with 2l of water and 20ml of cleaner solution.");
+   Insert(IDS::dlgDaily_96_384_Wash2Title,                 "Daily Maintenance - 96/384 Wash Station - Rinse procedure");
+   Insert(IDS::dlgDaily_96_384_Wash2Text,                  "Please empty both Wash Container and rinse it with distilled water.\n\nPlease fill Wash Container with 3l of distilled water.");
+   Insert(IDS::dlgDaily_96_384_Wash3Title,                 "Daily Maintenance - 96/384 Wash Station - Empty procedure");
+   Insert(IDS::dlgDaily_96_384_Wash3Text,                  "Please empty both Wash Container and rinse it with distilled water.\n\nPlease  empty Waste Container and rinse with distilled water.");
+   Insert(IDS::traceActionDaily_96_384_WashStation,        "Daily Maintenance - 96/384 Wash Station");
+   Insert(IDS::errorDuringDaily_96_384_WashStationMaint,   "Error during maintenance procedure of 96/384 Wash Station.");
+
+   Insert(IDS::dlgWeekly_96_384_Wash1Title,                "Weekly Maintenance - 96/384 Wash Station - Wash procedure");
+   Insert(IDS::dlgWeekly_96_384_Wash1Text,                 "Please fill both Wash Container with 2l of water and 20ml of cleaner solution.");
+   Insert(IDS::dlgWeekly_96_384_Wash2Title,                "Weekly Maintenance - 96/384 Wash Station - Rinse procedure");
+   Insert(IDS::dlgWeekly_96_384_Wash2Text,                 "Please empty both Wash Container and rinse it with distilled water.\n\nPlease fill Wash Container with 3l of distilled water.");
+   Insert(IDS::dlgWeekly_96_384_Wash3Title,                "Weekly Maintenance - 96/384 Wash Station - Empty procedure");
+   Insert(IDS::dlgWeekly_96_384_Wash3Text,                 "Please empty both Wash Container and rinse it with distilled water.\n\nPlease  empty Waste Container and rinse with distilled water.");
+   Insert(IDS::traceActionWeekly_96_384_WashStation,       "Weekly Maintenance - 96/384 Wash Station");
+   Insert(IDS::errorDuringWeekly_96_384_WashStationMaint,  "Error during maintenance procedure of 96/384 Wash Station.");
+
+   Insert(IDS::dlgExecuteDailyBVSTitle,               "Daily Maintenance - BVS/CVS procedure");
+   Insert(IDS::dlgExecuteDailyBVSInstalledText,       "Is a BVS/CVS installed?");
+   Insert(IDS::dlgDailyBVSWash1Title,                 "Daily Maintenance - BVS/CVS wash procedure");
+   Insert(IDS::dlgDailyBVSWash1Text,                  "Detach the Manifold Top, wipe it with a lint free cloth soaked with cleaning agent, and put it aside. \n Please fill the BVS/CVS Container to the brim with cleaner solution. Consider the user manual for more information. \nDo not overspill! ");
+   Insert(IDS::dlgDailyBVSWash2Title,                 "Daily Maintenance - BVS/CVS select COM Port");
+   Insert(IDS::dlgDailyBVSWash2Text,                  "Please enter COM Port No. where the BVS/CVS is connected.\n\nCOM Ports 1 to 255 are allowed.\n");
+   Insert(IDS::dlgDailyBVSWash3Title,                 "Daily Maintenance - BVS/CVS wash procedure");
+   Insert(IDS::dlgDailyBVSWash3Text,                  "Please fill the BVS/CVS Container to the brim with destilled water. Do not overspill!");
+   Insert(IDS::dlgDailyBVSWash4Title,                 "Daily Maintenance - BVS/CVS empty procedure");
+   Insert(IDS::dlgDailyBVSWash4Text,                  "Please empty Waste Container and rinse it with distilled water.");
+   Insert(IDS::dlgDailyCloseCoverTitle,               "Daily Maintenance - close cover");
+   Insert(IDS::dlgDailyCloseCoverText,                "Re-install the Manifold Top\nClose the front cover and press OK to continue.\n\nCancel will abort the daily maintenance.");
+
+   Insert(IDS::dlgExecuteWeeklyBVSTitle,              "Weekly Maintenance - BVS/CVS procedure");
+   Insert(IDS::dlgExecuteWeeklyBVSInstalledText,      "Is a BVS/CVS installed?");
+   Insert(IDS::dlgWeeklyBVSWash1Title,                "Weekly Maintenance - BVS/CVS wash procedure");
+   Insert(IDS::dlgWeeklyBVSWash1Text,                 "Detach the Manifold Top, wipe it with a lint free cloth soaked with cleaning agent, and put it aside. \n Please fill the BVS/CVS Container to the brim with cleaner solution. Consider the user manual for more information. \nDo not overspill! ");
+   Insert(IDS::dlgWeeklyBVSWash2Title,                "Weekly Maintenance - BVS/CVS select COM Port");
+   Insert(IDS::dlgWeeklyBVSWash2Text,                 "Please enter COM Port No. where the BVS/CVS is connected.\n\nCOM Ports 1 to 255 are allowed.\n");
+   Insert(IDS::dlgWeeklyBVSWash3Title,                "Weekly Maintenance - BVS/CVS wash procedure");
+   Insert(IDS::dlgWeeklyBVSWash3Text,                 "Please fill the BVS/CVS Container to the brim with destilled water. Do not overspill!");
+   Insert(IDS::dlgWeeklyBVSWash4Title,                "Weekly Maintenance - BVS/CVS empty procedure");
+   Insert(IDS::dlgWeeklyBVSWash4Text,                 "Please empty Waste Container and rinse it with distilled water.");
+   Insert(IDS::dlgWeeklyCloseCoverTitle,              "Weekly Maintenance - close cover");
+   Insert(IDS::dlgWeeklyCloseCoverText,               "Re-install the Manifold Top\nClose the front cover and press OK to continue.\n\nCancel will abort the weekly maintenance.");
+   
+   Insert(IDS::errorDuringBVSInitText,       			"Error: BVS/CVS not switched on or wrong COM port.");
+
+   Insert(IDS::dlgSleepForWashTime,          			"Please wait!");
+   Insert(IDS::soakTimerWaitText,          			   "Maintenance is running, please wait...");
+
+
+   Insert(IDS::dlgCheckNanoPipettorTitleMorning,      "Nanopipettor Daily Morning Maintenance");
+   Insert(IDS::dlgCheckNanoPipettorTitleDecontamination, "Nanopipettor Decontamination Maintenance");
+   Insert(IDS::dlgCheckNanoPipettorTitleStartUp,      "Nanopipettor Start Up Maintenance");
+   Insert(IDS::dlgNanoOpenTheBottleText,              "Please open the valves of Helium and CO2 supply!");
+   Insert(IDS::dlgNanoCloseValves,                    "Please close valve of Helium and CO2 supply!");
+   Insert(IDS::dlgNanoCheckPressureHe,                "Please check that the pressure of Helium is greater then 20 bar!\nIs the pressure > 20 bar?");
+   Insert(IDS::dlgNanoChangeBottleHe,                 "Please close the valve of Helium supply\nand change Helium supply!");
+   Insert(IDS::dlgNanoDraying_Time,                   "Drying Time in sec.");
+   Insert(IDS::dlgNanoPressureOfHelium,               "The pressure of Helium is: ");
+   Insert(IDS::dlgNanoPressureOfCO2,                  "The pressure of CO2 is: ");
+   Insert(IDS::dlgNanoMBAR,                           " [mbar]");
+   Insert(IDS::dlgNanoHeLow,                          "The pressure of Helium is too low.\nPlease adjust Helium pressure to 1.8 bar!");
+   Insert(IDS::dlgNanoHeHigh,                         "The pressure of Helium is too high.\nPlease close the valve of Helium supply and reduce the pressure!");
+   Insert(IDS::dlgNanoCO2Low,                         "The pressure of CO2 is too low.\nPlease adjust CO2 pressure to %s bar!");
+   Insert(IDS::dlgNanoCO2High,                        "The pressure of CO2 is too high.\nPlease adjust CO2 pressure to %s bar!\n(Close CO2 supply remove tube from pressure controller until pressure is 0)");
+   Insert(IDS::dlgNanoFillUpWaterHand,                "Please fill up water reservoir!");
+   Insert(IDS::dlgNanoEnterXPosition,                 "Please enter the first track position of the service carrier.");
+   Insert(IDS::dlgNanoAddCarrierTitle,                "Maintenance - Add Nano Service Carrier");
+   Insert(IDS::dlgNanoSparging,                       "Fill up system reservoir, Sparging, Drying multi Channel +n Channel, Priming Liquid System.");
+   Insert(IDS::dlgNanoServiceCarrier,                 "Ultrasonic bath (service carrier) empty (via Waste pump). Wash ceramic tips (10 seconds in the ultrasonic bath).");
+   Insert(IDS::dlgNanoEmptyWasteChamber,              "Empty waste Chamber (service carrier).");
+   Insert(IDS::dlgNanoHeIsToHigh,                     "The pressure of Helium is too high: ");
+   Insert(IDS::dlgNanoHeIsToLow,                      "The pressure of Helium is too low: ");
+   Insert(IDS::dlgNanoTraceUser,                      "USER");
+   Insert(IDS::dlgNanoPressureHe30,                   "Pressure of Helium is > 20 bar!");
+   Insert(IDS::dlgNanoTraceSystem,                    "SYSTEM");
+   Insert(IDS::dlgNanoWaterSystemFull,                "Water reservior is full!");
+   Insert(IDS::dlgNanoWasteContainerHand,             "Please empty waste container!");
+   Insert(IDS::dlgNanoWasteContainerIsEmpty,          "Waste container is empty!");
+   Insert(IDS::dlgNanoExchangeCleaningLiquid,         "Exchange cleaning liquid at ultrasonic bath.");
+   Insert(IDS::dlgNanoXPositionConform0,              "Please confirm that the service carrier\nis placed between the following tracks:");
+   Insert(IDS::dlgNanoXPositionConform1,              "\nStart track (left side): ");
+   Insert(IDS::dlgNanoXPositionConform2,              "\nEnd track (right side): ");
+   Insert(IDS::dlgNanoXPositionConform3,              "The position of the service carrier is indicated by the blinking LEDs.");
+   Insert(IDS::dlgNanoTrackPosition,                  "The position of the service carrier is between track: ");
+   Insert(IDS::dlgNanoTrackPosition1,                 " and ");
+   Insert(IDS::dlgNano8_Channel_Head_not_installed,   "Multi Channel Head not installed.");
+   Insert(IDS::dlgNano8_Channel_Head_high_viscosity_installed, "Multi Channel Head high viscosity installed.");
+   Insert(IDS::dlgNano8_Channel_Head_low_volume_installed,     "Multi Channel Head low volume installed.");
+   Insert(IDS::dlgNanon_channel_head_not_installed,            "+n channel head not installed.");
+   Insert(IDS::dlgNanon_channel_head_high_viscosity_installed, "+n channel head high viscosity installed.");
+   Insert(IDS::dlgNanon_channel_head_low_volume_installed,     "+n channel head low volume installed.");
+   Insert(IDS::dlgNanoDryHeliumPump,                  "Drying helium pump.");
+   Insert(IDS::dlgNanoDryHeliumPumpError,             "Error helium pump is not dry!");
+   Insert(IDS::dlgNanoWrongXPosition,                 "Please enter a track position between -3 to %s! (-3, -2, -1, 0, 1, 2, 3, ...)");
+   Insert(IDS::dlgNanoHeHighEndCorrection,            "Please open the valve of Helium supply and set the pressure to 1.8 bar!");
+
+   Insert(IDS::dlgNanoRemoveWaterFromSystem,          "Remove water from system.");
+   Insert(IDS::dlgNanoRemoveWaterFromSystemError,     "Error system is not free of water!");
+
+   Insert(IDS::dlgNanoFillUpDecontaminateFluid,       "Please wipe the refill container clean and fill it up with 8l ProClin 300 0.05%!");
+
+   Insert(IDS::dlgNanoDecontaminateSystem,            "Fill up system with ProClin 300 0.05%.");
+   Insert(IDS::dlgNanoDecontaminateSystemError,       "Error system cannot filled with ProClin 300!");
+   Insert(IDS::dlgNanoRemoveDecontWaterFromSystem,    "Remove ProClin 300 from system.");
+   Insert(IDS::dlgNanoRemoveDecontWaterFromSystemError,"Error system is not free of ProClin 300!");
+
+   Insert(IDS::dlgNanoFillUpRinseWaterFluid,          "Please wipe the refill container clean and fill it up with water!");
+
+   Insert(IDS::dlgNanoRinseSystem,                    "Fill up system with water.");
+   Insert(IDS::dlgNanoRinseSystemError,               "Error system cannot filled with water!");
+   Insert(IDS::dlgNanoRemoveRinseWaterFromSystem,     "Remove rinse water from system.");
+   Insert(IDS::dlgNanoRemoveRinseWaterFromSystemError,"Error system is not free of rinse water!");
+
+   Insert(IDS::dlgNanoEmptyRefillContainer,           "Please empty refill container!");
+   Insert(IDS::dlgNanoRefillContainerNeedsToBeEmpty,  "Refill container needs to be empty!");
+   Insert(IDS::dlgNanoMoveToWaste,                    "Move nano pipettor to waste.");
+   Insert(IDS::dlgNanoMoveToWasteError,               "Error nano pipettor cannot move to waste!");
+
+   Insert(IDS::trcInstrNoOfChannels5ml,           		"Instrument Number of 5ml Channels: ");
+   Insert(IDS::cLLDcheck5mlAirFailed,           		"Capacitive LLD check 5ml channel no. %s - air check failed");
+   Insert(IDS::cLLDcheck5mlBlockFailed,           		"Capacitive LLD check 5ml channel no. %s - block check failed");
+
+   Insert(IDS::buildOverPressure5mlFailed,            "Tightness check 5ml channel no. %s - build over pressure failed  > ");
+   Insert(IDS::dropOverPressure5mlFailed,             "Tightness check 5ml channel no. %s - drop check over pressure failed  > ");
+   Insert(IDS::buildUnderPressure5mlFailed,           "Tightness check 5ml channel no. %s - build under pressure failed  > ");
+   Insert(IDS::dropUnderPressure5mlFailed,            "Tightness check 5ml channel no. %s - drop check under pressure failed  > ");
+
+   Insert(IDS::channel5ml,                            "5ml Channel no. ");
+
+   Insert(IDS::buildOverPressure96TadmHeadFailed,     "Tightness check CO-RE 96 Tadm Head channel no. %s - build over pressure failed  > ");
+   Insert(IDS::dropOverPressure96TadmHeadFailed,      "Tightness check CO-RE 96 Tadm Head channel no. %s - drop check over pressure failed  > ");
+   Insert(IDS::buildUnderPressure96TadmHeadFailed,    "Tightness check CO-RE 96 Tadm Head channel no. %s - build under pressure failed  > ");
+   Insert(IDS::dropUnderPressure96TadmHeadFailed,     "Tightness check CO-RE 96 Tadm Head channel no. %s - drop check under pressure failed  > ");
+   Insert(IDS::trcInstr96TadmHead,                    "Instrument CO-RE 96 TADM Head: ");
+   Insert(IDS::dlg96TadmHeadTitle,                    "Maintenance - CO-RE 96 TADM Head");
+   Insert(IDS::dlg96TadmHeadCarrierMissing,           "Maintenance carrier for CO-RE 96 TADM Head not found.\n\nCheck if exist a customer decklayout which has added the needed carrier and maintenance tool.");
+   Insert(IDS::dlg96TadmHeadCarrierPosition,          "Please confirm that the maintenance tool is placed under the current CO-RE 96 TADM Head position.");
+   Insert(IDS::err96TadmHeadCannotMoveToTool,         "CO-RE 96 TADM Head cannot move to maintenance tool!");
+   Insert(IDS::dlg96TadmHeadCheckTool,                "Tightness check has failed for all channel!\n\nPlease verify for correct position (tightness side up) of maintenance tool.");
+   Insert(IDS::channel96TadmHead,                     "96 TADM Head channel no. ");
+
+
+   Insert(IDS::easyPunchDlgTitle,                     "Daily Maintenance - easyPunch");
+   Insert(IDS::easyPunchDlgWTitle,                    "Weekly Maintenance - easyPunch");
+   Insert(IDS::easyPunchDlgCleanWaste,                "Open the front cover, empty the cleaning punch waste troughs and rinse it with Ethanol (70%).");
+   Insert(IDS::easyPunchDlgCleanFrame,                "Please remove the plate slide and clean it with Ethanol (70%), clean the sliders with detergent solution.");
+   Insert(IDS::easyPunchDlgCleanDeck,                 "Please clean the glass plate with detergent solution, wipe it dry and put back the plate slide. Please make sure that the glass plate and the plate slide are dry before putting it back.");
+   Insert(IDS::easyPunchDlgCleanHead,                 "Please remove the punch head and clean it with clean compressed air.\n\nPunch cycle count of current head: %s");
+   Insert(IDS::easyPunchDlgInsertSN,                  "Please enter Serial Number S/N of cleaned or new punch head: \n\nFormat: #### (e.g. 0110)");
+   Insert(IDS::easyPunchDlgInsertPN,                  "Please enter Part Number P/N of cleaned or new punch head: \n\nFormat: ######/## (e.g. 803022/00");
+   Insert(IDS::easyPunchDlgMountHead,                 "Please mount the cleaned or new punch head; Serial Number: %s1 and Part Number: %s2.");
+   Insert(IDS::easyPunchDlgChangeHead,                "Used punch head (Serial Number: %s1, Part Number: %s2) has reached the maximum of %s3 punch cycles and should be exchanged.\n\nExchange punch head?");
+   Insert(IDS::easyPunchDlgCleanDustWaste,            "Open the front cover, remove and empty the vacuum dust collector and clean it with Ethanol (70%) and desinfect solution.\n\nRemount after cleaning.");
+   Insert(IDS::easyPunchDlgCleanGripClamp,            "Open the front cover, clean the card gripper fingers with Ethanol (70%) and desinfect solution.");
+   Insert(IDS::easyPunchIonisatorStateFailed,         ": Ionizer state check failed; expected 1 returned %s.");
+   Insert(IDS::easyPunchXyzCheckFailed,               ": Justage %s1 value check failed; tolerance ±%s2mm returned %s3mm.");
+   Insert(IDS::easyPunchCloseFrontCover,              "Close the front cover and press OK to continue.\n\nCancel will abort the maintenance.");
+
+}
+
+// $$author=ContainerAdministrator$$valid=1$$time=2025-09-09 20:31$$checksum=7e23e81b$$length=099$$

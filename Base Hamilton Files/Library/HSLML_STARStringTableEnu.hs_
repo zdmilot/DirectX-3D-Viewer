@@ -1,0 +1,89 @@
+// ======================================================================
+// This is the language dependant part of the HSLInstrument Library.
+// Copyright (C) by HAMILTON Bonaduz AG, CH-7402 Bonaduz.
+// ======================================================================
+//
+// Modification History
+//
+//	2001-11-14   bandenmatten :	Changed file name from HSLInstrumentStringTableEnu.hs_ to HSLML_STARStringTableEnu.hs_
+//	2001-11-14   bandenmatten :	Inserted IDEs and IDSs.
+//	2002-02-05   bandenmatten :	Inserted IDEs and IDSs.
+//	2004-04-15   cjoerg       :	Inserted IDEs and IDSs. Add stp-file.
+// 2004-04-16   cjoerg       :	Changed helpFileName to .chm
+//	2006-04-10   bandenmatten :	Inserted IDSs: traceActionAntiDropletControlOn, traceActionAntiDropletControlOff, traceActionSetBarcodeTypes.
+//	2006-04-10   bandenmatten :	Inserted IDEs: invalidBarcodeTypesString.
+//	2007-10-04   ubernhard	  :	Inserted several IDEs for 5ml channel actions
+//
+// ======================================================================
+
+function StringTable()
+{
+	Insert(IDE::noError,											"No error."												);
+	Insert(IDE::fatalError,										"Fatal error."											);
+	Insert(IDE::invalidChannelPattern,						"The channel pattern is invalid."				);
+	Insert(IDE::invalidChannelNumber,						"The channel number is invalid."					);
+	Insert(IDE::invalidLLDSensitivity,						"The liquid level detection sensitivity is invalid.");
+	Insert(IDE::invalidMaxHeightDifference,				"The maximum height difference is invalid."	);
+	Insert(IDE::methodAborted,									"The method was aborted by the user."			);
+	Insert(IDE::invalidFileName,								"The specified file name is invalid."			);
+	Insert(IDE::fileOpenFailed,								"The system cannot open the file '%s'."		);
+	Insert(IDE::fileWriteFailed,								"The system cannot write the device or file specified.");
+	Insert(IDE::noBarcode,										"The barcode '%s' was not found in the barcode file.");
+	Insert(IDE::noLabware,										"The labware with barcode '%s' was not found in the barcode file.");
+	Insert(IDE::noPosition,										"No position found for labware '%s'."			);
+	Insert(IDE::invalidVolume,									"The volume is invalid."							);
+	Insert(IDE::expectedLabwareIdOrBarcode,				"Expected either a labware id or a barcode."	);
+	Insert(IDE::invalidTipType,								"The tip type is invalid."							);
+	Insert(IDE::invalidLiquidClass,							"The liquid class is invalid."					);
+	Insert(IDE::missingLiquidClass,							"The liquid class is not specified."			);
+	Insert(IDE::invalidStepType,								"The step type is invalid."						);
+	Insert(IDE::invalidLiquidClassValue,					"The value of the extended liquid class property '%s' is invalid.");
+	Insert(IDE::unexpectedEndOfFile,							"Unexpected end of file."							);
+	Insert(IDE::fileNotFound,									"The system cannot find the file '%s'."		);
+	Insert(IDE::labwareDataKeyNotFound,						"The key '%s' was not found in the labware data.");
+	Insert(IDE::multipleLiquidClasses,						"All channels in an Aspirate or Dispense step must have the same liquid class.");
+	Insert(IDE::firmwareErrorTitle,							"ERROR (Firmware Command response)");	
+	Insert(IDE::firmwareError,									"Failed to execute the firmware command.\nFirmware error: ");	
+	Insert(IDE::firmwareError2,								"Failed to execute the firmware command '%s1'.\nFirmware error: '%s2'.");	
+	Insert(IDE::firmwareErrorDescription,					"\n\nPlease call the service technician to fix the problem.\nPress OK to abort method.");	
+	Insert(IDE::invalidParameterTitle,						"ERROR (Invalid Parameter) ");	
+	Insert(IDE::invalidParameterType,						"Invalid type of parameter.\n\nPress OK to abort method.");	
+	Insert(IDE::invalidParameterRange,						"Parameter out of range.\n\nPress OK to abort method.");	
+	Insert(IDE::invalidBarcodeTypesString,					"The barcode types string is invalid (expected characters '0' or '1').");	
+
+	Insert(IDS::traceSource,									"SYSTEM"													);
+	Insert(IDS::traceActionAspirationMonitoringOn,		"AspirationMonitoring_1000ulChannel_On"		);
+	Insert(IDS::traceActionAspirationMonitoringOff,		"AspirationMonitoring_1000ulChannel_Off"		);
+	Insert(IDS::traceActionClotDetectionMonitoringOn,	"ClotDetectionMonitoring_1000ulChannel_On"	);
+	Insert(IDS::traceActionClotDetectionMonitoringOff,	"ClotDetectionMonitoring_1000ulChannel_Off"	);
+	Insert(IDS::traceActionSetPressureThreshold,			"SetPressureThreshold_1000ulChannel"			);
+	Insert(IDS::traceActionCreateATBarcodefile,			"Create AT Barcode file"							);
+	Insert(IDS::traceActionMeasureContainerVolume,		"MeasureContainerVolume_1000ulChannel"			);
+	Insert(IDS::traceActionDeleteBarcodeFile,				"DeleteBarcodeFile"									);
+	Insert(IDS::traceActionFormatBarcodeFile,				"FormatBarcodeFile"									);
+	Insert(IDS::traceActionExecuteWorklist,				"ExecuteWorklist"										);
+	Insert(IDS::noBarcode,										"No barcode"											);
+	Insert(IDS::noLabware,										"No labware"											);
+	Insert(IDS::traceErrorInvalidDatatype,					"Invalid datatype"									);
+	Insert(IDS::traceErrorInvalidArgument,					"Invalid argument"									);
+	Insert(IDS::traceCarrier,									"Carrier"												);
+	Insert(IDS::tracePlate,										"Plate"													);
+	Insert(IDS::traceLabwareIdNotFound,						"The labware id of the plate was not found in the deck layout definition file.");
+	Insert(IDS::traceNewFunction, 							"Note: An updated function for AT Barcode file creation is available in the library HSLReportLib.");
+	Insert(IDS::simulatorModeFirmwrCmdNotExecuted,		"Simulator mode on: Firmware Command not executed: ");
+	Insert(IDS::traceActionGetInstrumentType,				"Get Instrument Type for ");
+	Insert(IDS::traceActionGetInstrumentTypeNoInstr,	"Get Instrument Type (no instrument passed) ");
+	Insert(IDS::evaluatedInstrumentType	,					"Evaluated instrument type: "						);
+	Insert(IDS::traceActionAntiDropletControlOn,			"AntiDropletControl_1000ulChannel_On"			);
+	Insert(IDS::traceActionAntiDropletControlOff,		"AntiDropletControl_1000ulChannel_Off"			);
+	Insert(IDS::traceActionSetBarcodeTypes,				"SetBarcodeTypes"										);
+	Insert(IDS::helpFileName,									"HSLML_STARLibEnu.chm"								);
+	Insert(IDS::traceActionAspMonitoring_5ml_On,			"AspirationMonitoring_5mlChannel_On"			);
+	Insert(IDS::traceActionAspMonitoring_5ml_Off,		"AspirationMonitoring_5mlChannel_Off"			);
+	Insert(IDS::traceActionClotDetMonitoring_5ml_On,	"ClotDetectionMonitoring_5mlChannel_On"		);
+	Insert(IDS::traceActionClotDetMonitoring_5ml_Off,	"ClotDetectionMonitoring_5mlChannel_Off"		);
+	Insert(IDS::traceActionSetPressureThreshold_5ml,	"SetPressureThreshold_5mlChannel"				);
+	Insert(IDS::traceActionADC_5ml_On,						"AntiDropletControl_5mlChannel_On"				);
+	Insert(IDS::traceActionADC_5ml_Off,						"AntiDropletControl_5mlChannel_Off"				);
+}
+// $$author=ContainerAdministrator$$valid=1$$time=2025-09-09 20:31$$checksum=d63d9aa7$$length=099$$

@@ -1,0 +1,145 @@
+// ======================================================================
+// This is a part of the HSL File Library.
+// Copyright (C) by HAMILTON Bonaduz AG, CH-7402 Bonaduz.
+// All rights reserved.
+// ======================================================================
+//
+// Modification History
+//		2002-05-24	:	Remove PVCS log-key
+// 	2004-03-03	:	Added new function: GetInstrumentType()
+// 	2004-03-19	:	Added new function: GetInstrumentType_GlobalDevice()
+// 	2004-04-14	:	- Added new function IsSimulatorMode(..)
+//							- Specify the return type of all (exported) functions.
+// 	2005-05-18	bandenmatten :	SCR#836: Added new function MeasureContainerVolume2().
+// 	2006-04-10	bandenmatten :	Added new functions:	- HSLML_STAR::AntiDropletControlOn().
+//																		- HSLML_STAR::AntiDropletControlOff().
+//																		- HSLML_STAR::SetBarcodeTypes().
+// 	2007-10-03	ubernhard :	Added new functions:
+//											- AspirationMonitoring_5mlChannel_On()
+//											- AspirationMonitoring_5mlChannel_Off()
+//											- ClotDetectionMonitoring_5mlChannel_On()
+//											- ClotDetectionMonitoring_5mlChannel_Off()
+//											- AntiDropletControl_5mlChannel_On()
+//											- AntiDropletControl_5mlChannel_Off()
+//											- SetPressureThreshold_5mlChannel()
+//											- AspirationMonitoring_1000ulChannel_On()
+//											- AspirationMonitoring_1000ulChannel_Off()
+//											- ClotDetectionMonitoring_1000ulChannel_On()
+//											- ClotDetectionMonitoring_1000ulChannel_Off()
+//											- AntiDropletControl_1000ulChannel_On()
+//											- AntiDropletControl_1000ulChannel_Off()
+//											- SetPressureThreshold_1000ulChannel()
+//										Declared following function as static (new naming due to new 5ml channels):
+//											- AspirationMonitoringOn()
+//											- AspirationMonitoringOff()
+//											- ClotDetectionMonitoringOn()
+//											- ClotDetectionMonitoringOff()
+//											- AntiDropletControlOn()
+//											- AntiDropletControlOff()
+//											- SetPressureThreshold()
+// 	
+// ======================================================================
+
+#ifndef __HSLML_STARLib_hsl__
+#define __HSLML_STARLib_hsl__	1
+
+// Interface to File library 
+#ifndef HSL_RUNTIME
+
+namespace HSLML_STAR
+{
+	static function AspirationMonitoringOn(device& ml_star) void {}
+	function AspirationMonitoring_1000ulChannel_On(device& ml_star) void {}
+	function AspirationMonitoring_5mlChannel_On(device& ml_star) void {}
+
+	static function AspirationMonitoringOff(device& ml_star) void {}
+	function AspirationMonitoring_1000ulChannel_Off(device& ml_star) void {}
+	function AspirationMonitoring_5mlChannel_Off(device& ml_star) void {}
+
+	static function ClotDetectionMonitoringOn(device& ml_star) void {}
+	function ClotDetectionMonitoring_1000ulChannel_On(device& ml_star) void {}
+	function ClotDetectionMonitoring_5mlChannel_On(device& ml_star) void {}
+
+	static function ClotDetectionMonitoringOff(device& ml_star) void {}
+	function ClotDetectionMonitoring_1000ulChannel_Off(device& ml_star) void {}
+	function ClotDetectionMonitoring_5mlChannel_Off(device& ml_star) void {}
+
+	static function AntiDropletControlOn(device& ml_star) void {}
+	function AntiDropletControl_1000ulChannel_On(device& ml_star) void {}
+	function AntiDropletControl_5mlChannel_On(device& ml_star) void {}
+
+	static function AntiDropletControlOff(device& ml_star) void {}
+	function AntiDropletControl_1000ulChannel_Off(device& ml_star) void {}
+	function AntiDropletControl_5mlChannel_Off(device& ml_star) void {}
+
+	static function SetPressureThreshold(device& ml_star, variable pressure) void {}
+	function SetPressureThreshold_1000ulChannel(device& ml_star, variable pressure) void {}
+	function SetPressureThreshold_5mlChannel(device& ml_star, variable pressure) void {}
+
+	function SetBarcodeTypes(
+		device& ml_star, variable& barcodeTypes) void {}
+
+	static function MeasureContainerVolume(											// obsolete, use MeasureContainerVolume2 instead (SCR#836)
+		device& ml_star,
+		sequence& targetSequence,
+		variable autoIncrement,
+		variable& channelPattern,
+		variable cLLDSensitivity,
+		variable pLLDSensitivity,
+		variable maxHeightDifference) variable { return(0); }
+
+	function MeasureContainerVolume2(
+		device& ml_star,
+		sequence& targetSequence,
+		variable autoIncrement,
+		variable& channelPattern,
+		variable cLLDSensitivity,
+		variable pLLDSensitivity,
+		variable maxHeightDifference) variable { return(0); }
+
+	function GetContainerVolume(
+		variable channel) variable { return(0); }
+
+   function CreateATBarcodefile(
+		device& ml_star,
+		variable& Labware_id_Plate) variable { return(0); }
+
+	function GetInstrumentType() variable { return(0); }
+
+	function GetInstrumentType_GlobalDevice(
+		device& ml_star) variable { return(0); }
+
+	function IsSimulatorMode(
+		device& ml_star) variable { return(0); }
+
+	function DeleteBarcodeFile(
+		variable& barcodeFileName) variable	{ return(0); }
+
+	function FormatBarcodeFile(
+		device& ml_star,
+		variable& barcodeFileName,
+		variable& formatedBarcodeFileName) variable { return(0); }
+
+	function ExecuteWorklist(
+		device& ML_STAR, 
+		sequence& tipPickupSequence,
+		variable& channelPattern,
+		variable& barcodeFileName,
+		variable& worklistFileName,
+		variable& liquidClass) variable { return(0); }
+}
+
+#endif
+
+
+// ==========================================================================
+// Implementation of File library 
+// ==========================================================================
+#ifdef HSL_RUNTIME
+	#ifndef __HSLML_STARImpl_hsl__
+	#include "HSLML_STARLib.hs_"
+	#endif
+#endif
+
+#endif
+// $$author=ContainerAdministrator$$valid=1$$time=2025-09-09 20:31$$checksum=65bbf0ca$$length=099$$

@@ -1,0 +1,320 @@
+//  ------------------------------------------------------------------------------------
+//  Hamilton Company Software Product
+//  File: HSLMETEDLib.hs_
+//
+//  This is a part of the module HxMetEd.
+//  Implementation of the Workflow Template Library.
+//
+//  File creation date:  2005-07-22 by LJe
+//  Last revision date:  2005-07-22 by LJe
+//
+//  Copyright (c) 2005 by Hamilton Bonaduz AG.
+//
+//
+//  Modification History
+//  --------------------
+//  1.00  2005-07-22 by LJe  Initial file creation.
+//  1.01  2006-02-14 by LJe  Add support for automatic workflow creation.
+//  1.02  2007-04-24 by LJe  HowManyTasksToday2 with pathname of method as parameter
+//  1.03  2007-07-03 by LJe  ExecuteMethod to register and activate method with actions
+//  1.04  2007-10-30 by LJe  HandleCanceledAction implements default handler for Actions without cancel block
+//  
+//  ------------------------------------------------------------------------------------
+
+
+#pragma once
+
+// --------------------------------------------------------------------------------------
+// Declaration
+// --------------------------------------------------------------------------------------
+
+
+#ifndef HSL_RUNTIME
+
+namespace HSLMETEDLib
+{
+	function RaiseReverseMapError( variable fileName, variable row, variable col, variable variableName, variable value) { return ; }
+	function RaiseReverseMapErrorForSequence( variable fileName, variable row, variable col, variable variableName, sequence& seqValue) { return ; }
+	function Trace_TaskInActivityAborted( variable filename) { return (""); }
+	static function HowManyTasksToday(variable& methodFileName) void {}
+	static function HowManyTasksToday2(variable& methodPathName) void {}
+	static function Sleep(variable seconds) {}
+	function ExecuteMethod(variable& methodPathName) void {}
+	function HandleCanceledAction(variable& actionName) void {}
+}
+
+#endif
+
+
+// --------------------------------------------------------------------------------------
+// Implementation
+// --------------------------------------------------------------------------------------
+
+#ifdef HSL_RUNTIME
+
+namespace HSLMETEDLib
+{
+
+	// Helper functions
+
+	namespace ERR
+	{
+		static function FormatErrorLocation( variable fileName, variable lineNumber)
+		{
+				return (fileName + "(" + lineNumber + ")");
+		}
+
+		static function FormatErrorLocation2( variable fileName, variable row, variable col)
+		{
+			return (fileName + "(" + Translate("Row: ") + row + ", " + Translate( "Column: ") + col + ")");
+		}
+	}
+
+   namespace STR
+	{
+		static function StrStr(variable var)
+		{
+			variable type;
+
+
+			type = GetType(var);
+			if (hslInteger.Compare(type) == 0)
+			{
+				var = IStr(var);
+			}
+			else
+			{
+				if (hslFloat.Compare(type) == 0)
+				{
+					var = FStr(var);
+				}
+				else
+				{
+					if (hslString.Compare(type) != 0)
+					{
+						err.Raise( 1, ERR::FormatErrorLocation( GetFileName(), GetLineNumber()) + " : " + Translate("Failed to convert to string. Unknown type : ") + IStr(type));
+					}
+				}
+			}
+			return(var);
+		}
+	}
+
+	function GetHelpFileName()
+	{
+		return ("HxMetEd" + GetLanguage() + ".chm");
+	}
+
+	function Trace_TaskInActivityAborted( variable filename)
+	{
+		Trace( Translate("Info:"), " '", filename,"': ", Translate("task"), " '", 
+				GetCurrentTaskViewName(), "' ", Translate( "has been aborted by activity"), 
+				 " '", GetCurrentActivityViewName(), "'");
+	}
+
+	function FormatReverseMapErrorDescription( variable fileName, variable row, variable col, variable variableName, variable value) 
+	{ 
+		variable description;
+		description = ERR::FormatErrorLocation2( fileName, row, col) + " : ";
+		description = description + Translate( "Failed to reverse map the value to a resource unit");
+		description = description + " (" + Translate( "variable value") + " '";
+		description = STR::StrStr( description) + STR::StrStr( value);
+		description = description + "' " + Translate( "in variable") + " " + variableName;
+		description = description + ").";
+		description = description + Translate( " The specified value does not exist in the mapping table!");
+
+		return (description);
+	}
+
+	function FormatReverseMapErrorForSequenceDescription( variable fileName, variable row, variable col, variable variableName, sequence& seqValue) 
+	{ 
+		variable description;
+		description = ERR::FormatErrorLocation2( fileName, row, col) + " : ";
+		description = description + Translate( "Failed to reverse map the sequence value from") + " '" + variableName + "' " + Translate( "to a resource unit.");
+		description = description + Translate( " The specified sequence does not exist in the mapping table!");
+
+		return (description);
+	}
+
+	function RaiseReverseMapError( variable fileName, variable row, variable col, variable variableName, variable value)
+	{
+		err.Raise( -365952924, FormatReverseMapErrorDescription( fileName, row, col, variableName, value), GetHelpFileName());
+	}
+
+	function RaiseReverseMapErrorForSequence( variable fileName, variable row, variable col, variable variableName, sequence& seqValue)
+	{
+		err.Raise( -365952924, FormatReverseMapErrorForSequenceDescription( fileName, row, col, variableName, seqValue), GetHelpFileName());
+	}
+
+	#ifndef HSL_SCHEDULE
+		variable methodHandle(0);
+
+		function ShowTaskDialog() variable
+		{
+			object executor;
+			object configPars;
+			variable showTaskDialogKey(-534642473);
+
+			configPars.CreateObject("HXPARAMSLib.HxPars");
+			executor = GetExecutorObject();
+			executor.GetConfigurationSettings(configPars);
+			return(configPars.Item1(showTaskDialogKey));
+		}
+
+		function HowManyTasksToday(variable& methodFileName) void 
+		{
+			variable i(0);
+			variable numberOfPlates(0);
+			variable taskIndex(0);
+			variable taskHandles[];
+
+			scheduleronly
+			{
+				variable actualInputType(""), desiredInputType( hslInteger);
+				if (0==RegisterMethod(methodFileName + ".hsl", methodFileName, methodHandle))
+				{
+					err.Raise( 0, Translate("Failed to register method") + " " + methodFileName + ".hsl", GetHelpFileName());
+				}
+				if (ShowTaskDialog())
+				{
+					numberOfPlates = InputBox(Translate("How many tasks to schedule ?\nAttention!\nDevices may become active and move after you confirm this message box!\nVerify that all devices are free and are clear to move without colliding."), "Scheduler", hslInteger, 1);
+				}
+				else
+				{
+					numberOfPlates = 1;
+				}
+				actualInputType = GetType(numberOfPlates);
+				if (actualInputType == "")
+				{
+					// cancel button
+					Trace( Translate( "Cancel button pressed!"));
+					return;
+				}
+				if (actualInputType != desiredInputType)
+				{
+					err.Raise( 0, Translate("Input parameter must be a positive integer:") + IStr( numberOfPlates), GetHelpFileName());
+				}
+				if (numberOfPlates < 1)
+				{
+					err.Raise( 0, Translate("Input parameter must be a positive integer:") + IStr( numberOfPlates), GetHelpFileName());
+				}
+				taskHandles.SetSize(numberOfPlates + 1);
+				taskHandles.SetAt(0, hslSchedulingStart);
+				for (i = 1; i <= numberOfPlates; i++)
+				{
+					if (0==ActivateDelay(0, taskHandles.ElementAt(i - 1), methodHandle, "Task " + IStr(++taskIndex), taskHandles.ElementAt(i), hslFalse))
+					{
+					   err.Raise( 0, Translate("Failed to activate") + " Task " + IStr(taskIndex) , GetHelpFileName());
+					}
+				}
+			}
+		}
+		function HowManyTasksToday2(variable& methodPathName) void 
+		{
+			variable i(0);
+			variable numberOfPlates(0);
+			variable taskIndex(0);
+			variable taskHandles[];
+
+			scheduleronly
+			{
+			   variable actualInputType(""), desiredInputType( hslInteger);
+				if (0==RegisterMethod( methodPathName, methodPathName, methodHandle))
+				{
+					err.Raise( 0, Translate("Failed to register method") + " " + methodPathName, GetHelpFileName());
+				}
+				if (ShowTaskDialog())
+				{
+					numberOfPlates = InputBox(Translate("How many tasks to schedule ?\nAttention!\nDevices may become active and move after you confirm this message box!\nVerify that all devices are free and are clear to move without colliding."), "Scheduler", hslInteger, 1);
+				}
+				else
+				{
+					numberOfPlates = 1;
+				}
+				actualInputType = GetType(numberOfPlates);
+				if (actualInputType == "")
+				{
+				   // cancel button
+				   Trace( Translate( "Cancel button pressed!"));
+					return;
+				}
+				if (actualInputType != desiredInputType)
+				{
+					err.Raise( 0, Translate("Input parameter must be a positive integer:") + IStr( numberOfPlates), GetHelpFileName());
+				}
+				if (numberOfPlates < 1)
+				{
+				   err.Raise( 0, Translate("Input parameter must be a positive integer:") + IStr( numberOfPlates), GetHelpFileName());
+				}
+				taskHandles.SetSize(numberOfPlates + 1);
+				taskHandles.SetAt(0, hslSchedulingStart);
+				for (i = 1; i <= numberOfPlates; i++)
+				{
+					if (0==ActivateDelay(0, taskHandles.ElementAt(i - 1), methodHandle, "Task " + IStr(++taskIndex), taskHandles.ElementAt(i), hslFalse))
+					{
+					   err.Raise( 0, Translate("Failed to activate") + " Task " + IStr(taskIndex) , GetHelpFileName());
+					}
+				}
+			}
+		}
+
+	#endif
+
+	function Sleep(variable seconds) 
+	{
+		timer t;
+		t.SetTimer(seconds, hslTrue);
+		t.WaitTimer(0,0);
+	}
+
+	function ExecuteMethod(variable& methodPathName) void 
+	{
+		scheduleronly
+		{
+			variable methodHandle(0);
+			variable taskHandle(0);
+			variable index(0);
+			string methodName(methodPathName);
+
+			for (index = methodName.Find("\\"); 0 <= index; index = methodName.Find("\\"))
+			{
+				methodName = methodName.Mid(index + 1, methodName.GetLength());
+			}
+
+			RegisterMethod(methodPathName, methodName, methodHandle);
+			ActivateDelay(0, hslSchedulingStart, methodHandle, methodName, taskHandle, hslFalse);
+			SetMethodProperties(methodHandle, hslFalse);
+			SetTaskProperties(taskHandle, hslFalse, hslFalse);
+			DisableReschedule();
+		}
+	}
+
+	function HandleCanceledAction(variable& actionName) void 
+	{
+		executoronly
+		{
+			variable message("");
+			variable title("");
+			variable selectedButton;
+			dialog hDialog;
+			
+			message = err.GetDescription() + "\n\n";
+			message = message + Translate("OK will bring the system to the pause state.\n   ---> Select this to continue after the error case has been solved.\n\nSelect Cancel to abort the run.");
+			hDialog.SetOutput(message);
+			title = Translate("Action Canceled") + " : " + actionName;
+			selectedButton = hDialog.ShowOutput( title, hslOKCancel | hslExclamation | hslDefButton1, hslInfinite);
+			if (selectedButton == hslOK)
+			{
+				pause;
+			}
+			else
+			{
+				abort;
+			}
+		}
+	}
+
+}
+
+#endif
+// $$author=ContainerAdministrator$$valid=1$$time=2025-09-09 20:13$$checksum=9325deca$$length=099$$

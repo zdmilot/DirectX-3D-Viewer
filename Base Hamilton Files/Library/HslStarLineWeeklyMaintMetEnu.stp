@@ -1,0 +1,10 @@
+HxCfgFile,2;
+
+ConfigIsValid,Y;
+
+DataDef,Method,1,Properties,
+{
+ReadOnly, "1"
+};
+
+* $$author=ContainerAdministrator$$valid=1$$time=2025-09-09 20:31$$checksum=9105e777$$length=098$$

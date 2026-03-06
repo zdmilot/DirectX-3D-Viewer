@@ -1,0 +1,738 @@
+// ======================================================================
+// This is a part of the HSL Report Library.
+// Copyright (C) by HAMILTON Bonaduz AG, CH-7402 Bonaduz.
+// All rights reserved.
+// ======================================================================
+//
+// Modification History
+// 2003-02-17  ubernhard : - Initial file creation.
+//	2003-04-03  ubernhard : - implement function CreateATBarcodeFile()
+//	2003-08-20  ubernhard : - timeout "STracker::flushToDisk" before calling HxATFilter respectively HxReport
+//									- implement static function IsSampleTrackerOn()
+//									- Check sample tracker switch during initialization of library
+//	2004-02-05	ubernhard : - removed timeout "STracker::flushToDisk" before calling HxATFilter respectively HxReport
+//									- get the one and only sample tracker object instantiated by the executor
+//									- all sample tracker calls done over this sample tracker object
+//									- use Flush function of IHxSampleTracker3 before calling HxATFilter respectively HxReport
+// 2006-08-30	fgarcia	 : - changed implementation of CreateReportFile(), an error is thrown that 
+//									  function is not longer supported
+//									- use of HxVectorDB instead of old Sample Tracker
+// 2006-08-31	fgarcia	 : - added special error handler when using HxVectorDB to get a labware ID
+// 2006-11-21  fgarcia   : - call Synchronize() of VectorDB before executing ATFilter
+//
+// ======================================================================
+
+#ifndef __HSLReportImpl_hsl__
+#define __HSLReportImpl_hsl__	1
+
+#ifndef __HSLStrLib_hsl__
+#include "HSLStrLib.hsl"
+#endif
+
+#ifndef __HSLSynLib_hsl__
+#include "HSLSynLib.hsl"
+#endif
+
+#ifndef __HSLUtilLib_hsl__
+#include "HSLUtilLib.hsl"
+#endif
+
+// --------------------------------------------------------------------------------------
+// Implementation of File library 
+// --------------------------------------------------------------------------------------
+
+namespace HSLReport
+{	
+	#ifndef __HSLStringTableLib_hsl__
+	#include "HSLStringTableLib.hs_"
+	#endif
+
+	//declaration of global member data
+	static global variable m_cs(0);									// critical section
+	static global variable m_runID[];								// unique run ID
+	static global variable m_elementID[];							// unique element ID
+	static global variable m_elementAccessName_Hierarchy[];	// element access name with the complete hierachy
+	static global variable m_elementAccessName[];				// element access name without hierarchy
+	static global variable m_trackerSwitch(hslFalse);			// false, if sample tracking is OFF
+	static global object m_trackerObject;							// the one and only sample tracker object, instantiated from executor
+
+	//declaration of member data
+	static variable m_initializedLib(hslFalse);					// initialization state of the HSL Report library
+	
+	// --------------------------------------------------------------------------------------
+	// Debugging and Developing
+	// --------------------------------------------------------------------------------------
+
+	//#define _DEBUG		1		// specifies the debug version of the HSL Report Library
+
+	// --------------------------------------------------------------------------------------
+	// Error Ids
+	// --------------------------------------------------------------------------------------
+	
+	namespace IDE
+	{
+		static const variable first(0);											// guard
+		static const variable noError(first);									// No error
+		static const variable fatalError(first + 1);							// General unspecific error
+		static const variable invalidParameter(first + 2);					// Invalid parameter
+		static const variable elementNotLoaded (first + 3);				// Element not loaded
+		static const variable functionNotSupported(first + 4);			// function not longer supported
+		static const variable traceElementNotCreate (first + 5);			// failed to create report file
+		static const variable last(first + 6);									// guard
+	}
+
+	// --------------------------------------------------------------------------------------
+	// String Ids
+	// --------------------------------------------------------------------------------------
+
+	namespace IDS
+	{
+		static const variable first(IDE::last + 1);								// guard
+		static const variable helpFileName(first);								// help file name
+		static const variable traceSource (first + 1);							// trace source
+		static const variable traceAddToReportListFromLabware (first + 2);// trace action "AddToReportListFromLabware"
+		static const variable traceAddToReportList (first + 3);				// trace action "AddToReportList"
+		static const variable traceCreateReportFile (first + 4);				// trace action "CreateReportFile"
+		static const variable trackerOFF (first + 5);							// sample tracker is OFF
+		static const variable traceElement (first + 6);							// element for create the report file
+		static const variable emptyReportList (first + 7);						// no elements found in report list
+		static const variable traceCreateATBarcodeFile (first + 8);			// trace action "CreateATBarcodeFile"
+		static const variable last(first + 8);										// guard
+	}
+
+	// --------------------------------------------------------------------------------------
+	// Tracing
+	// --------------------------------------------------------------------------------------
+
+	namespace TraceStatus
+	{
+		static const variable start(1);									// action status for formated trace
+		static const variable complete(2);								// action status for formated trace
+		static const variable error_(3);									// action status for formated trace
+		static const variable progress(4);								// action status for formated trace
+		static const variable completeWithError(5);					// action status for formated trace
+	}
+
+	// --------------------------------------------------------------------------------------
+	// Report Library return values
+	// --------------------------------------------------------------------------------------
+
+	namespace RepLibRetVal
+	{
+		static const variable successfully(0);
+		static const variable sampleTrackingOff(1);
+		static const variable failedToCreateReportFile(2);
+		static const variable emptyReportList(3);														
+	}
+
+	// --------------------------------------------------------------------------------------
+	// Utilities
+	// --------------------------------------------------------------------------------------
+
+	static function GetElementHierarchy(
+			device& device_,
+			variable& labware_id_Plate);
+
+	static function AddElementToList(
+			device& device_, 
+			variable& labware_id_Plate);
+
+	static function IsSampleTrackerOn();	// returns true, if sample tracker is switched ON
+
+	// --------------------------------------------------------------------------------------
+	// Exception handling
+	// --------------------------------------------------------------------------------------
+
+	namespace Error
+	{
+		static function Raise(												// raises a runtime error
+			variable errorId,													// i: error id, one of IDE
+			variable& fileName,												// i: file name
+			variable& funcName,												// i: function name
+			variable& lineNumber)											// i: line number
+		{
+			variable description("");
+
+			// set error description
+			if ("" == funcName)
+				description = fileName + "(" + lineNumber + ") : " + StringTable::Load(errorId);
+			else
+				description = fileName + "(" + lineNumber + ") : " + funcName + "()\n" + StringTable::Load(errorId);
+			err.SetDescription(description);
+
+			// raise error
+			err.Raise(errorId, err.GetDescription(), StringTable::Load(IDS::helpFileName));
+		}
+
+		static function RaiseEx(											// raises a runtime error
+			variable errorId,													// i: error id, one of IDE
+			variable errorDesc,												// i: error description
+			variable& fileName,												// i: file name
+			variable& funcName,												// i: function name
+			variable& lineNumber)											// i: line number
+		{
+			variable description("");
+
+			// set error description
+			if ("" == funcName)
+				description = fileName + "(" + lineNumber + ") : " + errorDesc;
+			else
+				description = fileName + "(" + lineNumber + ") : " + funcName + "()\n" + errorDesc;
+			err.SetDescription(description);
+
+			// raise error
+			err.Raise(errorId, err.GetDescription(), StringTable::Load(IDS::helpFileName));
+		}
+
+		static function RaiseLast()										// re-throws the last runtime error
+		{
+			// re-raise error
+			err.Raise();
+		}
+	}
+
+	// --------------------------------------------------------------------------------------
+	// Implementation 
+	// --------------------------------------------------------------------------------------
+
+	static function InitHSLReportLibrary()
+	{
+		// initialize the HSL Report library once only
+		if (!m_initializedLib)
+		{
+			StringTable::Init("HSLReportStringTable");
+
+			if(0 == m_cs)
+				m_cs = SynInitializeCriticalSection();
+
+			if(m_trackerObject.IsNull())
+				m_trackerObject = GetVectorDbTrackerObject();
+			
+			m_trackerSwitch = IsSampleTrackerOn();
+			
+			m_initializedLib = hslTrue;
+		}
+		return(m_initializedLib);
+	}
+
+	static function GetElementHierarchy(
+		device& device_,
+		variable& labware_id_Plate)
+	{
+		variable InstrumentName;
+		variable TemplateNames[];
+		variable LabwareNames[];
+		variable Labware_id_Carrier;
+		variable size;
+		variable index;
+		variable elementHierarchie("");
+
+		// Search Template name depending on the Labware_id_Plate
+		device_.GetTemplateLabwareNames(TemplateNames, LabwareNames);
+		size = LabwareNames.GetSize();
+		for (index = 0; index < size; index ++)
+			if (LabwareNames.GetAt(index) == labware_id_Plate)
+				break;
+
+	   // If LabwareName exist
+		if (index < size)
+		{
+		   Labware_id_Carrier = TemplateNames[index];     // Assign Template Name
+			InstrumentName = device_.GetInstrumentName( ); // Get Instrument name
+	   
+			if (Labware_id_Carrier == "default")			  // If a plate is not on a carrier
+			{
+	         elementHierarchie = InstrumentName + "\\" + labware_id_Plate;
+			}
+	      else
+			{
+		      elementHierarchie = InstrumentName + "\\" + Labware_id_Carrier + "\\" + labware_id_Plate;
+			}
+		}
+		else // the element was not found on decklayout, maybe it is an alias named element
+		{
+			elementHierarchie = labware_id_Plate;
+		}
+		return (elementHierarchie);
+	}
+
+	static function AddElementToList(
+			device& device_, 
+			variable& labware_id_Plate)
+	{
+		variable uniqueElementID;					// the unique element identifier
+		variable accessName;							// the access name with the complete hierarchy
+		variable viewName(labware_id_Plate);	// the access name without hierarchy
+
+		//lookup for element hierarchy
+		accessName = GetElementHierarchy(device_, labware_id_Plate);
+
+		// enable special error handling as IsLabwareLoaded() throws an exception
+		// if given access name (without hierarchy only) is not found
+		onerror goto LabwareNotFound;
+
+		uniqueElementID = m_trackerObject.IsLabwareLoaded(accessName);
+
+		// reset custom error handling
+		onerror goto 0;
+
+		if(uniqueElementID > 0) // add it to array
+		{
+			m_runID.AddAsLast(GetUniqueRunId());
+			m_elementID.AddAsLast(uniqueElementID);
+			m_elementAccessName_Hierarchy.AddAsLast(accessName);
+			m_elementAccessName.AddAsLast(viewName);
+		}
+		return(uniqueElementID);
+
+		// an error occured while getting labware ID with vectorDB
+		LabwareNotFound:
+		{
+			uniqueElementID = 0;
+			resume next;
+		}
+	}
+
+
+	static function IsSampleTrackerOn()
+	{
+		variable isOn(hslFalse);		// if 'true', the tracker is switched ON
+		
+		if(m_trackerObject.Enabled != 0)
+			isOn = hslTrue;
+
+		return(isOn);
+	}
+
+	// --------------------------------------------------------------------------------------
+	// Library Function: AddToReportList() 
+	// --------------------------------------------------------------------------------------	
+
+	function AddToReportList(
+		device& Device,
+		sequence& Sequence) variable
+	{
+		variable traceSource;							// source for formated trace
+		variable traceAction;							// action for formated trace
+		variable traceActionEx;							// additional description in trace action
+		variable labId[];									// place to hold the unique labware id
+		variable i;											// count
+
+		InitHSLReportLibrary();
+
+		// activate error handler
+		onerror goto Unexpected;
+
+		// get access to global data
+		SynEnterCriticalSection(m_cs);
+
+		traceSource = StringTable::Load(IDS::traceSource);
+		traceAction = StringTable::Load(IDS::traceAddToReportList);
+		FormatTrace(traceSource, traceAction, TraceStatus::start);
+
+		Sequence.GetLabwareIds(labId);
+		
+		for(i=0; i<labId.GetSize(); i++)
+		{
+			variable retVal;
+			// Add to report list
+			retVal = AddElementToList(Device, labId.GetAt(i));
+
+			if(retVal > 0)
+			{
+				// trace progress
+				traceActionEx = StringTable::Load(IDS::traceElement);
+				StrReplace(traceActionEx, "%s", labId.GetAt(i));
+				FormatTrace(traceSource, traceAction, TraceStatus::progress, traceActionEx);
+			}
+			else
+			{
+				if(retVal == -1) // tracker is switched off
+				{
+					FormatTrace(traceSource, traceAction, TraceStatus::complete, StringTable::Load(IDS::trackerOFF));
+					// release access to global data
+					SynLeaveCriticalSection(m_cs);
+					
+					return(RepLibRetVal::sampleTrackingOff);
+				}
+				else
+				if(retVal == 0) // the element was not found
+				{
+					variable errorDesc;
+					errorDesc = StringTable::Load(IDE::elementNotLoaded);
+					StrReplace(errorDesc, "%s", labId.GetAt(i));
+			
+					FormatTrace(traceSource, traceAction, TraceStatus::error_);
+					Error::RaiseEx(IDE::elementNotLoaded, errorDesc, GetFileName(), GetFunctionName(), GetLineNumber());
+				}
+				else
+				{
+					Error::Raise(IDE::fatalError, GetFileName(), GetFunctionName(), GetLineNumber());
+				}
+			}
+		}
+		
+		FormatTrace(traceSource, traceAction, TraceStatus::complete);
+
+		// release access to global data
+		SynLeaveCriticalSection(m_cs);
+
+		return(RepLibRetVal::successfully);
+
+		Unexpected:
+		{
+			// release access to global data
+			SynLeaveCriticalSection(m_cs);
+		
+			FormatTrace(traceSource, traceAction, TraceStatus::completeWithError);
+			Error::RaiseLast();
+		}	
+	}
+
+	// --------------------------------------------------------------------------------------
+	// Library Function: AddToReportListFromLabware() 
+	// --------------------------------------------------------------------------------------	
+
+	function AddToReportListFromLabware(
+		device& Device,
+		variable& Labware_id) variable
+	{
+		variable traceSource;							// source for formated trace
+		variable traceAction;							// action for formated trace
+		variable errorDesc;								// description of error
+		variable uniqueElementID;
+		variable retVal;
+
+		InitHSLReportLibrary();
+
+		// activate error handler
+		onerror goto Unexpected;
+
+		// get access to global data
+		SynEnterCriticalSection(m_cs);
+
+		traceSource = StringTable::Load(IDS::traceSource);
+		traceAction = StringTable::Load(IDS::traceAddToReportListFromLabware);
+		FormatTrace(traceSource, traceAction, TraceStatus::start);
+
+		// check input parameters to be valid
+		if(!Util::IsString(Labware_id))
+			Error::Raise(IDE::invalidParameter, GetFileName(), GetFunctionName(), GetLineNumber());
+
+		retVal = AddElementToList(Device, Labware_id);
+
+		if(retVal > 0)
+		{	
+			variable traceEx;
+			traceEx = StringTable::Load(IDS::traceElement);
+			StrReplace(traceEx, "%s", Labware_id);
+			FormatTrace(traceSource, traceAction, TraceStatus::complete, traceEx);
+		}
+		else
+		{
+			if(retVal == -1) // tracker is switched off
+			{
+				FormatTrace(traceSource, traceAction, TraceStatus::complete, StringTable::Load(IDS::trackerOFF));
+				// release access to global data
+				SynLeaveCriticalSection(m_cs);
+				
+				return(RepLibRetVal::sampleTrackingOff);
+			}
+			else
+			if(retVal == 0) // the element was not found
+			{
+				errorDesc = StringTable::Load(IDE::elementNotLoaded);
+				StrReplace(errorDesc, "%s", Labware_id);
+			
+				FormatTrace(traceSource, traceAction, TraceStatus::error_);
+				Error::RaiseEx(IDE::elementNotLoaded, errorDesc, GetFileName(), GetFunctionName(), GetLineNumber());
+			}
+			else
+			{
+				Error::Raise(IDE::fatalError, GetFileName(), GetFunctionName(), GetLineNumber());
+			}
+		}
+
+		// release access to global data
+		SynLeaveCriticalSection(m_cs);
+
+		return(RepLibRetVal::successfully);
+
+		Unexpected:
+		{
+			// release access to global data
+			SynLeaveCriticalSection(m_cs);
+		
+			FormatTrace(traceSource, traceAction, TraceStatus::completeWithError);
+			Error::RaiseLast();
+		}
+	}
+
+	// --------------------------------------------------------------------------------------
+	// Library Function: CreateReportFile() 
+	// --------------------------------------------------------------------------------------
+	function CreateReportFile(
+		variable completeList,
+		variable removeFromList,
+		variable& reportFileCfgName) variable
+	{
+		variable traceSource;		// source for formated trace
+		variable traceAction;		// action for formated trace
+
+		// activate error handler
+		onerror goto Unexpected;
+
+		// init string table
+		if (!m_initializedLib)
+			StringTable::Init("HSLReportStringTable");
+
+		traceSource = StringTable::Load(IDS::traceSource);
+		traceAction = StringTable::Load(IDS::traceCreateReportFile);
+		FormatTrace(traceSource, traceAction, TraceStatus::start);
+
+		Error::Raise(IDE::functionNotSupported, GetFileName(), GetFunctionName(), GetLineNumber());
+		
+		return(RepLibRetVal::failedToCreateReportFile);		// never reached
+
+		Unexpected:
+		{
+			FormatTrace(traceSource, traceAction, TraceStatus::completeWithError);
+			Error::RaiseLast();
+		}
+	}
+
+	// --------------------------------------------------------------------------------------
+	// Library Function: CreateATBarcodeFile() 
+	// --------------------------------------------------------------------------------------
+
+	function CreateATBarcodeFile(
+		variable completeList,
+		variable removeFromList,
+		variable& plateName) variable
+	{
+		variable traceSource;							// source for formated trace
+		variable traceAction;							// action for formated trace
+		variable traceActionEx;							// additional description in trace action
+		variable path;										// Pathname to call the HxATFilter program with all Parameters
+		variable hxATFilterFailed(hslFalse);		// true, if HxATFilter returns an error
+		variable labID(0);								// current labware ID, return value of m_trackerObject.IsLabwareLoaded()
+
+		event dummyObj;
+		variable exitCode;
+		
+		InitHSLReportLibrary();
+		
+		// activate error handler
+		onerror goto Unexpected;
+
+		// get access to global data
+		SynEnterCriticalSection(m_cs);
+
+		traceSource = StringTable::Load(IDS::traceSource);
+		traceAction = StringTable::Load(IDS::traceCreateATBarcodeFile);
+		FormatTrace(traceSource, traceAction, TraceStatus::start);
+
+		// check input parameters to be valid
+		if( !Util::IsNumber(completeList) )
+			Error::Raise(IDE::invalidParameter, GetFileName(), GetFunctionName(), GetLineNumber());
+		if( !Util::IsNumber(removeFromList) )
+			Error::Raise(IDE::invalidParameter, GetFileName(), GetFunctionName(), GetLineNumber());
+		if(!Util::IsString(plateName))
+			Error::Raise(IDE::invalidParameter, GetFileName(), GetFunctionName(), GetLineNumber());
+
+		if(!m_trackerSwitch)
+		{
+			FormatTrace(traceSource, traceAction, TraceStatus::complete, StringTable::Load(IDS::trackerOFF));
+			// release access to global data
+			SynLeaveCriticalSection(m_cs);
+
+			return(RepLibRetVal::sampleTrackingOff);
+		}
+
+		//if no element exists in the report list...
+		if(0 == m_elementID.GetSize())
+		{
+			FormatTrace(traceSource, traceAction, TraceStatus::complete, StringTable::Load(IDS::emptyReportList));
+			// release access to global data
+			SynLeaveCriticalSection(m_cs);
+
+			return(RepLibRetVal::emptyReportList);
+		}
+
+		// setup path (Due to the restrictive definition of the AT Barcode file format,
+		// the HxAtFilter should be called in a quiet run mode. If the ATFilter program detects any
+		// incompatibility, an appropriate message will be shown. Dialog Timeout (TI) is set as well. 
+		path = GetBinPath() + "\\HxAtFilter /CY /RQ /TI60";
+	
+		// trim leading spaces
+		StrTrimLeft(plateName, " ");
+		// trim postfix spaces
+		StrTrimRight(plateName, " ");
+	
+		// plate name is an optional parameter
+		if("" != plateName)
+		{				
+			path = path +	" \"/FN" + plateName + "\"";
+		}
+		
+		if(completeList == 0) //process already unloaded elements only
+		{
+			variable i;
+			variable runID_l[];								// place to hold loaded element's run ID
+			variable elementID_l[];							// place to hold loaded element ID
+			variable elementAccessName_Hierarchy_l[];	// place to hold loaded element's access name with hierarchy
+			variable elementAccessName_l[];				// place to hold loaded element's access name
+
+			#ifdef _DEBUG	
+			Trace("Number of elements in list: ", m_elementID.GetSize());
+			#endif
+						
+			for(i=0; i < m_elementID.GetSize(); i++)
+			{
+				labID = 0;
+
+				// enable special error handling as IsLabwareLoaded() throws an exception
+				// if given access name (without hierarchy only) is not found
+				onerror goto LabwareNotFound;
+
+				labID = m_trackerObject.IsLabwareLoaded(m_elementAccessName_Hierarchy.GetAt(i));
+
+				// reset custom error handling
+				onerror goto 0;
+
+				if ( 0 < labID )
+				{
+					runID_l.AddAsLast(m_runID.GetAt(i));
+					elementID_l.AddAsLast(m_elementID.GetAt(i));
+					elementAccessName_Hierarchy_l.AddAsLast(m_elementAccessName_Hierarchy.GetAt(i));
+					elementAccessName_l.AddAsLast(m_elementAccessName.GetAt(i));
+				}
+				else // the element was unloaded, create the AT Barcode file
+				{
+					variable setupPath;
+					//add Parameter MI and PI to path
+					setupPath = path + " \"/MI" + m_runID.GetAt(i)  + "\" \"/PI" + IStr(m_elementID.GetAt(i)) + "\"";
+
+					#ifdef _DEBUG	
+					Trace("Call HxATFilter: ", setupPath);
+					#endif
+
+					// Call program HxATFilter with shell command
+					m_trackerObject.Synchronize();
+					Shell(setupPath, hslHide, hslSynchronous, dummyObj, exitCode);
+					if(exitCode == 0) 
+					{
+						traceActionEx = StringTable::Load(IDS::traceElement);
+						StrReplace(traceActionEx, "%s", m_elementAccessName.GetAt(i));
+						FormatTrace(traceSource, traceAction, TraceStatus::progress, traceActionEx);
+					}
+					else	// HxATFilter returns with an error
+					{
+						traceActionEx = StringTable::Load(IDE::traceElementNotCreate);
+						StrReplace(traceActionEx, "%s", m_elementAccessName.GetAt(i));
+						FormatTrace(traceSource, traceAction, TraceStatus::progress, traceActionEx);
+						// release access to global data
+						SynLeaveCriticalSection(m_cs);
+
+						hxATFilterFailed = hslTrue;
+					}					
+				}
+			}
+
+			if(removeFromList != 0)
+			{
+				m_runID.SetSize(0);
+				m_elementID.SetSize(0);
+				m_elementAccessName_Hierarchy.SetSize(0);
+				m_elementAccessName.SetSize(0);
+
+				for(i=0; i < elementID_l.GetSize(); i++)
+				{
+					m_runID.AddAsLast(runID_l.GetAt(i));
+					m_elementID.AddAsLast(elementID_l.GetAt(i));
+					m_elementAccessName_Hierarchy.AddAsLast(elementAccessName_Hierarchy_l.GetAt(i));
+					m_elementAccessName.AddAsLast(elementAccessName_l.GetAt(i));
+				}
+			}
+		}
+		else //process the complete list 
+		{
+			variable i;
+
+			#ifdef _DEBUG	
+			Trace("Number of elements in list: ", m_elementID.GetSize());
+			#endif
+
+			for(i=0; i < m_elementID.GetSize(); i++)
+			{
+				variable setupPath;
+				//add Parameter MI and PI to path
+				setupPath = path + " \"/MI" + m_runID.GetAt(i)  + "\" \"/PI" + IStr(m_elementID.GetAt(i)) + "\"";
+
+				#ifdef _DEBUG	
+				Trace("Call HxATFilter: ", setupPath);
+				#endif
+
+				// Call program HxATFilter with shell command
+				m_trackerObject.Synchronize();
+				Shell(setupPath, hslHide, hslSynchronous, dummyObj, exitCode);
+				if(exitCode == 0) 
+				{
+					traceActionEx = StringTable::Load(IDS::traceElement);
+					StrReplace(traceActionEx, "%s", m_elementAccessName.GetAt(i));
+					FormatTrace(traceSource, traceAction, TraceStatus::progress, traceActionEx);
+				}
+				else
+				{
+					traceActionEx = StringTable::Load(IDE::traceElementNotCreate);
+					StrReplace(traceActionEx, "%s", m_elementAccessName.GetAt(i));
+					FormatTrace(traceSource, traceAction, TraceStatus::progress, traceActionEx);
+
+					// release access to global data
+					SynLeaveCriticalSection(m_cs);
+
+					hxATFilterFailed = hslTrue;
+				}				
+			}
+			if(removeFromList != 0)	// initialize all global arrays
+			{
+				m_runID.SetSize(0);
+				m_elementID.SetSize(0);
+				m_elementAccessName_Hierarchy.SetSize(0);
+				m_elementAccessName.SetSize(0);
+			}
+		}
+
+		// release access to global data
+		SynLeaveCriticalSection(m_cs);
+
+		FormatTrace(traceSource, traceAction, TraceStatus::complete);
+		
+		if(hxATFilterFailed)
+			return(RepLibRetVal::failedToCreateReportFile);
+
+		return(RepLibRetVal::successfully);		
+
+		// an error occured while getting labware ID with vectorDB
+		LabwareNotFound:
+		{
+			labID = 0;
+			resume next;
+		}
+
+		Unexpected:
+		{
+			// release access to global data
+			SynLeaveCriticalSection(m_cs);
+			
+			FormatTrace(traceSource, traceAction, TraceStatus::completeWithError);
+			Error::RaiseLast();
+		}
+	
+	}
+
+} // end of namespace HSLReport
+
+#endif  /* end of '#ifndef __HSLReportImpl_hsl__' */
+
+// $$author=ContainerAdministrator$$valid=1$$time=2025-09-09 20:13$$checksum=1276e41e$$length=099$$

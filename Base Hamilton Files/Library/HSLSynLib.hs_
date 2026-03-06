@@ -1,0 +1,976 @@
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// This is the implementation file of the HSL Synchronization Library.													//
+// Copyright (C) by HAMILTON Bonaduz AG, CH-7402 Bonaduz.																	//	
+// All rights reserved.																													//	
+//																																				//
+// Modification History																													//
+// 2004-03-04 rfederspiel	: 	First implementation of file																	//
+//										Combine HSLSynLib (bandenmatten) and HSLSyncLib (rfederspiel) into one library//
+// 2005-08-08 mhosang		:	added GetAllReceivedData function and added TCP support								//
+// 2007-05-07 mhosang		:	optimized TCP connections in Connect(). The function returns now after        //
+//										completion of connecting process                                              //
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#ifndef __HSLSynLib_hs___
+#define __HSLSynLib_hs___	1
+// Debugging
+//#define _SYN_DEBUG		1			// specifies the debug version of the synchronization library
+
+// Data 
+static global event synCriticalSections[];
+
+// Remarks :
+// The threads of a single method can use a critical section object 
+// for mutual-exclusion synchronization. There is no guarantee about 
+// the order in which threads will obtain ownership of the critical 
+// section, however, the system will be fair to all threads. 
+// Before using a critical section, some thread of the method must 
+// call the SynInitializeCriticalSection function to initialize the 
+// object. After a critical section object has been initialized, the 
+// threads of the method can specify the object in the 
+// SynEnterCriticalSection, or SynLeaveCriticalSection function to 
+// provide mutually exclusive access to a shared resource.
+
+// The SynInitializeCriticalSection function initializes 
+// a critical section object. 
+// If the function succeeds, the return value is a handle to the new critical section.
+// If the function fails, the return value is zero.
+
+function SynInitializeCriticalSection() variable
+{
+	variable criticalSection(0);
+	criticalSection = synCriticalSections.GetSize() + 1;
+	synCriticalSections.SetSize(criticalSection);
+	synCriticalSections[criticalSection - 1].SetEvent();
+	return(criticalSection);
+}
+
+// The SynEnterCriticalSection function waits for ownership of 
+// the specified critical section object. The function returns 
+// when the calling thread is granted ownership.
+// This function does not return a value. 
+
+synchronized function SynEnterCriticalSection(
+	variable criticalSection) void		// Index of the critical section object 
+{
+	#ifdef _SYN_DEBUG
+	variable source;
+	variable action;
+	source = "DEBUG";
+	action = GetFunctionName();
+	FormatTrace(source, "+" + action, 4, "criticalSection = ", criticalSection);
+	#endif
+	synCriticalSections[criticalSection - 1].WaitEvent(hslInfinite);
+	#ifdef _SYN_DEBUG
+	FormatTrace(source, "-" + action, 4, "criticalSection = ", criticalSection);
+	#endif
+	return;
+}
+
+// The SynLeaveCriticalSection function releases ownership of the 
+// specified critical section object.
+// This function does not return a value. 
+
+synchronized function SynLeaveCriticalSection(
+	variable criticalSection) void		// Index of the critical section object 
+{
+	#ifdef _SYN_DEBUG
+	variable source;
+	variable action;
+	source = "DEBUG";
+	action = GetFunctionName();
+	FormatTrace(source, "+" + action, 4, "criticalSection = ", criticalSection);
+	#endif
+	synCriticalSections[criticalSection - 1].SetEvent();
+	#ifdef _SYN_DEBUG
+	FormatTrace(source, "-" + action, 4, "criticalSection = ", criticalSection);
+	#endif
+	return;
+}
+
+namespace ProtocolConstants
+{
+	const variable sckTCPProtocol(0);
+	const variable sckUDPProtocol(1);
+
+	// WinSock.State values
+	const variable sckClosed(0);					// the socket is closed
+	const variable sckOpen(1);						// the socket is opened
+	const variable sckListening(2);				// the socket is ready to receive (listening)
+	const variable sckConnectionPending(3);	// the connection is pending
+	const variable sckResolvingHost(4);			// the remote host name is beeing translated into an ip adress
+	const variable sckHostResolve(5);			// the remote host name has been transalted into an ip adress
+	const variable sckConnecting(6);				// the socket is connecting to the remote host
+	const variable sckConnected(7);				// the socket is connected to the remote host
+	const variable sckClosing(8);					// the socket is closing
+	const variable sckError(9);					// an error occured
+}
+
+namespace VARENUM
+{
+	const variable VT_BSTR(8);
+}
+
+
+namespace SyncLib
+{
+	#ifndef __HSLStringTableLib_hsl__
+	#include "HSLStringTableLib.hs_"
+	#endif
+	// --------------------------------------------------------------------------------------
+	// Error Ids
+	// --------------------------------------------------------------------------------------
+	namespace IDE
+	{
+		static const variable first(0);										//first IDE
+		static const variable last(first + 0);
+	}
+	// --------------------------------------------------------------------------------------
+	// String Ids
+	// --------------------------------------------------------------------------------------
+	namespace IDS
+	{
+		static const variable first(IDE::last + 1);						//first IDS
+		static const variable Connecting(first);							//Connecting trace
+		static const variable HostName(first + 1);						//Hostname trace
+		static const variable HostPort(first + 2);						//Hostport trace
+		static const variable LocalPort(first + 3);						//Localport trace
+		static const variable Protocol(first + 4);						//Protocol trace
+		static const variable CloseConnection(first + 5);				//Close connection trace
+		static const variable SendingData(first + 6);					//Sending data trace
+		static const variable Data(first + 7);								//Data trace
+		static const variable WaitForData(first + 8);					//Wait for data trace
+		static const variable seconds(first + 9);							//seconds trace
+		static const variable GetData(first + 10);						//Get data trace
+		static const variable ResetBuffer(first + 11);					//Reset buffer trace
+		static const variable last(first + 12);
+	}
+	// --------------------------------------------------------------------------------------
+	// Return Values
+	// --------------------------------------------------------------------------------------
+	namespace SyncLibRet
+	{
+		static const variable noError(0);									//Return Value for NO error
+		static const variable StdError(1);									//Return Value for standard error
+		static const variable TimeOutError(2);								//Return Value for Timeout error
+	}
+
+	private function GetObjectSyncHandle(variable SyncHandle, object& wsServer) void;
+	private function GetFreeSyncHandle() variable;
+	private function InitSyncLib() void;
+	private function SetObjectSyncHandle(variable SyncHandle, object wsServer) void;
+	private function WriteGetDataToArray(variable ReceiveBuffer[], variable DataGet) void;
+	private function GetDataArraySyncHandle(variable SyncHandle, variable& ReceiveBuffer[]) void;
+	private function SetDataArraySyncHandle(variable SyncHandle, variable ReceiveBuffer[]) void;
+	private function CheckNoSyncHandle(variable MyHandle) variable;
+	private function IsTCPConnection(object& wsConnection) variable;
+	private function IsUDPConnection(object& wsConnection) variable;
+
+	global object g_SynLib_Con1;
+	global object g_SynLib_Con2;
+	global object g_SynLib_Con3;
+	global object g_SynLib_Con4;
+	global object g_SynLib_Con5;
+	global object g_SynLib_Con6;
+	global object g_SynLib_Con7;
+	global object g_SynLib_Con8;
+	global object g_SynLib_Con9;
+	global object g_SynLib_Con10;
+	global variable g_SynLib_ReceiveBuffer[];
+	global variable g_SynLib_ReceiveBufferCon1[];
+	global variable g_SynLib_ReceiveBufferCon2[];
+	global variable g_SynLib_ReceiveBufferCon3[];
+	global variable g_SynLib_ReceiveBufferCon4[];
+	global variable g_SynLib_ReceiveBufferCon5[];
+	global variable g_SynLib_ReceiveBufferCon6[];
+	global variable g_SynLib_ReceiveBufferCon7[];
+	global variable g_SynLib_ReceiveBufferCon8[];
+	global variable g_SynLib_ReceiveBufferCon9[];
+	global variable g_SynLib_ReceiveBufferCon10[];
+	global variable g_SynLib_EmptyArray[];
+	global variable g_SynLib_arrSyncHandle[];
+	global variable g_SynLib_IsInit(0);
+	variable StringTableInit(0);
+
+	global variable SyncLibCs(0);
+
+	private function InitSyncLib() void
+	{
+		//Init Function to reset arrays and create Winsock objects
+		variable y(0);
+		if ( g_SynLib_IsInit == 0 )
+		{
+			if (0 == SyncLibCs) SyncLibCs = SynInitializeCriticalSection();
+			g_SynLib_arrSyncHandle.SetSize( 10 );
+			while ( y < 10 )
+			{
+				g_SynLib_arrSyncHandle.SetAt( y, 0 );
+				y = y + 1;
+			}
+			g_SynLib_IsInit = 1;
+			
+			g_SynLib_Con1.CreateObject("HxSyncLib.clsWinsock", hslTrue);
+			g_SynLib_Con2.CreateObject("HxSyncLib.clsWinsock", hslTrue);
+			g_SynLib_Con3.CreateObject("HxSyncLib.clsWinsock", hslTrue);
+			g_SynLib_Con4.CreateObject("HxSyncLib.clsWinsock", hslTrue);
+			g_SynLib_Con5.CreateObject("HxSyncLib.clsWinsock", hslTrue);
+			g_SynLib_Con6.CreateObject("HxSyncLib.clsWinsock", hslTrue);
+			g_SynLib_Con7.CreateObject("HxSyncLib.clsWinsock", hslTrue);
+			g_SynLib_Con8.CreateObject("HxSyncLib.clsWinsock", hslTrue);
+			g_SynLib_Con9.CreateObject("HxSyncLib.clsWinsock", hslTrue);
+			g_SynLib_Con10.CreateObject("HxSyncLib.clsWinsock", hslTrue);
+		}
+
+		if ( StringTableInit == 0 )
+		{
+			StringTable::Init("HSLSyncLibStringTable");
+			StringTableInit = 1;
+		}
+	}
+
+	function Connect(variable HostName, variable HostPort, variable LocalPort, variable& SyncHandle) variable
+	{
+		//The Connect function opens a connection to a given pc on the network
+		object tempObject;
+		variable MyHandle;
+		variable retVal(SyncLibRet::noError);
+		timer waitTimer;
+		SyncHandle = 0;
+		InitSyncLib();
+		onerror goto Unexpected;
+		SynEnterCriticalSection(SyncLibCs); //enter critical section
+		MyHandle = GetFreeSyncHandle();
+		FormatTrace( "SYSTEM", StringTable::Load(IDS::Connecting) + IStr(MyHandle), 1);
+		retVal = CheckNoSyncHandle(MyHandle);
+		if (retVal != SyncLibRet::noError)
+		{
+			return (SyncLibRet::StdError);
+		}
+		//Gets a "unused" handle for the new connection
+		GetObjectSyncHandle(MyHandle, tempObject);
+		//Sets the parameters for this new connection (Hostname, Hostport, LocalPort) to a temporary winsock object. 
+		//This allows to use this function for all winsock connections.
+		
+		tempObject.RemoteHost = HostName;
+		tempObject.RemotePort = HostPort;
+		
+		if (LocalPort == 0)
+		{
+			tempObject.Protocol = ProtocolConstants::sckTCPProtocol;
+			tempObject.Connect;
+
+			// wait while trying to connect...
+			while ((tempObject.State < ProtocolConstants::sckConnected) && (tempObject.State != ProtocolConstants::sckClosed))
+			{
+				waitTimer.SetTimer(0.1);
+				waitTimer.WaitTimer(hslFalse, hslFalse);
+			}
+
+			if (tempObject.State != ProtocolConstants::sckConnected)
+			{
+				tempObject.Close();
+				err.Raise();	// raise an error to indicate a failure
+			}
+
+			FormatTrace( "SYSTEM", StringTable::Load(IDS::Protocol) + "TCP", 4);
+			FormatTrace( "SYSTEM", StringTable::Load(IDS::HostName) + HostName, 4);
+			FormatTrace( "SYSTEM", StringTable::Load(IDS::HostPort) + IStr(HostPort), 4);
+		}
+		else
+		{
+			tempObject.Protocol = ProtocolConstants::sckUDPProtocol;
+			tempObject.Bind(LocalPort);
+
+			FormatTrace( "SYSTEM", StringTable::Load(IDS::Protocol) + "UDP", 4);
+			FormatTrace( "SYSTEM", StringTable::Load(IDS::HostName) + HostName, 4);
+			FormatTrace( "SYSTEM", StringTable::Load(IDS::HostPort) + IStr(HostPort), 4);
+			FormatTrace( "SYSTEM", StringTable::Load(IDS::LocalPort) + IStr(LocalPort), 4);
+		}
+		//Assigns the temporary winsock object to the original object.
+		SyncHandle = MyHandle;
+		FormatTrace( "SYSTEM", StringTable::Load(IDS::Connecting) + IStr(MyHandle), 2);
+		//Sets this handle as "used"
+		g_SynLib_arrSyncHandle.SetAt(MyHandle - 1 , 1);
+		SynLeaveCriticalSection(SyncLibCs);	//leave critical section
+		
+		return(SyncLibRet::noError);
+		Unexpected:
+		{
+			if (0 != SyncLibCs)
+				SynLeaveCriticalSection(SyncLibCs);	//leave critical section
+			FormatTrace( "SYSTEM", StringTable::Load(IDS::Connecting) + IStr(MyHandle), 3);
+			return (SyncLibRet::StdError);
+		}
+	}
+
+	function CloseConnection(variable SyncHandle) variable
+	{
+		variable retVal(SyncLibRet::noError);
+		object myObject;
+		InitSyncLib();
+		onerror goto Unexpected;
+		SynEnterCriticalSection(SyncLibCs); //enter critical section
+		retVal = CheckNoSyncHandle(SyncHandle);
+		if (retVal != SyncLibRet::noError)
+		{
+			return (SyncLibRet::StdError);
+		}
+		//Gets the object for the given handle
+		GetObjectSyncHandle(SyncHandle, myObject);
+		FormatTrace( "SYSTEM", StringTable::Load(IDS::CloseConnection) + IStr(SyncHandle), 2);
+		//Sets this handle as "unused" in the handle array
+		g_SynLib_arrSyncHandle.SetAt(SyncHandle - 1 , 0);
+		//close the winsock connection
+		myObject.Close();
+		SynLeaveCriticalSection(SyncLibCs); //leave critical section
+		return (SyncLibRet::noError);
+		Unexpected:
+		{
+			if (0 != SyncLibCs)
+				SynLeaveCriticalSection(SyncLibCs);	//leave critical section
+			FormatTrace( "SYSTEM", StringTable::Load(IDS::CloseConnection) + IStr(SyncHandle), 3);
+			return (SyncLibRet::StdError);
+		}
+	}
+
+	function SendData(variable DataToSend, variable SyncHandle) variable
+	{
+		variable retVal(SyncLibRet::noError);
+		object tempObject;
+		InitSyncLib();
+		onerror goto Unexpected;
+		SynEnterCriticalSection(SyncLibCs); //enter critical section
+		retVal = CheckNoSyncHandle(SyncHandle);
+		if (retVal != SyncLibRet::noError)
+		{
+			return (SyncLibRet::StdError);
+		}
+		//Gets the object for the given handle
+		GetObjectSyncHandle(SyncHandle, tempObject);
+		//Send data over the given winsock connection
+		tempObject.SendData(DataToSend);
+		FormatTrace( "SYSTEM", StringTable::Load(IDS::SendingData) + IStr(SyncHandle) + StringTable::Load(IDS::Data)
+		+ DataToSend, 2);
+		SynLeaveCriticalSection(SyncLibCs); //leave critical section
+		return (SyncLibRet::noError);
+		Unexpected:
+		{
+			if (0 != SyncLibCs)
+				SynLeaveCriticalSection(SyncLibCs);	//leave critical section
+			FormatTrace( "SYSTEM", StringTable::Load(IDS::SendingData) + IStr(SyncHandle) + StringTable::Load(IDS::Data)
+		+ DataToSend, 3);
+			return (SyncLibRet::StdError);
+		}
+	}
+
+	function GetReceivedData(variable SyncHandle, variable TimeOut, variable& ReceivedData) variable
+	{
+		variable retVal(SyncLibRet::noError);
+		timer WaitForData;
+		variable mydata;
+		variable arrNewData[];
+		variable x(1);
+		variable CurrData;
+		variable arrSize;
+		variable WaitTime(1);
+		variable RunThrough(0);
+		InitSyncLib();
+		onerror goto Unexpected;
+		SynEnterCriticalSection(SyncLibCs); //enter critical section
+		retVal = CheckNoSyncHandle(SyncHandle);
+		if (retVal != SyncLibRet::noError)
+		{
+			return (SyncLibRet::StdError);
+		}
+		//If the timeout is 0, it only checks whether data are in the buffer. It doesn't wait for incoming data.
+		if ( TimeOut <= 0 )
+		{
+			RunThrough = 1;
+		}		
+		//Gets the object for the given handle
+		GetDataArraySyncHandle(SyncHandle, g_SynLib_ReceiveBuffer);
+		FormatTrace( "SYSTEM", StringTable::Load(IDS::WaitForData), 1);
+		//Gets the size of the receive buffer from the connection
+		arrSize = g_SynLib_ReceiveBuffer.GetSize();
+		if ( arrSize > 0 )
+		{
+			//If the array size is not 0, it gets the first array position and copies all other data
+			//one step forward in the buffer array.
+			mydata = g_SynLib_ReceiveBuffer.GetAt( 0 );
+			while ( x < arrSize )
+			{
+				CurrData = g_SynLib_ReceiveBuffer.GetAt(x);			
+				arrNewData.AddAsLast(CurrData);
+				x = x + 1;
+			}		
+			g_SynLib_ReceiveBuffer = arrNewData;
+			arrNewData = g_SynLib_EmptyArray;
+		}
+		else
+		{
+			while( arrSize == 0 )
+			{
+				if ( RunThrough == 0 )
+				{
+					//While the data array is empty, it loops and checks if new data are written in the array.
+					SynLeaveCriticalSection(SyncLibCs); //leave critical section
+					//Timer to wait for next check
+					WaitForData.SetTimer( WaitTime );
+					WaitForData.WaitTimer( hslFalse, hslFalse );
+					SynEnterCriticalSection(SyncLibCs); //enter critical section
+					//Gets the data array for the given handle.
+					GetDataArraySyncHandle(SyncHandle, g_SynLib_ReceiveBuffer);
+					//Gets the new array size for next "while" loop
+					arrSize = g_SynLib_ReceiveBuffer.GetSize();
+					TimeOut = TimeOut - WaitTime;
+				}
+				if ( TimeOut <= 0 )
+				{
+					//If the Timeout is reached, a empty string will be sent back.
+					//Error number "2" is set in the return value.
+					mydata = "";
+					SynLeaveCriticalSection(SyncLibCs); //leave critical section
+					FormatTrace( "SYSTEM", StringTable::Load(IDS::WaitForData) + StringTable::Load(IDS::seconds), 3, TimeOut);
+					return (SyncLibRet::TimeOutError);
+				}
+			}
+			//If the array size is not equal "0", it gets the first position of the array and copies all other data
+			//one step forward in the buffer array.
+			mydata = g_SynLib_ReceiveBuffer.GetAt( 0 );
+			while ( x < arrSize )
+			{
+				CurrData = g_SynLib_ReceiveBuffer.GetAt(x);			
+				arrNewData.AddAsLast(CurrData);
+				x = x + 1;
+			}		
+			g_SynLib_ReceiveBuffer = arrNewData;
+			arrNewData = g_SynLib_EmptyArray;	
+		}
+		ReceivedData = mydata;
+		FormatTrace( "SYSTEM", StringTable::Load(IDS::GetData) + IStr(SyncHandle), 2, ReceivedData);
+		//Writes the new temporary data array into the data array from the given handle
+		SetDataArraySyncHandle(SyncHandle, g_SynLib_ReceiveBuffer);
+		SynLeaveCriticalSection(SyncLibCs); //leave critical section
+		return (SyncLibRet::noError);
+		Unexpected:
+		{
+			if (0 != SyncLibCs)
+				SynLeaveCriticalSection(SyncLibCs);	//leave critical section
+			FormatTrace( "SYSTEM", StringTable::Load(IDS::GetData) + IStr(SyncHandle), 3);
+			return (SyncLibRet::StdError);
+		}
+	}
+
+	function GetAllReceivedData(variable SyncHandle, variable& ReceivedData) variable
+	{
+		variable retVal(SyncLibRet::noError);
+		timer WaitForData;
+		variable mydata("");
+		variable arrNewData[];
+		variable x(0);
+		variable CurrData;
+		variable arrSize;
+		variable WaitTime(1);
+		variable RunThrough(0);
+		InitSyncLib();
+		onerror goto Unexpected;
+		SynEnterCriticalSection(SyncLibCs); //enter critical section
+		retVal = CheckNoSyncHandle(SyncHandle);
+		if (retVal != SyncLibRet::noError)
+		{
+			return (SyncLibRet::StdError);
+		}
+	
+		//Gets the object for the given handle
+		GetDataArraySyncHandle(SyncHandle, g_SynLib_ReceiveBuffer);
+		FormatTrace( "SYSTEM", StringTable::Load(IDS::WaitForData), 1);
+		//Gets the size of the receive buffer from the connection
+		arrSize = g_SynLib_ReceiveBuffer.GetSize();
+		while ( x < arrSize )
+		{
+			mydata = mydata + g_SynLib_ReceiveBuffer.GetAt( x );
+			x = x + 1;
+		}		
+
+		ReceivedData = mydata;
+		FormatTrace( "SYSTEM", StringTable::Load(IDS::GetData) + IStr(SyncHandle), 2, ReceivedData);
+		//Writes the new temporary data array into the data array from the given handle
+		SetDataArraySyncHandle(SyncHandle, g_SynLib_ReceiveBuffer);
+		SynLeaveCriticalSection(SyncLibCs); //leave critical section
+		return (SyncLibRet::noError);
+		Unexpected:
+		{
+			if (0 != SyncLibCs)
+				SynLeaveCriticalSection(SyncLibCs);	//leave critical section
+			FormatTrace( "SYSTEM", StringTable::Load(IDS::GetData) + IStr(SyncHandle), 3);
+			return (SyncLibRet::StdError);
+		}
+	}
+
+	function ResetBuffer(variable SyncHandle) variable
+	{
+		variable retVal(SyncLibRet::noError);
+		InitSyncLib();
+		onerror goto Unexpected;
+		SynEnterCriticalSection(SyncLibCs); //enter critical section
+		retVal = CheckNoSyncHandle(SyncHandle);
+		if (retVal != SyncLibRet::noError)
+		{
+			return (SyncLibRet::StdError);
+		}
+		//Gets the Data Array for the given handle
+		GetDataArraySyncHandle(SyncHandle, g_SynLib_ReceiveBuffer);
+		//Sets the Data Array equal to a empty array.
+		g_SynLib_ReceiveBuffer = g_SynLib_EmptyArray;
+		//Writes the temporary Data Array into the Data Array from the Connection (now it's empty)
+		SetDataArraySyncHandle(SyncHandle, g_SynLib_ReceiveBuffer);
+		SynLeaveCriticalSection(SyncLibCs); //leave critical section
+		FormatTrace( "SYSTEM", StringTable::Load(IDS::ResetBuffer) + IStr(SyncHandle), 2);
+		return (SyncLibRet::noError);
+		Unexpected:
+		{
+			if (0 != SyncLibCs)
+				SynLeaveCriticalSection(SyncLibCs);	//leave critical section
+			FormatTrace( "SYSTEM", StringTable::Load(IDS::ResetBuffer) + IStr(SyncHandle), 3);
+			return (SyncLibRet::StdError);
+		}
+	}
+
+	private function GetObjectSyncHandle(variable SyncHandle, object& wsServer) void
+	{
+		//This function returns the Winsock object for a given handle
+		if ( SyncHandle == 1 )
+		{
+			wsServer = g_SynLib_Con1.GetWinsockObject();
+		}
+		else if ( SyncHandle == 2 )
+		{
+			wsServer = g_SynLib_Con2.GetWinsockObject();
+		}
+		else if ( SyncHandle == 3 )
+		{
+			wsServer = g_SynLib_Con3.GetWinsockObject();
+		}
+		else if ( SyncHandle == 4 )
+		{
+			wsServer = g_SynLib_Con4.GetWinsockObject();
+		}
+		else if ( SyncHandle == 5 )
+		{
+			wsServer = g_SynLib_Con5.GetWinsockObject();
+		}
+		else if ( SyncHandle == 6 )
+		{
+			wsServer = g_SynLib_Con6.GetWinsockObject();
+		}
+		else if ( SyncHandle == 7 )
+		{
+			wsServer = g_SynLib_Con7.GetWinsockObject();
+		}
+		else if ( SyncHandle == 8 )
+		{
+			wsServer = g_SynLib_Con8.GetWinsockObject();
+		}
+		else if ( SyncHandle == 9 )
+		{
+			wsServer = g_SynLib_Con9.GetWinsockObject();
+		}
+		else if ( SyncHandle == 10 )
+		{
+			wsServer = g_SynLib_Con10.GetWinsockObject();
+		}
+	}
+
+	private function GetDataArraySyncHandle(variable SyncHandle, variable& ReceiveBuffer[]) void
+	{
+		//This function returns the Data Array for a given handle
+		if ( SyncHandle == 1 )
+		{
+			ReceiveBuffer = g_SynLib_ReceiveBufferCon1;
+		}
+		else if ( SyncHandle == 2 )
+		{
+			ReceiveBuffer = g_SynLib_ReceiveBufferCon2;
+		}
+		else if ( SyncHandle == 3 )
+		{
+			ReceiveBuffer = g_SynLib_ReceiveBufferCon3;
+		}
+		else if ( SyncHandle == 4 )
+		{
+			ReceiveBuffer = g_SynLib_ReceiveBufferCon4;
+		}
+		else if ( SyncHandle == 5 )
+		{
+			ReceiveBuffer = g_SynLib_ReceiveBufferCon5;
+		}
+		else if ( SyncHandle == 6 )
+		{
+			ReceiveBuffer = g_SynLib_ReceiveBufferCon6;
+		}
+		else if ( SyncHandle == 7 )
+		{
+			ReceiveBuffer = g_SynLib_ReceiveBufferCon7;
+		}
+		else if ( SyncHandle == 8 )
+		{
+			ReceiveBuffer = g_SynLib_ReceiveBufferCon8;
+		}
+		else if ( SyncHandle == 9 )
+		{
+			ReceiveBuffer = g_SynLib_ReceiveBufferCon9;
+		}
+		else if ( SyncHandle == 10 )
+		{
+			ReceiveBuffer = g_SynLib_ReceiveBufferCon10;
+		}
+	}
+
+	private function SetDataArraySyncHandle(variable SyncHandle, variable ReceiveBuffer[]) void
+	{
+		//This function sets the Data Array from a given handle
+		if ( SyncHandle == 1 )
+		{
+			g_SynLib_ReceiveBufferCon1 = ReceiveBuffer;
+		}
+		else if ( SyncHandle == 2 )
+		{
+			g_SynLib_ReceiveBufferCon2 = ReceiveBuffer;
+		}
+		else if ( SyncHandle == 3 )
+		{
+			g_SynLib_ReceiveBufferCon3 = ReceiveBuffer;
+		}
+		else if ( SyncHandle == 4 )
+		{
+			g_SynLib_ReceiveBufferCon4 = ReceiveBuffer;
+		}
+		else if ( SyncHandle == 5 )
+		{
+			g_SynLib_ReceiveBufferCon5 = ReceiveBuffer;
+		}
+		else if ( SyncHandle == 6 )
+		{
+			g_SynLib_ReceiveBufferCon6 = ReceiveBuffer;
+		}
+		else if ( SyncHandle == 7 )
+		{
+			g_SynLib_ReceiveBufferCon7 = ReceiveBuffer;
+		}
+		else if ( SyncHandle == 8 )
+		{
+			g_SynLib_ReceiveBufferCon8 = ReceiveBuffer;
+		}
+		else if ( SyncHandle == 9 )
+		{
+			g_SynLib_ReceiveBufferCon9 = ReceiveBuffer;
+		}
+		else if ( SyncHandle == 10 )
+		{
+			g_SynLib_ReceiveBufferCon10 = ReceiveBuffer;
+		}
+	}
+
+	private function GetFreeSyncHandle() variable
+	{
+		//This function returns a free handle from the handle array.
+		//All handles are stored in a Array.
+		variable Handle;
+		if ( g_SynLib_arrSyncHandle.GetAt(0) == 0 )
+		{
+			Handle = 1;
+			return(Handle);
+		}
+		else if ( g_SynLib_arrSyncHandle.GetAt(1) == 0 )
+		{
+			Handle = 2;
+			return(Handle);
+		}
+		else if ( g_SynLib_arrSyncHandle.GetAt(2) == 0 )
+		{
+			Handle = 3;
+			return(Handle);
+		}
+		else if ( g_SynLib_arrSyncHandle.GetAt(3) == 0 )
+		{
+			Handle = 4;
+			return(Handle);
+		}
+		else if ( g_SynLib_arrSyncHandle.GetAt(4) == 0 )
+		{
+			Handle = 5;
+			return(Handle);
+		}
+		else if ( g_SynLib_arrSyncHandle.GetAt(5) == 0 )
+		{
+			Handle = 6;
+			return(Handle);
+		}
+		else if ( g_SynLib_arrSyncHandle.GetAt(6) == 0 )
+		{
+			Handle = 7;
+			return(Handle);
+		}
+		else if ( g_SynLib_arrSyncHandle.GetAt(7) == 0 )
+		{
+			Handle = 8;
+			return(Handle);
+		}
+		else if ( g_SynLib_arrSyncHandle.GetAt(8) == 0 )
+		{
+			Handle = 9;
+			return(Handle);
+		}
+		else if ( g_SynLib_arrSyncHandle.GetAt(9) == 0 )
+		{
+			Handle = 10;
+			return(Handle);
+		}
+		else
+		{
+			Handle = 0;
+			return(Handle);
+		}
+	}
+
+	private function WriteGetDataToArray(variable ReceiveBuffer[], variable DataGet) void
+	{
+		variable arrBufferCount;
+		variable CurrData;
+		variable arrNewBuffer[];
+		variable x(1);		
+		onerror goto Unexpected;
+		arrBufferCount = ReceiveBuffer.GetSize();
+		ReceiveBuffer.AddAsLast( DataGet );
+		return;
+		Unexpected:
+		{
+			return;
+		}
+	}
+
+	private function CheckNoSyncHandle(variable MyHandle) variable
+	{
+		//If the handle is 0 (no free handle) the function returns an error
+		if (MyHandle == 0)
+		{
+			if (0 != SyncLibCs)
+				SynLeaveCriticalSection(SyncLibCs);	//leave critical section
+			FormatTrace( "SYSTEM", StringTable::Load(IDS::Connecting) + IStr(MyHandle), 3);
+			return (SyncLibRet::StdError);
+		}
+	return (SyncLibRet::noError);
+	}
+
+	private function IsTCPConnection(object& wsConnection) variable
+	{
+		if (wsConnection.Protocol == ProtocolConstants::sckTCPProtocol)
+			return (hslTrue);
+		else
+			return (hslFalse);
+	}
+
+	private function IsUDPConnection(object& wsConnection) variable
+	{
+		if (wsConnection.Protocol == ProtocolConstants::sckUDPProtocol)
+			return (hslTrue);
+		else
+			return (hslFalse);
+	}
+} //end namespace SyncLib
+
+//Data Arrival functions which will be called if data comes on the specific connection (1 - 10).
+//Each function writes the received data into the receive buffer of the connection.
+
+	private global function g_SynLib_Con1_DataArrival(variable bytesTotal) void
+	{
+		object tempObject;
+		variable strServerMsg("");
+		onerror goto Unexpected;
+		SynEnterCriticalSection(SyncLibCs); //enter critical section
+		SyncLib::GetObjectSyncHandle(1, tempObject);
+		tempObject.GetData(strServerMsg, VARENUM::VT_BSTR);
+		SyncLib::WriteGetDataToArray(g_SynLib_ReceiveBufferCon1, strServerMsg);
+//		FormatTrace( "SYSTEM", SyncLib::StringTable::Load(SyncLib::IDS::DataArrival) + "1", 2, strServerMsg);
+		SynLeaveCriticalSection(SyncLibCs); //leave critical section
+		return;
+		Unexpected:
+		{
+			if (0 != SyncLibCs)
+				SynLeaveCriticalSection(SyncLibCs);	//leave critical section
+		}
+	}
+
+	private global function g_SynLib_Con2_DataArrival(variable bytesTotal) void
+	{
+		object tempObject;
+		variable strServerMsg("");
+		onerror goto Unexpected;
+		SynEnterCriticalSection(SyncLibCs); //enter critical section
+		SyncLib::GetObjectSyncHandle(2, tempObject);
+		tempObject.GetData(strServerMsg, VARENUM::VT_BSTR);
+		SyncLib::WriteGetDataToArray(g_SynLib_ReceiveBufferCon2, strServerMsg);
+//		FormatTrace( "SYSTEM", SyncLib::StringTable::Load(SyncLib::IDS::DataArrival) + "2", 2);
+		SynLeaveCriticalSection(SyncLibCs); //leave critical section
+		return;
+		Unexpected:
+		{
+			if (0 != SyncLibCs)
+				SynLeaveCriticalSection(SyncLibCs);	//leave critical section
+		}
+	}
+
+	private global function g_SynLib_Con3_DataArrival(variable bytesTotal) void
+	{
+		object tempObject;
+		variable strServerMsg("");
+		onerror goto Unexpected;
+		SynEnterCriticalSection(SyncLibCs); //enter critical section
+		SyncLib::GetObjectSyncHandle(3, tempObject);
+		tempObject.GetData(strServerMsg, VARENUM::VT_BSTR);
+		SyncLib::WriteGetDataToArray(g_SynLib_ReceiveBufferCon3, strServerMsg);
+//		FormatTrace( "SYSTEM", SyncLib::StringTable::Load(SyncLib::IDS::DataArrival) + "3", 2);
+		SynLeaveCriticalSection(SyncLibCs); //leave critical section
+		return;
+		Unexpected:
+		{
+			if (0 != SyncLibCs)
+				SynLeaveCriticalSection(SyncLibCs);	//leave critical section
+		}
+	}
+
+	private global function g_SynLib_Con4_DataArrival(variable bytesTotal) void
+	{
+		object tempObject;
+		variable strServerMsg("");
+		onerror goto Unexpected;
+		SynEnterCriticalSection(SyncLibCs); //enter critical section
+		SyncLib::GetObjectSyncHandle(4, tempObject);
+		tempObject.GetData(strServerMsg, VARENUM::VT_BSTR);
+		SyncLib::WriteGetDataToArray(g_SynLib_ReceiveBufferCon4, strServerMsg);
+//		FormatTrace( "SYSTEM", SyncLib::StringTable::Load(SyncLib::IDS::DataArrival) + "4", 2);
+		SynLeaveCriticalSection(SyncLibCs); //leave critical section
+		return;
+		Unexpected:
+		{
+			if (0 != SyncLibCs)
+				SynLeaveCriticalSection(SyncLibCs);	//leave critical section
+		}
+	}
+
+	private global function g_SynLib_Con5_DataArrival(variable bytesTotal) void
+	{
+		object tempObject;
+		variable strServerMsg("");
+		onerror goto Unexpected;
+		SynEnterCriticalSection(SyncLibCs); //enter critical section
+		SyncLib::GetObjectSyncHandle(5, tempObject);
+		tempObject.GetData(strServerMsg, VARENUM::VT_BSTR);
+		SyncLib::WriteGetDataToArray(g_SynLib_ReceiveBufferCon5, strServerMsg);
+//		FormatTrace( "SYSTEM", SyncLib::StringTable::Load(SyncLib::IDS::DataArrival) + "5", 2);
+		SynLeaveCriticalSection(SyncLibCs); //leave critical section
+		return;
+		Unexpected:
+		{
+			if (0 != SyncLibCs)
+				SynLeaveCriticalSection(SyncLibCs);	//leave critical section
+		}
+	}
+
+	private global function g_SynLib_Con6_DataArrival(variable bytesTotal) void
+	{
+		object tempObject;
+		variable strServerMsg("");
+		onerror goto Unexpected;
+		SynEnterCriticalSection(SyncLibCs); //enter critical section
+		SyncLib::GetObjectSyncHandle(6, tempObject);
+		tempObject.GetData(strServerMsg, VARENUM::VT_BSTR);
+		SyncLib::WriteGetDataToArray(g_SynLib_ReceiveBufferCon6, strServerMsg);
+//		FormatTrace( "SYSTEM", SyncLib::StringTable::Load(SyncLib::IDS::DataArrival) + "6", 2);
+		SynLeaveCriticalSection(SyncLibCs); //leave critical section
+		return;
+		Unexpected:
+		{
+			if (0 != SyncLibCs)
+				SynLeaveCriticalSection(SyncLibCs);	//leave critical section
+		}
+	}
+
+	private global function g_SynLib_Con7_DataArrival(variable bytesTotal) void
+	{
+		object tempObject;
+		variable strServerMsg("");
+		onerror goto Unexpected;
+		SynEnterCriticalSection(SyncLibCs); //enter critical section
+		SyncLib::GetObjectSyncHandle(7, tempObject);
+		tempObject.GetData(strServerMsg, VARENUM::VT_BSTR);
+		SyncLib::WriteGetDataToArray(g_SynLib_ReceiveBufferCon7, strServerMsg);
+//		FormatTrace( "SYSTEM", SyncLib::StringTable::Load(SyncLib::IDS::DataArrival) + "7", 2);
+		SynLeaveCriticalSection(SyncLibCs); //leave critical section
+		return;
+		Unexpected:
+		{
+			if (0 != SyncLibCs)
+				SynLeaveCriticalSection(SyncLibCs);	//leave critical section
+		}
+	}
+
+	private global function g_SynLib_Con8_DataArrival(variable bytesTotal) void
+	{
+		object tempObject;
+		variable strServerMsg("");
+		onerror goto Unexpected;
+		SynEnterCriticalSection(SyncLibCs); //enter critical section
+		SyncLib::GetObjectSyncHandle(8, tempObject);
+		tempObject.GetData(strServerMsg, VARENUM::VT_BSTR);
+		SyncLib::WriteGetDataToArray(g_SynLib_ReceiveBufferCon8, strServerMsg);
+//		FormatTrace( "SYSTEM", SyncLib::StringTable::Load(SyncLib::IDS::DataArrival) + "8", 2);
+		SynLeaveCriticalSection(SyncLibCs); //leave critical section
+		return;
+		Unexpected:
+		{
+			if (0 != SyncLibCs)
+				SynLeaveCriticalSection(SyncLibCs);	//leave critical section
+		}
+	}
+
+	private global function g_SynLib_Con9_DataArrival(variable bytesTotal) void
+	{
+		object tempObject;
+		variable strServerMsg("");
+		onerror goto Unexpected;
+		SynEnterCriticalSection(SyncLibCs); //enter critical section
+		SyncLib::GetObjectSyncHandle(9, tempObject);
+		tempObject.GetData(strServerMsg, VARENUM::VT_BSTR);
+		SyncLib::WriteGetDataToArray(g_SynLib_ReceiveBufferCon9, strServerMsg);
+//		FormatTrace( "SYSTEM", SyncLib::StringTable::Load(SyncLib::IDS::DataArrival) + "9", 2);
+		SynLeaveCriticalSection(SyncLibCs); //leave critical section
+		return;
+		Unexpected:
+		{
+			if (0 != SyncLibCs)
+				SynLeaveCriticalSection(SyncLibCs);	//leave critical section
+		}
+	}
+
+	private global function g_SynLib_Con10_DataArrival(variable bytesTotal) void
+	{
+		object tempObject;
+		variable strServerMsg("");
+		onerror goto Unexpected;
+		SynEnterCriticalSection(SyncLibCs); //enter critical section
+		SyncLib::GetObjectSyncHandle(10, tempObject);
+		tempObject.GetData(strServerMsg, VARENUM::VT_BSTR);
+		SyncLib::WriteGetDataToArray(g_SynLib_ReceiveBufferCon10, strServerMsg);
+//		FormatTrace( "SYSTEM", SyncLib::StringTable::Load(SyncLib::IDS::DataArrival) + "10", 2);
+		SynLeaveCriticalSection(SyncLibCs); //leave critical section
+		return;
+		Unexpected:
+		{
+			if (0 != SyncLibCs)
+				SynLeaveCriticalSection(SyncLibCs);	//leave critical section
+		}
+	}
+
+#endif
+// $$author=ContainerAdministrator$$valid=1$$time=2025-09-09 20:13$$checksum=c87a766d$$length=099$$

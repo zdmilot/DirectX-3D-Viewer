@@ -1,0 +1,76 @@
+// This is a part of the HSL Math Library.
+// Copyright (C) by HAMILTON Bonaduz AG, CH-7402 Bonaduz.
+// All rights reserved.
+//
+// Modification History
+// 2001-06-26  bandenmatten : Removed onerror goto statements from library functions.
+// 2001-08-23  bandenmatten : Modified include HSLMthLibImpl.hsl -> HSLMthLibImpl.hs_.
+// 2002-02-22  bandenmatten : Added functions MthBitwiseNOT and MthBitwiseXOR.
+// 2002-12-05  bandenmatten : Specified return values for exported library functions.
+// 2004-02-25  bandenmatten : Added functions MthFFloor() and MthFCeiling().
+// 2006-09-07  bandenmatten : Declared functions MthLessThanOrEaqual(), MthEaqual(), 
+//										MthNotEaqual() and MthGreaterThanOrEaqual() as static (error in writing).
+// 2006-09-07  bandenmatten : Added functions MthLessThanOrEqual(), MthEqual(), MthNotEqual() and MthGreaterThanOrEqual().
+
+#ifndef __HSLMthLib_hsl__
+#define __HSLMthLib_hsl__	1
+
+// Interface to Math functions 
+#ifndef HSL_RUNTIME
+function MthBitwiseOR(variable number1, variable number2) variable				{return(0);}
+function MthBitwiseAND(variable number1, variable number2) variable				{return(0);}
+function MthBitwiseNOT(variable number) variable										{return(0);}
+function MthBitwiseXOR(variable number1, variable number2) variable				{return(0);}
+function MthLogicalOR(variable number1, variable number2) variable				{return(0);}
+function MthLogicalAND(variable number1, variable number2) variable				{return(0);}
+function MthLogicalNOT(variable number) variable										{return(0);}
+function MthLessThan(variable number1, variable number2) variable					{return(0);}
+static function MthLessThanOrEaqual(variable number1, variable number2) variable {return(0);}
+function MthLessThanOrEqual(variable number1, variable number2) variable		{return(0);}
+static function MthEaqual(variable number1, variable number2) variable			{return(0);}
+function MthEqual(variable number1, variable number2) variable						{return(0);}
+static function MthNotEaqual(variable number1, variable number2) variable		{return(0);}
+function MthNotEqual(variable number1, variable number2) variable					{return(0);}
+function MthGreaterThan(variable number1, variable number2) variable				{return(0);}
+static function MthGreaterThanOrEaqual(variable number1, variable number2) variable	{return(0);}
+function MthGreaterThanOrEqual(variable number1, variable number2) variable	{return(0);}
+function MthPow(variable base, variable exponent) variable							{return(0);}
+function MthInc(variable& number) variable												{return(0);}
+function MthDec(variable& number) variable												{return(0);}
+function MthMin(variable number1, variable number2) variable						{return(0);}
+function MthMax(variable number1, variable number2) variable						{return(0);}
+function MthRound(variable number, variable numDecimalPlaces) variable			{return(0);}
+function MthSin(variable number) variable													{return(0);}
+function MthCos(variable number) variable													{return(0);}
+function MthTan(variable number) variable													{return(0);}
+function MthASin(variable number) variable												{return(0);}
+function MthACos(variable number) variable												{return(0);}
+function MthATan(variable number) variable												{return(0);}
+function MthExp(variable number) variable													{return(0);}
+function MthLog(variable number) variable													{return(0);}
+function MthLog10(variable number) variable												{return(0);}
+function MthCeiling(variable number) variable											{return(0);}
+function MthFloor(variable number) variable												{return(0);}
+function MthShiftRight(variable number, variable numBits) variable				{return(0);}
+function MthShiftLeft(variable number, variable numBits) variable					{return(0);}
+function MthR01Init(variable module, variable factor, variable seed) void		{return;}
+function MthR01Draw() variable																{return(0);}
+function MthURandInit(variable low, variable high) void								{return;}
+function MthURandDraw() variable																{return(0);}
+function MthERandInit(variable mean) void													{return;}
+function MthERandDraw() variable																{return(0);}
+function MthNRandInit(variable mean, variable standardDev) void					{return;}
+function MthNRandDraw() variable																{return(0);}
+function MthFCeiling(variable number) variable											{return(0);}
+function MthFFloor(variable number) variable												{return(0);}
+#endif
+
+// Implementation of Math functions 
+#ifdef HSL_RUNTIME
+#ifndef __HSLMthLibImpl_hsl__
+#include "HSLMthLibImpl.hs_"
+#endif
+#endif
+
+#endif
+// $$author=ContainerAdministrator$$valid=1$$time=2025-09-09 20:13$$checksum=a5fcb492$$length=099$$

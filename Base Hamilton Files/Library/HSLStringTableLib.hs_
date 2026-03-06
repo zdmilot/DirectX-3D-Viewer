@@ -1,0 +1,119 @@
+// This is a part of the String Table Library.
+// Copyright (C) by HAMILTON Bonaduz AG, CH-7402 Bonaduz.
+// All rights reserved.
+//
+// Modification History
+// 2001-09-06  bandenmatten : Initial file creation.
+// 2002-12-05  bandenmatten : Specified return values for exported library functions.
+// 2003-01-10  bandenmatten : Disabled Assert in function StringTable::Insert().
+// 2003-01-10  bandenmatten : Renamed define _DEBUG -> _DEBUGStringTable.
+// 2004-01-14  bandenmatten : Function StringTable::Init(): Checked whether the file containing the string table exists. 
+//																				If not, tried to load the file *Enu.hs_.
+
+#ifndef __HSLStringTableLib_hsl__
+#define __HSLStringTableLib_hsl__	1
+
+// Interface to the String Table Library
+#ifndef HSL_RUNTIME
+namespace StringTable
+{
+	//#define _DEBUGStringTable		1								// specifies the debug version of the pipetting library
+	
+	// functions
+
+	function Init(															// initializes the the string table
+		variable& libraryName) void									// i: the name of the library that defines the string table entries
+	{return;}
+
+	function Load(															// loads a string from the string table
+		variable ids) variable											// i: string id
+	{return(0);}
+
+	function Dump() void													// dumps the the string table entries in the debug version 
+	{return;}
+}
+#endif
+
+// Implementation of String Table library 
+#ifdef HSL_RUNTIME
+namespace StringTable
+{
+	// data
+
+	static variable entry[];											// string table entries
+	static variable initializedStr(hslFalse);						// initialization state of the string table
+
+	// functions
+
+	static function StringTable();									// loads the string table, implemented by the client of this library
+
+	function Insert(														// inserts a string into the string table
+		variable ids,														// i: string id
+		variable& str) void;												// i: string 
+	
+	static function Assert(												// assert function 
+		variable expr,														// i: specifies a numeric expression that evaluates to nonzero or 0
+		variable location) void;										// i: location (string or number)
+
+	// implementation
+
+	function Insert(variable ids, variable& str) void
+	{
+		if (entry.GetSize() < ids + 1)
+			entry.SetSize(ids + 1);
+		entry.SetAt(ids, str);
+	}
+
+	function Init(variable& librayName) void
+	{
+		if (!initializedStr)
+		{
+			string str;
+			variable stringTableFileName;
+
+			stringTableFileName = librayName + GetLanguage() + ".hs_";
+			//ba 2004-01-14 begin
+			if ("" == SearchPath(stringTableFileName))
+				stringTableFileName = librayName + "Enu.hs_";
+			// end
+			str = stringTableFileName;
+			<< str;
+			StringTable();
+			initializedStr = hslTrue;
+		}
+	}
+
+	function Load(variable ids) variable
+	{
+		Assert(0 <= ids && ids <= entry.GetSize(), GetFunctionName());
+		if (0 <= ids && ids <= entry.GetSize())
+			return(entry.GetAt(ids));
+		return("");
+	}
+
+	function Dump() void
+	{
+		variable i;
+		for (i = 0; i < entry.GetSize(); i++)
+			Trace(Load(i));
+	}
+
+	function Assert(variable expr, variable location) void
+	{
+		#ifdef _DEBUGStringTable
+		if (!expr)
+		{
+			variable type(GetType(location));
+			if (hslInteger.Compare(GetType(type)) == 0)
+				location = IStr(type);
+			if (hslFloat.Compare(GetType(type)) == 0)
+				location = FStr(type);
+			MessageBox("Debug Assertion failed", "Debug Error - " + location, hslError|hslOKOnly);
+			abort;
+		}
+		#endif
+	}
+}
+#endif
+#endif
+// $$author=ContainerAdministrator$$valid=1$$time=2025-09-09 20:13$$checksum=93099eae$$length=099$$

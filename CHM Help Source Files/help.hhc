@@ -80,6 +80,35 @@
 				</OBJECT>
 		</UL>
 		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="Command-Line Interface">
+			</OBJECT>
+		<UL>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="CLI Reference">
+				<param name="Local" value="CLIReference.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="Inspection Commands">
+				<param name="Local" value="CLIReference.html#inspection">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="Export &amp; Extraction (CLI)">
+				<param name="Local" value="CLIReference.html#export-extract">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="Conversion Command (CLI)">
+				<param name="Local" value="CLIReference.html#convert">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="Labware Generation (CLI)">
+				<param name="Local" value="CLIReference.html#generate">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="Batch Validation (CLI)">
+				<param name="Local" value="CLIReference.html#validation">
+				</OBJECT>
+		</UL>
+		<LI> <OBJECT type="text/sitemap">
 			<param name="Name" value="Technical Reference">
 			</OBJECT>
 		<UL>

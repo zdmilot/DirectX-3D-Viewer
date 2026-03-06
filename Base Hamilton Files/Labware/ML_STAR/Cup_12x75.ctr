@@ -1,0 +1,50 @@
+HxCfgFile,2;
+
+ConfigIsValid,Y;
+
+DataDef,CONTAINER,3,default,
+{
+1.DX, "9.8",
+1.DY, "9.3",
+1.DZ, "9.80000019073",
+1.EqnOfVol, "h*71.6466",
+1.Max, "73.9",
+1.Min, "4.65",
+1.Shape, "3",
+2.DX, "0",
+2.DY, "0",
+2.DZ, "9.3",
+2.EqnOfVol, "h*h*(14.6084 - 1.0472*h)",
+2.Max, "4.65",
+2.Min, "0",
+2.Shape, "4",
+3DModel, "ML_STAR\\Cup_12x75.hxx",
+3DModelRel, ".\\Cup_12x75.hxx",
+3DxOffset, "0",
+3DyOffset, "0",
+3DzOffset, "0",
+Barcode.Unique, "0",
+Barcode.Value, "",
+BaseMM, "1.1",
+CategoryCnt, "0",
+Clearance, "85",
+Depth, "73.9",
+Description, "",
+Dim.Dx, "9.8",
+Dim.Dy, "9.8",
+Dim.Dz, "0",
+LS, "1",
+LSHt, "80",
+MaxDepth, "1",
+ReadOnly, "1",
+Segments, "2",
+Shape, "0",
+TchBase, "0",
+TchOff, "0",
+UseBndry, "0",
+ViewName, "",
+Visible, "0",
+cLLD, "4"
+};
+
+* $$author=ContainerAdministrator$$valid=1$$time=2025-06-21 16:41$$checksum=c8e4b0a2$$length=098$$

@@ -1,0 +1,493 @@
+// This is a part of the Update Worklist Library.
+// Copyright (C) by HAMILTON Bonaduz AG, CH-7402 Bonaduz.
+// All rights reserved.
+//
+// Modification History
+// 2006-04-05  bandenmatten : Initial file creation.
+// 2006-09-20  bandenmatten : Added check whether Vector Database worklist management is enabled to function UpdateJobStatus().
+// 2006-10-18  bandenmatten : Replaced VectorDb_Labware::IsLabwareLoadedByLabwareIdPositionId() by vectorDbTrackingObject.IsLabwareLoadedByLabwareIdPositionId(deckID,labwareId,positionId).
+
+#ifndef __HSLUpdateWorklist_hs___
+#define __HSLUpdateWorklist_hs___	1
+
+//#define HSL_RUNTIME 1
+
+// Interface to the Update Worklist Library
+#ifndef HSL_RUNTIME
+namespace UpdateWorklist
+{
+
+	function UpdateJobStatus(
+		variable& jobName, 
+		device& deviceObj,
+		sequence& sequenceObj) variable
+	{return(0);}
+
+	//--------------------------------------------------------------------------------------------------------------
+	//
+	// Description:
+	//
+	// The UpdateSampleStatus function updates the job status of all positions contained between positon 1 and (currentPos - 1) 
+	// in the given sequence which are in the state VectorDb_JobState::Assigned and which are associated to the specified assay name. 
+	// If the current position of the sequence equals to zero, the status of all positions contained between positon 1 and the end position are updated.
+	//
+	// Parameters:
+	//
+	// [in] jobName:
+	// The job name (string). 
+	//
+	// [in] deviceObj:
+	// The device containing the positions which status should be updated.
+	//
+	// [in] sequenceObj:
+	// The sequence containing the positions which status should be updated.
+	//
+	// Return:
+	//
+	// The number of jobs updated in the Vector Database table 'Job' (integer).
+	//
+	//--------------------------------------------------------------------------------------------------------------
+}
+#endif
+
+// Implementation of to the Update Worklist Library
+#ifdef HSL_RUNTIME
+
+// ----------------------------------------------------------------------------------------------------
+// Includes
+// ----------------------------------------------------------------------------------------------------
+
+#ifndef __HSLUtilLib2_hsl__
+	#include "HSLUtilLib2.hsl"
+#endif
+
+#ifndef  __HSLSynLib_hsl__
+	#include "HSLSynLib.hsl"
+#endif
+
+#ifndef __HSLStrLib_hsl__
+	#include "HSLStrLib.hsl"
+#endif
+
+#ifndef __HSLVectorDbWorklistManagement_hsl__
+	#include "HSLVectorDbWorklistManagement.hsl"
+#endif
+
+#ifndef __HSLVectorDbWorklistManagementDefs_hs___
+	#include "HSLVectorDbWorklistManagementDefs.hs_"
+#endif
+
+#ifndef __HSLVectorDbTrackingDefs_hs___
+	#include "HSLVectorDbTrackingDefs.hs_"
+#endif
+
+#ifndef __HSLVectorDbTracking_hsl__
+	#include "HSLVectorDbTracking.hsl"
+#endif
+
+// Implementation of the Update Worklist Library
+namespace UpdateWorklist
+{
+
+	// --------------------------------------------------------------------------------------
+	// Tracing
+	// --------------------------------------------------------------------------------------
+
+	#define TRACE_UPDATE_WORKLIST_FUNC			1								// Trace function start-end
+	//#define TRACE_UPDATE_WORKLIST_PARAM			1								// Trace function params
+	//#define TRACE_UPDATE_WORKLIST_CORE			1								// Trace function core
+
+	// ----------------------------------------------------------------------------------------------------
+	// Data 
+	// ----------------------------------------------------------------------------------------------------
+
+	static global variable g_updateWorklist_CriticalSection(0);				// Critical section
+	static global variable g_updateWorklist_DefaultJobName("");				// Default job name
+	static global variable g_updateWorklist_Enabled(hslFalse);				// Indicates whether Vector Database worklist management is enabled
+
+	// ----------------------------------------------------------------------------------------------------
+	// Constants
+	// ----------------------------------------------------------------------------------------------------
+
+	namespace Constants
+	{
+		static const variable lf("\010");											// Linefeed
+		static const variable crlf("\013\010");									// Carriage return linefeed 
+		static const variable helpFileShortName("HSLUpdateWorklist");		// Help file short name
+		static const variable helpFileExtension(".chm");						// Help file extension
+		static const variable defaultJobNamePrefix("{");						// Prefix to mark default job name when used as a job name
+		static const variable defaultJobNamePostfix("}");						// Postfix to mark default job name when used as a job name
+	}
+
+	// ----------------------------------------------------------------------------------------------------
+	// Translated strings
+	// ----------------------------------------------------------------------------------------------------
+
+	namespace TrStr
+	{
+		static const variable noErrorTextAvailable			(Translate("No error description available."));
+		
+		static const variable traceSource(Translate("Data Handling Steps"));									// Trace source
+		static const variable traceActionUpdateJobStatus(Translate("Update Job Status"));				// Trace action
+	}
+
+	// ----------------------------------------------------------------------------------------------------
+	// Traceing
+	// ----------------------------------------------------------------------------------------------------
+
+	namespace TraceStatus
+	{
+		static const variable start(1);								// Action status for formated trace
+		static const variable complete(2);							// Action status for formated trace
+		static const variable error_(3);								// Action status for formated trace
+		static const variable progress(4);							// Action status for formated trace
+		static const variable completeWithError(5);				// Action status for formated trace
+	}
+
+	// ----------------------------------------------------------------------------------------------------
+	// Error handling
+	// ----------------------------------------------------------------------------------------------------
+
+	namespace Error
+	{
+		static const variable majorID(0x4E);						// Major error id
+
+		namespace MinorID													// Minor error ids
+		{
+			static const variable generalRuntimeError(0x0B);
+			//static const variable ....(0x1F)
+		}
+
+		namespace ErrorCode												// Error codes
+		{
+			static const variable unexpected							(0x0001);
+			static const variable invalidParameter					(0x0002);
+			static const variable updateWorklistDisabled			(0x0003);
+
+			//static const variable ....(0xFFFF)					// If a new ErrorCode is added, function Error::MakeErrorDescription() has to be updated
+		}
+
+		namespace TrStr													// Translated error strings
+		{
+			static const variable unexpected							(Translate("Unexpected error."));
+			static const variable invalidParameter					(Translate("The parameter is invalid:"));
+			static const variable updateWorklistDisabled			(Translate("The Vector Database tracking is disabled."));
+		}
+
+		// ----------------------------------------------------------------------------------------------------
+		// Error functions
+		// ----------------------------------------------------------------------------------------------------
+
+		static function MakeErrorDescription(
+			variable errorCode,
+			variable& additionalDescription) variable
+		{
+			variable description("");
+			variable errorNumber(0);
+
+			if (ErrorCode::unexpected == errorCode)
+				description = TrStr::unexpected;
+			else if (ErrorCode::invalidParameter == errorCode)
+				description = TrStr::invalidParameter;
+			else if (ErrorCode::updateWorklistDisabled == errorCode)
+				description = TrStr::updateWorklistDisabled;
+			//...		
+			//...
+			//... 
+			//...
+			//...
+			else
+			{
+				description = TrStr::noErrorTextAvailable;
+			}
+
+			// Generate the full description
+			if (additionalDescription != "")
+			{
+				description = description + Constants::crlf + Constants::crlf + additionalDescription;
+			}
+			return(description);
+		}
+	}
+
+	// ----------------------------------------------------------------------------------------------------
+	// Utility functions
+	// ----------------------------------------------------------------------------------------------------
+
+	static function GetHelpFileName() variable		// Builds the library help file name
+	{
+		return(Constants::helpFileShortName + GetLanguage() + Constants::helpFileExtension);
+	}
+
+	static global function UpdateWorklist_InitCriticalSection() void
+	{
+		if (0 == g_updateWorklist_CriticalSection)
+		{
+			g_updateWorklist_CriticalSection = SynInitializeCriticalSection();
+			if (0 == g_updateWorklist_CriticalSection)
+			{
+				Util2::Error::RaiseRuntimeError(Error::majorID, Error::MinorID::generalRuntimeError, Error::ErrorCode::unexpected,
+												Error::MakeErrorDescription(Error::ErrorCode::unexpected, ""), 
+												GetHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+			}
+
+			#ifdef TRACE_UPDATE_WORKLIST_CORE
+			FormatTrace("DEBUG", GetFunctionName(), TraceStatus::progress, "Initialized critical section object, id = ", g_updateWorklist_CriticalSection);
+			#endif
+		}
+	}
+
+	static function InitLibrary() void			// Library initialization function
+	{
+		variable methodFileName("");
+
+		// Initialize critical section object 
+		UpdateWorklist_InitCriticalSection();
+
+		// Activate error handler
+		onerror goto Unexpected;
+
+		// Lock critical section
+		SynEnterCriticalSection(g_updateWorklist_CriticalSection);
+
+		// Init 
+		if ("" == g_updateWorklist_DefaultJobName)
+		{
+			object vectorDbTrackingObject;
+			object tableSchemaPars;
+			variable columnSize(50);
+
+			vectorDbTrackingObject = GetVectorDbTrackerObject();
+			tableSchemaPars = vectorDbTrackingObject.GetTableSchema(vectorDbTrackingObject.HxVectorDbTable_Job);
+			columnSize = tableSchemaPars.Item2(vectorDbTrackingObject.HxVectorDbParsKey_Job_JobName, vectorDbTrackingObject.HxVectorDbParsKey_TableSchema_ColumnSize);
+			columnSize = columnSize - StrGetLength(Constants::defaultJobNamePrefix) - StrGetLength(Constants::defaultJobNamePostfix);
+
+			methodFileName = GetMethodFileName();
+			if ("" == methodFileName)
+			{
+				methodFileName = GetWorkflowFileName();
+			}
+			StrMakeLower(methodFileName);
+			methodFileName = StrRight(methodFileName, columnSize);
+			g_updateWorklist_DefaultJobName = Constants::defaultJobNamePrefix + methodFileName + Constants::defaultJobNamePostfix;
+			g_updateWorklist_Enabled = VectorDb_Misc::TrackingEnabled();
+		}
+
+		// Unlock critical section
+		SynLeaveCriticalSection(g_updateWorklist_CriticalSection);
+
+		return;
+
+		Unexpected:
+		{
+			// Unlock critical section
+			if (0 != g_updateWorklist_CriticalSection)
+				SynLeaveCriticalSection(g_updateWorklist_CriticalSection);
+
+			// Re-throw the error 
+			Util2::Error::RaiseLast();
+		}
+	} 
+
+	function UpdateJobStatus(
+		variable& jobName, 
+		device& deviceObj,
+		sequence& sequenceObj) variable
+	{
+		variable errorDesc("");												// Error description
+		variable jobNameCopy("");											// Copy of job name
+		variable currentPos(-1);											// Current position of input sequence
+		variable currentPosBck(-1);										// Backup of current position of input sequence
+		variable endPos(-1);													// End position of input sequence
+		variable numberOfAffectedRecords(0);							// Number of affected records
+		variable i(0); 														// Loop counter
+		variable deckID(0); 													// Deck ID
+		variable runID(0); 													// Run ID
+		object vectorDbTrackingObject;									// Vector Db tracking object
+
+		variable jobIDs[];													// Array to retrieve job IDs (integer)
+		variable jobNames[];													// Array to retrieve job names (string)
+		variable jobPriorities[]; 											// Array to retrieve job priorities (integer)
+		variable jobStates[]; 												// Array to retrieve job states (integer)
+		variable jobUserStates[]; 											// Array to retrieve job user states (integer)
+		variable sourceElementIDs[];										// Array to retrieve source labware IDs (integer)
+		variable sourceBarcodes[]; 										// Array to retrieve source barcodes (string)
+		variable sourceLabwareIds[];										// Array to retrieve source labware ids/names (string)
+		variable sourcePositionIds[]; 									// Array to retrieve source position ids/names (string)
+		variable sourceRequiredFlags[]; 									// Array to retrieve source required flags (integer) (string)
+		variable targetElementIDs[];										// Array to retrieve target labware IDs (integer)
+		variable targetBarcodes[]; 										// Array to retrieve target barcodes (string)
+		variable targetLabwareIds[]; 										// Array to retrieve target labware ids/names (string)
+		variable targetPositionIds[]; 									// Array to retrieve target position ids/names (string)
+		variable targetVolumes[];											// Array to retrieve target volumes (float)
+		variable numberOfJobs(0);
+
+		variable labwareState(VectorDb_LabwareState::NoError);	// Labware state (integer), one of VectorDb_LabwareState
+
+		// Trace start of function
+		#ifdef TRACE_UPDATE_WORKLIST_FUNC
+		FormatTrace(TrStr::traceSource, TrStr::traceActionUpdateJobStatus, TraceStatus::start);
+		#endif
+
+		// Dump input params
+		#ifdef TRACE_UPDTATE_WORKLIST_PARAM
+		FormatTrace(TrStr::traceSource, TrStr::traceActionUpdateJobStatus, TraceStatus::progress,	
+																	"jobName = ", defaultInteger, 
+																	", deviceObj = ", deviceObj.GetInstrumentName(),
+																	", sequenceObj = ", sequenceObj.GetName());
+		#endif
+
+		// Activate error handler
+		onerror goto Unexpected;
+
+		// Init library
+		InitLibrary();
+
+		// Lock critical section
+		SynEnterCriticalSection(g_updateWorklist_CriticalSection);
+
+		// Check whether Vector Database tracking is enabled.
+		if (!g_updateWorklist_Enabled)
+		{
+			Util2::Error::RaiseRuntimeError(Error::majorID, Error::MinorID::generalRuntimeError, Error::ErrorCode::updateWorklistDisabled,
+											Error::MakeErrorDescription(Error::ErrorCode::updateWorklistDisabled, ""), 
+											GetHelpFileName(), GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+
+		// Check input params to be valid
+		Util2::CheckValueType(jobName, hslString, errorDesc + "jobName");
+
+		// Check job name
+		jobNameCopy = jobName;
+		if ("" == jobNameCopy)
+		{
+			jobNameCopy = g_updateWorklist_DefaultJobName;
+		}
+
+		// Update job status.
+
+		// We have to iterate over the sample sequence from position 1 to (currentPos - 1), so 
+		// backup the current position of the sample sequence and determine the end position
+		currentPosBck = sequenceObj.GetCurrentPosition();
+		endPos = currentPosBck - 1;
+		if (endPos < 0)
+		{
+			endPos = sequenceObj.GetCount();
+		}
+
+		// Get deck ID
+		deckID = VectorDb_Deck::GetDeckID(deviceObj.GetInstrumentName());
+
+		// Get current run id
+		vectorDbTrackingObject = GetVectorDbTrackerObject();
+		runID = vectorDbTrackingObject.GetRunID(GetUniqueRunId());
+
+		// Iterate over sample sequence from position 1 to (currentPos - 1)
+		for (currentPos = sequenceObj.SetCurrentPosition(1);
+			  0 < currentPos && currentPos <= endPos;
+			  currentPos = sequenceObj.Increment(1))
+		{
+			variable labwareId("");
+			variable positionId("");
+			variable labwareID(0);
+
+			// Get labware and position id of element at current position
+			labwareId = sequenceObj.GetLabwareId();
+			positionId = sequenceObj.GetPositionId();
+
+			// Check whether given labware is still loaded on given deck
+			labwareID = vectorDbTrackingObject.IsLabwareLoadedByLabwareIdPositionId(deckID,labwareId,positionId);
+			if (0 < labwareID)
+			{
+				// Given labware is still loaded on given deck
+
+				// Get jobs for labware ID
+				jobIDs.SetSize(0);
+				jobNames.SetSize(0);
+				jobStates.SetSize(0);
+				jobUserStates.SetSize(0);
+				jobPriorities.SetSize(0);
+				sourceBarcodes.SetSize(0);
+				sourceLabwareIds.SetSize(0);
+				sourcePositionIds.SetSize(0);
+				sourceRequiredFlags.SetSize(0);
+				targetBarcodes.SetSize(0);
+				targetLabwareIds.SetSize(0);
+				targetPositionIds.SetSize(0);
+				targetVolumes.SetSize(0);
+				numberOfJobs = VectorDb::GetJobsForElementID(runID,
+																		labwareID,
+																		VectorDb_LabwareUsageType::Filter_Any,
+																		VectorDb_JobState::Assigned,
+																		jobIDs,jobNames,jobPriorities,jobStates,jobUserStates,
+																		sourceElementIDs,sourceBarcodes,sourceLabwareIds,sourcePositionIds,sourceRequiredFlags,
+																		targetElementIDs,targetBarcodes,targetLabwareIds,targetPositionIds,targetVolumes);
+
+				// Iterate over jobs for labware and filter out labware assigned to given job
+				for (i = 0; i < numberOfJobs; i++)
+				{
+					if (jobNames.ElementAt(i) == jobNameCopy)
+					{
+						// Labware is assigned to given job.
+
+						// Check if any action on the current sample was erroneous
+						labwareState = VectorDb_LabwareState::NoError;
+						VectorDb_Labware::GetLabwareByElementID(	sourceElementIDs.ElementAt(i),
+																	0, // deckID,
+																	0, // parentElementID,
+																	0, // labwareName,
+																	0, // labwareLevel,
+																	0, // barcode,
+																	0, // volume,
+																	labwareState,
+																	0, // userLabwareState,
+																	0, // deckCoordinateX,
+																	0, // deckCoordinateY,
+																	0, // deckCoordinateZ,
+																	0);// userLabwareTypeID);
+
+						// Update status 
+						if (VectorDb_LabwareState::NoError == labwareState || VectorDb_LabwareState::NotUsed == labwareState)
+						{
+							VectorDb::SetJobState(jobIDs.ElementAt(i),VectorDb_JobState::Processed);
+							numberOfAffectedRecords++;
+						}
+					}
+				}
+			}
+		}
+
+		// Restore current position of sample sequence
+		sequenceObj.SetCurrentPosition(currentPosBck);
+
+		// Trace completion of function
+		#ifdef TRACE_UPDATE_WORKLIST_FUNC
+		FormatTrace(TrStr::traceSource, TrStr::traceActionUpdateJobStatus, TraceStatus::complete);
+		#endif
+
+		// Unlock critical section
+		SynLeaveCriticalSection(g_updateWorklist_CriticalSection);
+
+		// Return 
+		return(numberOfAffectedRecords);
+
+		Unexpected:
+ 		{
+			// Unlock critical section
+			if (0 != g_updateWorklist_CriticalSection)
+				SynLeaveCriticalSection(g_updateWorklist_CriticalSection);
+
+			// Trace completion with error of function
+			#ifdef TRACE_UPDATE_WORKLIST_FUNC
+			FormatTrace(TrStr::traceSource, TrStr::traceActionUpdateJobStatus, TraceStatus::completeWithError);
+			#endif
+
+			// Re-throw the error 
+			Util2::Error::RaiseLast();
+		}
+	}
+}
+#endif
+
+#endif
+// $$author=ContainerAdministrator$$valid=1$$time=2025-09-09 20:13$$checksum=d50e5e89$$length=099$$

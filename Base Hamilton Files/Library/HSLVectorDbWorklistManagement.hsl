@@ -1,0 +1,486 @@
+// This is a part of the Vector Database Worklist Management Library.
+// Copyright (C) by HAMILTON Bonaduz AG, CH-7402 Bonaduz.
+// All rights reserved.
+//
+// Modification History
+// 2006-03-01  bandenmatten : Initial file creation.
+// 2006-05-31  bandenmatten : Added parameter queryJobLabwareData to function GetJobIDs().
+// 2006-06-14  bandenmatten : Added parameter deckID to function GetJobIDs().
+// 2006-06-20  bandenmatten : Added functions AssignJobsToLabware() and UnassignJobsFromLabware().
+// 2006-06-29  bandenmatten : Updated functions corresponding to changes of IHxVectorDbTracking.
+// 2006-06-29  bandenmatten : Removed parameter deckID from function GetJobIDs().
+// 2006-09-15  bandenmatten : Renamed LabwareID to ElementID (labwareID to elementID).
+// 2006-09-18  bandenmatten : Added function RemoveAllJobs().
+// 2006-09-20  bandenmatten : Added static function WorklistManagementEnabled().
+// 2006-10-06  bandenmatten : Added param runID to functions GetJobsForElementID(), GetJobsForElementIDSortedByPriority(), RemoveJobsForElementID().
+
+#ifndef __HSLVectorDbWorklistManagement_hsl__
+#define __HSLVectorDbWorklistManagement_hsl__	1
+
+// Interface to the Vector Database Worklist Management Library
+#ifndef HSL_RUNTIME
+namespace VectorDb
+{
+	function AddJob(
+		variable& jobName, 						// [in]: Job name (string, max 50 characters)
+		variable  jobPriority, 					// [in]: Job priority (integer, range [0, 255])
+		variable  jobState, 						// [in]: Job state (integer, one of VectorDb_JobState)
+		variable  jobUserState, 				// [in]: User defined job state (integer, 0 if unknown)
+		variable& sourceBarcode, 				// [in]: Source labware barcode (string, max 255 characters, empty string if unknown)
+		variable& sourceLabwareId, 			// [in]: Source labware identifier (string, max 255 characters, empty string if unknown)
+		variable& sourcePositionId, 			// [in]: Source position identifier (string, max 50 characters, empty string if unknown)
+		variable  sourceRequired, 				// [in]: Flag indicating whether the source labware is reqiured (integer, 0 = not required, 1 = required)
+		variable& targetBarcode, 				// [in]: Target labware barcode (string, max 255 characters, empty string if unknown)
+		variable& targetLabwareId, 			// [in]: Target labware identifier (string, max 255 characters, empty string if unknown)
+		variable& targetPositionId, 			// [in]: Target position identifier (string, max 50 characters, empty string if unknown)
+		variable  targetVolume) variable		// [in]: Target volume (float; in µL).
+	//--------------------------------------------------------------------------------------------------------------
+	// Description:
+	// Adds a new job to the Vector Database table 'Job'.
+	// 
+	// Return:
+	// The ID of the added job if the function succeeds, otherwise zero (integer).
+	//--------------------------------------------------------------------------------------------------------------
+	{return(0);} 
+
+	function AddJobAdditionalData(
+		variable jobID,									// [in]: Job id (integer)
+		variable& additionalDataKey,					// [in]: Additional data key (string)
+		variable& additionalDataValue) variable	// [in]: Additional data value (integer, float or string)
+	//--------------------------------------------------------------------------------------------------------------
+	// Description:
+	// Adds addidional data for the specified job to the Vector Database table 'Job'.
+	// 
+	// Return:
+	// Nonzero if the function succeeded, otherwise zero (integer).
+	//--------------------------------------------------------------------------------------------------------------
+	{return(0);} 
+
+	function RemoveJob(
+		variable jobID) variable						// [in]: Job ID (integer)
+	//--------------------------------------------------------------------------------------------------------------
+	// Description:
+	// Removes the specified job from the Vector Database table 'Job'.
+	// 
+	// Return:
+	// Nonzero if the function succeeded, otherwise zero (integer).
+	//--------------------------------------------------------------------------------------------------------------
+	{return(0);} 
+
+	function RemoveJobAdditionalData(
+		variable jobID,									// [in]: Job id (integer)
+		variable& additionalDataKey) variable		// [in]: Additional data key (string)
+	//--------------------------------------------------------------------------------------------------------------
+	// Description:
+	// Removes addidional data for the specified job from the Vector Database table 'Job'.
+	// 
+	// Return:
+	// The number of affected records (integer).
+	//--------------------------------------------------------------------------------------------------------------
+	{return(0);} 
+
+	function RemoveAllJobs(
+		variable jobStateFilter) variable			// [in]: Job state filter (integer, one of VectorDb_JobState)
+	//--------------------------------------------------------------------------------------------------------------
+	// Description:
+	// Removes all jobs (including additional data) that match the given state from the Vector Database table 'Job'.
+	// 
+	// Return:
+	// The number of removed jobs (integer).
+	//--------------------------------------------------------------------------------------------------------------
+	{return(0);} 
+
+	function GetJobs(
+		variable jobStateFilter,				// [in]: Job state filter (integer, one of VectorDb_JobState)
+		variable& jobIDs[],						// [in/out]: Array to retrieve job IDs (integer)
+		variable& jobNames[],					// [in/out]: Array to retrieve job names (string)
+		variable& jobPriorities[], 			// [in/out]: Array to retrieve job priorities (integer)
+		variable& jobStates[], 					// [in/out]: Array to retrieve job states (integer)
+		variable& jobUserStates[], 			// [in/out]: Array to retrieve job user states (integer)
+		variable& sourceElementIDs[],			// [in/out]: Array to retrieve source element IDs (integer)
+		variable& sourceBarcodes[], 			// [in/out]: Array to retrieve source barcodes (string)
+		variable& sourceLabwareIds[],			// [in/out]: Array to retrieve source labware ids/names (string)
+		variable& sourcePositionIds[], 		// [in/out]: Array to retrieve source position ids/names (string)
+		variable& sourceRequiredFlags[], 	// [in/out]: Array to retrieve source required flags (integer)
+		variable& targetElementIDs[],			// [in/out]: Array to retrieve target element IDs (integer)
+		variable& targetBarcodes[], 			// [in/out]: Array to retrieve target barcodes (string)
+		variable& targetLabwareIds[], 		// [in/out]: Array to retrieve target labware ids/names (string)
+		variable& targetPositionIds[], 		// [in/out]: Array to retrieve target position ids/names (string)
+		variable& targetVolumes[]) variable	// [in/out]: Array to retrieve target volumes (float)
+	//--------------------------------------------------------------------------------------------------------------
+	// Description:
+	// Returns information about all jobs that match the given job state.
+	// 
+	// Return:
+	// The number of jobs added to the output parameters (integer).
+	//--------------------------------------------------------------------------------------------------------------
+	{return(0);} 
+
+	function GetJobIDs(
+		variable& searchCondition,								// [in]: Specifies an SQL search condition to restrict the rows returned (string)
+		variable& orderByExpression,							// [in]: Specifies an SQL sort expression to sort the result set (string)
+		variable queryJobAdditionalData,						// [in]: Indicates whether to query job additional data. 
+																		//			If this parameter evaluates to true, all jobs in the result set must support the same additional data.
+		variable queryJobLabwareData) variable[]			// [in]: Indicates whether to query job labware data, i.e. loading time and x-y-z-coordinates
+																		//			of associated source labware (integer, 0 = don't query, 1 = query).
+	//--------------------------------------------------------------------------------------------------------------
+	// Description:
+	// Returns all job ids that match the given filter in the given sort order.
+	//
+	// Supported column names in the SQL search condition and the SQL sort expression are:
+	//
+	//	JobID
+	//	JobName
+	//	JobPriority
+	//	JobState
+	//	JobUserState
+	//	SourceElementID
+	//	SourceBarcode
+	//	SourceLabwareId
+	//	SourcePositionId
+	//	SourceRequired
+	//	TargetElementID
+	//	TargetBarcode
+	//	TargetLabwareId
+	//	TargetPositionId
+	//	TargetVolume
+	// <JobAdditionalDataName>				Parameter queryJobAdditionalData must be set to 1.
+	// SourceLoadingTime						Parameter queryLabwareData must be set to 1.
+	// SourceXCoordinate						Parameter queryLabwareData must be set to 1.
+	// SourceYCoordinate						Parameter queryLabwareData must be set to 1.
+	// SourceZCoordinate						Parameter queryLabwareData must be set to 1.
+	//
+	// Example:
+	// searchCondition	=	"JobName = 'HIV' AND JobState = 1"
+	// orderByExpression	=	"JobPriority asc"
+	// 
+	// Return:
+	// Returns an array containing all job ids that match the given filter in the given sort order (integer).
+	//--------------------------------------------------------------------------------------------------------------
+	{variable _0[]; return(_0);} 
+
+	function GetJob(
+		variable jobID,							// [in]: Job id (integer)
+		variable& jobName,						// [in/out]: Variable to retrieve job name (string)
+		variable& jobPriority, 					// [in/out]: Variable to retrieve job priority (integer)
+		variable& jobState, 						// [in/out]: Variable to retrieve job state (integer)
+		variable& jobUserState, 				// [in/out]: Variable to retrieve job user state (integer)
+		variable& sourceElementID,				// [in/out]: Variable to retrieve source element ID (integer)
+		variable& sourceBarcode, 				// [in/out]: Variable to retrieve source barcode (string)
+		variable& sourceLabwareId,				// [in/out]: Variable to retrieve source labware id/name (string)
+		variable& sourcePositionId, 			// [in/out]: Variable to retrieve source position id/name (string)
+		variable& sourceRequired, 				// [in/out]: Variable to retrieve source required flag (integer) (string)
+		variable& targetElementID,				// [in/out]: Variable to retrieve target element ID (integer)
+		variable& targetBarcode, 				// [in/out]: Variable to retrieve target barcode (string)
+		variable& targetLabwareId, 			// [in/out]: Variable to retrieve target labware id/name (string)
+		variable& targetPositionId, 			// [in/out]: Variable to retrieve target position id/name (string)
+		variable& targetVolume) variable		// [in/out]: Variable to retrieve target volume (float)
+	//--------------------------------------------------------------------------------------------------------------
+	// Description:
+	// Returns information about the specified job from the Vector Database table 'Job'.
+	// 
+	// Return:
+	// Nonzero if the function succeeded, otherwise zero (integer).
+	//--------------------------------------------------------------------------------------------------------------
+	{return(0);} 
+
+	function GetJobAdditionalData(
+		variable jobID,										// [in]: Job id (integer)
+		variable& additionalDataKeys[],					// [in/out]: Array to retrieve additional data keys (string)
+		variable& additionalDataValues[]) variable	// [in/out]: Array to retrieve additional data values (integer, float or string)
+	//--------------------------------------------------------------------------------------------------------------
+	// Description:
+	// Returns information about the additional data for the specified job from the Vector Database table 'Job'.
+	// 
+	// Return:
+	// The number of additional data added to the output parameters (integer).
+	//--------------------------------------------------------------------------------------------------------------
+	{return(0);} 
+
+	function GetJobsSortedByPriority(
+		variable jobStateFilter,				// [in]: Job state filter (integer, one of VectorDb_JobState)
+		variable sortingDirection,				// [in]: Sorting direction (integer, one of VectorDb_SortingDirection)
+		variable& jobIDs[],						// [in/out]: Array to retrieve job IDs (integer)
+		variable& jobNames[],					// [in/out]: Array to retrieve job names (string)
+		variable& jobPriorities[], 			// [in/out]: Array to retrieve job priorities (integer)
+		variable& jobStates[], 					// [in/out]: Array to retrieve job states (integer)
+		variable& jobUserStates[], 			// [in/out]: Array to retrieve job user states (integer)
+		variable& sourceElementIDs[],			// [in/out]: Array to retrieve source element IDs (integer)
+		variable& sourceBarcodes[], 			// [in/out]: Array to retrieve source barcodes (string)
+		variable& sourceLabwareIds[],			// [in/out]: Array to retrieve source labware ids/names (string)
+		variable& sourcePositionIds[], 		// [in/out]: Array to retrieve source position ids/names (string)
+		variable& sourceRequiredFlags[], 	// [in/out]: Array to retrieve source required flags (integer) (string)
+		variable& targetElementIDs[],			// [in/out]: Array to retrieve target element IDs (integer)
+		variable& targetBarcodes[], 			// [in/out]: Array to retrieve target barcodes (string)
+		variable& targetLabwareIds[], 		// [in/out]: Array to retrieve target labware ids/names (string)
+		variable& targetPositionIds[], 		// [in/out]: Array to retrieve target position ids/names (string)
+		variable& targetVolumes[]) variable	// [in/out]: Array to retrieve target volumes (float)
+	//--------------------------------------------------------------------------------------------------------------
+	// Description:
+	// Returns information about all jobs that match the given job state.
+	// 
+	// Return:
+	// The number of jobs added to the output parameters (integer).
+	//--------------------------------------------------------------------------------------------------------------
+	{return(0);} 
+
+	function GetJobsForLabware(
+		variable& labwareId,						// [in]: Labware id/name (string)
+		variable& positionId,					// [in]: Position id/name (string)
+		variable labwareUsageType,				// [in]: Labware usage type (integer, one of VectorDb_LabwareUsageType)
+		variable jobStateFilter,				// [in]: Job state filter (integer, one of VectorDb_JobState)
+		variable& jobIDs[],						// [in/out]: Array to retrieve job IDs (integer)
+		variable& jobNames[],					// [in/out]: Array to retrieve job names (string)
+		variable& jobPriorities[], 			// [in/out]: Array to retrieve job priorities (integer)
+		variable& jobStates[], 					// [in/out]: Array to retrieve job states (integer)
+		variable& jobUserStates[], 			// [in/out]: Array to retrieve job user states (integer)
+		variable& sourceElementIDs[],			// [in/out]: Array to retrieve source element IDs (integer)
+		variable& sourceBarcodes[], 			// [in/out]: Array to retrieve source barcodes (string)
+		variable& sourceLabwareIds[],			// [in/out]: Array to retrieve source labware ids/names (string)
+		variable& sourcePositionIds[], 		// [in/out]: Array to retrieve source position ids/names (string)
+		variable& sourceRequiredFlags[], 	// [in/out]: Array to retrieve source required flags (integer) (string)
+		variable& targetElementIDs[],			// [in/out]: Array to retrieve target element IDs (integer)
+		variable& targetBarcodes[], 			// [in/out]: Array to retrieve target barcodes (string)
+		variable& targetLabwareIds[], 		// [in/out]: Array to retrieve target labware ids/names (string)
+		variable& targetPositionIds[], 		// [in/out]: Array to retrieve target position ids/names (string)
+		variable& targetVolumes[]) variable	// [in/out]: Array to retrieve target volumes (float)
+	//--------------------------------------------------------------------------------------------------------------
+	// Description:
+	// Returns information about all jobs that match the given criteria.
+	// 
+	// Return:
+	// The number of jobs added to the output parameters (integer).
+	//--------------------------------------------------------------------------------------------------------------
+	{return(0);} 
+
+	function GetJobsForLabwareSortedByPriority(
+		variable& labwareId,						// [in]: Labware id/name (string)
+		variable& positionId,					// [in]: Position id/name (string)
+		variable labwareUsageType,				// [in]: Labware usage type (integer, one of VectorDb_LabwareUsageType)
+		variable jobStateFilter,				// [in]: Job state filter (integer, one of VectorDb_JobState)
+		variable sortingDirection,				// [in]: Sorting direction (integer, one of VectorDb_SortingDirection)
+		variable& jobIDs[],						// [in/out]: Array to retrieve job IDs (integer)
+		variable& jobNames[],					// [in/out]: Array to retrieve job names (string)
+		variable& jobPriorities[], 			// [in/out]: Array to retrieve job priorities (integer)
+		variable& jobStates[], 					// [in/out]: Array to retrieve job states (integer)
+		variable& jobUserStates[], 			// [in/out]: Array to retrieve job user states (integer)
+		variable& sourceElementIDs[],			// [in/out]: Array to retrieve source element IDs (integer)
+		variable& sourceBarcodes[], 			// [in/out]: Array to retrieve source barcodes (string)
+		variable& sourceLabwareIds[],			// [in/out]: Array to retrieve source labware ids/names (string)
+		variable& sourcePositionIds[], 		// [in/out]: Array to retrieve source position ids/names (string)
+		variable& sourceRequiredFlags[], 	// [in/out]: Array to retrieve source required flags (integer) (string)
+		variable& targetElementIDs[],			// [in/out]: Array to retrieve target element IDs (integer)
+		variable& targetBarcodes[], 			// [in/out]: Array to retrieve target barcodes (string)
+		variable& targetLabwareIds[], 		// [in/out]: Array to retrieve target labware ids/names (string)
+		variable& targetPositionIds[], 		// [in/out]: Array to retrieve target position ids/names (string)
+		variable& targetVolumes[]) variable	// [in/out]: Array to retrieve target volumes (float)
+	//--------------------------------------------------------------------------------------------------------------
+	// Description:
+	// Returns information about all jobs that match the given criteria.
+	// 
+	// Return:
+	// The number of jobs added to the output parameters (integer).
+	//--------------------------------------------------------------------------------------------------------------
+	{return(0);} 
+
+	function GetJobsForBarcode(
+		variable& barcode,						// [in]: Barcode (string)
+		variable labwareUsageType,				// [in]: Labware usage type (integer, one of VectorDb_LabwareUsageType)
+		variable jobStateFilter,				// [in]: Job state filter (integer, one of VectorDb_JobState)
+		variable& jobIDs[],						// [in/out]: Array to retrieve job IDs (integer)
+		variable& jobNames[],					// [in/out]: Array to retrieve job names (string)
+		variable& jobPriorities[], 			// [in/out]: Array to retrieve job priorities (integer)
+		variable& jobStates[], 					// [in/out]: Array to retrieve job states (integer)
+		variable& jobUserStates[], 			// [in/out]: Array to retrieve job user states (integer)
+		variable& sourceElementIDs[],			// [in/out]: Array to retrieve source element IDs (integer)
+		variable& sourceBarcodes[], 			// [in/out]: Array to retrieve source barcodes (string)
+		variable& sourceLabwareIds[],			// [in/out]: Array to retrieve source labware ids/names (string)
+		variable& sourcePositionIds[], 		// [in/out]: Array to retrieve source position ids/names (string)
+		variable& sourceRequiredFlags[], 	// [in/out]: Array to retrieve source required flags (integer) (string)
+		variable& targetElementIDs[],			// [in/out]: Array to retrieve target element IDs (integer)
+		variable& targetBarcodes[], 			// [in/out]: Array to retrieve target barcodes (string)
+		variable& targetLabwareIds[], 		// [in/out]: Array to retrieve target labware ids/names (string)
+		variable& targetPositionIds[], 		// [in/out]: Array to retrieve target position ids/names (string)
+		variable& targetVolumes[]) variable	// [in/out]: Array to retrieve target volumes (float)
+	//--------------------------------------------------------------------------------------------------------------
+	// Description:
+	// Returns information about all jobs that match the given criteria.
+	// 
+	// Return:
+	// The number of jobs added to the output parameters (integer).
+	//--------------------------------------------------------------------------------------------------------------
+	{return(0);} 
+
+	function GetJobsForBarcodeSortedByPriority(
+		variable& barcode,						// [in]: Barcode (string)
+		variable labwareUsageType,				// [in]: Labware usage type (integer, one of VectorDb_LabwareUsageType)
+		variable jobStateFilter,				// [in]: Job state filter (integer, one of VectorDb_JobState)
+		variable sortingDirection,				// [in]: Sorting direction (integer, one of VectorDb_SortingDirection)
+		variable& jobIDs[],						// [in/out]: Array to retrieve job IDs (integer)
+		variable& jobNames[],					// [in/out]: Array to retrieve job names (string)
+		variable& jobPriorities[], 			// [in/out]: Array to retrieve job priorities (integer)
+		variable& jobStates[], 					// [in/out]: Array to retrieve job states (integer)
+		variable& jobUserStates[], 			// [in/out]: Array to retrieve job user states (integer)
+		variable& sourceElementIDs[],			// [in/out]: Array to retrieve source element IDs (integer)
+		variable& sourceBarcodes[], 			// [in/out]: Array to retrieve source barcodes (string)
+		variable& sourceLabwareIds[],			// [in/out]: Array to retrieve source labware ids/names (string)
+		variable& sourcePositionIds[], 		// [in/out]: Array to retrieve source position ids/names (string)
+		variable& sourceRequiredFlags[], 	// [in/out]: Array to retrieve source required flags (integer) (string)
+		variable& targetElementIDs[],			// [in/out]: Array to retrieve target element IDs (integer)
+		variable& targetBarcodes[], 			// [in/out]: Array to retrieve target barcodes (string)
+		variable& targetLabwareIds[], 		// [in/out]: Array to retrieve target labware ids/names (string)
+		variable& targetPositionIds[], 		// [in/out]: Array to retrieve target position ids/names (string)
+		variable& targetVolumes[]) variable	// [in/out]: Array to retrieve target volumes (float)
+	//--------------------------------------------------------------------------------------------------------------
+	// Description:
+	// Returns information about all jobs that match the given criteria.
+	// 
+	// Return:
+	// The number of jobs added to the output parameters (integer).
+	//--------------------------------------------------------------------------------------------------------------
+	{return(0);} 
+
+	function GetJobsForElementID(
+		variable runID,							// [in]: Run ID (integer)
+		variable elementID,						// [in]: Element ID (integer)
+		variable labwareUsageType,				// [in]: Labware usage type (integer, one of VectorDb_LabwareUsageType)
+		variable jobStateFilter,				// [in]: Job state filter (integer, one of VectorDb_JobState)
+		variable& jobIDs[],						// [in/out]: Array to retrieve job IDs (integer)
+		variable& jobNames[],					// [in/out]: Array to retrieve job names (string)
+		variable& jobPriorities[], 			// [in/out]: Array to retrieve job priorities (integer)
+		variable& jobStates[], 					// [in/out]: Array to retrieve job states (integer)
+		variable& jobUserStates[], 			// [in/out]: Array to retrieve job user states (integer)
+		variable& sourceElementIDs[],			// [in/out]: Array to retrieve source element IDs (integer)
+		variable& sourceBarcodes[], 			// [in/out]: Array to retrieve source barcodes (string)
+		variable& sourceLabwareIds[],			// [in/out]: Array to retrieve source labware ids/names (string)
+		variable& sourcePositionIds[], 		// [in/out]: Array to retrieve source position ids/names (string)
+		variable& sourceRequiredFlags[], 	// [in/out]: Array to retrieve source required flags (integer) (string)
+		variable& targetElementIDs[],			// [in/out]: Array to retrieve target element IDs (integer)
+		variable& targetBarcodes[], 			// [in/out]: Array to retrieve target barcodes (string)
+		variable& targetLabwareIds[], 		// [in/out]: Array to retrieve target labware ids/names (string)
+		variable& targetPositionIds[], 		// [in/out]: Array to retrieve target position ids/names (string)
+		variable& targetVolumes[]) variable	// [in/out]: Array to retrieve target volumes (float)
+	//--------------------------------------------------------------------------------------------------------------
+	// Description:
+	// Returns information about all jobs that match the given criteria.
+	// 
+	// Return:
+	// The number of jobs added to the output parameters (integer).
+	//--------------------------------------------------------------------------------------------------------------
+	{return(0);} 
+
+	function GetJobsForElementIDSortedByPriority(
+		variable runID,							// [in]: Run ID (integer)
+		variable elementID,						// [in]: Element ID (integer)
+		variable labwareUsageType,				// [in]: Labware usage type (integer, one of VectorDb_LabwareUsageType)
+		variable jobStateFilter,				// [in]: Job state filter (integer, one of VectorDb_JobState)
+		variable sortingDirection,				// [in]: Sorting direction (integer, one of VectorDb_SortingDirection)
+		variable& jobIDs[],						// [in/out]: Array to retrieve job IDs (integer)
+		variable& jobNames[],					// [in/out]: Array to retrieve job names (string)
+		variable& jobPriorities[], 			// [in/out]: Array to retrieve job priorities (integer)
+		variable& jobStates[], 					// [in/out]: Array to retrieve job states (integer)
+		variable& jobUserStates[], 			// [in/out]: Array to retrieve job user states (integer)
+		variable& sourceElementIDs[],			// [in/out]: Array to retrieve source element IDs (integer)
+		variable& sourceBarcodes[], 			// [in/out]: Array to retrieve source barcodes (string)
+		variable& sourceLabwareIds[],			// [in/out]: Array to retrieve source labware ids/names (string)
+		variable& sourcePositionIds[], 		// [in/out]: Array to retrieve source position ids/names (string)
+		variable& sourceRequiredFlags[], 	// [in/out]: Array to retrieve source required flags (integer) (string)
+		variable& targetElementIDs[],			// [in/out]: Array to retrieve target element IDs (integer)
+		variable& targetBarcodes[], 			// [in/out]: Array to retrieve target barcodes (string)
+		variable& targetLabwareIds[], 		// [in/out]: Array to retrieve target labware ids/names (string)
+		variable& targetPositionIds[], 		// [in/out]: Array to retrieve target position ids/names (string)
+		variable& targetVolumes[]) variable	// [in/out]: Array to retrieve target volumes (float)
+	//--------------------------------------------------------------------------------------------------------------
+	// Description:
+	// Returns information about all jobs that match the given criteria.
+	// 
+	// Return:
+	// The number of jobs added to the output parameters (integer).
+	//--------------------------------------------------------------------------------------------------------------
+	{return(0);} 
+
+	function GetJobState(
+		variable jobID) variable				// [in]: Job id (integer)
+	//--------------------------------------------------------------------------------------------------------------
+	// Description:
+	// Gets the state of the specified job from the Vector Database table 'Job'.
+	// 
+	// Return:
+	// The state of the specified job (integer, one of VectorDb_JobState).
+	//--------------------------------------------------------------------------------------------------------------
+	{return(0);} 
+
+	function SetJobState(
+		variable jobID,							// [in]: Job id (integer)
+		variable jobState) variable			// [in]: Job state (integer, one of VectorDb_JobState)
+	//--------------------------------------------------------------------------------------------------------------
+	// Description:
+	// Sets the state of the specified job in the Vector Database table 'Job'.
+	// 
+	// Return:
+	// Nonzero if the function succeeded, otherwise zero (integer).
+	//--------------------------------------------------------------------------------------------------------------
+	{return(0);} 
+
+	function RemoveJobsForLabware(
+		variable& labwareId,						// [in]: Labware id/name (string)
+		variable& positionId,					// [in]: Position id/name (string)
+		variable labwareUsageType,				// [in]: Labware usage type (integer, one of VectorDb_LabwareUsageType)
+		variable jobStateFilter) variable	// [in]: Job state filter (integer, one of VectorDb_JobState)
+	//--------------------------------------------------------------------------------------------------------------
+	// Description:
+	// Removes information about all jobs that match the given criteria.
+	// 
+	// Return:
+	// The number of affected records (integer).
+	//--------------------------------------------------------------------------------------------------------------
+	{return(0);} 
+
+	function RemoveJobsForBarcode(
+		variable& barcode,						// [in]: Barcode (string)
+		variable labwareUsageType,				// [in]: Labware usage type (integer, one of VectorDb_LabwareUsageType)
+		variable jobStateFilter) variable	// [in]: Job state filter (integer, one of VectorDb_JobState)
+	//--------------------------------------------------------------------------------------------------------------
+	// Description:
+	// Removes information about all jobs that match the given criteria.
+	// 
+	// Return:
+	// The number of affected records (integer).
+	//--------------------------------------------------------------------------------------------------------------
+	{return(0);} 
+
+	function RemoveJobsForElementID(
+		variable runID,							// [in]: Run ID (integer)
+		variable elementID,						// [in]: Element ID (integer)
+		variable labwareUsageType,				// [in]: Labware usage type (integer, one of VectorDb_LabwareUsageType)
+		variable jobStateFilter) variable	// [in]: Job state filter (integer, one of VectorDb_JobState)
+	//--------------------------------------------------------------------------------------------------------------
+	// Description:
+	// Removes information about all jobs that match the given criteria.
+	// 
+	// Return:
+	// The number of affected records (integer).
+	//--------------------------------------------------------------------------------------------------------------
+	{return(0);} 
+
+	static function WorklistManagementEnabled() variable
+	//--------------------------------------------------------------------------------------------------------------
+	// Description:
+	// Indicates whether Vector Database WorklistManagement is enabled.
+	// 
+	// Return:
+	// Nonzero if Vector Database worklist management is enabled, otherwise zero (integer).
+	//--------------------------------------------------------------------------------------------------------------
+	{return(0);} 
+}
+#endif
+
+// Implementation of the Vector Database Worklist Management Library
+#ifdef HSL_RUNTIME
+	#ifndef __HSLVectorDbWorklistManagementImpl_hsl__
+		#include "HSLVectorDbWorklistManagementImpl.hs_"
+	#endif
+#endif
+
+#endif
+// $$author=ContainerAdministrator$$valid=1$$time=2025-09-09 20:13$$checksum=6a9bb2d1$$length=099$$

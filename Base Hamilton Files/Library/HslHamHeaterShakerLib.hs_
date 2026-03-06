@@ -1,0 +1,2233 @@
+// ======================================================================
+// This is a part of the HSLHamHeaterShaker Library.
+// Copyright (C) by HAMILTON Bonaduz AG, CH-7402 Bonaduz.
+// All rights reserved.
+// ======================================================================
+
+#pragma once
+
+#include "HSLStrLib.hsl"
+#include "HSLSynLib.hsl"
+#include "HSLMthLib.hsl"
+
+#include "HslHamHeaterShakerLib.Common.hs_"
+#include "HslHamHeaterShakerLib.Usb.hs_"
+#include "HslHamHeaterShakerLib.Instrument.hs_"
+#include "HslHamHeaterShakerLib.Firmware.hs_"
+
+
+// --------------------------------------------------------------------------------------
+// Implementation of Hamilton Heater Shaker library
+// --------------------------------------------------------------------------------------
+namespace HSLHamHeaterShaker
+{
+    /****************************************************************************************
+    *
+    * Interface functions
+    *
+    ****************************************************************************************/
+
+    //====================================================================
+    //
+    // Application function Terminate()
+    //
+    //--------------------------------------------------------------------
+    // Description:
+    //  Terminate the USB device connection.
+    //....................................................................
+    // Parameters:
+    //    none
+    // ...................................................................
+    // return value:
+    //    none
+    //....................................................................
+    // Remarks:
+    //
+    //====================================================================
+    function Terminate() void
+    {
+        variable funcId(IDF::Terminate);
+        variable nodeIndex(0);
+
+        startTrace(funcId);
+
+        // activate error handler
+        onerror goto Unexpected;
+
+        SynEnterCriticalSection(m_hhsCriticalSection);
+
+        for( nodeIndex = 0; nodeIndex < m_maxHHS; nodeIndex++)
+        {
+            m_initializedHeater[nodeIndex] = hslFalse;
+            m_deviceName[nodeIndex] = "";
+            m_nodeNumber[nodeIndex] = 0;
+            m_hhsSetting[nodeIndex] = 0;
+        }
+
+        if(!m_usbComObject.IsNull())
+        {
+            // release the usb object
+            // run is crash in cae of multi thread and a call of ReleaseObject() while commands are send / receive
+            // m_usbComObject.ReleaseObject();
+        }
+        SynLeaveCriticalSection(m_hhsCriticalSection);
+
+        endTrace(funcId);
+        return;
+
+        Unexpected:
+        {
+            SynLeaveCriticalSection(m_hhsCriticalSection);
+            Error::RaiseLast();
+        }
+    }
+
+    //====================================================================
+    //
+    // Application function StartShaker()
+    //
+    //--------------------------------------------------------------------
+    // Description:
+    //  Lock plate and start shaking.
+    //
+    //....................................................................
+    // Parameters:
+    //  deviceNumber     :  device number which was generated on CreateXXDevice()
+    //  shakingSpeed    :    Shaking speed in RPM round per minutes
+    // ...................................................................
+    // return value:
+    //  noError(0)          :  all nodes are initialized successfull.
+    //  retErr(1)           :  initialisation failed
+    //  retNotInitErr(2)    :  needed node not initalized
+    //  retNotConnectErr(3) :  device not connected
+    //  Raise               :  An exception is throw on wrong parameter or time out
+    //  FirmErr             :  Firmware command error
+    //....................................................................
+    // Remarks:
+    //
+    //====================================================================
+    function StartShaker(variable deviceNumber, variable shakingSpeed) variable
+    {
+        variable funcRc(IDE::noError);
+        variable funcId(IDF::StartShaker);
+        variable node;
+        variable command("SB");
+        string   parameter("st%s1sv%s2sr%s3");
+        string   cmdResult;
+        variable shakingDirection;
+        variable shakingAccRamp;
+
+        startTrace(funcId);
+
+        checkDeviceNumber(funcId, deviceNumber);
+        //tb 2008-12-03 checkIntegerInputRange(funcId, "shakingSpeed", shakingSpeed, ShakingParam::rpmMin, ShakingParam::rpmMax);
+        checkIntegerInput(funcId, "shakingSpeed", shakingSpeed);
+
+        funcRc = initHamHeaterShakerLib(funcId, deviceNumber, m_ON);
+        if(0 < funcRc)
+            return (funcRc);
+
+        hasShaker(funcId, deviceNumber, 1);
+
+        // activate error handler
+        onerror goto Unexpected;
+
+        SynEnterCriticalSection(m_hhsCriticalSection);
+        shakingDirection = m_shakingDirection.GetAt(deviceNumber-1);
+        shakingAccRamp = m_shakingAccRamp.GetAt(deviceNumber-1);
+        m_userShakingSpeed[deviceNumber-1] = shakingSpeed;
+        SynLeaveCriticalSection(m_hhsCriticalSection);
+
+        sendToProgressTrace(funcId, deviceNumber);
+
+        // change RPM to steps
+        shakingSpeed = Floor(MthRound(shakingSpeed / ShakingParam::rmpStepFactor, 0));
+        shakingAccRamp = Floor(MthRound(shakingAccRamp / ShakingParam::rmpStepFactor, 0));
+
+        if(isSimulate(funcId, deviceNumber, hslTrue))
+            return (IDE::noError);
+
+        // check for initialized and connect
+        funcRc = getSendState(funcId, deviceNumber, hslTrue);
+        if(0 < funcRc)
+            return (funcRc);
+
+        // add saved parameter
+        StrReplace(parameter, "%s1", IStr(shakingDirection));
+        StrReplace(parameter, "%s2", formatParam(shakingSpeed, ShakingParam::speedParamLenght));
+        StrReplace(parameter, "%s3", formatParam(shakingAccRamp, ShakingParam::accelParamLenght));
+
+        // lock plate
+        cmdResult = startPlateLockCmd(funcId, deviceNumber, m_ON);
+        funcRc = isFirmwError(funcId, cmdResult, hslFalse);
+        if(0 < funcRc)
+        {
+            // be sure that the plate lock is open
+            startPlateLockCmd(funcId, deviceNumber, m_OFF);
+            isFirmwError(funcId, cmdResult, hslTrue);
+            return (funcRc);
+        }
+
+        // start shaker
+        cmdResult = startShakingCmd(funcId, deviceNumber, command, parameter, hslTrue);
+        funcRc = isFirmwError(funcId, cmdResult, hslFalse);
+        if(0 < funcRc)
+        {
+            // be sure that the plate lock is open
+            startPlateLockCmd(funcId, deviceNumber, m_OFF);
+            isFirmwError(funcId, cmdResult, hslTrue);
+            return (funcRc);
+        }
+
+        endTrace(funcId);
+        return (funcRc);
+
+        Unexpected:
+        {
+            SynLeaveCriticalSection(m_hhsCriticalSection);
+            Error::RaiseLast();
+        }
+    }
+
+    //====================================================================
+    //
+    // Application function StopShaker()
+    //
+    //--------------------------------------------------------------------
+    // Description:
+    //  Stop shaking and unlock plate.
+    //
+    //....................................................................
+    // Parameters:
+    //  deviceNumber :  device number which was generated on CreateXXDevice()
+    // ...................................................................
+    // return value:
+    //  noError(0)          :  all nodes are initialized successfull.
+    //  retErr(1)           :  initialisation failed
+    //  retNotInitErr(2)    :  needed node not initalized
+    //  retNotConnectErr(3) :  device not connected
+    //  Raise               :  An exception is throw on wrong parameter or time out
+    //  FirmErr             :  Firmware command error
+    //....................................................................
+    // Remarks:
+    //
+    //====================================================================
+    function StopShaker(variable deviceNumber) variable
+    {
+        variable funcRc(IDE::noError);
+        variable funcId(IDF::StopShaker);
+        variable command("SC");
+        variable parameter("");
+        string   cmdResult;
+
+        startTrace(funcId);
+
+        checkDeviceNumber(funcId, deviceNumber);
+
+        initHamHeaterShakerLib(funcId, deviceNumber, m_OFF);
+
+        hasShaker(funcId, deviceNumber, 1);
+
+        sendToProgressTrace(funcId, deviceNumber);
+
+        if(isSimulate(funcId, deviceNumber, hslTrue))
+            return (IDE::noError);
+
+        // check for initialized and connect
+        funcRc = getSendState(funcId, deviceNumber, hslTrue);
+        if(0 < funcRc)
+            return (funcRc);
+
+        // stop shaking
+        cmdResult = startShakingCmd(funcId, deviceNumber, command, parameter, hslFalse);
+
+        // open plate lock
+        startPlateLockCmd(funcId, deviceNumber, m_OFF);
+
+        SynEnterCriticalSection(m_hhsCriticalSection);
+        m_userShakingSpeed[deviceNumber-1] = 0;
+        m_shakingTimeOut[deviceNumber-1] = m_OFF;
+        SynLeaveCriticalSection(m_hhsCriticalSection);
+
+        // check error of stop shaker after open plate lock
+        funcRc = isFirmwError(funcId, cmdResult, hslTrue);
+        if(0 < funcRc)
+            return (funcRc);
+
+        endTrace(funcId);
+        return (funcRc);
+    }
+
+    //====================================================================
+    //
+    // Application function StartShakerTimed()
+    //
+    //--------------------------------------------------------------------
+    // Description:
+    //  Lock plate and start shaking with timed duration.
+    //....................................................................
+    // Parameters:
+    //  deviceNumber     :  device number which was generated on CreateXXDevice()
+    //  shakingSpeed    :    Shaking speed in RPM round per minutes
+    //  shakingTime    :  Shaking time in seconds
+    // ...................................................................
+    // return value:
+    //  noError(0)          :  all nodes are initialized successfull.
+    //  retErr(1)           :  initialisation failed
+    //  retNotInitErr(2)    :  needed node not initalized
+    //  retNotConnectErr(3) :  device not connected
+    //  Raise               :  An exception is throw on wrong parameter or time out
+    //  FirmErr             :  Firmware command error
+    //....................................................................
+    // Remarks:
+    //
+    //====================================================================
+    function StartShakerTimed(
+        variable deviceNumber,
+        variable shakingSpeed,
+        variable shakingTime) variable
+    {
+        variable funcRc(IDE::noError);
+        variable funcId(IDF::StartShakerTimed);
+        variable command("ST");
+        string   parameter("sd%s1st%s2sv%s3sr%s4");
+        string   cmdResult;
+        variable shakingDirection;
+        variable shakingAccRamp;
+
+        startTrace(funcId);
+
+        checkDeviceNumber(funcId, deviceNumber);
+        //tb 2008-12-03 checkIntegerInputRange(funcId, "shakingSpeed", shakingSpeed, ShakingParam::rpmMin, ShakingParam::rpmMax);
+        checkIntegerInput(funcId, "shakingSpeed", shakingSpeed);
+        //tb 2008-12-03 checkIntegerInputRange(funcId, "shakingTime", shakingTime, ShakingParam::shakingTimeMin, ShakingParam::shakingTimeMax);
+        checkIntegerInput(funcId, "shakingTime", shakingTime);
+
+        funcRc = initHamHeaterShakerLib(funcId, deviceNumber, m_ON);
+        if(0 < funcRc)
+            return (funcRc);
+
+        hasShaker(funcId, deviceNumber, 1);
+
+        // activate error handler
+        onerror goto Unexpected;
+
+        SynEnterCriticalSection(m_hhsCriticalSection);
+        shakingDirection = m_shakingDirection.GetAt(deviceNumber-1);
+        shakingAccRamp = m_shakingAccRamp.GetAt(deviceNumber-1);
+        m_shakingTimeOut[deviceNumber-1] = shakingTime;
+        m_userShakingSpeed[deviceNumber-1] = shakingSpeed;
+        SynLeaveCriticalSection(m_hhsCriticalSection);
+
+        // change RPM to steps
+        shakingSpeed = Floor(MthRound(shakingSpeed / ShakingParam::rmpStepFactor, 0));
+        shakingAccRamp = Floor(MthRound(shakingAccRamp / ShakingParam::rmpStepFactor, 0));
+
+
+        // add saved parameter
+        StrReplace(parameter, "%s1", formatParam(shakingTime, ShakingParam::timeParamLenght));
+        StrReplace(parameter, "%s2", IStr(shakingDirection));
+        StrReplace(parameter, "%s3", formatParam(shakingSpeed, ShakingParam::speedParamLenght));
+        StrReplace(parameter, "%s4", formatParam(shakingAccRamp, ShakingParam::accelParamLenght));
+
+        sendToProgressTrace(funcId, deviceNumber);
+
+        if(isSimulate(funcId, deviceNumber, hslTrue))
+            return (IDE::noError);
+
+        // check for initialized and connect
+        funcRc = getSendState(funcId, deviceNumber, hslTrue);
+        if(0 < funcRc)
+            return (funcRc);
+
+        // lock plate
+        cmdResult = startPlateLockCmd(funcId, deviceNumber, m_ON);
+        funcRc = isFirmwError(funcId, cmdResult, hslFalse);
+        if(0 < funcRc)
+        {
+            // be sure that the plate lock is open
+            startPlateLockCmd(funcId, deviceNumber, m_OFF);
+            isFirmwError(funcId, cmdResult, hslTrue);
+            return (funcRc);
+        }
+
+        // start shaker timed
+        cmdResult = startShakingCmd(funcId, deviceNumber, command, parameter, hslTrue);
+
+        funcRc = isFirmwError(funcId, cmdResult, hslFalse);
+        if(0 < funcRc)
+        {
+            // be sure that the plate lock is open
+            startPlateLockCmd(funcId, deviceNumber, m_OFF);
+            isFirmwError(funcId, cmdResult, hslTrue);
+            return (funcRc);
+        }
+
+        endTrace(funcId);
+        return (funcRc);
+
+        Unexpected:
+        {
+            SynLeaveCriticalSection(m_hhsCriticalSection);
+            Error::RaiseLast();
+        }
+    }
+
+    //====================================================================
+    //
+    // Application function WaitForShaker()
+    //
+    //--------------------------------------------------------------------
+    // Description:
+    //  Waits until a timed shaking has end.
+    //....................................................................
+    // Parameters:
+    //  deviceNumber :  device number which was generated on CreateXXDevice()
+    // ...................................................................
+    // return value:
+    //  noError(0)          :  all nodes are initialized successfull.
+    //  retErr(1)           :  initialisation failed
+    //  retNotInitErr(2)    :  needed node not initalized
+    //  retNotConnectErr(3) :  device not connected
+    //  Raise               :  An exception is throw on wrong parameter or time out
+    //  FirmErr             :  Firmware command error
+    //....................................................................
+    // Remarks:
+    //
+    //====================================================================
+    function WaitForShaker(variable deviceNumber) variable
+    {
+        variable funcRc(IDE::noError);
+        variable funcId(IDF::WaitForShaker);
+        variable shakingTime(ShakingParam::shakingTimeMax);
+        variable command("SW");
+        string   parameter("");
+        string   cmdResult;
+
+        startTrace(funcId);
+
+        checkDeviceNumber(funcId, deviceNumber);
+
+        initHamHeaterShakerLib(funcId, deviceNumber, m_OFF);
+
+        hasShaker(funcId, deviceNumber, 1);
+
+        sendToProgressTrace(funcId, deviceNumber);
+
+        if(isSimulate(funcId, deviceNumber, hslTrue))
+            return (funcRc);
+
+        // check for initialized and connect
+        funcRc = getSendState(funcId, deviceNumber, hslTrue);
+        if(0 < funcRc)
+            return (funcRc);
+
+        // activate error handler
+        onerror goto Unexpected;
+
+        SynEnterCriticalSection(m_hhsCriticalSection);
+        shakingTime = m_shakingTimeOut.GetAt(deviceNumber-1);
+        SynLeaveCriticalSection(m_hhsCriticalSection);
+
+        // add 60 seconds to the started shaking time (secure that the shaking time out is reached before the wait time out)
+        shakingTime = shakingTime + m_waitTimeOutSecurity;
+
+        #ifdef _DEBUG
+        progressTrace(funcId, "Function timeout = ", IStr(shakingTime));
+        #endif
+
+        // pollen
+        pollingForRunningShaker(deviceNumber, shakingTime - m_waitTimeOutSecurity);
+
+        WaitUntilShakerIsStoppedOrStopShaker(deviceNumber, shakingTime);
+
+        // open plate lock
+        startPlateLockCmd(funcId, deviceNumber, m_OFF);
+
+        SynEnterCriticalSection(m_hhsCriticalSection);
+        m_userShakingSpeed[deviceNumber-1] = m_OFF;
+        m_shakingTimeOut[deviceNumber-1] = m_OFF;
+        SynLeaveCriticalSection(m_hhsCriticalSection);
+
+        funcRc = isFirmwError(funcId, cmdResult, hslTrue);
+        if(0 < funcRc)
+            return (funcRc);
+
+        endTrace(funcId);
+        return (funcRc);
+
+        Unexpected:
+        {
+            SynLeaveCriticalSection(m_hhsCriticalSection);
+            Error::RaiseLast();
+        }
+    }
+
+    //====================================================================
+    //
+    // Application function StartAllShaker()
+    //
+    //--------------------------------------------------------------------
+    // Description:
+    //  Lock plate and start shaking for all initialized shaker.
+    //....................................................................
+    // Parameters:
+    //  shakingSpeed    :    Shaking speed in RPM round per minutes
+    // ...................................................................
+    // return value:
+    //  noError(0)          :  all nodes are initialized successfull.
+    //  retErr(1)           :  initialisation failed
+    //  retNotInitErr(2)    :  needed node not initalized
+    //  retNotConnectErr(3) :  device not connected
+    //  Raise               :  An exception is throw on wrong parameter or time out
+    //  FirmErr             :  Firmware command error
+    //....................................................................
+    // Remarks:
+    //
+    //====================================================================
+    function StartAllShaker(variable shakingSpeed) variable
+    {
+        variable funcRc(IDE::retNotInitErr);
+        variable funcId(IDF::StartAllShaker);
+        variable deviceNumber(0);
+
+        startTrace(funcId);
+
+        // parameter are checked in StartShaker() function
+
+        for( deviceNumber = 1; deviceNumber <= m_maxHHS; deviceNumber++)
+        {
+            if(isHeaterInitialized(deviceNumber))
+            {
+                // call StartShaker with 1 base node
+                funcRc = StartShaker(deviceNumber, shakingSpeed);
+                if(0 < funcRc)
+                {
+                    errorCompleteTrace(funcId, "");
+                    return (funcRc);
+                }
+                funcRc = IDE::noError;
+            }
+        }
+
+        if(0 < funcRc)
+        {
+            errorCompleteTrace(funcId, IDE::retNotInitErr);
+            return (funcRc);
+        }
+        endTrace(funcId);
+        return (funcRc);
+    }
+
+    //====================================================================
+    //
+    // Application function StartAllShakerTimed()
+    //
+    //--------------------------------------------------------------------
+    // Description:
+    //  Lock plate and start shaking with timed duration for all initialized shaker.
+    //....................................................................
+    // Parameters:
+    //  shakingSpeed    :    Shaking speed in RPM round per minutes
+    //  shakingTime    :  Shaking time in seconds
+    // ...................................................................
+    // return value:
+    //  noError(0)          :  all nodes are initialized successfull.
+    //  retErr(1)           :  initialisation failed
+    //  retNotInitErr(2)    :  needed node not initalized
+    //  retNotConnectErr(3) :  device not connected
+    //  Raise               :  An exception is throw on wrong parameter or time out
+    //  FirmErr             :  Firmware command error
+    //....................................................................
+    // Remarks:
+    //
+    //====================================================================
+    function StartAllShakerTimed(variable shakingSpeed, variable shakingTime) variable
+    {
+        variable funcRc(IDE::retNotInitErr);
+        variable funcId(IDF::StartAllShakerTimed);
+        variable deviceNumber(0);
+
+        startTrace(funcId);
+
+        // parameter are checked in StartShakerTimed() function
+
+        for( deviceNumber = 1; deviceNumber <= m_maxHHS; deviceNumber++)
+        {
+            if(isHeaterInitialized(deviceNumber))
+            {
+                // call StartShaker with 1 base node
+                funcRc = StartShakerTimed(deviceNumber, shakingSpeed, shakingTime);
+                if(0 < funcRc)
+                {
+                    errorCompleteTrace(funcId, "");
+                    return (funcRc);
+                }
+                funcRc = IDE::noError;
+            }
+        }
+
+        if(0 < funcRc)
+        {
+            errorCompleteTrace(funcId, IDE::retNotInitErr);
+            return (funcRc);
+        }
+        endTrace(funcId);
+        return (funcRc);
+    }
+
+    //====================================================================
+    //
+    // Application function StopAllShaker()
+    //
+    //--------------------------------------------------------------------
+    // Description:
+    //  Stop shaking and unlock plate for all initialized shaker.
+    //
+    //....................................................................
+    // Parameters:
+    //  none
+    // ...................................................................
+    // return value:
+    //  noError(0)          :  all nodes are initialized successfull.
+    //  retErr(1)           :  initialisation failed
+    //  retNotInitErr(2)    :  needed node not initalized
+    //  retNotConnectErr(3) :  device not connected
+    //  Raise               :  An exception is throw on wrong parameter or time out
+    //  FirmErr             :  Firmware command error
+    //....................................................................
+    // Remarks:
+    //
+    //====================================================================
+    function StopAllShaker() variable
+    {
+        variable funcRc(IDE::retNotInitErr);
+        variable funcId(IDF::StopAllShaker);
+        variable deviceNumber(0);
+
+        startTrace(funcId);
+
+        for( deviceNumber = 1; deviceNumber <= m_maxHHS; deviceNumber++)
+        {
+            if(isHeaterInitialized(deviceNumber))
+            {
+                // call StopShaker with 1 base node
+                funcRc = StopShaker(deviceNumber);
+                if(0 < funcRc)
+                {
+                    errorCompleteTrace(funcId, "");
+                    return (funcRc);
+                }
+                funcRc = IDE::noError;
+            }
+        }
+        if(0 < funcRc)
+        {
+            errorCompleteTrace(funcId, IDE::retNotInitErr);
+            return (funcRc);
+        }
+
+        endTrace(funcId);
+        return (funcRc);
+    }
+
+    //====================================================================
+    //
+    // Application function SetShakerParameter()
+    //
+    //--------------------------------------------------------------------
+    // Description:
+    //  Set the parameter for plate shaking
+    //....................................................................
+    // Parameters:
+    //  deviceNumber         :  device number which was generated on CreateXXDevice()
+    //  shakingDirection :  Shaking direction left/right (0/1)
+    //  shakingAccRamp   :  Acceleration ramp (1..4)
+    // ...................................................................
+    // return value:
+    //  Raise      :  Wrong parameter
+    //....................................................................
+    // Remarks:
+    //
+    //====================================================================
+    function SetShakerParameter(
+        variable deviceNumber,
+        variable shakingDirection,
+        variable shakingAccRamp) void
+    {
+        variable funcId(IDF::SetShakerParameter);
+        variable node;
+        string   nodeType;
+
+        startTrace(funcId);
+
+        checkDeviceNumber(funcId, deviceNumber);
+        checkIntegerInputRange(funcId, "shakingDirection", shakingDirection, m_OFF, m_ON);
+        //tb 2008-12-03 checkIntegerInputRange(funcId, "shakingAccRamp", shakingAccRamp, ShakingParam::rampMin, ShakingParam::rampMax);
+        checkIntegerInput(funcId, "shakingAccRamp", shakingAccRamp);
+
+        if(isStarDevice(deviceNumber))
+            nodeType = StringTable::Load(IDS::starNode);
+        else
+            nodeType = StringTable::Load(IDS::usbNode);
+
+        node = getNodeFromDeviceNumber(deviceNumber);
+
+        progressTrace(funcId, nodeType, IStr(node));
+        progressTrace(funcId, IDS::shakingDirection, IStr(shakingDirection));
+        progressTrace(funcId, IDS::shakingAccRamp, IStr(shakingAccRamp));
+
+        initHamHeaterShakerLib(funcId, deviceNumber, m_OFF);
+
+        hasShaker(funcId, deviceNumber, 1);
+
+        // activate error handler
+        onerror goto Unexpected;
+
+        SynEnterCriticalSection(m_hhsCriticalSection);
+        m_shakingDirection[deviceNumber-1] = shakingDirection;
+        m_shakingAccRamp[deviceNumber-1] = shakingAccRamp;
+        SynLeaveCriticalSection(m_hhsCriticalSection);
+
+        endTrace(funcId);
+        return;
+
+        Unexpected:
+        {
+            SynLeaveCriticalSection(m_hhsCriticalSection);
+            Error::RaiseLast();
+        }
+    }
+
+    //====================================================================
+    //
+    // Application function GetShakerParameter()
+    //
+    //--------------------------------------------------------------------
+    // Description:
+    //  Get the parameter for plate shaking
+    //....................................................................
+    // Parameters:
+    //  deviceNumber :  device number which was generated on CreateXXDevice()
+    //  shakingDirection :  Shaking direction left/right (0/1)
+    //  shakingAccRamp   :  Acceleration ramp (1..4)
+    // ...................................................................
+    // return value:
+    //  Raise      :  Wrong parameter
+    //....................................................................
+    // Remarks:
+    //
+    //====================================================================
+    function GetShakerParameter(
+        variable deviceNumber,
+        variable& shakingDirection,
+        variable& shakingAccRamp) void
+    {
+        variable funcId(IDF::GetShakerParameter);
+        variable node;
+        string   nodeType;
+
+        startTrace(funcId);
+
+        checkDeviceNumber(funcId, deviceNumber);
+
+        shakingDirection = ShakingParam::directionDefault;
+        shakingAccRamp = ShakingParam::rampDefault;
+
+        initHamHeaterShakerLib(funcId, deviceNumber, m_OFF);
+
+        hasShaker(funcId, deviceNumber, 1);
+
+        // activate error handler
+        onerror goto Unexpected;
+
+        SynEnterCriticalSection(m_hhsCriticalSection);
+        shakingDirection = m_shakingDirection.GetAt(deviceNumber-1);
+        shakingAccRamp = m_shakingAccRamp.GetAt(deviceNumber-1);
+        SynLeaveCriticalSection(m_hhsCriticalSection);
+
+        node = getNodeFromDeviceNumber(deviceNumber);
+
+        if(isStarDevice(deviceNumber))
+            nodeType = StringTable::Load(IDS::starNode);
+        else
+            nodeType = StringTable::Load(IDS::usbNode);
+
+        progressTrace(funcId, nodeType, IStr(node));
+        progressTrace(funcId, IDS::shakingDirection, IStr(shakingDirection));
+        progressTrace(funcId, IDS::shakingAccRamp, IStr(shakingAccRamp));
+
+        endTrace(funcId);
+        return;
+
+        Unexpected:
+        {
+            SynLeaveCriticalSection(m_hhsCriticalSection);
+            Error::RaiseLast();
+        }
+    }
+
+    //====================================================================
+    //
+    // Application function GetShakerSpeed()
+    //
+    //--------------------------------------------------------------------
+    // Description:
+    //  Lock plate and start shaking with timed duration.
+    //....................................................................
+    // Parameters:
+    //  in : deviceNumber     :  device number which was generated on CreateXXDevice()
+    //  out: shakingSpeed    :    Shaking speed in RPM round per minutes
+    // ...................................................................
+    // return value:
+    //  noError(0)          :  all nodes are initialized successfull.
+    //  retErr(1)           :  initialisation failed
+    //  retNotInitErr(2)    :  needed node not initalized
+    //  retNotConnectErr(3) :  device not connected
+    //  Raise               :  An exception is throw on wrong parameter or time out
+    //  FirmErr             :  Firmware command error
+    //....................................................................
+    // Remarks:
+    //
+    //====================================================================
+    function GetShakerSpeed(
+        variable deviceNumber,
+        variable& shakingSpeed) variable
+    {
+        variable funcRc(IDE::noError);
+        variable funcId(IDF::GetShakerSpeed);
+
+        startTrace(funcId);
+
+        checkDeviceNumber(funcId, deviceNumber);
+        shakingSpeed = 0;
+
+        funcRc = initHamHeaterShakerLib(funcId, deviceNumber, m_ON);
+        if(0 < funcRc)
+            return (funcRc);
+
+        hasShaker(funcId, deviceNumber, 1);
+
+        sendToProgressTrace(funcId, deviceNumber);
+
+        if(isSimulate(funcId, deviceNumber, hslTrue))
+            return (IDE::noError);
+
+        // check for initialized and connect
+        funcRc = getSendState(funcId, deviceNumber, hslTrue);
+        if(0 < funcRc)
+            return (funcRc);
+
+        shakingSpeed = getCurrentShakerRPM(deviceNumber, hslTrue);
+
+        endTrace(funcId);
+        return (funcRc);
+    }
+
+    //====================================================================
+    //
+    // Application function StartTempCtrl()
+    //
+    //--------------------------------------------------------------------
+    // Description:
+    //  Set incubation temperature and wait (if set) until temperature is reached
+    //....................................................................
+    // Parameters:
+    //  deviceNumber :  device number which was generated on CreateXXDevice()
+    //  temperature         :  Incubation temperature
+    //  waitForTempReached  :  Flag for waiting until temperature is reached
+    // ...................................................................
+    // return value:
+    //  noError(0)          :  all nodes are initialized successfull.
+    //  retErr(1)           :  initialisation failed
+    //  retNotInitErr(2)    :  needed node not initalized
+    //  retNotConnectErr(3) :  device not connected
+    //  Raise               :  An exception is throw on wrong parameter or time out
+    //  FirmErr             :  Firmware command error
+    //....................................................................
+    // Remarks:
+    //
+    //====================================================================
+    function StartTempCtrl(
+        variable deviceNumber,
+        variable temperature,
+        variable waitForTempReached) variable
+    {
+        variable funcRc(IDE::noError);
+        variable funcId(IDF::StartTempCtrl);
+        variable tempStartTimeOut;
+        variable tempToleranceRange;
+        variable tempSecurityRange;
+        variable command("TA");
+        variable parameter("ta%s1tb%s2tc%s3td%s4");
+        variable cmdResult;
+
+        startTrace(funcId);
+
+        checkDeviceNumber(funcId, deviceNumber);
+        //tb 2008-12-03 checkDoubleInputRange(funcId, "temperature", temperature, TemperateParam::tempMin, TemperateParam::tempMax);
+        checkDoubleInput(funcId, "temperature", temperature);
+        checkIntegerInputRange(funcId, "waitForTempReached", waitForTempReached, m_OFF, m_ON);
+
+        initHamHeaterShakerLib(funcId, deviceNumber, m_OFF);
+
+        hasHeater(funcId, deviceNumber, 1);
+
+        // activate error handler
+        onerror goto Unexpected;
+
+        SynEnterCriticalSection(m_hhsCriticalSection);
+        tempStartTimeOut = m_tempStartTimeOut.GetAt(deviceNumber-1);
+        tempToleranceRange = m_tempToleranceRange.GetAt(deviceNumber-1);
+        tempSecurityRange = m_tempSecurityRange.GetAt(deviceNumber-1);
+        m_userTemperature[deviceNumber-1] = temperature;
+        SynLeaveCriticalSection(m_hhsCriticalSection);
+
+        StrReplace(parameter, "%s1", normalizeParam(temperature, TemperateParam::paramLength));
+        StrReplace(parameter, "%s2", formatParam(tempStartTimeOut, TemperateParam::paramLength));
+        StrReplace(parameter, "%s3", normalizeParam(tempToleranceRange, TemperateParam::paramLength));
+        StrReplace(parameter, "%s4", normalizeParam(tempSecurityRange, TemperateParam::paramLength));
+
+        sendToProgressTrace(funcId, deviceNumber);
+
+        if(isSimulate(funcId, deviceNumber, hslTrue))
+            return (IDE::noError);
+
+        // check for initialized and connect
+        funcRc = getSendState(funcId, deviceNumber, hslFalse);
+        if(0 < funcRc)
+            return (funcRc);
+
+        // add 60 seconds to the started heat up time (secure that the heat up time out is reached before the wait time out)
+        tempStartTimeOut = tempStartTimeOut + m_waitTimeOutSecurity;
+        if(tempStartTimeOut < m_usbMsgTimeout)
+            tempStartTimeOut = m_usbMsgTimeout;
+
+
+        #ifdef _DEBUG
+        progressTrace(funcId, "Function timeout = ", IStr(tempStartTimeOut));
+        #endif
+
+        funcRc = StartTemperatureControler(
+            deviceNumber, 
+            temperature, 
+            tempStartTimeOut, 
+            tempToleranceRange, 
+            tempSecurityRange);
+
+        // command waits until temperature is in controlling mode
+        if(waitForTempReached == m_ON && funcRc == IDE::noError)
+        {
+            pollingForRunningHeater(deviceNumber, tempStartTimeOut-m_waitTimeOutSecurity);
+
+            funcRc = WaitUntilTargetTemperatureReached(deviceNumber, funcId, m_usbMsgTimeout);
+        }
+
+        if(0 < funcRc)
+            return (funcRc);
+
+        endTrace(funcId);
+        return (funcRc);
+
+        Unexpected:
+        {
+            SynLeaveCriticalSection(m_hhsCriticalSection);
+            Error::RaiseLast();
+        }
+    }
+
+    //====================================================================
+    //
+    // Application function StopTempCtrl()
+    //
+    //--------------------------------------------------------------------
+    // Description:
+    //  Set incubation temperature control off
+    //....................................................................
+    // Parameters:
+    //  deviceNumber :  device number which was generated on CreateXXDevice()
+    // ...................................................................
+    // return value:
+    //  noError(0)          :  all nodes are initialized successfull.
+    //  retErr(1)           :  initialisation failed
+    //  retNotInitErr(2)    :  needed node not initalized
+    //  retNotConnectErr(3) :  device not connected
+    //  Raise               :  An exception is throw on wrong parameter or time out
+    //  FirmErr             :  Firmware command error
+    //....................................................................
+    // Remarks:
+    //
+    //====================================================================
+    function StopTempCtrl(
+        variable deviceNumber) variable
+    {
+        variable funcRc(IDE::noError);
+        variable funcId(IDF::StopTempCtrl);
+        variable command("TO");
+        variable parameter("");
+        variable cmdResult;
+
+        startTrace(funcId);
+
+        checkDeviceNumber(funcId, deviceNumber);
+
+        initHamHeaterShakerLib(funcId, deviceNumber, m_OFF);
+
+        hasHeater(funcId, deviceNumber, 1);
+
+        sendToProgressTrace(funcId, deviceNumber);
+
+        if(isSimulate(funcId, deviceNumber, hslTrue))
+            return (IDE::noError);
+
+        // check for initialized and connect
+        funcRc = getSendState(funcId, deviceNumber, hslFalse);
+        if(0 < funcRc)
+            return (funcRc);
+
+        funcRc = SwitchOffTemperatureController(deviceNumber, funcId);
+
+        SynEnterCriticalSection(m_hhsCriticalSection);
+        m_userTemperature[deviceNumber-1] = 0;
+        SynLeaveCriticalSection(m_hhsCriticalSection);
+
+        if(0 < funcRc)
+            return (funcRc);
+
+        endTrace(funcId);
+        return (funcRc);
+    }
+
+    //====================================================================
+    //
+    // Application function WaitForTempCtrl()
+    //
+    //--------------------------------------------------------------------
+    // Description:
+    //  Waits until the on StartTempCtrl() given temperature is reached
+    //....................................................................
+    // Parameters:
+    //  deviceNumber :  device number which was generated on CreateXXDevice()
+    // ...................................................................
+    // return value:
+    //  noError(0)          :  all nodes are initialized successfull.
+    //  retErr(1)           :  initialisation failed
+    //  retNotInitErr(2)    :  needed node not initalized
+    //  retNotConnectErr(3) :  device not connected
+    //  Raise               :  An exception is throw on wrong parameter or time out
+    //  FirmErr             :  Firmware command error
+    //....................................................................
+    // Remarks:
+    //
+    //====================================================================
+    function WaitForTempCtrl(
+        variable deviceNumber) variable
+    {
+        variable funcRc(IDE::noError);
+        variable funcId(IDF::WaitForTempCtrl);
+        variable tempStartTimeOut;
+        variable command("TW");
+        variable parameter("");
+        variable cmdResult;
+
+        startTrace(funcId);
+
+        checkDeviceNumber(funcId, deviceNumber);
+
+        initHamHeaterShakerLib(funcId, deviceNumber, m_OFF);
+
+        hasHeater(funcId, deviceNumber, 1);
+
+        // activate error handler
+        onerror goto Unexpected;
+
+        SynEnterCriticalSection(m_hhsCriticalSection);
+        tempStartTimeOut = m_tempStartTimeOut.GetAt(deviceNumber-1);
+        SynLeaveCriticalSection(m_hhsCriticalSection);
+
+        // add 60 seconds to the started heat up time (secure that the heat up time out is reached before the wait time out)
+        tempStartTimeOut = tempStartTimeOut + m_waitTimeOutSecurity;
+        if(tempStartTimeOut < m_usbMsgTimeout)
+            tempStartTimeOut = m_usbMsgTimeout;
+
+
+        #ifdef _DEBUG
+        progressTrace(funcId, "Function timeout = ", IStr(tempStartTimeOut));
+        #endif
+
+        sendToProgressTrace(funcId, deviceNumber);
+
+        if(isSimulate(funcId, deviceNumber, hslTrue))
+            return (IDE::noError);
+
+        // check for initialized and connect
+        funcRc = getSendState(funcId, deviceNumber, hslFalse);
+        if(0 < funcRc)
+            return (funcRc);
+
+        // make a polling until temperature controlling is in controlling mode
+        pollingForRunningHeater(deviceNumber, tempStartTimeOut-m_waitTimeOutSecurity);
+
+        funcRc = WaitUntilTargetTemperatureReached(deviceNumber, funcId, tempStartTimeOut);
+        if(0 < funcRc)
+            return (funcRc);
+
+        endTrace(funcId);
+        return (funcRc);
+
+        Unexpected:
+        {
+            SynLeaveCriticalSection(m_hhsCriticalSection);
+            Error::RaiseLast();
+        }
+    }
+
+    //====================================================================
+    //
+    // Application function GetTemperature()
+    //
+    //--------------------------------------------------------------------
+    // Description:
+    //  Get the current temperatur
+    //....................................................................
+    // Parameters:
+    //  deviceNumber :  device number which was generated on CreateXXDevice()
+    //  temperature         :  Actual carrier temperature
+    // ...................................................................
+    // return value:
+    //  noError(0)          :  all nodes are initialized successfull.
+    //  retErr(1)           :  initialisation failed
+    //  retNotInitErr(2)    :  needed node not initalized
+    //  retNotConnectErr(3) :  device not connected
+    //  Raise               :  An exception is throw on wrong parameter or time out
+    //  FirmErr             :  Firmware command error
+    //....................................................................
+    // Remarks:
+    //
+    //====================================================================
+    function GetTemperature(
+        variable deviceNumber,
+        variable& temperature) variable
+    {
+        variable funcRc(IDE::noError);
+        variable funcId(IDF::GetTemperature);
+
+        startTrace(funcId);
+
+        temperature = 0;
+
+        checkDeviceNumber(funcId, deviceNumber);
+
+        initHamHeaterShakerLib(funcId, deviceNumber, m_OFF);
+
+        hasHeater(funcId, deviceNumber, 1);
+
+        sendToProgressTrace(funcId, deviceNumber);
+
+        if(isSimulate(funcId, deviceNumber, hslTrue))
+            return (IDE::noError);
+
+        // check for initialized and connect
+        funcRc = getSendState(funcId, deviceNumber, hslFalse);
+        if(0 < funcRc)
+            return (funcRc);
+
+        temperature = getCurrentTemp(deviceNumber, hslTrue);
+
+        endTrace(funcId);
+        return (funcRc);
+    }
+
+    //====================================================================
+    //
+    // Application function GetTemperatureState()
+    //
+    //--------------------------------------------------------------------
+    // Description:
+    //  Get the state of temperatur supervision
+    //....................................................................
+    // Parameters:
+    //  deviceNumber :  device number which was generated on CreateXXDevice()
+    //  temperatureState    :  State of temperature supervision 0 = OK, 1 = out of range, 2 = out of security
+    // ...................................................................
+    // return value:
+    //  noError(0)          :  all nodes are initialized successfull.
+    //  retErr(1)           :  initialisation failed
+    //  retNotInitErr(2)    :  needed node not initalized
+    //  retNotConnectErr(3) :  device not connected
+    //  Raise               :  An exception is throw on wrong parameter or time out
+    //  FirmErr             :  Firmware command error
+    //....................................................................
+    // Remarks:
+    //
+    //====================================================================
+    function GetTemperatureState(
+        variable deviceNumber,
+        variable& temperatureState) variable
+    {
+        variable funcRc(IDE::noError);
+        variable funcId(IDF::GetTemperatureState);
+        variable command("QE");
+        variable parameter("");
+        string   cmdResult;
+        variable startPos;
+        variable controllerError;
+
+
+        startTrace(funcId);
+
+        checkDeviceNumber(funcId, deviceNumber);
+
+        temperatureState = TemperateParam::tempStateOk;
+
+        initHamHeaterShakerLib(funcId, deviceNumber, m_OFF);
+
+        hasHeater(funcId, deviceNumber, 1);
+
+        sendToProgressTrace(funcId, deviceNumber);
+
+        if(isSimulate(funcId, deviceNumber, hslTrue))
+            return (IDE::noError);
+
+        // check for initialized and connect
+        funcRc = getSendState(funcId, deviceNumber, hslFalse);
+        if(0 < funcRc)
+            return (funcRc);
+
+        funcRc = RequestTemperatureControllerError(deviceNumber, funcId, controllerError);
+        if(0 != funcRc)
+            return (funcRc);
+
+        if (controllerError == 62)
+        {
+            temperatureState = TemperateParam::tempStateOutOfRange;
+        }
+        else if (controllerError == 63)
+        {
+            temperatureState = TemperateParam::tempStateOutOfSecurity;
+        }
+        else if (controllerError != 0)
+        {
+            temperatureState = TemperateParam::tempStateTimeOut;
+        }
+
+        endTrace(funcId);
+        return (funcRc);
+    }
+
+    //====================================================================
+    //
+    // Application function SetTempParameter()
+    //
+    //--------------------------------------------------------------------
+    // Description:
+    //  Set the parameter of temperatur supervision
+    //....................................................................
+    // Parameters:
+    //  deviceNumber :  device number which was generated on CreateXXDevice()
+    //  startTimeout        :  Time which must elapse before temperature will be controlled
+    //  toleranceRange      :  Range of temperature tolerance
+    //  securityRange       :  Range of temperature security, on leave heater will be switched off
+    // ...................................................................
+    // return value:
+    //  Raise               :  An exception is throw on wrong parameter or time out
+    //....................................................................
+    // Remarks:
+    //
+    //====================================================================
+    function SetTempParameter(
+        variable deviceNumber,
+        variable startTimeout, variable toleranceRange, variable securityRange) void
+    {
+        variable funcId(IDF::SetTempParameter);
+        variable node;
+        string   nodeType;
+
+        startTrace(funcId);
+
+        checkDeviceNumber(funcId, deviceNumber);
+        //tb 2008-12-03 checkIntegerInputRange(funcId, "startTimeout", startTimeout, TemperateParam::startTimeOutMin, TemperateParam::startTimeOutMax);
+        checkIntegerInput(funcId, "startTimeout", startTimeout);
+        //tb 2008-12-03 checkDoubleInputRange(funcId, "toleranceRange", toleranceRange, TemperateParam::tempToleranceMin, TemperateParam::tempToleranceMax);
+        checkDoubleInput(funcId, "toleranceRange", toleranceRange);
+        //tb 2008-12-03 checkDoubleInputRange(funcId, "securityRange", securityRange, TemperateParam::tempSecurityMin, TemperateParam::tempSecurityMax);
+        checkDoubleInput(funcId, "securityRange", securityRange);
+
+        if(isStarDevice(deviceNumber))
+            nodeType = StringTable::Load(IDS::starNode);
+        else
+            nodeType = StringTable::Load(IDS::usbNode);
+
+        node = getNodeFromDeviceNumber(deviceNumber);
+
+        progressTrace(funcId, nodeType, IStr(node));
+        progressTrace(funcId, IDS::startTimeout, IStr(startTimeout));
+        progressTrace(funcId, IDS::toleranceRange, FStr(toleranceRange, hslTrue));
+        progressTrace(funcId, IDS::securityRange, FStr(securityRange, hslTrue));
+
+        initHamHeaterShakerLib(funcId, deviceNumber, m_OFF);
+
+        hasHeater(funcId, deviceNumber, 1);
+
+        // activate error handler
+        onerror goto Unexpected;
+
+        SynEnterCriticalSection(m_hhsCriticalSection);
+        m_tempStartTimeOut[deviceNumber-1] = startTimeout;
+        m_tempToleranceRange[deviceNumber-1] = toleranceRange;
+        m_tempSecurityRange[deviceNumber-1] = securityRange;
+        SynLeaveCriticalSection(m_hhsCriticalSection);
+
+        endTrace(funcId);
+        return;
+
+        Unexpected:
+        {
+            SynLeaveCriticalSection(m_hhsCriticalSection);
+            Error::RaiseLast();
+        }
+    }
+
+
+    //====================================================================
+    //
+    // Application function GetTempParameter()
+    //
+    //--------------------------------------------------------------------
+    // Description:
+    //  Get the parameter of temperatur supervision
+    //....................................................................
+    // Parameters:
+    //  deviceNumber :  device number which was generated on CreateXXDevice()
+    //  startTimeout        :  Time which must elapse before temperature will be controlled
+    //  toleranceRange      :  Range of temperature tolerance
+    //  securityRange       :  Range of temperature security, on leave heater will be switched off
+    // ...................................................................
+    // return value:
+    //  Raise               :  An exception is throw on wrong parameter or time out
+    //....................................................................
+    // Remarks:
+    //
+    //====================================================================
+    function GetTempParameter(
+        variable deviceNumber,
+        variable& startTimeout, variable& toleranceRange, variable& securityRange) void
+    {
+        variable funcId(IDF::GetTempParameter);
+        variable node;
+        string   nodeType;
+
+        startTrace(funcId);
+
+        checkDeviceNumber(funcId, deviceNumber);
+
+        // init output parameter
+        startTimeout = TemperateParam::startTimeOutDefault;
+        toleranceRange = TemperateParam::tempToleranceDefault;
+        securityRange = TemperateParam::tempSecurityDefault;
+
+        initHamHeaterShakerLib(funcId, deviceNumber, m_OFF);
+
+        hasHeater(funcId, deviceNumber, 1);
+
+        // activate error handler
+        onerror goto Unexpected;
+
+        SynEnterCriticalSection(m_hhsCriticalSection);
+        // set output parameter
+        startTimeout = m_tempStartTimeOut.GetAt(deviceNumber-1);
+        toleranceRange = m_tempToleranceRange.GetAt(deviceNumber-1);
+        securityRange = m_tempSecurityRange.GetAt(deviceNumber-1);
+        SynLeaveCriticalSection(m_hhsCriticalSection);
+
+        if(isStarDevice(deviceNumber))
+            nodeType = StringTable::Load(IDS::starNode);
+        else
+            nodeType = StringTable::Load(IDS::usbNode);
+
+        node = getNodeFromDeviceNumber(deviceNumber);
+
+        progressTrace(funcId, nodeType, IStr(node));
+        progressTrace(funcId, IDS::startTimeout, IStr(startTimeout));
+        progressTrace(funcId, IDS::toleranceRange, FStr(toleranceRange, hslTrue));
+        progressTrace(funcId, IDS::securityRange, FStr(securityRange, hslTrue));
+
+        endTrace(funcId);
+        return;
+
+        Unexpected:
+        {
+            SynLeaveCriticalSection(m_hhsCriticalSection);
+            Error::RaiseLast();
+        }
+    }
+
+
+    //====================================================================
+    //
+    // Application function SetPlateLock()
+    //
+    //--------------------------------------------------------------------
+    // Description:
+    //  Set the parameter for plate shaking
+    //
+    //....................................................................
+    // Parameters:
+    //  deviceNumber :  device number which was generated on CreateXXDevice()
+    //  plateLock        :  Lock / unlock flag
+    // ...................................................................
+    // return value:
+    //  noError(0)          :  all nodes are initialized successfull.
+    //  retErr(1)           :  initialisation failed
+    //  retNotInitErr(2)    :  needed node not initalized
+    //  retNotConnectErr(3) :  device not connected
+    //  Raise               :  An exception is throw on wrong parameter or time out
+    //  FirmErr             :  Firmware command error
+    //....................................................................
+    // Remarks:
+    //
+    //====================================================================
+    function SetPlateLock(
+        variable deviceNumber,
+        variable plateLock) variable
+    {
+        variable funcRc(IDE::noError);
+        variable funcId(IDF::SetPlateLock);
+        variable cmdResult;
+
+        startTrace(funcId);
+
+        checkDeviceNumber(funcId, deviceNumber);
+        checkIntegerInputRange(funcId, "plateLock", plateLock, m_OFF, m_ON);
+
+        funcRc = initHamHeaterShakerLib(funcId, deviceNumber, m_ON);
+        if(0 < funcRc)
+            return (funcRc);
+
+        sendToProgressTrace(funcId, deviceNumber);
+
+        hasShaker(funcId, deviceNumber, 1);
+
+        if(isSimulate(funcId, deviceNumber, hslTrue))
+            return (IDE::noError);
+
+        // check for initialized and connect
+        funcRc = getSendState(funcId, deviceNumber, hslTrue);
+        if(0 < funcRc)
+            return (funcRc);
+
+        // start lock command
+        cmdResult = startPlateLockCmd(funcId, deviceNumber, plateLock);
+        funcRc = isFirmwError(funcId, cmdResult, hslTrue);
+        if(0 < funcRc)
+            return (funcRc);
+
+        endTrace(funcId);
+        return (funcRc);
+    }
+
+
+    //====================================================================
+    //
+    // Application function GetFirmwareVersion()
+    //
+    //--------------------------------------------------------------------
+    // Description:
+    //  Get firmware version of current HHS
+    //
+    //....................................................................
+    // Parameters:
+    //  in : deviceNumber         :  device number which was generated on CreateXXDevice()
+    //  out: firmwareVersion   :  firmware version format: "1.0P 1999-03-10"
+    // ...................................................................
+    // return value:
+    //  noError(0)          :  all nodes are initialized successfull.
+    //  retErr(1)           :  initialisation failed
+    //  retNotInitErr(2)    :  needed node not initalized
+    //  retNotConnectErr(3) :  device not connected
+    //  Raise               :  An exception is throw on wrong parameter or time out
+    //  FirmErr             :  Firmware command error
+    //....................................................................
+    // Remarks:
+    //
+    //====================================================================
+    function GetFirmwareVersion(
+        variable deviceNumber,
+        variable& firmwareVersion) variable
+    {
+        variable funcRc(IDE::noError);
+        variable funcId(IDF::GetFirmwareVersion);
+        string     answString;
+        variable startPos;
+
+        startTrace(funcId);
+
+        checkDeviceNumber(funcId, deviceNumber);
+        firmwareVersion = "0.0S 2008-01-01";
+
+        funcRc = initHamHeaterShakerLib(funcId, deviceNumber, m_OFF);
+        if(0 < funcRc)
+            return (funcRc);
+
+        sendToProgressTrace(funcId, deviceNumber);
+
+        if(isSimulate(funcId, deviceNumber, hslTrue))
+            return (IDE::noError);
+
+        // check for initialized and connect
+        funcRc = getSendState(funcId, deviceNumber, hslTrue);
+        if(0 < funcRc)
+            return (funcRc);
+
+        // read the firmware version of current node
+        answString = RequestFirmwareVersion(deviceNumber);
+
+        if (answString.GetLength() != 0)
+        {
+            firmwareVersion = answString;
+        }
+
+        endTrace(funcId);
+        return (funcRc);
+    }
+
+
+    //====================================================================
+    //
+    // Application function GetSerialNumber()
+    //
+    //--------------------------------------------------------------------
+    // Description:
+    //  Get serial number of current HHS
+    //
+    //....................................................................
+    // Parameters:
+    //  in : deviceNumber         :  device number which was generated on CreateXXDevice()
+    //  out: firmwareVersion   :  firmware serial number format: "####"
+    // ...................................................................
+    // return value:
+    //  noError(0)          :  all nodes are initialized successfull.
+    //  retErr(1)           :  initialisation failed
+    //  retNotInitErr(2)    :  needed node not initalized
+    //  retNotConnectErr(3) :  device not connected
+    //  Raise               :  An exception is throw on wrong parameter or time out
+    //  FirmErr             :  Firmware command error
+    //....................................................................
+    // Remarks:
+    //
+    //====================================================================
+    function GetSerialNumber(
+        variable deviceNumber,
+        variable& serialNumber) variable
+    {
+        variable funcRc(IDE::noError);
+        variable funcId(IDF::GetSerialNumber);
+        string     answString;
+        variable startPos;
+
+        startTrace(funcId);
+
+        checkDeviceNumber(funcId, deviceNumber);
+        serialNumber = "0000";
+
+        funcRc = initHamHeaterShakerLib(funcId, deviceNumber, m_OFF);
+        if(0 < funcRc)
+            return (funcRc);
+
+        sendToProgressTrace(funcId, deviceNumber);
+
+        if(isSimulate(funcId, deviceNumber, hslTrue))
+            return (IDE::noError);
+
+        // check for initialized and connect
+        funcRc = getSendState(funcId, deviceNumber, hslTrue);
+        if(0 < funcRc)
+            return (funcRc);
+
+        serialNumber = RequestSerialNumber(deviceNumber, funcId);
+
+        endTrace(funcId);
+        return (funcRc);
+    }
+
+
+    //====================================================================
+    //
+    // Application function BeginMonitoring()
+    //
+    //--------------------------------------------------------------------
+    // Description:
+    //  Get serial number of current HHS
+    //
+    //....................................................................
+    // Parameters:
+    //  in : deviceNumber     :  device number which was generated on CreateXXDevice()
+    //  in : shakerMin       :  Minimum RPM
+    //  in : shakerMax       :  Maximum RPM
+    //  in : sampleInterval :  Interval in sec. for check RPM and temperature
+    //  in : action           :  Continue / Abort (0 / 1)
+    //                                 Note: Abort will only called on an error after temperature controlling is activated ()
+    //                                            An abort will end only the current heater/shaker.
+    //                                 Note:    heaterMin and heaterMax uses the parameter toleranceRange of SetTempParameter()
+    // ...................................................................
+    // return value:
+    //  noError(0)          :  all nodes are initialized successfull.
+    //  retErr(1)           :  initialisation failed
+    //  retNotInitErr(2)    :  needed node not initalized
+    //  retNotConnectErr(3) :  device not connected
+    //  Raise               :  An exception is throw on wrong parameter or time out
+    //  FirmErr             :  Firmware command error
+    //....................................................................
+    // Remarks:
+    //
+    //====================================================================
+    function BeginMonitoring(
+        variable deviceNumber,
+        variable shakingToleranceRange,
+        variable sampleInterval,
+        variable action) variable
+    {
+        variable funcRc(IDE::noError);
+        variable funcId(IDF::BeginMonitoring);
+        string     answString;
+        variable startPos;
+        event        startEvent;
+        variable sSpeed;
+        variable hTemp;
+        variable shakerMin(m_OFF);
+        variable shakerMax(ShakingParam::rpmMax);
+        variable heaterTempTol(m_OFF);
+        variable heaterMin(TemperateParam::tempMin);
+        variable heaterMax(TemperateParam::tempMax);
+        variable node;
+        variable nodeType;
+        variable funcName;
+
+        startTrace(funcId);
+
+        checkDeviceNumber(funcId, deviceNumber);
+        checkIntegerInputRange(funcId, "shakingToleranceRange", shakingToleranceRange, ShakingParam::shakeTolMin, ShakingParam::shakeTolMax);
+        checkIntegerInputRange(funcId, "sampleInterval", sampleInterval, m_minSampleInterval, m_maxSampleInterval);
+        checkIntegerInputRange(funcId, "action", action, MonitorAction::monitorActionMin, MonitorAction::monitorActionMax);
+
+        funcRc = initHamHeaterShakerLib(funcId, deviceNumber, m_OFF);
+        if(0 < funcRc)
+            return (funcRc);
+
+        // activate error handler
+        onerror goto Unexpected;
+
+        SynEnterCriticalSection(m_hhsCriticalSection);
+        sSpeed = m_userShakingSpeed.GetAt(deviceNumber-1);
+        hTemp = m_userTemperature.GetAt(deviceNumber-1);
+        heaterTempTol = m_tempToleranceRange.GetAt(deviceNumber-1);
+        m_monitorResult.SetAt(deviceNumber-1, -1);
+        SynLeaveCriticalSection(m_hhsCriticalSection);
+        onerror goto 0;
+
+        if(isStarDevice(deviceNumber))
+            nodeType = StringTable::Load(IDS::starNode);
+        else
+            nodeType = StringTable::Load(IDS::usbNode);
+        node = getNodeFromDeviceNumber(deviceNumber);
+
+        // if no shaker is initialized, set the maximum range
+        if(hasShaker(funcId, deviceNumber, 0) && sSpeed > m_OFF)
+        {
+            shakerMin = sSpeed-shakingToleranceRange;
+            if(shakerMin < 0)
+                shakerMin = 0;
+            shakerMax = sSpeed+shakingToleranceRange;
+        }
+        else if(sSpeed == m_OFF)
+        {
+            string moniText;
+            moniText = StringTable::Load(IDS::monitoringShNotStart);
+            StrReplace(moniText, "%s1", nodeType);
+            StrReplace(moniText, "%s2", IStr(node));
+
+            // Shaking on %s1 ( %s2 ) not started, check of speed limit will be disabled!
+            progressTrace(funcId, IDS::monitoringWarning, moniText);
+        }
+
+        if(hasHeater(funcId, deviceNumber, 0) && hTemp > m_OFF)
+        {
+            heaterMin = hTemp - heaterTempTol;
+            if(heaterMin < m_OFF)
+                heaterMin = m_OFF;
+            heaterMax = hTemp + heaterTempTol;
+        }
+        else if(hTemp == m_OFF)
+        {
+            variable moniText;
+            moniText = StringTable::Load(IDS::monitoringHeNotStart);
+            StrReplace(moniText, "%s1", nodeType);
+            StrReplace(moniText, "%s2", IStr(node));
+
+            // Heating up on %s1 ( %s2 ) not started, check of temperature limit will be disabled!
+            progressTrace(funcId, IDS::monitoringWarning, moniText);
+        }
+
+        sendToProgressTrace(funcId, deviceNumber);
+
+        if(isSimulate(funcId, deviceNumber, hslTrue))
+            return (IDE::noError);
+
+        // check for initialized and connect
+        funcRc = getSendState(funcId, deviceNumber, hslTrue);
+        if(0 < funcRc)
+            return (funcRc);
+
+        // activate error handler
+        onerror goto Unexpected;
+
+        SynEnterCriticalSection(m_hhsCriticalSection);
+
+        // Prepare the globals for the hsl thread.
+        m_monitorDeviceNumber                = deviceNumber;
+        m_monitorShakerMin                    = shakerMin;
+        m_monitorShakerMax                    = shakerMax;
+        m_monitorSampleInterval                = sampleInterval;
+        m_monitorAction                        = action;
+        m_monitorResult[deviceNumber-1]     = -1;
+        m_monitorHeaterMin                    = heaterMin;
+        m_monitorHeaterMax                    = heaterMax;
+
+
+        Fork( "monitorHeaterShaker" );
+
+        // wait until thread has received the global data (maximum 10 seconds)
+        m_monitorStartEvent.WaitEvent(10);
+
+        SynLeaveCriticalSection(m_hhsCriticalSection);
+
+        endTrace(funcId);
+        return (funcRc);
+
+        Unexpected:
+        {
+            SynLeaveCriticalSection(m_hhsCriticalSection);
+            Error::RaiseLast();
+        }
+    }
+
+
+    //====================================================================
+    //
+    // Application function EndMonitoring()
+    //
+    //--------------------------------------------------------------------
+    // Description:
+    //  Get serial number of current HHS
+    //
+    //....................................................................
+    // Parameters:
+    //  in : deviceNumber     :  device number which was generated on CreateXXDevice()
+    //  out: monitorResult  :  -1 = monitoring has not started or is not initialized
+    //                                 0 = heating and shaking values were within specification
+    //                                 1 = heating out of range
+    //                                 2 = shaking out of range
+    //                                 3 = heating and shaking out of range
+    // ...................................................................
+    // return value:
+    //  noError(0)          :  all nodes are initialized successfull.
+    //  retErr(1)           :  initialisation failed
+    //  retNotInitErr(2)    :  needed node not initalized
+    //  retNotConnectErr(3) :  device not connected
+    //  Raise               :  An exception is throw on wrong parameter or time out
+    //  FirmErr             :  Firmware command error
+    //....................................................................
+    // Remarks:
+    //
+    //====================================================================
+    function EndMonitoring(
+        variable deviceNumber,
+        variable& monitorResult) variable
+    {
+        variable funcRc(IDE::noError);
+        variable funcId(IDF::EndMonitoring);
+        event        intervalEvent;
+
+        startTrace(funcId);
+
+        checkDeviceNumber(funcId, deviceNumber);
+
+        funcRc = initHamHeaterShakerLib(funcId, deviceNumber, m_OFF);
+        if(0 < funcRc)
+            return (funcRc);
+
+        sendToProgressTrace(funcId, deviceNumber);
+
+        if(isSimulate(funcId, deviceNumber, hslTrue))
+            return (IDE::noError);
+
+        // check for initialized and connect
+        funcRc = getSendState(funcId, deviceNumber, hslTrue);
+        if(0 < funcRc)
+            return (funcRc);
+
+        // activate error handler
+        onerror goto Unexpected;
+
+        SynEnterCriticalSection(m_hhsCriticalSection);
+        intervalEvent = m_monitorEvent.GetAt(deviceNumber-1);
+        SynLeaveCriticalSection(m_hhsCriticalSection);
+
+        intervalEvent.SetEvent();
+
+        SynEnterCriticalSection(m_hhsCriticalSection);
+        monitorResult = m_monitorResult.GetAt(deviceNumber-1);
+        m_monitorResult.SetAt(deviceNumber-1, -1);
+        SynLeaveCriticalSection(m_hhsCriticalSection);
+
+        endTrace(funcId);
+        return (funcRc);
+
+        Unexpected:
+        {
+            SynLeaveCriticalSection(m_hhsCriticalSection);
+            Error::RaiseLast();
+        }
+    }
+
+
+    //====================================================================
+    //
+    // Application function SetSimulation()
+    //
+    //--------------------------------------------------------------------
+    // Description:
+    //  Set the internal flag m_isSimulate.
+    //  If this flag is set, only parameter checks are made on all exported function
+    //
+    //....................................................................
+    // Parameters:
+    //  simulate   :  Flag for set the simulate mode, must be a number 0/1
+    //
+    // ...................................................................
+    // return value:
+    //  Raise      :  Wrong parameter
+    //....................................................................
+    // Remarks:
+    //
+    //====================================================================
+    function SetSimulation(variable simulate) void
+    {
+        variable funcId(IDF::SetSimulation);
+
+        startTrace(funcId);
+
+        checkIntegerInputRange(funcId, "simulate", simulate, m_OFF, m_ON);
+
+        progressTrace(funcId, IDS::setSimulate, IStr(simulate));
+
+        // activate error handler
+        onerror goto Unexpected;
+
+        SynEnterCriticalSection(m_hhsCriticalSection);
+        m_isSimulate = hslFalse;
+        if(simulate == m_ON)
+            m_isSimulate = hslTrue;
+        SynLeaveCriticalSection(m_hhsCriticalSection);
+
+        endTrace(funcId);
+        return;
+
+        Unexpected:
+        {
+            SynLeaveCriticalSection(m_hhsCriticalSection);
+            Error::RaiseLast();
+        }
+    }
+
+
+    //====================================================================
+    //
+    // Application function SendFirmwareCommand()
+    //
+    //--------------------------------------------------------------------
+    // Description:
+    //  Send a command to the device
+    //
+    //....................................................................
+    // Parameters:
+    //  deviceNumber :  device number which was generated on CreateXXDevice()
+    //  command                :  Firmware command without node name ( 2 letter )
+    //  parameter            :  Parameter dependent of the used command
+    // ...................................................................
+    // return value:
+    //  Raise            :  An exception is throw on wrong parameter or time out
+    //  string           :  Firmware command result data string
+    //....................................................................
+    // Remarks:
+    //
+    //====================================================================
+    function SendFirmwareCommand(
+        variable deviceNumber,
+        variable command, variable parameter) variable
+    {
+        variable funcRc(IDE::noError);
+        variable funcId(IDF::SendFirmwareCommand);
+        string   cmd;
+        string   cmdResult;
+
+        startTrace(funcId);
+
+        checkDeviceNumber(funcId, deviceNumber);
+        checkStringInput(funcId, "command", command);
+        checkStringInput(funcId, "parameter", parameter);
+
+        // check for two character as command
+        cmd = command;
+        if(cmd.GetLength() != m_firmwareCmdLength)
+        {
+            variable funcName;
+            string errMsg;
+
+            // "Wrong length of input parameter.\r\nParameter = '%s1' length (%s2).\r\nExpected lenght (%s3)."
+            errMsg = StringTable::Load(IDE::wrongParameterLength);
+            StrReplace(errMsg, "%s1", "command");
+            StrReplace(errMsg, "%s2", IStr(cmd.GetLength()));
+            StrReplace(errMsg, "%s3", IStr(m_firmwareCmdLength));
+
+            funcName = StringTable::Load(funcId);
+
+            Error::RaiseEx(IDE::wrongParameterLength, errMsg, GetFileName(), funcName, GetLineNumber());
+        }
+
+        funcRc = initHamHeaterShakerLib(funcId, deviceNumber, m_ON);
+        if(0 < funcRc)
+            return (funcRc);
+
+        sendToProgressTrace(funcId, deviceNumber);
+
+        if(isSimulate(funcId, deviceNumber, hslTrue))
+            return (IDE::noError);
+
+        // check for initialized and connect
+        funcRc = getSendState(funcId, deviceNumber, hslTrue);
+        if(0 < funcRc)
+            return (funcRc);
+
+        // wait for temperature is reached
+        cmdResult = sendMsg(deviceNumber, command, parameter, m_usbMsgTimeout, hslTrue);
+
+        endTrace(funcId);
+        return (cmdResult);
+    }
+
+    //====================================================================
+    //
+    // Application function SetUSBTrace()
+    //
+    //--------------------------------------------------------------------
+    // Description:
+    //  Set the parameter for plate shaking
+    //
+    //....................................................................
+    // Parameters:
+    //  trace                :  Trace on / off. 0 = off, 1 = on
+    // ...................................................................
+    // return value:
+    //  Raise            :  An exception is throw on wrong parameter or time out
+    //....................................................................
+    // Remarks:
+    //
+    //====================================================================
+    function SetUSBTrace(variable trace) void
+    {
+        variable funcId(IDF::SetUSBTrace);
+
+        startTrace(funcId);
+
+        checkIntegerInputRange(funcId, "trace", trace, m_OFF, m_ON);
+
+        progressTrace(funcId, IDS::setTrace, IStr(trace));
+
+        // activate error handler
+        onerror goto Unexpected;
+
+        SynEnterCriticalSection(m_hhsCriticalSection);
+        m_usbTrace = hslFalse;
+        // set trace flag
+        if(trace == 1)
+            m_usbTrace = hslTrue;
+        SynLeaveCriticalSection(m_hhsCriticalSection);
+
+        endTrace(funcId);
+        return;
+
+        Unexpected:
+        {
+            SynLeaveCriticalSection(m_hhsCriticalSection);
+            Error::RaiseLast();
+        }
+    }
+
+
+    /****************************************************************************************
+    *
+    * Internal helper function declaration
+    *
+    ****************************************************************************************/
+
+    // --------------------------------------------------------------------------------------
+    // Communication functions
+    // --------------------------------------------------------------------------------------
+
+    // --------------------------------------------------------------------------------------
+    // Firmware error check function
+    // --------------------------------------------------------------------------------------
+
+
+    //====================================================================
+    //
+    // Internal function MonitorHeaterShaker()
+    //
+    //--------------------------------------------------------------------
+    // Description:
+    //    Monitors temperature and speed of a HHS module
+    //====================================================================
+    synchronized function monitorHeaterShaker()
+    {
+        variable monitorComplete( 0 );
+        event        intervalEvent;
+        variable currentStatus(-1);
+        variable funcName;
+        variable sTitle;
+        variable hTitle;
+        variable stateTitle;
+        variable heatingUp(hslTrue);
+        variable result;
+        variable oldResult;
+        variable notStopped(hslTrue); // action Stop not used
+
+        // set the locals...
+        variable devNumber(m_monitorDeviceNumber);
+        variable hMin(m_monitorHeaterMin);
+        variable hMax(m_monitorHeaterMax);
+        variable sMin(m_monitorShakerMin);
+        variable sMax(m_monitorShakerMax);
+        variable interval(m_monitorSampleInterval);
+        variable action(m_monitorAction);
+        variable curRpm(sMin);        // if not available, the speed must be OK
+        variable curTemp(hMin);        // if not available, the temperature must be OK
+        variable node;
+        variable nodeType;
+
+        // reset globals
+        m_monitorDeviceNumber            = 0;
+        m_monitorShakerMin                = 0;
+        m_monitorShakerMax                = 0;
+        m_monitorSampleInterval            = 0;
+        m_monitorAction                    = 0;
+        m_monitorHeaterMin                = 0;
+        m_monitorHeaterMax                = 0;
+        m_monitorResult[devNumber-1]     = -1;
+
+        // set min max temperature dependend of current heater settings
+        // critical section is set in StartMonotoring() function
+        intervalEvent = m_monitorEvent.GetAt(devNumber-1);
+
+        // free start semaphore
+        m_monitorStartEvent.SetEvent();
+
+        initStringTable();
+
+        if(isStarDevice(devNumber))
+            nodeType = StringTable::Load(IDS::starNode);
+        else
+            nodeType = StringTable::Load(IDS::usbNode);
+        nodeType = nodeType + " (";
+        node = getNodeFromDeviceNumber(devNumber);
+        nodeType = nodeType + IStr(node);
+        nodeType = nodeType + " )";
+
+
+        funcName = StringTable::Load(IDF::Monitoring);
+        funcName = funcName + " ";
+        funcName = funcName + nodeType;
+        sTitle = StringTable::Load(IDS::monitoringShakingTitle);
+        hTitle = StringTable::Load(IDS::monitoringTempTitle);
+        stateTitle = StringTable::Load(IDS::monitoringStateTitle);
+
+
+        while (monitorComplete == 0)
+        {
+            // WaitEvent returns 0 if still waiting or non-zero
+            // if the event was triggered.
+            monitorComplete = intervalEvent.WaitEvent( interval );
+
+            if( monitorComplete == 0 && notStopped)
+            {
+                if(hasShaker(0, devNumber, 0))
+                {
+                    variable title(sTitle);
+
+                    // read currect RPM
+                    curRpm = getCurrentShakerRPM(devNumber, hslFalse);
+
+                    progressTrace(funcName, title, IStr(curRpm));
+                }
+
+                if(hasHeater(0, devNumber, 0))
+                {
+                    variable title(hTitle);
+
+                    if(heatingUp)
+                    {
+                        heatingUp = RequestHeatingUpState(devNumber);
+                        if(heatingUp)
+                            title = StringTable::Load(IDS::monitoringTempHeatUpTitle);
+                    }
+
+                    // read current temperature
+                    curTemp = getCurrentTemp(devNumber, hslFalse);
+
+                    progressTrace(funcName, title, FStr(curTemp, hslTrue));
+                }
+
+                SynEnterCriticalSection(m_hhsCriticalSection);
+                result = m_monitorResult.GetAt(devNumber-1);
+                SynLeaveCriticalSection(m_hhsCriticalSection);
+
+                oldResult = result;
+
+                // Calculate the current state of the heater/shaker
+                if( (((curTemp < hMin) || (curTemp > hMax)) && !heatingUp) && ((curRpm < sMin) || (curRpm > sMax)))
+                {
+                    currentStatus = MonitorStatus::monitorErrHeatingAndShaking;
+                }
+                else if ( ((curTemp < hMin) || (curTemp > hMax)) && !heatingUp )
+                {
+                    currentStatus = MonitorStatus::monitorErrHeating;
+                }
+                else if ( (curRpm < sMin) || (curRpm > sMax) )
+                {
+                    currentStatus = MonitorStatus::monitorErrShaking;
+                }
+                else
+                {
+                    currentStatus = MonitorStatus::monitorOK;
+                }
+
+                // If the monitor status has previously not been set, set it.
+                // Otherwise, use bitwise OR to merge the current result with the previous result
+                if (result == -1)
+                    result = currentStatus;
+                else
+                    result = currentStatus | result;
+
+                SynEnterCriticalSection(m_hhsCriticalSection);
+                m_monitorResult[devNumber-1] = result;
+                SynLeaveCriticalSection(m_hhsCriticalSection);
+
+                progressTrace(funcName, stateTitle, IStr(result));
+
+                if ( result != MonitorStatus::monitorOK )
+                {
+                    if ( action == MonitorAction::monitorActionStop )
+                    {
+                        // stop shaking and heating
+                        if(hasShaker(0, devNumber, 0))
+                            StopShaker(devNumber);
+
+                        if(hasHeater(0, devNumber, 0))
+                            StopTempCtrl(devNumber);
+
+                        // end monitoring but leave in the loop for a correct end of the automatic semapore intervalEvent
+                        notStopped = hslFalse;
+                    }
+                    if(action == MonitorAction::monitorActionAbort)
+                    {
+                        errorTrace(funcName, IDS::monitoringAbort);
+                        abort;
+                    }
+                }
+
+            }
+
+        }  // end while
+
+        return(0);
+    }
+
+    //====================================================================
+    //
+    // Internal function pollingForRunningShaker()
+    //
+    //--------------------------------------------------------------------
+    // Description:
+    //    Polling until shaker has end shaked or time is elapsed
+    //    Polling is neccessary that during a long wait time an Abort()
+    // command can be execute.
+    //====================================================================
+    static function pollingForRunningShaker(
+        variable deviceNumber, variable maxPollingTime)
+    {
+        variable maxPTime(maxPollingTime);
+        variable intervalTime(5);
+
+        if(maxPollingTime > 10)
+        {
+            while (RequestMovingStateShakerDrive(deviceNumber) && maxPTime > 0)
+            {
+                maxPTime = maxPTime - intervalTime;
+                wait(intervalTime);
+            }
+        }
+    }
+
+    //====================================================================
+    //
+    // Internal function pollingForRunningHeater()
+    //
+    //--------------------------------------------------------------------
+    // Description:
+    //    Polling until heater is in temperature controlling mode
+    //    Polling is neccessary that during a long wait time an Abort()
+    // command can be execute.
+    //====================================================================
+    static function pollingForRunningHeater(
+    variable deviceNumber, variable maxPollingTime)
+    {
+        variable maxPTime(maxPollingTime);
+        variable intervalTime(10);
+
+        if(maxPollingTime > 10)
+        {
+            while (RequestHeatingUpState(deviceNumber) && maxPTime > 0)
+            {
+                maxPTime = maxPTime - intervalTime;
+                wait(intervalTime);
+            }
+        }
+    }
+
+    //====================================================================
+    //
+    // Internal function OnAbortHHSLibrary()
+    //
+    //--------------------------------------------------------------------
+    // Description:
+    //    Stop heating and shaking for all HHS module
+    //====================================================================
+    static function OnAbortHHSLibrary()
+    {
+        variable deviceNumber;
+
+        for( deviceNumber = 1; deviceNumber <= m_maxHHS; deviceNumber++)
+        {
+            if(isHeaterInitialized(deviceNumber))
+            {
+                // call StartShaker with 1 base node
+                StopShaker(deviceNumber);
+                StopTempCtrl(deviceNumber);
+            }
+        }
+
+        Terminate();
+        return;
+    }
+}
+// $$author=ContainerAdministrator$$valid=1$$time=2025-09-09 20:13$$checksum=8253d4f2$$length=099$$

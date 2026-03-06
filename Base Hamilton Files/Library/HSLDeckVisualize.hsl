@@ -1,0 +1,250 @@
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// Interface to library 
+//
+#ifndef __HSLDeckVisualize_hsl__
+#define __HSLDeckVisualize_hsl__ 1
+
+
+
+#ifndef HSL_RUNTIME
+namespace DeckVisualize
+{
+	function UpdateUsedPositions(device& dev, sequence& positions, variable action, variable description) void {}
+	function UpdateUsedLabware(device& dev, variable labware[], variable action[], variable description) void {}
+	function UpdateLoadedLabware(device& dev, variable labware[], variable state[], variable description) void {}
+} 
+#endif
+
+
+
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// Implementation
+//
+#ifdef HSL_RUNTIME
+
+#ifndef __HSLUtilLib_hsl__
+#include "HSLUtilLib.hsl"
+#endif
+#ifndef __HSLStrLib_hsl__
+#include "HSLStrLib.hsl"
+#endif
+
+namespace DeckVisualize
+{
+
+// constant data
+	namespace IDS
+    {
+        const variable traceSource(0); 
+        const variable errDeckLayout(1);
+        const variable errArrayDimensions(2);
+		  const variable errInvalidParameter(3);
+    }
+
+	namespace Constants
+	{
+		const variable actionMin(0); 					// lower bound of action value
+		const variable actionMax(7);					// upper bound of action value
+		const variable stateMin(0); 					// lower bound of load state value
+		const variable stateMax(5);					// upper bound of load state value
+	}
+
+	#ifndef __HSLStringTableLib_hsl__
+	#include "HSLStringTableLib.hs_"
+	#endif
+
+// global data
+variable initializedLib(hslFalse);
+
+//==================================================================================
+// internal functions
+//
+function InitLibrary() variable
+ {
+     // initialize the Library once only
+     if (!initializedLib)
+     {
+         StringTable::Init("HSLDeckVisualize");
+         initializedLib = hslTrue;
+     }
+     return(initializedLib);
+ }
+
+function ErrRaiseInvalidParameter(					// raises an invalid parameter error
+	variable& fileName,									// [in] file name
+	variable& functionName,								// [in] function name
+	variable lineNumber,									// [in] line number
+	variable& parameterName) void						// [in] parameter name
+{
+	variable errorDesc;
+	errorDesc = StringTable::Load(IDS::errInvalidParameter);
+	StrReplace(errorDesc, "%s", parameterName);
+	errorDesc = fileName + "(" + lineNumber + ") : " + functionName + "()\n" + errorDesc;
+	err.SetDescription(errorDesc);
+	err.Raise(IDS::errInvalidParameter, err.GetDescription());
+}
+
+//===================================================================================
+// library functions
+//
+
+function UpdateUsedPositions(device& dev, sequence& positions, variable action, variable description) void
+{
+	variable labwareid;
+	variable positionid;
+	variable pos(0);
+	variable posBackup;
+	object pars;
+	object decklayout;
+
+	InitLibrary();
+
+	// check input parameters to be valid
+	if (!Util::IsInteger(action))
+		ErrRaiseInvalidParameter(GetFileName(), GetFunctionName(), GetLineNumber(), "action");
+	if (action < Constants::actionMin || Constants::actionMax < action)
+		ErrRaiseInvalidParameter(GetFileName(), GetFunctionName(), GetLineNumber(), "action");
+	if (!Util::IsString(description))
+		ErrRaiseInvalidParameter(GetFileName(), GetFunctionName(), GetLineNumber(), "description");
+
+	decklayout = dev.GetDeckLayoutObject();
+	if ( decklayout.IsNull() )
+	{
+		FormatTrace(StringTable::Load(IDS::traceSource), StringTable::Load(IDS::errDeckLayout), 3);
+		return;
+	}
+
+	// save user position in sequence
+	posBackup = positions.GetCurrentPosition();
+
+	// need to add all positions from sequence to pars in correct format
+	pars.CreateObject("HXPARAMSLib.HxPars");
+
+	for (pos = positions.SetCurrentPosition(1); 0 < pos;  pos = positions.Increment(1))
+	{
+	   labwareid = positions.GetLabwareId();
+	   positionid = positions.GetPositionId();
+	   pars.Add(action, labwareid, positionid);
+	}
+
+
+	decklayout.UpdateUsedPositions(description,0,pars);
+	
+	pars.ReleaseObject();
+	decklayout.ReleaseObject();
+
+	// restore user position 
+	positions.SetCurrentPosition(posBackup);
+
+	return;
+}
+
+
+function UpdateUsedLabware(device& dev, variable labware[], variable action[], variable description) void
+{
+	variable index;
+	variable size;
+	object pars;
+	object decklayout;
+
+	InitLibrary();
+
+	// check input parameters to be valid
+	size = Util::Min(labware.GetSize(), action.GetSize());
+	for (index = 0; index < size; index++)
+	{
+		if (!Util::IsString(labware.ElementAt(index)))
+			ErrRaiseInvalidParameter(GetFileName(), GetFunctionName(), GetLineNumber(), "labware");
+		if (!Util::IsInteger(action.ElementAt(index)))
+			ErrRaiseInvalidParameter(GetFileName(), GetFunctionName(), GetLineNumber(), "action");
+		if (action.ElementAt(index) < Constants::actionMin || Constants::actionMax < action.ElementAt(index))
+			ErrRaiseInvalidParameter(GetFileName(), GetFunctionName(), GetLineNumber(), "action");
+	}
+	if (!Util::IsString(description))
+		ErrRaiseInvalidParameter(GetFileName(), GetFunctionName(), GetLineNumber(), "description");
+
+	decklayout = dev.GetDeckLayoutObject();
+	if ( decklayout.IsNull() )
+	{
+		FormatTrace(StringTable::Load(IDS::traceSource), StringTable::Load(IDS::errDeckLayout), 3);
+		return;
+	}
+
+	if ( labware.GetSize() != action.GetSize() )
+	{
+		FormatTrace(StringTable::Load(IDS::traceSource), StringTable::Load(IDS::errArrayDimensions), 3);
+		return;
+	}
+
+	// need to add all labware to pars with action
+	pars.CreateObject("HXPARAMSLib.HxPars");
+
+	for (index = 0; index < labware.GetSize(); index++)
+	{
+		pars.Add(action[index], labware[index]);
+	}
+
+	decklayout.UpdateUsedLabware(description,0,pars);
+	
+	pars.ReleaseObject();
+	decklayout.ReleaseObject( );
+	return;
+}
+
+
+function UpdateLoadedLabware(device& dev, variable labware[], variable state[], variable description) void
+{
+	variable index;
+	variable size;
+	object pars;
+	object decklayout;
+
+	InitLibrary();
+
+	// check input parameters to be valid
+	size = Util::Min(labware.GetSize(), state.GetSize());
+	for (index = 0; index < size; index++)
+	{
+		if (!Util::IsString(labware.ElementAt(index)))
+			ErrRaiseInvalidParameter(GetFileName(), GetFunctionName(), GetLineNumber(), "labware");
+		if (!Util::IsInteger(state.ElementAt(index)))
+			ErrRaiseInvalidParameter(GetFileName(), GetFunctionName(), GetLineNumber(), "state");
+		if (state.ElementAt(index) < Constants::stateMin || Constants::stateMax < state.ElementAt(index))
+			ErrRaiseInvalidParameter(GetFileName(), GetFunctionName(), GetLineNumber(), "state");
+	}
+	if (!Util::IsString(description))
+		ErrRaiseInvalidParameter(GetFileName(), GetFunctionName(), GetLineNumber(), "description");
+
+	decklayout = dev.GetDeckLayoutObject();
+	if ( decklayout.IsNull() )
+	{
+		FormatTrace(StringTable::Load(IDS::traceSource), StringTable::Load(IDS::errDeckLayout), 3);
+		return;
+	}
+
+	if ( labware.GetSize() != state.GetSize() )
+	{
+		FormatTrace(StringTable::Load(IDS::traceSource), StringTable::Load(IDS::errArrayDimensions), 3);
+		return;
+	}
+
+	// need to add all labware to pars with load state
+	pars.CreateObject("HXPARAMSLib.HxPars");
+
+	for (index = 0; index < labware.GetSize(); index++)
+	{
+		pars.Add(state[index], labware[index]);
+	}
+	decklayout.UpdateLoadedLabware(description,0,pars);
+	
+	pars.ReleaseObject();
+	decklayout.ReleaseObject( );
+	return;
+}
+
+
+}	// namespace DeckVisualize
+#endif
+
+#endif
+// $$author=ContainerAdministrator$$valid=1$$time=2025-09-09 20:13$$checksum=10ccb21c$$length=099$$

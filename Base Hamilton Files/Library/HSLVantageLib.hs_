@@ -1,0 +1,187 @@
+// ======================================================================
+// This is a part of the HSLVantageLib Library.
+// Copyright (C) by HAMILTON Company
+// All rights reserved.
+// ======================================================================
+//
+// Modification History
+//
+// 1/19/2015   Gareth Ferneyhough: creation
+//
+// **********************************************************************
+// **********************************************************************
+
+//device ML_Star;
+
+#include "HSLStrLib.hsl"
+
+namespace HSLVantageLib
+{		
+	function TurnDeckLightOn (device& ML_Star, variable intensityPercentage) void
+	{ 
+		variable commandString;
+		commandString = "C0AMLIli1os";
+		commandString = StrConcat2(commandString, StrIStr(intensityPercentage));
+		
+		ML_Star._1FB5DA01_3ACB_11d4_AE1F_0004ACB1DCB2( "b9fc6659_8aac_4745_9c05dec121d5dd45" ); // FirmwareCommand
+		return; 
+	}
+
+	function TurnDeckLightOff (device& ML_Star) void 
+	{ 
+      variable commandString;
+      commandString = "C0AMLIli0"; 
+		ML_Star._1FB5DA01_3ACB_11d4_AE1F_0004ACB1DCB2( "01aafe3b_fd07_4b02_b0c751bed8bcf21a" ); // FirmwareCommand
+		return;             
+	}
+
+   function RaiseLoadingTray (device& ML_Star) void 
+	{ 
+      variable commandString;
+      commandString = "I1AMLPlp1"; 
+		ML_Star._1FB5DA01_3ACB_11d4_AE1F_0004ACB1DCB2( "859352d5_4ede_4034_a071fe3a17cc2085" ); // FirmwareCommand
+		return;             
+	}
+
+   function RaiseAndLockLoadingTray (device& ML_Star) void 
+	{ 
+      variable commandString;
+      commandString = "C0AMLLco1 0 0 1 0 0"; 
+      RaiseLoadingTray(ML_Star);
+      ML_Star._1FB5DA01_3ACB_11d4_AE1F_0004ACB1DCB2( "e8773166_9ba6_4592_8c4c656200982b06" ); // FirmwareCommand
+		return;             
+	}
+
+   function LowerLoadingTray (device& ML_Star) void 
+	{ 
+      variable commandString;
+      commandString = "I1AMLPlp0"; 
+		ML_Star._1FB5DA01_3ACB_11d4_AE1F_0004ACB1DCB2( "6254ab19_fedc_4a98_a2ee65261f08b8f4" ); // FirmwareCommand
+		return;             
+	}
+
+
+
+   
+
+   function StringTokenize(string inString, string token, variable& outStrings[]) void
+   {
+      variable len;
+      variable index;
+      variable str;
+
+      outStrings.SetSize( 0 );   // first clear the out array
+
+
+      len = inString.GetLength( );
+
+      index = inString.Find( token );
+      while ( index != -1 )
+      {
+         str = inString.Mid(0, index); // string from current position, count         
+         outStrings.AddAsLast( str );
+        
+         inString = inString.Mid(index+1, len-index);
+         index = inString.Find( token );
+      }
+      // add last portion of inString
+      outStrings.AddAsLast(inString);
+   }
+
+   function SplitReturnStringByCarrier(string returnString, variable& carrierStrings[]) void
+   {
+      // split the step return string by separator ';'
+
+      StringTokenize(returnString, ";", carrierStrings);
+
+   }
+
+
+   function SplitCarrierReturnValue(string returnValue, variable& labwareId, variable& barcode)
+   {
+      // format of carrier return value:
+      // ErrFlag [Num, MainErr, SlaveErr, RecoveryId, Barcode, LabwareName,
+      // e.g.   0[25,00,00,0,A_321234,SMP_CAR_24_17x100_A00_0001,
+
+      // only need tokenize by ','
+      variable posnValues[];
+      StringTokenize(returnValue, ",", posnValues);
+      
+      barcode = posnValues.GetAt(4);
+      labwareId = posnValues.GetAt(5);
+   }
+
+
+   function SplitPositionReturnValue(string returnValue, variable& labwareIds[], variable& positionIds[], variable& barcodes[], variable& presence[])
+   {
+      // format of positions returnValue:
+      // ErrFlag [Num, MainErr, SlaveErr, RecoveryId, Barcode, LabwareName, LabwarePos, Presence [Num, etc ...
+      // e.g.   0[01,00,00,0,Barcode01,SMP_CAR_24_17x100_A00_0001,1 ,1
+      // >> parse Barcode, LabwareName, LabwarePos and Presence
+
+      variable posnStrings[];
+      variable posnValues[];
+      variable cnt;
+      variable index;
+      string str;
+
+
+      // first tokenize by '[' 
+      StringTokenize(returnValue, "[", posnStrings);
+      cnt = posnStrings.GetSize();
+
+      // start at index [1] (ignore ErrFlag) and tokenize by ','
+      for(index = 1; index<cnt; index++)
+      {
+         str = posnStrings.GetAt(index);
+         StringTokenize(str, ",", posnValues);
+
+         // assign return values
+         barcodes.AddAsLast(posnValues[4]);
+         labwareIds.AddAsLast(posnValues[5]);
+         positionIds.AddAsLast(posnValues[6]);
+         presence.AddAsLast(posnValues[7]);
+      }
+   }
+
+
+   function GetPositionErrorRecovery(string returnValue, variable& positionIds[], variable& errors[], variable& recoveries[])
+   {
+      // format of positions returnValue:
+      // ErrFlag [Num, MainErr, SlaveErr, RecoveryId, Barcode, LabwareName, LabwarePos, Presence [Num, etc ...
+      // >> parse SlaveErr, RecoveryId and LabwarePos
+
+      variable posnStrings[];
+      variable posnValues[];
+      variable cnt;
+      variable index;
+      string str;
+
+
+      // first tokenize by '[' 
+      StringTokenize(returnValue, "[", posnStrings);
+      cnt = posnStrings.GetSize();
+
+
+      // start at index [1] (ignore ErrFlag) and tokenize by ','
+      for(index = 1; index<cnt; index++)
+      {
+         str = posnStrings.GetAt(index);
+         StringTokenize(str, ",", posnValues);
+
+         // assign return values
+         errors.AddAsLast(posnValues[2]);
+         recoveries.AddAsLast(posnValues[3]);
+         positionIds.AddAsLast(posnValues[6]);
+      }
+   }
+
+
+
+
+
+
+
+   	
+}
+// $$author=ContainerAdministrator$$valid=1$$time=2025-09-09 20:46$$checksum=757ff2cd$$length=099$$

@@ -1,0 +1,17 @@
+30017
+30001,0,Nimbus
+30002,30001,Nimbus Pedestals,default.bmp
+30003,30001,Nimbus Tip Racks,default.bmp
+30004,30001,CORE-96\, 300uL,default.bmp
+30005,30001,CORE-96\, 1mL,default.bmp
+30006,30001,Channels,default.bmp
+30007,30006,Nimbus Shift and Scan,default.bmp
+30008,30006,Nimbus CORE-Tools,default.bmp
+30009,30003,10uL
+30010,30003,50uL
+30011,30003,300uL
+30012,30003,1mL
+30013,30003,5mL
+30014,30003,384 Tips
+30015,30001,HD Carriers
+30016,30001,Waste Options

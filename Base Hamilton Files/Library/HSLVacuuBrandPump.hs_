@@ -1,0 +1,3894 @@
+// ======================================================================
+// Interface of the library for control of the VacuuBrand CVC2000
+// chemistry vacuum pumping controller unit.
+//
+// Copyright (C) by HAMILTON Bonaduz AG, CH-7402 Bonaduz.
+// All rights reserved.
+// ======================================================================
+//
+// Modification History
+//		2003-01-22, Ruedi Vogel, created
+//
+//    2003-03-31, Ruedi Vogel
+//      Optimierung gemäss ersten Feld-Erfahrungen:
+//      - Function Initialize(): nur comPort-Parameter, restliche auf fix:
+//        	baudrate=9600; databits=8; parity="N"; handshake="H";
+//      - Function StartPressureControl(): Parameter frequency entfällt,
+//          dafür zwei neue Parameter: releaseAfterPres (boolean) und 
+//          releaseDuration (integer, in [sec])
+//          durch ersteren wird bestimmt, ob das air admittance valve
+//          am Ende des geregelten Unterdruckaufbaus geöffnet wird, 
+//          letzterer gibt die Zeit an, wie lange da Ventil geöffnet sein
+//          soll. Wenn das Ventil nicht geöffnet werden soll, hat dieser
+//          Parameter keinen Einfluss, muss aber trotzdem angegeben werden.
+//      - Während Pumpen bzw. Entlasten wird laufend Zieldruck, akt. Druck
+//          und verbleibende Zeit getraced. 
+//      - Function WaitForPumpStopped() öffnet Air Admittance Valve NICHT
+//          mehr! Nur So macht es Sinn, mehrere StartPressureControl()-Auf-
+//          rufe hintereinander, gefolgt von WaitForPumpStopped(), aufzu-
+//          rufen. Dafür wird eine neue "high level" Funktion zur Verfügung
+//          gestellt, mit der sich das Ventil öffnen lässt.
+//      - neue Funktion: OpenAirAdmittanceValve() eingeführt
+//
+//    2003-04-08, Ruedi Vogel:
+//      Erweitert, um mehrere Pumpen aus einer Library anzusteuern
+//
+//    2003-05-09, Ruedi Vogel
+//      - Trace des Druckes alle 10sec anstatt jede Sekunde (Laufzeit des 
+//        Task-Loops)
+//      - PumpID bei 1 (eins) anstatt 0 (null) beginnen
+//
+//    2003-06-26, Ruedi Vogel
+//      - zwischen dem Stoppen der Pumpe und dem Ventil Öffnen bei der 
+//        Ausführung StartPressureControl-Befehls im execTask ein Delay
+//        eingefügt. Dieses war auf schnellen Rechnern notwendig.
+//
+//    2003-08-06 Ruedi Vogel:
+//      - die Funktion execWriteCommand() hat die Funktion isInitialized()
+//        mit der globalen Variablen g_pumpID aufgerufen. Dies führte
+//        dazu, dass die Funktion OpenAirAdmittanceValve() abstürzte, wenn
+//        sie als erste Library-Funktion in einer Methode aufgerufen wurde.
+//        Problemlösung: Den Check isInitialized() in der Funktion
+//        execWriteCommand() entfernt, da der Check immer schon durchge-
+//        führt worden ist, bevor diese Funktion je einmal aufgerufen wird.
+//      - Die Funktion StopPumpImmediatly() stürzt zur Laufzeit ab. Der 
+//        execTask ruft bei der Ausführung dieses Befehls die Funktion
+//        transmitCmd() auf, bei der als drittem Parameter ein Integer-Wert
+//        anstelle eines Strings übergeben wurde. -> korrigiert.
+//  
+//    
+//    2006-06-27, G. Zaugg
+//      added namespace HSLStarBVSLib containing functionality to:
+//        - control the BVS in a simplified manner
+//        - track the volume move of the BVS to the Hamilton
+//          Vector Database
+//        - set the BVS to simulation mode
+//	     functions in namespace HSLVacuuBrandPump overworked:
+//        - simulation mode implemented
+//        - strings are now translateable
+// 
+//		2008-04-15, Ruedi Vogel
+//			- return value declared of functions in namespace HSLVacuuBrandPump
+//			- return value of transmitCmd() evaluated
+//			- errorPending and errorCommandFailed in string table added
+//			- in request functions first checked for a pending error and then 
+//			  for proper command execution
+//			- first checked for a pending error in all other functions
+//			- loop to request comm status in WaitForPumpStopped() function
+//			- variables for request commands extended to arrays
+//			- changes to assure runs with Scheduler
+//			- initialized variables for request commands
+//			- no changes within namespace HSLStarBVSLib
+//
+//    2016-06-08, T. Benz
+//      wrong call of HSLVacuuBrandPump::OpenAirAdmittanceValve( 1 ); corrected
+//       - Vacuumate() line HSLVacuuBrandPump::OpenAirAdmittanceValve( 1 ); deleted
+//       - This command was called before line retVal = HSLVacuuBrandPump::OpenAirAdmittanceValve( pumpID );
+//       - StringTable::domain text updated BVS to BVS/CVS
+//
+// ======================================================================
+
+#ifndef __HSLVacuuBrandPumpImpl_hsl__
+#define __HSLVacuuBrandPumpImpl_hsl__	1
+
+#ifndef __HSLStrLib_hsl__
+#include "HSLStrLib.hsl"
+#endif
+
+#ifndef __HSLSynLib_hsl__
+#include "HSLSynLib.hsl"
+#endif
+
+
+// --------------------------------------------------------------------------------------
+// Debugging
+// --------------------------------------------------------------------------------------
+//#define _BVS_DEBUG		1		// debug switch, enables traces of low level functions
+
+
+// --------------------------------------------------------------------------------------
+// Implementation of library 
+// --------------------------------------------------------------------------------------
+
+namespace HSLVacuuBrandPump
+{
+
+	// --------------------------------------------------------------------------------------
+	// Exported functions
+	// --------------------------------------------------------------------------------------
+	function Initialize(variable pumpID,variable comPort) variable;
+	function Terminate(variable pumpID) variable;
+	function ReqActualPressure(variable pumpID) variable;
+	static function ReqActualFrequency(variable pumpID) variable; 
+	static function ReqConfiguration(variable pumpID) variable; 
+	static function ReqErrorStatus(variable pumpID) variable;
+	static function ReqProcessStatus(variable pumpID) variable;
+	static function PreparePressure(variable pumpID, variable pressure) variable;
+	static function PrepareVentPressure(variable pumpID, variable pressure) variable;
+	static function PrepareRestartPressure(variable pumpID, variable pressure) variable;
+	static function PrepareSwitchOffPressure(variable pumpID, variable pressure) variable;
+	static function PreparePumpingTime(variable pumpID, variable time) variable;
+	static function PrepareFrequency(variable pumpID, variable frequency) variable;
+	static function PreparePumpingMode(variable pumpID, variable mode) variable;
+	static function StartPump(variable pumpID) variable;
+	static function StopPump(variable pumpID, variable mode) variable;
+	static function AirAdmittanceValve(variable pumpID, variable mode) variable;
+	function StartPressureControl(variable pumpID, variable pressure, variable duration, variable releaseAfterPres, variable releaseDuration) variable;
+	function StopPumpImmediatly(variable pumpID) variable;
+	function WaitForPumpStopped(variable pumpID) variable;
+	function OpenAirAdmittanceValve(variable pumpID) variable;
+
+
+	// --------------------------------------------------------------------------------------
+	// Exported error constants
+	// --------------------------------------------------------------------------------------
+	const variable CMD_START(1);
+	const variable CMD_COMPLET(2);
+	const variable CMD_ERROR(3);
+	const variable CMD_PROGRESS(4);
+
+
+	// --------------------------------------------------------------------------------------
+	// String table for the namespace HSLVacuuBrandPump
+	// --------------------------------------------------------------------------------------
+	namespace StringTable
+	{
+		static const string domain						(Translate("Microlab BVS/CVS (ID=%%pumpID%%)"));
+		static const string invalidPumpId			(Translate("pumpID has to be between 1..4!"));
+		static const string invalidComPort			(Translate("COM port has to be greater than 0!"));
+		static const string invalidBaudrate			(Translate("Baudrate has to be [1200|2400|4800|9600]!"));
+		static const string invalidParity			(Translate("Parity has to be [\"N\"|\"E\"|\"O\"]!"));
+		static const string invalidDatabits			(Translate("Databits have to be [7|8]!"));
+		static const string invalidHandshakeMode	(Translate("Handshake has to be [\"N\"|\"S\"|\"H\"]!"));
+		static const string comportAlreadyOpen		(Translate("COM %%comPort%%: already open. It will be closed and reopened."));
+		static const string addFieldFailed			(Translate("<AddField> failed!"));
+		static const string portOpenFailed			(Translate("<port.Open> with [%%openString%%] failed!"));
+		static const string portOpenSucceeded		(Translate("port opened with [%%openString%%]"));
+		static const string setCommTimeoutsFailed	(Translate("<SetCommTimeouts> failed!"));
+		static const string writeRecordFailed		(Translate("<WriteRecord> failed!"));
+		static const string readRecordFailed		(Translate("<ReadRecord> failed! Pumping unit NOT present!"));
+		static const string readRecordSucceeded	(Translate("Pumping unit answered: [%%comBuffer%%]"));
+		static const string pumpUnitNotInitialized(Translate("Pumping unit is not initialized!"));
+		static const string portCloseFailed			(Translate("<port.Close> failed!"));
+		static const string requestFailed			(Translate("Request failed!"));
+		static const string actualPressure			(Translate("actual pressure is %%value%% mbar."));
+		static const string actualFrequency			(Translate("actual frequency is %%value%% Hz."));
+		static const string remoteOperation			(Translate("Remote operation : "));
+		static const string modeOn						(Translate("ON"));
+		static const string modeOff					(Translate("OFF"));
+		static const string modeActive				(Translate("Active"));
+		static const string modeInactive				(Translate("Inactive"));
+		static const string modeNot					(Translate("not"));
+		static const string modeDriven				(Translate("driven"));
+		static const string automaticSwitchOff		(Translate("automatic switch off : "));
+		static const string connected					(Translate("connected"));
+		static const string notConnected				(Translate("not present"));
+		static const string airAdmittanceValve		(Translate("air admittance valve"));
+		static const string coolingWaterValve		(Translate("cooling water valve"));
+		static const string pumpingMode				(Translate("pumping mode : "));
+		static const string pumpingMode0				(Translate("VACUU*LAN"));
+		static const string pumpingMode1				(Translate("continous"));
+		static const string pumpingMode2				(Translate("pressure control without automatic"));
+		static const string pumpingMode3				(Translate("pressure control with automatic"));
+		static const string actualConfig1			(Translate("Pumping units actual configuration:"));
+		static const string actualConfig2			(Translate("actual configuation is : "));
+		static const string vacuuBrandErrCode0		(Translate("No error recognized!"));
+		static const string vacuuBrandErrCode1		(Translate("Last command failed!"));
+		static const string vacuuBrandErrCode2		(Translate("Malfunctioning pressure transducer!"));
+		static const string vacuuBrandErrCode3		(Translate("Overpressure occurred!"));
+		static const string vacuuBrandErrCode4		(Translate("Fault in pump electronics recognized!"));
+		static const string actualErrStatus1		(Translate("Pumping units actual error status:"));
+		static const string actualErrStatus2		(Translate("actual error status is : "));
+		static const string vacuuLanStatus			(Translate("VACUU*LAN: "));
+		static const string vacuuLanStatus1			(Translate("Pumping down, actual pressure > selected pressure."));
+		static const string vacuuLanStatus2			(Translate("Pumping down, time for automatic switching off is running."));
+		static const string vacuuLanStatus3			(Translate("System is switched off."));
+		static const string vacuuLanStatusUnknown	(Translate("Unknown process status."));
+		static const string continuosPumping		(Translate("Continous pumping: "));
+		static const string processStatusUnknown	(Translate("Unknown process status."));
+		static const string pressureControlStatus	(Translate("Pressure contol: "));
+		static const string pressureControlStatus1(Translate("Actual pressure > selected pressure."));
+		static const string pressureControlStatus2(Translate("Actual pressure = selected pressure (+/-1mbar)."));
+		static const string pressureControlStatus3(Translate("Actual pressure < selected pressure."));
+		static const string automaticStatus			(Translate("Automatic: "));
+		static const string automaticStatus1		(Translate("Determining boiling point."));
+		static const string automaticStatus2		(Translate("Adjusting boiling point."));
+		static const string automaticStatus3		(Translate("System switched off."));
+		static const string processModeUnknonw		(Translate("Unknown process control mode."));
+		static const string actualProcessStatus1	(Translate("Pumping units actual process status:"));
+		static const string actualProcessStatus2	(Translate("actual process status is : "));
+		static const string writeCommandFailed		(Translate("<execWriteCommand( %%pumpId%%, %%cmd%%, %%param%% )> failed with error code = %%errCode%%"));
+		static const string unknownCommand			(Translate("unknown command! command=%%cmd%%"));
+		static const string statePumping				(Translate("Pumping:"));
+		static const string stateReleasing			(Translate("Releasing:"));
+		static const string statePumpingInfo		(Translate("Pump[%%pumpId%%]: rated pressure = %%pressure%%[mbar], actual pressure = %%actPressure%%[mbar], remaining time = %%time%%[sec]"));
+		static const string stateReleasingInfo		(Translate("pump[%%pumpId%%]: rated pressure = ambient, actual pressure = %%actPressure%%[mbar], remaining time = %%time%%[sec]"));
+		static const string errorPending				(Translate("Communication error pending!"));
+		static const string errorCommandFailed		(Translate("Command execution failed!"));
+	}
+
+
+	// ----------------------------------------------------------------------------
+	// Variables
+	// ----------------------------------------------------------------------------
+	variable lowLevelLibraryTrace( hslTrue );// if true, each function in this namespace will trace start and end action
+
+	// ----------------------------------------------------------------------------
+	// locale functions
+	// ----------------------------------------------------------------------------
+	function FormatTraceEx( variable source, variable action, variable status, variable extInfo );
+	function EnableLowLevelLibraryTrace( variable enable );
+
+
+	// --------------------------------------------------------------------------------------
+	// Local access to vacuum pump
+	//
+	// Provides the interface and functionality to the pumping unit.
+	//	For more information see below or see in the appropriate function implementation
+	// --------------------------------------------------------------------------------------
+	namespace pump
+	{
+		// -------------------------------------------------------------------------
+		// Constants and variables for communication port
+		// -------------------------------------------------------------------------
+		static global variable g_BVSLib_comPort[](4);	// COM Port to which pump is connected (0=not initialized, 1=COM1, 2=COM2, etc.)
+		static global file g_BVSLib_port[](4);          // file-variable representing the port
+		static global variable g_BVSLib_comBuffer("");	// String buffer for reading the COM port
+		static global variable g_BVSLib_pumpID(-1);		// pump ID
+
+		// -------------------------------------------------------------------------
+		// Simulation
+		// -------------------------------------------------------------------------
+		static global variable g_BVSLib_bvsSimulationOn[](4);			// simulation flag for each of the 4 pump units
+		static global variable g_BVSLib_systemSimulationOn( -1 );	// "global" system simulation flag
+
+
+		// -------------------------------------------------------------------------
+		// task variables
+		// -------------------------------------------------------------------------
+		static global variable g_BVSLib_taskHandle(0);
+		static global event g_BVSLib_dataSync;
+		static global event g_BVSLib_execSync;
+		static global event g_BVSLib_pumpStopped[](4);
+		static global variable g_BVSLib_command;
+
+		static global variable g_BVSLib_communicate_initialized[](4);
+		static global event g_BVSLib_communicate[](4);
+
+		// variables for request commands
+		static global variable g_BVSLib_actPressure[](4);
+		static global variable g_BVSLib_actFrequency[](4);
+		static global string g_BVSLib_actConfiguration[](4);
+		static global string g_BVSLib_actErrorStatus[](4);
+		static global string g_BVSLib_actProcessStatus[](4);
+		static global string g_BVSLib_writeCmd[](4);
+		static global string g_BVSLib_writePrm[](4);
+		static global variable g_BVSLib_cmdExecStatus[](4);
+		static global variable g_BVSLib_stateMachineCommStatus[](4);
+		static global variable g_BVSLib_pumpingTime[](4);
+		static global variable g_BVSLib_pressure[](4);
+		static global variable g_BVSLib_valveOpen[](4);
+		static global variable g_BVSLib_valveOpenTime[](4);
+
+		// task contants
+		static const variable cmdIdle(0);
+		static const variable cmdTerminate(1);
+		static const variable cmdStart(2);
+		static const variable cmdStop(3);
+		static const variable cmdWrite(4);
+		static const variable cmdReqActPressure(5);
+		static const variable cmdReqActFrequency(6);
+		static const variable cmdReqConfiguration(7);
+		static const variable cmdReqErrorStatus(8);
+		static const variable cmdReqProcessStatus(9);
+		static const variable cmdStopRequest(10);
+		static const variable taskCycleCounts(9);
+
+		// -------------------------------------------------------------------------
+		// locale functions
+		// -------------------------------------------------------------------------
+		static function execTask() void;
+		static function isInitialized(variable pumpID) variable;					
+		static function execWriteCommand(variable pID, variable cmd, variable prm) variable;
+		static function transmitCmd( variable pumpID, variable command , variable parameter, variable waitForResponse ) variable;
+		static function isSimulationMode( variable pumpID ) variable;
+
+	} // end of namespace pump
+
+	// ############################################################################
+	// ############################################################################
+	// Implementation of exported functions
+	// ############################################################################
+	// ############################################################################
+
+	//*****************************************************************************
+	// Description:
+	//		Initializes the communication port. This function has to be called before 
+	//		any other function of this library.
+	//	Parameter:
+	//		comPort
+	//			1=COM1, 2=COM2, 3=COM3, etc.
+	//    baudrate
+	//       1200, 2400, 4800 or 9600
+	//    databits
+	//       7, 8
+	//    parity
+	//       "N" = no parity
+	//       "E" = even parity
+	//       "O" = odd parity
+	//    handshake
+	//       "N" = no handshake, 
+	//       "S" = XON/XOFF software handshake
+	//       "H" = RTS/CTS hardware handshake
+	// Return:
+	//		err_No		: initialization successful
+	//		err_Timeout	: Timeout in connection check occurred ==> not connected
+	//		CMD_ERROR	: e.g. Parametererror
+	//*****************************************************************************
+	function Initialize(variable pumpID, variable comPort) variable
+	{
+		variable baudrate(9600);
+		variable databits(8);
+		variable parity("N");
+		variable handshake("H");
+		variable comSettings;
+		variable str;
+		variable ii;
+
+		variable domain;
+		domain = StringTable::domain;
+		StrReplace( domain, "%%pumpID%%", IStr(pumpID) );
+
+		FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_START, "" );
+
+		// -------------------------------------------------------------------------
+		// Check pumpID parameter
+		// -------------------------------------------------------------------------
+		if((1>pumpID)||(4<pumpID))
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::invalidPumpId );
+			return(CMD_ERROR);
+		}
+		pumpID--;
+
+		if(!g_BVSLib_communicate_initialized.GetAt(pumpID))
+		{
+			g_BVSLib_communicate[pumpID].SetEvent();       
+   		g_BVSLib_communicate_initialized.SetAt(pumpID, hslTrue);
+		}
+
+		// -------------------------------------------------------------------------
+		// Check com port
+		// -------------------------------------------------------------------------
+		if (comPort < 1)
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::invalidComPort );
+			return(CMD_ERROR);
+		}
+
+		// -------------------------------------------------------------------------
+		// Check simulation mode
+		// -------------------------------------------------------------------------
+		if( pump::isSimulationMode(pumpID) != 0 )
+		{
+			// set pump unit to initialized and return
+			g_BVSLib_comPort[pumpID] = comPort;
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_COMPLET, "" );
+			return(CMD_COMPLET);
+		}
+
+		// -------------------------------------------------------------------------
+		// Check communication port parameter
+		// -------------------------------------------------------------------------
+		if (!((baudrate==1200)||(baudrate==2400)||(baudrate==4800)||(baudrate==9600)))
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::invalidBaudrate );
+			return(CMD_ERROR);
+		}
+		comSettings = IStr(baudrate);			
+
+		if (!((parity=="N")||(parity=="E")||(parity=="O")))
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::invalidParity );
+			return(CMD_ERROR);
+		}
+		comSettings = comSettings + "," + parity;			
+
+		if (!((databits==7)||(databits==8)))
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::invalidDatabits );
+			return(CMD_ERROR);
+		}
+		comSettings = comSettings + "," + IStr(databits) + ",1,";			
+
+		if (!((handshake=="N")||(handshake=="S")||(handshake=="H")))
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::invalidHandshakeMode );
+			return(CMD_ERROR);
+		}
+		if (handshake=="H")
+		{
+			comSettings = comSettings + "RTS/CTS";			
+		}
+		else if (handshake=="S")
+		{
+			comSettings = comSettings + "XON/XOFF";			
+		}
+		else
+		{
+			comSettings = comSettings + "N";			
+		}
+		comSettings = comSettings + ",CR/LF";			
+
+		// -------------------------------------------------------------------------
+		// Already initialized  
+		// -------------------------------------------------------------------------
+		if (pump::isInitialized(pumpID))
+		{
+			str = StringTable::comportAlreadyOpen;
+			StrReplace(str, "%%comPort%%", IStr(comPort));
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_PROGRESS, str );
+			Terminate(pumpID+1);
+		}
+
+		// -------------------------------------------------------------------------
+		// Initialize communication port
+		// -------------------------------------------------------------------------
+		g_BVSLib_communicate[pumpID].WaitEvent(hslInfinite);
+		g_BVSLib_comBuffer = "";
+		onerror  goto Unexpected;
+
+		g_BVSLib_port[pumpID].SetDelimiter(hslAsciiText);
+		if (0 == g_BVSLib_port[pumpID].AddField(1, g_BVSLib_comBuffer, hslString, 1))
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::addFieldFailed );
+			g_BVSLib_communicate[pumpID].SetEvent();
+			return(CMD_ERROR);
+		}
+
+		// -------------------------------------------------------------------------
+		// Open port
+		// -------------------------------------------------------------------------
+		{
+			variable openString;
+
+			openString = StrConcat4("COM",IStr(comPort)," ",comSettings);
+			if (0 == g_BVSLib_port[pumpID].Open(openString, hslWrite))
+			{
+				g_BVSLib_port[pumpID].RemoveFields();  // is evident for redundant inits!!
+				str = StringTable::portOpenFailed;
+				StrReplace( str, "%%openString%%", openString );
+				FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, str );
+				g_BVSLib_communicate[pumpID].SetEvent();
+				return(CMD_ERROR);
+			}
+			str = StringTable::portOpenSucceeded;
+			StrReplace( str, "%%openString%%", openString );
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_PROGRESS, str );
+			g_BVSLib_comPort[pumpID] = comPort;
+		}
+
+		// -------------------------------------------------------------------------
+		// Configure Timeouts
+		// Timeout settings for timeout within HSL-functions <file::ReadRecord> and 
+		// <file::WriteString>
+		// These settings are used by the function <SetCommTimeouts>.
+		// For more information see HSL Reference (document e253518b)
+		// -------------------------------------------------------------------------
+		{
+			variable ReadIntervalTimeout(hslInfinite);			// maximum time between read chars
+			variable ReadTotalTimeoutMultiplier(hslInfinite);	// mutiplier of characters
+			variable ReadTotalTimeoutConstant(2.250);				// constant in seconds
+			variable WriteTotalTimeoutMultiplier(0.000);			// mutiplier of characters 
+			variable WriteTotalTimeoutConstant(10.000);			// constant in seconds
+			if (0 == SetCommTimeouts(g_BVSLib_port[pumpID]))
+			{
+				FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::setCommTimeoutsFailed );
+				g_BVSLib_communicate[pumpID].SetEvent();
+				return(CMD_ERROR);
+			}
+		}
+
+		// -------------------------------------------------------------------------
+		// Check if pumping unit's communication works
+		// -------------------------------------------------------------------------
+		{
+
+			g_BVSLib_comBuffer = "IN_ERR";
+			if (0 == g_BVSLib_port[pumpID].WriteRecord())
+			{
+				FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::writeRecordFailed );
+				g_BVSLib_communicate[pumpID].SetEvent();
+				return(CMD_ERROR);
+			}
+			if (0 == g_BVSLib_port[pumpID].ReadRecord())
+			{
+				FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_PROGRESS, StringTable::readRecordFailed );
+				g_BVSLib_communicate[pumpID].SetEvent();
+				return(CMD_ERROR);
+			}
+			else
+			{
+				str = StringTable::readRecordSucceeded;
+				StrReplace( str, "%%comBuffer%%", g_BVSLib_comBuffer );
+				FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_PROGRESS, str );
+			}
+		}
+		g_BVSLib_communicate[pumpID].SetEvent();
+
+		// -------------------------------------------------------------------------
+		// Start execution task if not still running
+		// -------------------------------------------------------------------------
+		if (0 == g_BVSLib_taskHandle)
+		{
+			for( ii=0; ii<4; ii++ )
+			{
+				g_BVSLib_actPressure.SetAt(ii,-1);
+				g_BVSLib_actFrequency.SetAt(ii,-1.0);
+				g_BVSLib_actConfiguration.SetAt(ii,"");
+				g_BVSLib_actErrorStatus.SetAt(ii,"");
+				g_BVSLib_actProcessStatus.SetAt(ii,"");
+				g_BVSLib_writeCmd.SetAt(ii,"");
+				g_BVSLib_writePrm.SetAt(ii,"");
+				g_BVSLib_cmdExecStatus.SetAt(ii,CMD_COMPLET);
+				g_BVSLib_stateMachineCommStatus.SetAt(ii,CMD_COMPLET);
+				g_BVSLib_pumpingTime.SetAt(ii,0);
+				g_BVSLib_pressure.SetAt(ii,0);
+				g_BVSLib_valveOpen.SetAt(ii,hslFalse);
+				g_BVSLib_valveOpenTime.SetAt(ii,0);
+			}
+			g_BVSLib_taskHandle = Fork("pump::execTask");
+		}
+
+		// -------------------------------------------------------------------------
+		// Evaluation and return
+		// -------------------------------------------------------------------------
+		FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_COMPLET, "" );
+		return(CMD_COMPLET);
+
+		Unexpected:
+		{
+			g_BVSLib_communicate[pumpID].SetEvent();
+		}
+	} // end of Initialize()
+
+	// *****************************************************************************
+	// Description:
+	//		Shuts down the communication and closes the initialized COM-port.
+	//	Parameter
+	//    None
+	// Return
+	//    None	
+	// *****************************************************************************
+	function Terminate(variable pumpID) variable
+	{
+		variable retCode(0);
+		variable ii;
+
+		variable domain;
+		domain = StringTable::domain;
+		StrReplace( domain, "%%pumpID%%", IStr(pumpID) );
+
+		FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_START, "" );
+
+		// -------------------------------------------------------------------------
+		// Check pumpID parameter
+		// -------------------------------------------------------------------------
+		if((1>pumpID)||(4<pumpID))
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::invalidPumpId );
+			return(CMD_ERROR);
+		}
+		pumpID--;
+
+		// -------------------------------------------------------------------------
+		// check if initialized
+		// -------------------------------------------------------------------------
+		if (!pump::isInitialized(pumpID))
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::pumpUnitNotInitialized );
+			return(CMD_ERROR);
+		}
+
+		// -------------------------------------------------------------------------
+		// Check simulation mode
+		// -------------------------------------------------------------------------
+		if( pump::isSimulationMode(pumpID) != 0 )
+		{
+			// set pump unit to NOT initialized and return
+			g_BVSLib_comPort[pumpID] = 0;
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_COMPLET, "" );
+			return(CMD_COMPLET);
+		}
+
+		//--------------------------------------------------------------------------
+		// check if more than one pumping unit active
+		//--------------------------------------------------------------------------
+		for(ii=0;ii<4;ii++)
+		{
+			if (pump::isInitialized(ii)) retCode++;
+		}
+
+		if(1 >= retCode)
+		{
+			//--------------------------------------------------------------------------
+			// Terminate execution task
+			//--------------------------------------------------------------------------
+			if (0 != g_BVSLib_taskHandle)
+			{
+				g_BVSLib_dataSync.WaitEvent(hslInfinite);
+				g_BVSLib_pumpID = pumpID;
+				g_BVSLib_command = pump::cmdTerminate;
+				g_BVSLib_dataSync.SetEvent();	
+
+				g_BVSLib_execSync.WaitEvent(hslInfinite);
+
+				Join(g_BVSLib_taskHandle, hslInfinite);
+				g_BVSLib_taskHandle = 0;
+			}
+		}
+
+		//--------------------------------------------------------------------------
+		// close communication port
+		//--------------------------------------------------------------------------
+		g_BVSLib_communicate[pumpID].WaitEvent(hslInfinite);
+		onerror goto Unexpected;
+
+		g_BVSLib_port[pumpID].RemoveFields();
+		retCode = g_BVSLib_port[pumpID].Close();
+		g_BVSLib_communicate[pumpID].SetEvent();
+		g_BVSLib_comPort[pumpID] = 0;
+		if (0 != retCode)
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::portCloseFailed );
+			return(CMD_ERROR);
+		}
+		FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_COMPLET, "" );
+		return(CMD_COMPLET);
+
+		Unexpected:
+		{
+			g_BVSLib_communicate[pumpID].SetEvent();
+		}
+	} // end of Terminate()
+
+	// *****************************************************************************
+	// Description:
+	//		Request current pressure.
+	//	Parameter
+	//    None
+	// Return
+	//    None	
+	// *****************************************************************************
+	function ReqActualPressure(variable pumpID) variable
+	{
+		variable value;
+		variable str;
+
+		variable domain;
+		domain = StringTable::domain;
+		StrReplace( domain, "%%pumpID%%", IStr(pumpID) );
+
+		FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_START, "" );
+
+		// -------------------------------------------------------------------------
+		// Check pumpID parameter
+		// -------------------------------------------------------------------------
+		if((1>pumpID)||(4<pumpID))
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::invalidPumpId );
+			return(-1);
+		}
+		pumpID--;
+
+		// -------------------------------------------------------------------------
+		// check if initialized
+		// -------------------------------------------------------------------------
+		if (!pump::isInitialized(pumpID))
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::pumpUnitNotInitialized );
+			return(-1);
+		}
+
+		// -------------------------------------------------------------------------
+		// Check simulation mode
+		// -------------------------------------------------------------------------
+		if( pump::isSimulationMode(pumpID) != 0 )
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_COMPLET, "" );
+			return( 1013 );
+		}
+
+		// -------------------------------------------------------------------------
+		// check if error pending
+		// -------------------------------------------------------------------------
+		g_BVSLib_dataSync.WaitEvent(hslInfinite);		
+		value = g_BVSLib_stateMachineCommStatus.GetAt( pumpID );
+		g_BVSLib_dataSync.SetEvent();		
+
+		if (CMD_COMPLET != value)
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::errorPending);
+			return(-1);
+		}
+
+		// -------------------------------------------------------------------------
+		// set command for execution task
+		// -------------------------------------------------------------------------
+		g_BVSLib_dataSync.WaitEvent(hslInfinite);		
+		g_BVSLib_pumpID = pumpID;
+		g_BVSLib_command = pump::cmdReqActPressure;
+		g_BVSLib_dataSync.SetEvent();		
+
+		// -------------------------------------------------------------------------
+		// wait for command execution
+		// -------------------------------------------------------------------------
+		g_BVSLib_execSync.WaitEvent(hslInfinite);
+
+		// -------------------------------------------------------------------------
+		// check if command failed
+		// -------------------------------------------------------------------------
+		g_BVSLib_dataSync.WaitEvent(hslInfinite);		
+		value = g_BVSLib_cmdExecStatus.GetAt(pumpID);
+		g_BVSLib_dataSync.SetEvent();		
+
+		if (CMD_COMPLET != value)
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::errorCommandFailed);
+			return(-1);
+		}
+
+		// -------------------------------------------------------------------------
+		// request evaluated ambient pressure
+		// -------------------------------------------------------------------------
+		g_BVSLib_dataSync.WaitEvent(hslInfinite);		
+		value = g_BVSLib_actPressure.GetAt(pumpID);
+		g_BVSLib_dataSync.SetEvent();		
+
+		if(-1 == value)
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::requestFailed);
+			return(-1);
+		}
+
+		str = StringTable::actualPressure;
+		StrReplace( str, "%%value%%", IStr(value) );
+		FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_COMPLET, str );
+		return(value);
+
+	} // end of ReqActualPressure()
+
+	function ReqActualFrequency(variable pumpID) variable
+	{
+		variable value;
+		variable str;
+
+		variable domain;
+		domain = StringTable::domain;
+		StrReplace( domain, "%%pumpID%%", IStr(pumpID) );
+
+		FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_START, "" );
+
+		// -------------------------------------------------------------------------
+		// Check pumpID parameter
+		// -------------------------------------------------------------------------
+		if((1>pumpID)||(4<pumpID))
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::invalidPumpId );
+			return(-1);
+		}
+		pumpID--;
+
+		// -------------------------------------------------------------------------
+		// check if initialized
+		// -------------------------------------------------------------------------
+		if (!pump::isInitialized(pumpID))
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::pumpUnitNotInitialized );
+			return(-1);
+		}
+
+		// -------------------------------------------------------------------------
+		// Check simulation mode
+		// -------------------------------------------------------------------------
+		if( pump::isSimulationMode(pumpID) != 0 )
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_COMPLET, "" );
+			return( 50.0 );
+		}
+
+		// -------------------------------------------------------------------------
+		// check if error pending
+		// -------------------------------------------------------------------------
+		g_BVSLib_dataSync.WaitEvent(hslInfinite);		
+		value = g_BVSLib_stateMachineCommStatus.GetAt( pumpID );
+		g_BVSLib_dataSync.SetEvent();		
+
+		if (CMD_COMPLET != value)
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::errorPending);
+			return(-1);
+		}
+
+		// -------------------------------------------------------------------------
+		// set command for execution task
+		// -------------------------------------------------------------------------
+		g_BVSLib_dataSync.WaitEvent(hslInfinite);		
+		g_BVSLib_pumpID = pumpID;
+		g_BVSLib_command = pump::cmdReqActFrequency;
+		g_BVSLib_dataSync.SetEvent();		
+
+		// -------------------------------------------------------------------------
+		// wait for command execution
+		// -------------------------------------------------------------------------
+		g_BVSLib_execSync.WaitEvent(hslInfinite);
+
+		// -------------------------------------------------------------------------
+		// check if command failed
+		// -------------------------------------------------------------------------
+		g_BVSLib_dataSync.WaitEvent(hslInfinite);		
+		value = g_BVSLib_cmdExecStatus.GetAt(pumpID);
+		g_BVSLib_dataSync.SetEvent();		
+
+		if (CMD_COMPLET != value)
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::errorCommandFailed);
+			return(-1);
+		}
+
+		// -------------------------------------------------------------------------
+		// request evaluated frequency
+		// -------------------------------------------------------------------------
+		g_BVSLib_dataSync.WaitEvent(hslInfinite);		
+		value = g_BVSLib_actFrequency.GetAt(pumpID);
+		g_BVSLib_dataSync.SetEvent();		
+
+		if(-1.0 == value)
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::requestFailed );
+			return(-1);
+		}
+
+		str = StringTable::actualFrequency;
+		StrReplace( str, "%%value%%", FStr(value) );
+		FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_COMPLET, str );
+		return(value);
+
+	} // end of ReqActualFrequency()
+
+	function ReqConfiguration(variable pumpID) variable
+	{
+		variable value;
+		string answer;
+		string message;
+
+		variable domain;
+		domain = StringTable::domain;
+		StrReplace( domain, "%%pumpID%%", IStr(pumpID) );
+
+		FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_START, "" );
+
+		// -------------------------------------------------------------------------
+		// Check pumpID parameter
+		// -------------------------------------------------------------------------
+		if((1>pumpID)||(4<pumpID))
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::invalidPumpId );
+			return(CMD_ERROR);
+		}
+		pumpID--;
+
+		// -------------------------------------------------------------------------
+		// check if initialized
+		// -------------------------------------------------------------------------
+		if (!pump::isInitialized(pumpID))
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::pumpUnitNotInitialized );
+			return(CMD_ERROR);
+		}
+
+		// -------------------------------------------------------------------------
+		// Check simulation mode
+		// -------------------------------------------------------------------------
+		if( pump::isSimulationMode(pumpID) != 0 )
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_COMPLET, "" );
+			return(CMD_COMPLET);
+		}
+
+		// -------------------------------------------------------------------------
+		// check if error pending
+		// -------------------------------------------------------------------------
+		g_BVSLib_dataSync.WaitEvent(hslInfinite);		
+		value = g_BVSLib_stateMachineCommStatus.GetAt( pumpID );
+		g_BVSLib_dataSync.SetEvent();		
+
+		if (CMD_COMPLET != value)
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::errorPending);
+			return(CMD_ERROR);
+		}
+
+		// -------------------------------------------------------------------------
+		// set command for execution task
+		// -------------------------------------------------------------------------
+		g_BVSLib_dataSync.WaitEvent(hslInfinite);		
+		g_BVSLib_pumpID = pumpID;
+		g_BVSLib_command = pump::cmdReqConfiguration;
+		g_BVSLib_dataSync.SetEvent();		
+
+		// -------------------------------------------------------------------------
+		// wait for command execution
+		// -------------------------------------------------------------------------
+		g_BVSLib_execSync.WaitEvent(hslInfinite);
+
+		// -------------------------------------------------------------------------
+		// check if command failed
+		// -------------------------------------------------------------------------
+		g_BVSLib_dataSync.WaitEvent(hslInfinite);		
+		value = g_BVSLib_cmdExecStatus.GetAt(pumpID);
+		g_BVSLib_dataSync.SetEvent();		
+
+		if (CMD_COMPLET != value)
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::errorCommandFailed);
+			return(CMD_ERROR);
+		}
+
+		// -------------------------------------------------------------------------
+		// request evaluated actual configuration
+		// -------------------------------------------------------------------------
+		g_BVSLib_dataSync.WaitEvent(hslInfinite);		
+		answer = g_BVSLib_actConfiguration.GetAt(pumpID);
+		g_BVSLib_dataSync.SetEvent();		
+
+		if (0==answer.Compare(""))
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::requestFailed );
+			return(CMD_ERROR);
+		}
+
+		message = StringTable::remoteOperation;
+		if ("1"==answer.Mid(4,1))
+		{
+			message = message + StringTable::modeOn;
+		}
+		else
+			message = message + StringTable::modeOff;
+
+		message = message + "\n";
+		message = message + StringTable::automaticSwitchOff;
+		if ("1"==answer.Mid(3,1))
+			message = message + StringTable::connected;
+		else
+			message = message + StringTable::notConnected;
+
+		message = message + "\n";
+		message = message + StringTable::airAdmittanceValve + " : ";
+		if ("1"==answer.Mid(2,1))
+			message = message + StringTable::connected;
+		else
+			message = message + StringTable::notConnected;
+
+		message = message + "\n";
+		message = message + StringTable::coolingWaterValve + " : ";
+		if ("1"==answer.Mid(1,1))
+			message = message + StringTable::connected;
+		else
+			message = message + StringTable::notConnected;
+
+		message = message + "\n";
+		message = message + StringTable::pumpingMode;
+		if ("0"==answer.Mid(0,1))
+			message = message + StringTable::pumpingMode0;
+		else if ("1"==answer.Mid(0,1))
+			message = message + StringTable::pumpingMode1;
+		else if ("2"==answer.Mid(0,1))
+			message = message + StringTable::pumpingMode2;
+		else 
+			message = message + StringTable::pumpingMode3;
+
+		MessageBox(message,StringTable::actualConfig1,64);
+		answer = StringTable::actualConfig2+answer;
+		FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_COMPLET, answer );
+		return(CMD_COMPLET);
+
+	} // end of ReqConfiguration()
+
+	function ReqErrorStatus(variable pumpID) variable
+	{
+		variable value;
+		string answer;
+		string message;
+
+		variable domain;
+		domain = StringTable::domain;
+		StrReplace( domain, "%%pumpID%%", IStr(pumpID) );
+
+		FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_START, "" );
+
+		// -------------------------------------------------------------------------
+		// Check pumpID parameter
+		// -------------------------------------------------------------------------
+		if((1>pumpID)||(4<pumpID))
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::invalidPumpId );
+			return(CMD_ERROR);
+		}
+		pumpID--;
+
+		// -------------------------------------------------------------------------
+		// check if initialized
+		// -------------------------------------------------------------------------
+		if (!pump::isInitialized(pumpID))
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::pumpUnitNotInitialized );
+			return(CMD_ERROR);
+		}
+
+		// -------------------------------------------------------------------------
+		// Check simulation mode
+		// -------------------------------------------------------------------------
+		if( pump::isSimulationMode(pumpID) != 0 )
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_COMPLET, "" );
+			return( CMD_COMPLET );
+		}
+
+		// -------------------------------------------------------------------------
+		// check if error pending
+		// -------------------------------------------------------------------------
+		g_BVSLib_dataSync.WaitEvent(hslInfinite);		
+		value = g_BVSLib_stateMachineCommStatus.GetAt( pumpID );
+		g_BVSLib_dataSync.SetEvent();		
+
+		if (CMD_COMPLET != value)
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::errorPending);
+			return(CMD_ERROR);
+		}
+
+		// -------------------------------------------------------------------------
+		// set command for execution task
+		// -------------------------------------------------------------------------
+		g_BVSLib_dataSync.WaitEvent(hslInfinite);		
+		g_BVSLib_pumpID = pumpID;
+		g_BVSLib_command = pump::cmdReqErrorStatus;
+		g_BVSLib_dataSync.SetEvent();		
+
+		// -------------------------------------------------------------------------
+		// wait for command execution
+		// -------------------------------------------------------------------------
+		g_BVSLib_execSync.WaitEvent(hslInfinite);
+
+		// -------------------------------------------------------------------------
+		// check if command failed
+		// -------------------------------------------------------------------------
+		g_BVSLib_dataSync.WaitEvent(hslInfinite);		
+		value = g_BVSLib_cmdExecStatus.GetAt(pumpID);
+		g_BVSLib_dataSync.SetEvent();		
+
+		if (CMD_COMPLET != value)
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::errorCommandFailed);
+			return(CMD_ERROR);
+		}
+
+		// -------------------------------------------------------------------------
+		// request evaluated error status
+		// -------------------------------------------------------------------------
+		g_BVSLib_dataSync.WaitEvent(hslInfinite);		
+		answer = g_BVSLib_actErrorStatus.GetAt(pumpID);
+		g_BVSLib_dataSync.SetEvent();		
+
+		if (0==answer.Compare(""))
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::requestFailed );
+			return(CMD_ERROR);
+		}
+
+		message = "";
+		if ("1"==answer.Mid(3,1))
+			message = message + StringTable::vacuuBrandErrCode1 + "\n";
+
+		if ("1"==answer.Mid(2,1))
+			message = message + StringTable::vacuuBrandErrCode2 + "\n";
+
+		if ("1"==answer.Mid(1,1))
+			message = message + StringTable::vacuuBrandErrCode3 + "\n";
+
+		if ("1"==answer.Mid(0,1))
+			message = message + StringTable::vacuuBrandErrCode4 + "\n";
+
+		if (0==message.Compare(""))
+			message = StringTable::vacuuBrandErrCode0 + "\n";
+
+		MessageBox(message,StringTable::actualErrStatus1,64);
+		answer = StringTable::actualErrStatus2 + answer;
+		FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_COMPLET, answer );
+		return(CMD_COMPLET);
+
+	} // end of ReqErrorStatus()
+
+	function ReqProcessStatus(variable pumpID) variable
+	{
+		variable value;
+		string answer;
+		string message;
+
+		variable domain;
+		domain = StringTable::domain;
+		StrReplace( domain, "%%pumpID%%", IStr(pumpID) );
+
+		FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_START, "" );
+
+		// -------------------------------------------------------------------------
+		// Check pumpID parameter
+		// -------------------------------------------------------------------------
+		if((1>pumpID)||(4<pumpID))
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::invalidPumpId );
+			return(CMD_ERROR);
+		}
+		pumpID = pumpID-1;
+
+		// -------------------------------------------------------------------------
+		// check if initialized
+		// -------------------------------------------------------------------------
+		if (!pump::isInitialized(pumpID))
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::pumpUnitNotInitialized );
+			return(CMD_ERROR);
+		}
+
+		// -------------------------------------------------------------------------
+		// Check simulation mode
+		// -------------------------------------------------------------------------
+		if( pump::isSimulationMode(pumpID) != 0 )
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_COMPLET, "" );
+			return(CMD_COMPLET);
+		}
+
+		// -------------------------------------------------------------------------
+		// check if error pending
+		// -------------------------------------------------------------------------
+		g_BVSLib_dataSync.WaitEvent(hslInfinite);		
+		value = g_BVSLib_stateMachineCommStatus.GetAt( pumpID );
+		g_BVSLib_dataSync.SetEvent();		
+
+		if (CMD_COMPLET != value)
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::errorPending);
+			return(CMD_ERROR);
+		}
+
+		// -------------------------------------------------------------------------
+		// set command for execution task
+		// -------------------------------------------------------------------------
+		g_BVSLib_dataSync.WaitEvent(hslInfinite);		
+		g_BVSLib_pumpID = pumpID;
+		g_BVSLib_command = pump::cmdReqProcessStatus;
+		g_BVSLib_dataSync.SetEvent();		
+
+		// -------------------------------------------------------------------------
+		// wait for command execution
+		// -------------------------------------------------------------------------
+		g_BVSLib_execSync.WaitEvent(hslInfinite);
+
+		// -------------------------------------------------------------------------
+		// check if command failed
+		// -------------------------------------------------------------------------
+		g_BVSLib_dataSync.WaitEvent(hslInfinite);		
+		value = g_BVSLib_cmdExecStatus.GetAt(pumpID);
+		g_BVSLib_dataSync.SetEvent();		
+
+		if (CMD_COMPLET != value)
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::errorCommandFailed);
+			return(CMD_ERROR);
+		}
+
+		// -------------------------------------------------------------------------
+		// request evaluated actual process state
+		// -------------------------------------------------------------------------
+		g_BVSLib_dataSync.WaitEvent(hslInfinite);		
+		answer = g_BVSLib_actProcessStatus.GetAt(pumpID);
+		g_BVSLib_dataSync.SetEvent();		
+
+		if (0==answer.Compare(""))
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::requestFailed );
+			return(CMD_ERROR);
+		}
+
+		if ("0"==answer.Mid(2,1))
+		{
+			message = StringTable::vacuuLanStatus;
+			if ("0"==answer.Mid(3,1))
+				message = message + StringTable::modeInactive + ".\n";
+			else if ("1"==answer.Mid(3,1))
+				message = message + StringTable::vacuuLanStatus1 + "\n";
+			else if ("2"==answer.Mid(3,1))
+				message = message + StringTable::vacuuLanStatus2 + "\n";
+			else if ("3"==answer.Mid(3,1))
+				message = message + StringTable::vacuuLanStatus3 + "\n";
+			else	
+				message = message + StringTable::vacuuLanStatusUnknown + "\n";
+		}
+		else if ("1"==answer.Mid(2,1))
+		{
+			message = StringTable::continuosPumping;
+			if ("0"==answer.Mid(3,1))
+				message = message + StringTable::modeInactive + ".\n";
+			else if ("1"==answer.Mid(3,1))
+				message = message + StringTable::modeActive + ".\n";
+			else 
+				message = message + StringTable::processStatusUnknown + "\n";
+		}
+		else if ("2"==answer.Mid(2,1))
+		{
+			message = StringTable::pressureControlStatus;
+			if ("0"==answer.Mid(3,1))
+				message = message + StringTable::modeInactive + ".\n";
+			else if ("1"==answer.Mid(3,1))
+				message = message + StringTable::pressureControlStatus1 + "\n";
+			else if ("2"==answer.Mid(3,1))
+				message = message + StringTable::pressureControlStatus2 + "\n";
+			else if ("3"==answer.Mid(3,1))
+				message = message + StringTable::pressureControlStatus3 + "\n";
+			else 
+				message = message + StringTable::processStatusUnknown + "\n";
+		}
+		else if ("3"==answer.Mid(2,1))
+		{
+			message = StringTable::automaticStatus;
+			if ("0"==answer.Mid(3,1))
+				message = message + StringTable::modeInactive + ".\n";
+			else if ("1"==answer.Mid(3,1))
+				message = message + StringTable::automaticStatus1 + "\n";
+			else if ("2"==answer.Mid(3,1))
+				message = message + StringTable::automaticStatus2 + "\n";
+			else if ("3"==answer.Mid(3,1))
+				message = message + StringTable::automaticStatus3 + "\n";
+			else 
+				message = message + StringTable::processStatusUnknown + "\n";
+		}
+		else
+			message = StringTable::processModeUnknonw + "\n";
+
+		message = message + StringTable::airAdmittanceValve + " ";
+		if ("0"==answer.Mid(1,1))
+			message = message + StringTable::modeNot + " ";
+		message = message + StringTable::modeDriven + ".\n";
+
+
+		message = message + StringTable::coolingWaterValve + " ";
+		if ("0"==answer.Mid(0,1))
+			message = message + StringTable::modeNot + " ";
+		message = message + StringTable::modeDriven + ".\n";
+
+		MessageBox(message,StringTable::actualProcessStatus1,64);
+		answer = StringTable::actualProcessStatus2 + answer;
+		FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_COMPLET, answer );
+		return(CMD_COMPLET);
+
+	} // end of ReqProcessStatus()
+
+
+	function PreparePressure(variable pumpID, variable pressure) variable
+	{
+		variable errCode;
+		variable str;
+
+		variable domain;
+		domain = StringTable::domain;
+		StrReplace( domain, "%%pumpID%%", IStr(pumpID) );
+
+		FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_START, "" );
+
+		// -------------------------------------------------------------------------
+		// Check pumpID parameter
+		// -------------------------------------------------------------------------
+		if((1>pumpID)||(4<pumpID))
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::invalidPumpId );
+			return(CMD_ERROR);
+		}
+		pumpID--;
+
+		// -------------------------------------------------------------------------
+		// check if initialized
+		// -------------------------------------------------------------------------
+		if (!pump::isInitialized(pumpID))
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::pumpUnitNotInitialized );
+			return(CMD_ERROR);
+		}
+
+		// -------------------------------------------------------------------------
+		// Check simulation mode
+		// -------------------------------------------------------------------------
+		if( pump::isSimulationMode(pumpID) != 0 )
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_COMPLET, "" );
+			return(CMD_COMPLET);
+		}
+
+		// -------------------------------------------------------------------------
+		// check if error pending
+		// -------------------------------------------------------------------------
+		g_BVSLib_dataSync.WaitEvent(hslInfinite);		
+		errCode = g_BVSLib_stateMachineCommStatus.GetAt( pumpID );
+		g_BVSLib_dataSync.SetEvent();		
+
+		if (CMD_COMPLET != errCode)
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::errorPending);
+			return(CMD_ERROR);
+		}
+
+		// -------------------------------------------------------------------------
+		// prepare pressure
+		// -------------------------------------------------------------------------
+		errCode = pump::execWriteCommand(pumpID,0,pressure);
+
+		if(0!=errCode)
+		{
+			str = StringTable::writeCommandFailed;
+			StrReplace( str, "%%pumpId%%", IStr(pumpID) );
+			StrReplace( str, "%%cmd%%", IStr(0) );
+			StrReplace( str, "%%param%%", IStr(pressure) );
+			StrReplace( str, "%%errCode%%", IStr(errCode) );
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, str );
+			return(CMD_ERROR);
+		}
+		FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_COMPLET, "" );
+		return(CMD_COMPLET);
+
+	} // end of PreparePressure()
+
+	function PrepareVentPressure(variable pumpID, variable pressure) variable
+	{
+		variable errCode;
+		variable str;
+
+		variable domain;
+		domain = StringTable::domain;
+		StrReplace( domain, "%%pumpID%%", IStr(pumpID) );
+
+		FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_START, "" );
+
+		// -------------------------------------------------------------------------
+		// Check pumpID parameter
+		// -------------------------------------------------------------------------
+		if((1>pumpID)||(4<pumpID))
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::invalidPumpId );
+			return(CMD_ERROR);
+		}
+		pumpID--;
+
+		// -------------------------------------------------------------------------
+		// check if initialized
+		// -------------------------------------------------------------------------
+		if (!pump::isInitialized(pumpID))
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::pumpUnitNotInitialized );
+			return(CMD_ERROR);
+		}
+
+		// -------------------------------------------------------------------------
+		// Check simulation mode
+		// -------------------------------------------------------------------------
+		if( pump::isSimulationMode(pumpID) != 0 )
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_COMPLET, "" );
+			return( CMD_COMPLET );
+		}
+
+		// -------------------------------------------------------------------------
+		// check if error pending
+		// -------------------------------------------------------------------------
+		g_BVSLib_dataSync.WaitEvent(hslInfinite);		
+		errCode = g_BVSLib_stateMachineCommStatus.GetAt( pumpID );
+		g_BVSLib_dataSync.SetEvent();		
+
+		if (CMD_COMPLET != errCode)
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::errorPending);
+			return(CMD_ERROR);
+		}
+
+		// -------------------------------------------------------------------------
+		// prepare ventilation pressure
+		// -------------------------------------------------------------------------
+		errCode = pump::execWriteCommand(pumpID,1,pressure);
+
+		if(0!=errCode)
+		{
+			str = StringTable::writeCommandFailed;
+			StrReplace( str, "%%pumpId%%", IStr(pumpID) );
+			StrReplace( str, "%%cmd%%", IStr(0) );
+			StrReplace( str, "%%param%%", IStr(pressure) );
+			StrReplace( str, "%%errCode%%", IStr(errCode) );
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, str );
+			return(CMD_ERROR);
+		}
+		FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_COMPLET, "" );
+		return(CMD_COMPLET);
+
+	} // end of PrepareVentPressure()
+
+	function PrepareRestartPressure(variable pumpID, variable pressure) variable
+	{
+		variable errCode;
+		variable str;
+
+		variable domain;
+		domain = StringTable::domain;
+		StrReplace( domain, "%%pumpID%%", IStr(pumpID) );
+
+		FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_START, "" );
+
+		// -------------------------------------------------------------------------
+		// Check pumpID parameter
+		// -------------------------------------------------------------------------
+		if((1>pumpID)||(4<pumpID))
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::invalidPumpId );
+			return(CMD_ERROR);
+		}
+		pumpID--;
+
+		// -------------------------------------------------------------------------
+		// check if initialized
+		// -------------------------------------------------------------------------
+		if (!pump::isInitialized(pumpID))
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::pumpUnitNotInitialized );
+			return(CMD_ERROR);
+		}
+
+		// -------------------------------------------------------------------------
+		// Check simulation mode
+		// -------------------------------------------------------------------------
+		if( pump::isSimulationMode(pumpID) != 0 )
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_COMPLET, "" );
+			return( CMD_COMPLET );
+		}
+
+		// -------------------------------------------------------------------------
+		// check if error pending
+		// -------------------------------------------------------------------------
+		g_BVSLib_dataSync.WaitEvent(hslInfinite);		
+		errCode = g_BVSLib_stateMachineCommStatus.GetAt( pumpID );
+		g_BVSLib_dataSync.SetEvent();		
+
+		if (CMD_COMPLET != errCode)
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::errorPending);
+			return(CMD_ERROR);
+		}
+
+		// -------------------------------------------------------------------------
+		// prepare restart pressure
+		// -------------------------------------------------------------------------
+		errCode = pump::execWriteCommand(pumpID,2,pressure);
+
+		if(0!=errCode)
+		{
+			str = StringTable::writeCommandFailed;
+			StrReplace( str, "%%pumpId%%", IStr(pumpID) );
+			StrReplace( str, "%%cmd%%", IStr(0) );
+			StrReplace( str, "%%param%%", IStr(pressure) );
+			StrReplace( str, "%%errCode%%", IStr(errCode) );
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, str );
+			return(CMD_ERROR);
+		}
+		FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_COMPLET, "" );
+		return(CMD_COMPLET);
+
+	} // end of PrepareRestartPressure()
+
+	function PrepareSwitchOffPressure(variable pumpID, variable pressure) variable
+	{
+		variable errCode;
+		variable str;
+
+		variable domain;
+		domain = StringTable::domain;
+		StrReplace( domain, "%%pumpID%%", IStr(pumpID) );
+
+		FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_START, "" );
+
+		// -------------------------------------------------------------------------
+		// Check pumpID parameter
+		// -------------------------------------------------------------------------
+		if((1>pumpID)||(4<pumpID))
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::invalidPumpId );
+			return(CMD_ERROR);
+		}
+		pumpID--;
+
+		// -------------------------------------------------------------------------
+		// check if initialized
+		// -------------------------------------------------------------------------
+		if (!pump::isInitialized(pumpID))
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::pumpUnitNotInitialized );
+			return(CMD_ERROR);
+		}
+
+		// -------------------------------------------------------------------------
+		// Check simulation mode
+		// -------------------------------------------------------------------------
+		if( pump::isSimulationMode(pumpID) != 0 )
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_COMPLET, "" );
+			return(CMD_COMPLET);
+		}
+
+		// -------------------------------------------------------------------------
+		// check if error pending
+		// -------------------------------------------------------------------------
+		g_BVSLib_dataSync.WaitEvent(hslInfinite);		
+		errCode = g_BVSLib_stateMachineCommStatus.GetAt( pumpID );
+		g_BVSLib_dataSync.SetEvent();		
+
+		if (CMD_COMPLET != errCode)
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::errorPending);
+			return(CMD_ERROR);
+		}
+
+		// -------------------------------------------------------------------------
+		// prepare switch off pressure
+		// -------------------------------------------------------------------------
+		errCode = pump::execWriteCommand(pumpID,2,pressure);
+
+		if(0!=errCode)
+		{
+			str = StringTable::writeCommandFailed;
+			StrReplace( str, "%%pumpId%%", IStr(pumpID) );
+			StrReplace( str, "%%cmd%%", IStr(0) );
+			StrReplace( str, "%%param%%", IStr(pressure) );
+			StrReplace( str, "%%errCode%%", IStr(errCode) );
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, str );
+			return(CMD_ERROR);
+		}
+		FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_COMPLET, "" );
+		return(CMD_COMPLET);
+
+	} // end of PrepareSwitchOffPressure()
+
+	function StartPump(variable pumpID) variable
+	{
+		variable errCode;
+		variable str;
+
+		variable domain;
+		domain = StringTable::domain;
+		StrReplace( domain, "%%pumpID%%", IStr(pumpID) );
+
+		FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_START, "" );
+
+		// -------------------------------------------------------------------------
+		// Check pumpID parameter
+		// -------------------------------------------------------------------------
+		if((1>pumpID)||(4<pumpID))
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::invalidPumpId );
+			return(CMD_ERROR);
+		}
+		pumpID--;
+
+		// -------------------------------------------------------------------------
+		// check if initialized
+		// -------------------------------------------------------------------------
+		if (!pump::isInitialized(pumpID))
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::pumpUnitNotInitialized );
+			return(CMD_ERROR);
+		}
+
+		// -------------------------------------------------------------------------
+		// Check simulation mode
+		// -------------------------------------------------------------------------
+		if( pump::isSimulationMode(pumpID) != 0 )
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_COMPLET, "" );
+			return(CMD_COMPLET);
+		}
+
+		// -------------------------------------------------------------------------
+		// check if error pending
+		// -------------------------------------------------------------------------
+		g_BVSLib_dataSync.WaitEvent(hslInfinite);		
+		errCode = g_BVSLib_stateMachineCommStatus.GetAt( pumpID );
+		g_BVSLib_dataSync.SetEvent();		
+
+		if (CMD_COMPLET != errCode)
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::errorPending);
+			return(CMD_ERROR);
+		}
+
+		// -------------------------------------------------------------------------
+		// start pump
+		// -------------------------------------------------------------------------
+		errCode = pump::execWriteCommand(pumpID,8,0);
+		if(0!=errCode)
+		{
+			str = StringTable::writeCommandFailed;
+			StrReplace( str, "%%pumpId%%", IStr(pumpID) );
+			StrReplace( str, "%%cmd%%", IStr(8) );
+			StrReplace( str, "%%param%%", IStr(0) );
+			StrReplace( str, "%%errCode%%", IStr(errCode) );
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, str );
+			return(CMD_ERROR);
+		}
+		FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_COMPLET, "" );
+		return(CMD_COMPLET);
+	} // end of StartPump()
+
+	function StopPump(variable pumpID, variable mode) variable
+	{
+		variable errCode;
+		variable str;
+
+		variable domain;
+		domain = StringTable::domain;
+		StrReplace( domain, "%%pumpID%%", IStr(pumpID) );
+
+		FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_START, "" );
+
+		// -------------------------------------------------------------------------
+		// Check pumpID parameter
+		// -------------------------------------------------------------------------
+		if((1>pumpID)||(4<pumpID))
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::invalidPumpId );
+			return(CMD_ERROR);
+		}
+		pumpID--;
+
+		// -------------------------------------------------------------------------
+		// check if initialized
+		// -------------------------------------------------------------------------
+		if (!pump::isInitialized(pumpID))
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::pumpUnitNotInitialized );
+			return(CMD_ERROR);
+		}
+
+		// -------------------------------------------------------------------------
+		// Check simulation mode
+		// -------------------------------------------------------------------------
+		if( pump::isSimulationMode(pumpID) != 0 )
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_COMPLET, "" );
+			return( CMD_COMPLET );
+		}
+
+		// -------------------------------------------------------------------------
+		// check if error pending
+		// -------------------------------------------------------------------------
+		g_BVSLib_dataSync.WaitEvent(hslInfinite);		
+		errCode = g_BVSLib_stateMachineCommStatus.GetAt( pumpID );
+		g_BVSLib_dataSync.SetEvent();		
+
+		if (CMD_COMPLET != errCode)
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::errorPending);
+			return(CMD_ERROR);
+		}
+
+		// -------------------------------------------------------------------------
+		// stop pump
+		// -------------------------------------------------------------------------
+		errCode = pump::execWriteCommand(pumpID,9,mode);
+		if(0!=errCode)
+		{
+			str = StringTable::writeCommandFailed;
+			StrReplace( str, "%%pumpId%%", IStr(pumpID) );
+			StrReplace( str, "%%cmd%%", IStr(9) );
+			StrReplace( str, "%%param%%", IStr(mode) );
+			StrReplace( str, "%%errCode%%", IStr(errCode) );
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, str );
+			return(CMD_ERROR);
+		}
+		FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_COMPLET, "" );
+		return(CMD_COMPLET);
+	} // end of StopPump()
+
+	function PreparePumpingMode(variable pumpID, variable mode) variable
+	{
+		variable errCode;
+		variable str;
+
+		variable domain;
+		domain = StringTable::domain;
+		StrReplace( domain, "%%pumpID%%", IStr(pumpID) );
+
+		FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_START, "" );
+
+		// -------------------------------------------------------------------------
+		// Check pumpID parameter
+		// -------------------------------------------------------------------------
+		if((1>pumpID)||(4<pumpID))
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::invalidPumpId );
+			return(CMD_ERROR);
+		}
+		pumpID--;
+
+		// -------------------------------------------------------------------------
+		// check if initialized
+		// -------------------------------------------------------------------------
+		if (!pump::isInitialized(pumpID))
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::pumpUnitNotInitialized );
+			return(CMD_ERROR);
+		}
+
+		// -------------------------------------------------------------------------
+		// Check simulation mode
+		// -------------------------------------------------------------------------
+		if( pump::isSimulationMode(pumpID) != 0 )
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_COMPLET, "" );
+			return( CMD_COMPLET );
+		}
+
+		// -------------------------------------------------------------------------
+		// check if error pending
+		// -------------------------------------------------------------------------
+		g_BVSLib_dataSync.WaitEvent(hslInfinite);		
+		errCode = g_BVSLib_stateMachineCommStatus.GetAt( pumpID );
+		g_BVSLib_dataSync.SetEvent();		
+
+		if (CMD_COMPLET != errCode)
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::errorPending);
+			return(CMD_ERROR);
+		}
+
+		// -------------------------------------------------------------------------
+		// prepare pumping mode
+		// -------------------------------------------------------------------------
+		errCode = pump::execWriteCommand(pumpID,6,mode);
+		if(0!=errCode)
+		{
+			str = StringTable::writeCommandFailed;
+			StrReplace( str, "%%pumpId%%", IStr(pumpID) );
+			StrReplace( str, "%%cmd%%", IStr(6) );
+			StrReplace( str, "%%param%%", IStr(mode) );
+			StrReplace( str, "%%errCode%%", IStr(errCode) );
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, str );
+			return(CMD_ERROR);
+		}
+		FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_COMPLET, "" );
+		return(CMD_COMPLET);
+	} // end of PreparePumpingMode()
+
+	function PreparePumpingTime(variable pumpID, variable time) variable
+	{
+		variable errCode;
+		variable str;
+
+		variable domain;
+		domain = StringTable::domain;
+		StrReplace( domain, "%%pumpID%%", IStr(pumpID) );
+
+		FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_START, "" );
+
+		// -------------------------------------------------------------------------
+		// Check pumpID parameter
+		// -------------------------------------------------------------------------
+		if((1>pumpID)||(4<pumpID))
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::invalidPumpId );
+			return(CMD_ERROR);
+		}
+		pumpID--;
+
+		// -------------------------------------------------------------------------
+		// check if initialized
+		// -------------------------------------------------------------------------
+		if (!pump::isInitialized(pumpID))
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::pumpUnitNotInitialized );
+			return(CMD_ERROR);
+		}
+
+		// -------------------------------------------------------------------------
+		// Check simulation mode
+		// -------------------------------------------------------------------------
+		if( pump::isSimulationMode(pumpID) != 0 )
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_COMPLET, "" );
+			return( CMD_COMPLET );
+		}
+
+		// -------------------------------------------------------------------------
+		// check if error pending
+		// -------------------------------------------------------------------------
+		g_BVSLib_dataSync.WaitEvent(hslInfinite);		
+		errCode = g_BVSLib_stateMachineCommStatus.GetAt( pumpID );
+		g_BVSLib_dataSync.SetEvent();		
+
+		if (CMD_COMPLET != errCode)
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::errorPending);
+			return(CMD_ERROR);
+		}
+
+		// -------------------------------------------------------------------------
+		// prepare pumping time
+		// -------------------------------------------------------------------------
+		errCode = pump::execWriteCommand(pumpID,4,time);
+		if(0!=errCode)
+		{
+			str = StringTable::writeCommandFailed;
+			StrReplace( str, "%%pumpId%%", IStr(pumpID) );
+			StrReplace( str, "%%cmd%%", IStr(5) );
+			StrReplace( str, "%%param%%", IStr(time) );
+			StrReplace( str, "%%errCode%%", IStr(errCode) );
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, str );
+			return(CMD_ERROR);
+		}
+		FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_COMPLET, "" );
+		return(CMD_COMPLET);
+	} // end of PreparePumpingTime()
+
+	function PrepareFrequency(variable pumpID, variable frequency) variable
+	{
+		variable errCode;
+		variable str;
+
+		variable domain;
+		domain = StringTable::domain;
+		StrReplace( domain, "%%pumpID%%", IStr(pumpID) );
+
+		FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_START, "" );
+
+		// -------------------------------------------------------------------------
+		// Check pumpID parameter
+		// -------------------------------------------------------------------------
+		if((1>pumpID)||(4<pumpID))
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::invalidPumpId );
+			return(CMD_ERROR);
+		}
+		pumpID--;
+
+		// -------------------------------------------------------------------------
+		// check if initialized
+		// -------------------------------------------------------------------------
+		if (!pump::isInitialized(pumpID))
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::pumpUnitNotInitialized );
+			return(CMD_ERROR);
+		}
+
+		// -------------------------------------------------------------------------
+		// Check simulation mode
+		// -------------------------------------------------------------------------
+		if( pump::isSimulationMode(pumpID) != 0 )
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_COMPLET, "" );
+			return(CMD_COMPLET);
+		}
+
+		// -------------------------------------------------------------------------
+		// check if error pending
+		// -------------------------------------------------------------------------
+		g_BVSLib_dataSync.WaitEvent(hslInfinite);		
+		errCode = g_BVSLib_stateMachineCommStatus.GetAt( pumpID );
+		g_BVSLib_dataSync.SetEvent();		
+
+		if (CMD_COMPLET != errCode)
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::errorPending);
+			return(CMD_ERROR);
+		}
+
+		// -------------------------------------------------------------------------
+		// prepare frequency
+		// -------------------------------------------------------------------------
+		errCode = pump::execWriteCommand(pumpID,4,frequency);
+
+		if(0!=errCode)
+		{
+			str = StringTable::writeCommandFailed;
+			StrReplace( str, "%%pumpId%%", IStr(pumpID) );
+			StrReplace( str, "%%cmd%%", IStr(4) );
+			StrReplace( str, "%%param%%", FStr(frequency) );
+			StrReplace( str, "%%errCode%%", IStr(errCode) );
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, str );
+			return(CMD_ERROR);
+		}
+		FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_COMPLET, "" );
+		return(CMD_COMPLET);
+
+	} // end of PrepareFrequency()
+
+	function AirAdmittanceValve(variable pumpID, variable mode) variable
+	{
+		variable errCode;
+		variable str;
+
+		variable domain;
+		domain = StringTable::domain;
+		StrReplace( domain, "%%pumpID%%", IStr(pumpID) );
+
+		FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_START, "" );
+
+		// -------------------------------------------------------------------------
+		// Check pumpID parameter
+		// -------------------------------------------------------------------------
+		if((1>pumpID)||(4<pumpID))
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::invalidPumpId );
+			return(CMD_ERROR);
+		}
+		pumpID--;
+
+		// -------------------------------------------------------------------------
+		// check if initialized
+		// -------------------------------------------------------------------------
+		if (!pump::isInitialized(pumpID))
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::pumpUnitNotInitialized );
+			return(CMD_ERROR);
+		}
+
+		// -------------------------------------------------------------------------
+		// Check simulation mode
+		// -------------------------------------------------------------------------
+		if( pump::isSimulationMode(pumpID) != 0 )
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_COMPLET, "" );
+			return( CMD_COMPLET );
+		}
+
+		// -------------------------------------------------------------------------
+		// check if error pending
+		// -------------------------------------------------------------------------
+		g_BVSLib_dataSync.WaitEvent(hslInfinite);		
+		errCode = g_BVSLib_stateMachineCommStatus.GetAt( pumpID );
+		g_BVSLib_dataSync.SetEvent();		
+
+		if (CMD_COMPLET != errCode)
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::errorPending);
+			return(CMD_ERROR);
+		}
+
+		// -------------------------------------------------------------------------
+		// control air admittance valve
+		// -------------------------------------------------------------------------
+		errCode = pump::execWriteCommand(pumpID,7,mode);
+		if(0!=errCode)
+		{
+			str = StringTable::writeCommandFailed;
+			StrReplace( str, "%%pumpId%%", IStr(pumpID) );
+			StrReplace( str, "%%cmd%%", IStr(7) );
+			StrReplace( str, "%%param%%", IStr(mode) );
+			StrReplace( str, "%%errCode%%", IStr(errCode) );
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, str );
+			return(CMD_ERROR);
+		}
+		FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_COMPLET, "" );
+		return(CMD_COMPLET);
+	} // end of AirAdmittanceValve()
+
+	// *****************************************************************************
+	// Description:
+	//		Prepare pumping unit with desired parameters, close air admittance valve
+	//    and start pumping under pressuer control.
+	//	Parameter
+	//    pressure:  desired pressure to be controlled.
+	//    frequency: pumping frequency
+	//    duration:  duration of pumping active
+	// Return
+	//    
+	// *****************************************************************************
+	function StartPressureControl(variable pumpID, variable pressure, variable duration, variable releaseAfterPres, variable releaseDuration) variable
+	{
+		variable errCode;
+		variable boolReleaseAfterPres(hslTrue);
+		variable str;
+
+		variable domain;
+		domain = StringTable::domain;
+		StrReplace( domain, "%%pumpID%%", IStr(pumpID) );
+
+		FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_START, "" );
+		
+		// -------------------------------------------------------------------------
+		// Check pumpID parameter
+		// -------------------------------------------------------------------------
+		if((1>pumpID)||(4<pumpID))
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::invalidPumpId );
+			return(CMD_ERROR);
+		}
+		pumpID--;
+
+		// -------------------------------------------------------------------------
+		// check if initialized
+		// -------------------------------------------------------------------------
+		if (!pump::isInitialized(pumpID))
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::pumpUnitNotInitialized );
+			return(CMD_ERROR);
+		}
+
+		// -------------------------------------------------------------------------
+		// Check simulation mode
+		// -------------------------------------------------------------------------
+		if( pump::isSimulationMode(pumpID) != 0 )
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_COMPLET, "" );
+			return(CMD_COMPLET);
+		}
+
+		// -------------------------------------------------------------------------
+		// check if error pending
+		// -------------------------------------------------------------------------
+		g_BVSLib_dataSync.WaitEvent(hslInfinite);		
+		errCode = g_BVSLib_stateMachineCommStatus.GetAt( pumpID );
+		g_BVSLib_dataSync.SetEvent();		
+
+		if (CMD_COMPLET != errCode)
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::errorPending);
+			return(CMD_ERROR);
+		}
+
+		// -------------------------------------------------------------------------
+		// convert parameter releaseAfterPres ["n"|"N"|<>"n"|<>"N"] into boolean
+		// -------------------------------------------------------------------------
+		StrMakeUpper(releaseAfterPres);
+		boolReleaseAfterPres = ("N" != StrLeft(releaseAfterPres,1));
+		if(!boolReleaseAfterPres)
+			releaseDuration = 0;
+		
+		// -------------------------------------------------------------------------
+		// set desired pressure
+		// -------------------------------------------------------------------------
+		errCode = pump::execWriteCommand(pumpID,0,pressure);
+		if(0!=errCode)
+		{
+				str = StringTable::writeCommandFailed;
+			StrReplace( str, "%%pumpId%%", IStr(pumpID) );
+			StrReplace( str, "%%cmd%%", IStr(0) );
+			StrReplace( str, "%%param%%", IStr(pressure) );
+			StrReplace( str, "%%errCode%%", IStr(errCode) );
+		FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, str );
+			return(CMD_ERROR);
+		}
+
+		// -------------------------------------------------------------------------
+		// set pumping mode
+		// -------------------------------------------------------------------------
+		errCode = pump::execWriteCommand(pumpID,6,2);
+		if(0!=errCode)
+		{
+			str = StringTable::writeCommandFailed;
+			StrReplace( str, "%%pumpId%%", IStr(pumpID) );
+			StrReplace( str, "%%cmd%%", IStr(6) );
+			StrReplace( str, "%%param%%", IStr(2) );
+			StrReplace( str, "%%errCode%%", IStr(errCode) );
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, str );
+			return(CMD_ERROR);
+		}
+
+		// -------------------------------------------------------------------------
+		// close air admittance valve
+		// -------------------------------------------------------------------------
+		errCode = pump::execWriteCommand(pumpID,7,0);
+		if(0!=errCode)
+		{
+			str = StringTable::writeCommandFailed;
+			StrReplace( str, "%%pumpId%%", IStr(pumpID) );
+			StrReplace( str, "%%cmd%%", IStr(7) );
+			StrReplace( str, "%%param%%", IStr(0) );
+			StrReplace( str, "%%errCode%%", IStr(errCode) );
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, str );
+			return(CMD_ERROR);
+		}
+
+		// -------------------------------------------------------------------------
+		// start pump
+		// -------------------------------------------------------------------------
+		errCode = pump::execWriteCommand(pumpID,8,0);
+		if(0!=errCode)
+		{
+			str = StringTable::writeCommandFailed;
+			StrReplace( str, "%%pumpId%%", IStr(pumpID) );
+			StrReplace( str, "%%cmd%%", IStr(8) );
+			StrReplace( str, "%%param%%", IStr(0) );
+			StrReplace( str, "%%errCode%%", IStr(errCode) );
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, str );
+			return(CMD_ERROR);
+		}
+
+		// -------------------------------------------------------------------------
+		// start timeout supervision
+		// -------------------------------------------------------------------------
+		g_BVSLib_dataSync.WaitEvent(hslInfinite);
+		g_BVSLib_pumpID = pumpID;
+		g_BVSLib_valveOpen.SetAt(pumpID,boolReleaseAfterPres);
+		g_BVSLib_valveOpenTime.SetAt(pumpID,releaseDuration);
+		g_BVSLib_pressure.SetAt(pumpID,pressure);
+		g_BVSLib_pumpingTime.SetAt(pumpID,duration);
+		g_BVSLib_command = pump::cmdStart;
+		g_BVSLib_dataSync.SetEvent();		
+
+		// -------------------------------------------------------------------------
+		// wait for command execution
+		// -------------------------------------------------------------------------
+		g_BVSLib_execSync.WaitEvent(hslInfinite);
+
+		FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_COMPLET, "" );
+		return(CMD_COMPLET);
+	} // end of StartPressureControl()
+
+	function StopPumpImmediatly(variable pumpID) variable
+	{
+		variable errCode;
+		variable str;
+
+		variable domain;
+		domain = StringTable::domain;
+		StrReplace( domain, "%%pumpID%%", IStr(pumpID) );
+
+		FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_START, "" );
+
+		// -------------------------------------------------------------------------
+		// Check pumpID parameter
+		// -------------------------------------------------------------------------
+		if((1>pumpID)||(4<pumpID))
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::invalidPumpId );
+			return(CMD_ERROR);
+		}
+		pumpID--;
+
+		// -------------------------------------------------------------------------
+		// check if initialized
+		// -------------------------------------------------------------------------
+		if (!pump::isInitialized(pumpID))
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::pumpUnitNotInitialized );
+			return(CMD_ERROR);
+		}
+
+		// -------------------------------------------------------------------------
+		// Check simulation mode
+		// -------------------------------------------------------------------------
+		if( pump::isSimulationMode(pumpID) != 0 )
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_COMPLET, "" );
+			return( CMD_COMPLET );
+		}
+
+		// -------------------------------------------------------------------------
+		// check if error pending
+		// -------------------------------------------------------------------------
+		g_BVSLib_dataSync.WaitEvent(hslInfinite);		
+		errCode = g_BVSLib_stateMachineCommStatus.GetAt( pumpID );
+		g_BVSLib_dataSync.SetEvent();		
+
+		if (CMD_COMPLET != errCode)
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::errorPending);
+			return(CMD_ERROR);
+		}
+
+		// -------------------------------------------------------------------------
+		// start timeout supervision
+		// -------------------------------------------------------------------------
+		g_BVSLib_dataSync.WaitEvent(hslInfinite);
+		g_BVSLib_pumpID = pumpID;
+		g_BVSLib_command = pump::cmdStop;
+		g_BVSLib_dataSync.SetEvent();		
+
+		// -------------------------------------------------------------------------
+		// wait for command execution
+		// -------------------------------------------------------------------------
+		g_BVSLib_execSync.WaitEvent(hslInfinite);
+
+		// -------------------------------------------------------------------------
+		// check if command failed
+		// -------------------------------------------------------------------------
+		g_BVSLib_dataSync.WaitEvent(hslInfinite);		
+		errCode = g_BVSLib_cmdExecStatus.GetAt(pumpID);
+		g_BVSLib_dataSync.SetEvent();		
+
+		if (CMD_COMPLET != errCode)
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::errorCommandFailed);
+			return(-1);
+		}
+
+		// -------------------------------------------------------------------------
+		// open air admittance valve
+		// -------------------------------------------------------------------------
+		errCode = pump::execWriteCommand(pumpID,7,1);
+		if(0!=errCode)
+		{
+			str = StringTable::writeCommandFailed;
+			StrReplace( str, "%%pumpId%%", IStr(pumpID) );
+			StrReplace( str, "%%cmd%%", IStr(7) );
+			StrReplace( str, "%%param%%", IStr(1) );
+			StrReplace( str, "%%errCode%%", IStr(errCode) );
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, str );
+			return(CMD_ERROR);
+		}
+
+		FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_COMPLET, "" );
+		return(CMD_COMPLET);
+	} // end of StopPumpImmediatly()
+
+	function WaitForPumpStopped(variable pumpID) variable
+	{
+		variable errCode;
+
+		variable domain;
+		domain = StringTable::domain;
+		StrReplace( domain, "%%pumpID%%", IStr(pumpID) );
+
+		FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_START, "" );
+
+		// -------------------------------------------------------------------------
+		// Check pumpID parameter
+		// -------------------------------------------------------------------------
+		if((1>pumpID)||(4<pumpID))
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::invalidPumpId );
+			return(CMD_ERROR);
+		}
+		pumpID--;
+
+		// -------------------------------------------------------------------------
+		// check if initialized
+		// -------------------------------------------------------------------------
+		if (!pump::isInitialized(pumpID))
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::pumpUnitNotInitialized );
+			return(CMD_ERROR);
+		}
+
+		// -------------------------------------------------------------------------
+		// Check simulation mode
+		// -------------------------------------------------------------------------
+		if( pump::isSimulationMode(pumpID) != 0 )
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_COMPLET, "" );
+			return(CMD_COMPLET);
+		}
+
+		// -------------------------------------------------------------------------
+		// check if error pending
+		// -------------------------------------------------------------------------
+		g_BVSLib_dataSync.WaitEvent(hslInfinite);		
+		errCode = g_BVSLib_stateMachineCommStatus.GetAt( pumpID );
+		g_BVSLib_dataSync.SetEvent();		
+
+		if (CMD_COMPLET != errCode)
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::errorPending);
+			return(CMD_ERROR);
+		}
+
+		// -------------------------------------------------------------------------
+		// transmit stop request to asynchronous running task
+		// -------------------------------------------------------------------------
+		g_BVSLib_dataSync.WaitEvent(hslInfinite);
+		g_BVSLib_pumpID = pumpID;
+		g_BVSLib_command = pump::cmdStopRequest;
+		g_BVSLib_dataSync.SetEvent();
+
+		g_BVSLib_execSync.WaitEvent(hslInfinite);
+
+		while( errCode == CMD_COMPLET )
+		{
+			g_BVSLib_dataSync.WaitEvent(hslInfinite);		
+			errCode = g_BVSLib_stateMachineCommStatus.GetAt( pumpID );
+			g_BVSLib_dataSync.SetEvent();		
+			if( 0 != g_BVSLib_pumpStopped[pumpID].WaitEvent(1.0) ) break;
+		}
+		
+		if( CMD_COMPLET != errCode )
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::errorPending);
+			return(CMD_ERROR);
+		}
+
+		FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_COMPLET, "" );
+		return(CMD_COMPLET);
+	} // end of WaitForPumpStopped()
+
+	function OpenAirAdmittanceValve(variable pumpID) variable
+	{
+		variable errCode;
+		variable str;
+
+		variable domain;
+		domain = StringTable::domain;
+		StrReplace( domain, "%%pumpID%%", IStr(pumpID) );
+
+		FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_START, "" );
+
+		// -------------------------------------------------------------------------
+		// Check pumpID parameter
+		// -------------------------------------------------------------------------
+		if((1>pumpID)||(4<pumpID))
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::invalidPumpId );
+			return(CMD_ERROR);
+		}
+		pumpID--;
+
+		// -------------------------------------------------------------------------
+		// check if initialized
+		// -------------------------------------------------------------------------
+		if (!pump::isInitialized(pumpID))
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::pumpUnitNotInitialized );
+			return(CMD_ERROR);
+		}
+
+		// -------------------------------------------------------------------------
+		// Check simulation mode
+		// -------------------------------------------------------------------------
+		if( pump::isSimulationMode(pumpID) != 0 )
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_COMPLET, "" );
+			return( CMD_COMPLET );
+		}
+
+		// -------------------------------------------------------------------------
+		// check if error pending
+		// -------------------------------------------------------------------------
+		g_BVSLib_dataSync.WaitEvent(hslInfinite);		
+		errCode = g_BVSLib_stateMachineCommStatus.GetAt( pumpID );
+		g_BVSLib_dataSync.SetEvent();		
+
+		if (CMD_COMPLET != errCode)
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::errorPending);
+			return(CMD_ERROR);
+		}
+
+		// -------------------------------------------------------------------------
+		// open air admittance valve
+		// -------------------------------------------------------------------------
+		errCode = pump::execWriteCommand(pumpID,7,1);
+		if(0 != errCode)
+		{
+			str = StringTable::writeCommandFailed;
+			StrReplace( str, "%%pumpId%%", IStr(pumpID) );
+			StrReplace( str, "%%cmd%%", IStr(7) );
+			StrReplace( str, "%%param%%", IStr(1) );
+			StrReplace( str, "%%errCode%%", IStr(errCode) );
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, str );
+			return(CMD_ERROR);
+		}
+
+		FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_COMPLET, "" );
+		return(CMD_COMPLET);
+	} // end of OpenAirAdmittanceValve()
+
+	
+
+	// ----------------------------------------------------------------------------
+	// locale functions
+	// ----------------------------------------------------------------------------
+
+	// ----------------------------------------------------------------------------
+	// Overridden built in function FormatTrace(). This function traces only, if:
+	//  - the low level library trace is enabled
+	//  - an error shall be traced
+	// 
+	function FormatTraceEx(
+					variable source,	// i: source string
+					variable action,	// i: action string
+					variable status,	// i: action status
+					variable extInfo )// i: additional information
+	{
+		#ifdef _BVS_DEBUG
+			FormatTrace( source, action, status, extInfo );
+		#endif
+
+		#ifndef _BVS_DEBUG
+			if( lowLevelLibraryTrace || status == CMD_ERROR )
+				FormatTrace( source, action, status, extInfo );
+		#endif			
+	}
+
+
+	// ----------------------------------------------------------------------------
+	// Enable/disable tracing in the low level functions (namespace HSLVacuuBrandPump).
+	//
+	function EnableLowLevelTrace(
+					variable enable )	// i: hslTrue to enable tracing of low level
+											//		functions (namespace HSLVacuuBrandPump),
+											//		hslFalse otherwise
+	{
+		lowLevelLibraryTrace = enable;
+	}
+
+
+
+namespace pump
+{
+	// #############################################################################
+	// #############################################################################
+	// Implementation of internal functions
+	// #############################################################################
+	// #############################################################################
+
+	//*****************************************************************************
+	// shaker execution task
+	//*****************************************************************************
+	static function execTask() void
+	{
+		variable stopped(0);
+		variable running(1);
+		variable stopping(2);
+
+		variable taskItself(running);
+		timer    taskTimer;
+		variable taskCycleTime(1.000);
+		variable timeout;
+		variable taskCycleCounter(0);
+
+		string   answerString("");
+		variable pumpState[](4);
+		timer    pumpControlTimer[](4);
+		variable pumpDuration[](4);
+		variable ratedPressure[](4);
+		variable stopFlagRequested[](4);
+		variable valveOpenDuration[](4);
+		variable valveOpenExecute[](4);
+		timer    delayTimer;
+
+		variable ii;
+		variable errCode;
+		variable str;
+
+		variable domain;
+		domain = StringTable::domain;
+		StrReplace( domain, "%%pumpID%%", IStr(g_BVSLib_pumpID) );
+
+		FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_START, "" );
+
+		//------------------------------------------------------------------------------
+		// initialize timers for task execution timeout and pumping duration
+		//------------------------------------------------------------------------------
+		for(ii=0;ii<4;ii++)
+		{
+			pumpControlTimer[ii].SetTimer(hslInfinite);
+			pumpState[ii]=stopped;
+			stopFlagRequested[ii]=hslFalse;
+			valveOpenDuration[ii]=0;
+			valveOpenExecute[ii]=hslFalse;
+		}
+		taskTimer.SetTimer(taskCycleTime);
+		delayTimer.SetTimer(1);
+
+		//------------------------------------------------------------------------------
+		// initialize synchronitaion semaphore
+		//------------------------------------------------------------------------------
+		g_BVSLib_dataSync.SetEvent();
+
+		//------------------------------------------------------------------------------
+		// start task loop
+		//------------------------------------------------------------------------------
+		while(running == taskItself)
+		{
+			taskTimer.RestartTimer();
+			g_BVSLib_dataSync.WaitEvent(hslInfinite);
+			if(taskCycleCounts==taskCycleCounter)
+				taskCycleCounter=0;
+			else
+				taskCycleCounter++;
+			//---------------------------------------------------------------------------
+			// pump command interpreter
+			//---------------------------------------------------------------------------
+			if( cmdIdle != g_BVSLib_command)
+			{	// new command was applied by a user function
+				if (cmdTerminate == g_BVSLib_command)
+				{
+					taskItself = stopped;
+				} // end of if (cmdTerminate == cmd)
+				else if (cmdStart == g_BVSLib_command)
+				{
+					ratedPressure[g_BVSLib_pumpID] = g_BVSLib_pressure.GetAt(g_BVSLib_pumpID);
+					pumpDuration[g_BVSLib_pumpID] = g_BVSLib_pumpingTime.GetAt(g_BVSLib_pumpID);
+					pumpControlTimer[g_BVSLib_pumpID].RestartTimer();
+					valveOpenDuration[g_BVSLib_pumpID] = g_BVSLib_valveOpenTime.GetAt(g_BVSLib_pumpID);
+					valveOpenExecute[g_BVSLib_pumpID] = g_BVSLib_valveOpen.GetAt(g_BVSLib_pumpID);
+					pumpState[g_BVSLib_pumpID] = running;
+				} // end of if (cmdStart == cmd)
+				else if (cmdStop == g_BVSLib_command)
+				{
+					g_BVSLib_cmdExecStatus.SetAt(g_BVSLib_pumpID,transmitCmd(g_BVSLib_pumpID,"STOP","1",0));
+					pumpState[g_BVSLib_pumpID] = stopped;
+					pumpDuration[g_BVSLib_pumpID] = 0;
+				} // end of if (cmdStop == cmd)
+				else if(cmdReqActPressure == g_BVSLib_command)
+				{
+					answerString="";
+					g_BVSLib_cmdExecStatus.SetAt(g_BVSLib_pumpID,transmitCmd(g_BVSLib_pumpID,"IN_PV_1",answerString,1));
+					if(CMD_COMPLET == g_BVSLib_cmdExecStatus.GetAt(g_BVSLib_pumpID))
+						g_BVSLib_actPressure.SetAt(g_BVSLib_pumpID,IVal(answerString.Left(answerString.Find(" "))));
+					else
+						g_BVSLib_actPressure.SetAt(g_BVSLib_pumpID,-1);
+				}
+				else if(cmdReqActFrequency == g_BVSLib_command)
+				{
+					answerString="";
+					g_BVSLib_cmdExecStatus.SetAt(g_BVSLib_pumpID,transmitCmd(g_BVSLib_pumpID,"IN_PV_2",answerString,1));
+					if(CMD_COMPLET == g_BVSLib_cmdExecStatus.GetAt(g_BVSLib_pumpID))
+					{
+						g_BVSLib_actFrequency.SetAt(g_BVSLib_pumpID,FVal(answerString.Left(answerString.Find(" "))));
+					}
+					else
+						g_BVSLib_actFrequency.SetAt(g_BVSLib_pumpID,-1.0);
+				}
+				else if(cmdReqConfiguration == g_BVSLib_command)
+				{
+					answerString="";
+					g_BVSLib_cmdExecStatus.SetAt(g_BVSLib_pumpID,transmitCmd(g_BVSLib_pumpID,"IN_CFG",answerString,1));
+					if(CMD_COMPLET == g_BVSLib_cmdExecStatus.GetAt(g_BVSLib_pumpID))
+						g_BVSLib_actConfiguration.SetAt(g_BVSLib_pumpID,answerString);
+					else
+						g_BVSLib_actConfiguration.SetAt(g_BVSLib_pumpID,"");
+				}
+				else if(cmdReqErrorStatus == g_BVSLib_command)
+				{
+					answerString="";
+					g_BVSLib_cmdExecStatus.SetAt(g_BVSLib_pumpID,transmitCmd(g_BVSLib_pumpID,"IN_ERR",answerString,1));
+					if(CMD_COMPLET == g_BVSLib_cmdExecStatus.GetAt(g_BVSLib_pumpID))
+						g_BVSLib_actErrorStatus.SetAt(g_BVSLib_pumpID,answerString);
+					else
+						g_BVSLib_actErrorStatus.SetAt(g_BVSLib_pumpID,"");
+				}
+				else if(cmdReqProcessStatus == g_BVSLib_command)
+				{
+					answerString="";
+					g_BVSLib_cmdExecStatus.SetAt(g_BVSLib_pumpID,transmitCmd(g_BVSLib_pumpID,"IN_STAT",answerString,1));
+					if(CMD_COMPLET == g_BVSLib_cmdExecStatus.GetAt(g_BVSLib_pumpID))
+						g_BVSLib_actProcessStatus.SetAt(g_BVSLib_pumpID,answerString);
+					else
+						g_BVSLib_actProcessStatus.SetAt(g_BVSLib_pumpID,"");
+				}
+				else if(cmdWrite == g_BVSLib_command)
+				{
+					g_BVSLib_cmdExecStatus.SetAt(g_BVSLib_pumpID,transmitCmd(g_BVSLib_pumpID,g_BVSLib_writeCmd.GetAt(g_BVSLib_pumpID),g_BVSLib_writePrm.GetAt(g_BVSLib_pumpID),0));
+				}
+				else if(cmdStopRequest == g_BVSLib_command)
+				{
+					if(stopped != pumpState.GetAt(g_BVSLib_pumpID))
+					{
+						stopFlagRequested[g_BVSLib_pumpID] = hslTrue;
+					}
+					else
+					{
+						g_BVSLib_pumpStopped[g_BVSLib_pumpID].SetEvent();
+					}
+				}
+				else
+				{
+					str = StringTable::unknownCommand;
+					StrReplace( str, "%%cmd%%", IStr(g_BVSLib_command) );
+					FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_PROGRESS, str );
+				}
+
+				if (cmdTerminate != g_BVSLib_command) { g_BVSLib_execSync.SetEvent(); }
+				g_BVSLib_command = cmdIdle;
+			}
+
+			//------------------------------------------------------------------------
+			// pumping unit state machine
+			//------------------------------------------------------------------------
+			for(ii=0;ii<4;ii++)
+			{
+				if(0 != g_BVSLib_comPort.GetAt(ii)) // comPort activated
+				{
+					errCode = CMD_COMPLET;
+					timeout = pumpControlTimer[ii].GetElapsedTime();
+					if(running == pumpState.GetAt(ii)) // pump is pumping
+					{
+						if(timeout >= pumpDuration.GetAt(ii))
+						{
+							errCode = transmitCmd(ii,"STOP","1",0);
+							if( valveOpenExecute.GetAt(ii) )
+							{
+								delayTimer.RestartTimer();
+								delayTimer.WaitTimer(hslFalse);
+								errCode = transmitCmd(ii,"OUT_VENT","1",0);
+								pumpState[ii] = stopping;
+							}
+							else
+							{
+								pumpState[ii] = stopped;
+							}
+						}
+						else
+						{
+							if(taskCycleCounts==taskCycleCounter)
+							{
+								answerString="";
+								errCode = transmitCmd(ii,"IN_PV_1",answerString,1);
+								if(CMD_COMPLET == errCode)
+								{
+									g_BVSLib_actPressure.SetAt(g_BVSLib_pumpID,IVal(answerString.Left(answerString.Find(" "))));
+
+									str = StringTable::statePumpingInfo;
+									StrReplace( str, "%%pumpId%%", IStr(ii+1) );
+									StrReplace( str, "%%pressure%%", IStr(g_BVSLib_pressure.GetAt(g_BVSLib_pumpID)) );
+									StrReplace( str, "%%actPressure%%", IStr(g_BVSLib_actPressure.GetAt(g_BVSLib_pumpID)) );
+									StrReplace( str, "%%time%%", FStr(pumpDuration.GetAt(ii)-timeout,0,3) );
+ 									FormatTraceEx( domain, StringTable::statePumping, CMD_PROGRESS, str );
+								}
+							}
+						}
+
+					}
+					if(stopping == pumpState.GetAt(ii)) // valve is opened
+					{
+						if(timeout >= pumpDuration.GetAt(ii)+valveOpenDuration.GetAt(ii)+1)
+						{
+							pumpState[ii] = stopped;
+						}
+						else
+						{
+							if(taskCycleCounts==taskCycleCounter)
+							{
+								answerString="";
+								errCode = transmitCmd(ii,"IN_PV_1",answerString,1);
+								if(CMD_COMPLET == errCode)
+								{
+									g_BVSLib_actPressure.SetAt(g_BVSLib_pumpID,IVal(answerString.Left(answerString.Find(" "))));
+
+									str = StringTable::stateReleasingInfo;
+									StrReplace( str, "%%pumpId%%", IStr(ii+1) );
+									StrReplace( str, "%%actPressure%%", IStr(g_BVSLib_actPressure.GetAt(g_BVSLib_pumpID)) );
+									StrReplace( str, "%%time%%", FStr(pumpDuration.GetAt(ii)+valveOpenDuration.GetAt(ii)-timeout,0,3) );
+									FormatTraceEx( domain, StringTable::stateReleasing, CMD_PROGRESS, str );
+								}
+							}
+						}
+					}
+
+					if((stopped == pumpState.GetAt(ii))&&stopFlagRequested.GetAt(ii)) // no running pump or valve activity
+					{
+						stopFlagRequested[ii] = hslFalse;
+						g_BVSLib_pumpStopped[ii].SetEvent();
+					}
+					if( CMD_COMPLET != errCode )
+					{
+						g_BVSLib_stateMachineCommStatus.SetAt(ii,errCode);
+					}
+				} // if comPort activated
+			}
+			g_BVSLib_dataSync.SetEvent();
+			taskTimer.WaitTimer(hslFalse);
+		} // end of while() (task loop)
+
+		g_BVSLib_execSync.SetEvent();
+		FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_COMPLET, "" );
+	} // end of execTask()
+
+	// --------------------------------------------------------------------------------------
+	// Description:
+	//		Checks whether pump unit is initialized.
+	// Return:
+	//		0= not initialized
+	//		1= initialized
+	// --------------------------------------------------------------------------------------
+	static function isInitialized(variable pumpID) variable
+	{
+		return(0 != g_BVSLib_comPort.GetAt(pumpID));
+	}
+
+	// --------------------------------------------------------------------------------------
+	// Description:
+	//		Checks whether pump unit is in simulation mode.
+	// Return:
+	//		0= simulation off
+	//		1= simulation on
+	// --------------------------------------------------------------------------------------
+	static function isSimulationMode( variable pumpID ) variable
+	{
+		// initialize system simulation flag
+		if( g_BVSLib_systemSimulationOn == -1 )
+		{
+			object services, generalSettings;
+
+			services.CreateObject( "Hamilton.HxServicesGeneralSettings" );
+			services.GetObject( "IHxServicesGeneralSettings2", generalSettings );
+
+			g_BVSLib_systemSimulationOn = ( generalSettings.SimulationOn != 0 );
+		}
+
+		return( g_BVSLib_systemSimulationOn || g_BVSLib_bvsSimulationOn.GetAt( pumpID ) );
+	}
+
+	// --------------------------------------------------------------------------------------
+	// Description:
+	//		Transmit any write command defined by cmd with a defined prm
+	// Parameters:
+	//    cmd : defined command to be executed
+	//			0 : prepare desired pressure, *)
+	//			1 : prepare desired pressure with venting, *)
+	//			2 : prepare desired pressure for restart, *)
+	//			3 : prepare desired pressure for switching off, *)
+	//					prm = [1 .. 1060] in [mbar] 
+	//						*) for these commands
+	//			4 : prepare frequency, prm = [1.0 .. 60.0|99.9]
+	//					prm = [1.0..60.0] in [Hz]
+	//					prm = [99.9] for "HI"
+	//			5 : timeout for switching off,
+	//					prm = [1..5999] in [min]
+	//			6 : prepare operation mode, prm = [1|2|3]
+	//					prm = 1 : continous pumping
+	//					prm = 2 : pressure control without automatic
+	//					prm = 3 : pressure control with automatic
+	//       7 : driving air admittance valve, prm = [0|1]
+	//					prm = 0 : air admittance valve closed
+	//					prm = 1 : air admittance valve open (process control stopped)
+	//			8 : start process control,
+	//					prm = 0 : always!
+	//			9 : stop process control, prm = [1|2]
+	//					prm = 1 : termination of process control
+	//					prm = 2 : termination of process control and store actual pressure as
+	//									new set point
+	// Return:
+	//		0 : successful
+	//		1 : unknown parameter cmn **)
+	//		2 : pressure parameter out of range **)
+	//		3 : frequency parameter out of range **)
+	//		4 : timeout parameter out of range **)
+	//		5 : control mode out of range **)
+	//		6 : air admittance valve parameter out of range **)
+	//		7 : start parameter out of range **)
+	//				**) ranges see above in section "Parameters"
+	//    8 : command execution (transmission) failed
+	// --------------------------------------------------------------------------------------
+	static function execWriteCommand(variable pID, variable cmd, variable prm) variable
+	{
+		string parameter("");
+		string command("");
+		variable mm(0);
+		variable hh(0);
+		string sMM("");
+		variable value;
+
+		// -------------------------------------------------------------------------
+		// parameter range check and preparation
+		// -------------------------------------------------------------------------
+		if(0>cmd)							// unknown command
+			return(1);
+		else if((0<=cmd)&&(3>=cmd))   // pressure prepare commands
+			if ((1>prm)||(1060<prm)) return(2);
+			else
+			{
+				parameter = IStr(prm);
+
+				while (4>StrGetLength(parameter)) parameter="0"+parameter;
+				if(0==cmd) // selected pressure
+					command="OUT_SP_1";
+				else if(1==cmd) // selected pressure with venting
+					command="OUT_SP_V";
+				else if(2==cmd) //pressure for restart
+					command="OUT_SP_3";
+				else // automatic switching off
+					command="OUT_SP_5";
+			}
+		else if(4==cmd)             // frequency prepare command
+			if (((1.0>prm)||(60.0<prm))&&((99.8>prm)||(100.0<prm))) return(3);
+			else
+			{
+				if(60.0<prm)
+					parameter="99.9";
+				else
+				{
+					parameter=FStr(prm,hslFalse,1);
+					while (0!=parameter.Mid(2,1)) parameter="0"+parameter;
+				}
+				command="OUT_SP_2";
+			}
+		else if(5==cmd)             // time prepare command
+			if ((1>prm)||(5999<prm)) return(4);
+			else
+			{
+				mm=prm%60;
+				prm=prm-mm;
+				hh=prm/60;
+				parameter=IStr(hh);
+				while (2>StrGetLength(parameter)) parameter="0"+parameter;
+				sMM=IStr(mm);
+				while (2>StrGetLength(sMM)) sMM="0"+sMM;
+				parameter=parameter+":";
+				parameter=parameter+sMM;
+				command="OUT_SP_4";
+			}
+		else if(6==cmd)             // mode prepare command
+			if ((1>prm)||(3<prm)) return(5);
+			else
+			{
+				parameter = IStr(prm);
+				command="OUT_MODE";
+			}
+		else if(7==cmd)             // valve prepare command
+			if ((0>prm)||(1<prm)) return(6);
+			else
+			{
+				parameter = IStr(prm);
+				command="OUT_VENT";
+			}
+		else if(8==cmd)             // start command
+			if ((0!=prm)) return(7);
+			else
+			{
+				parameter = "";
+				command="START";
+			}
+		else if(9==cmd)             // stop command
+			if ((1>prm)||(2<prm)) return(8);
+			else
+			{
+				parameter = IStr(prm);
+				command="OUT_STOP";
+			}
+		else return(1);
+
+		// -------------------------------------------------------------------------
+		// set command for execution task
+		// -------------------------------------------------------------------------
+		g_BVSLib_dataSync.WaitEvent(hslInfinite);
+		g_BVSLib_pumpID = pID;
+		g_BVSLib_writePrm.SetAt(g_BVSLib_pumpID,parameter);
+		g_BVSLib_writeCmd.SetAt(g_BVSLib_pumpID,command);
+		g_BVSLib_command = pump::cmdWrite;
+		g_BVSLib_dataSync.SetEvent();		
+
+		// -------------------------------------------------------------------------
+		// wait for command execution
+		// -------------------------------------------------------------------------
+		g_BVSLib_execSync.WaitEvent(hslInfinite);
+
+		// -------------------------------------------------------------------------
+		// request execution status
+		// -------------------------------------------------------------------------
+		g_BVSLib_dataSync.WaitEvent(hslInfinite);		
+		value = g_BVSLib_cmdExecStatus.GetAt(g_BVSLib_pumpID);
+		g_BVSLib_dataSync.SetEvent();		
+
+		if(CMD_COMPLET==value)
+			return(0);
+		return(8);
+
+	} // end of execWriteCommand()
+
+	// *****************************************************************************
+	// Description:
+	//		Transmit an execution command to a shaker.
+	//	Parameter
+	//    command: prepared string which is to transmit.
+	// Return
+	//    requested value of revolution or 0xFFFF (=65535) in the case of an error.
+	// Remarks
+	// 	CMD_COMPLET if the command was transmitted successfully, else
+	//		CMD_ERROR.
+	// *****************************************************************************
+	static function transmitCmd( variable pumpID, variable &command, variable &parameter, variable waitForResponse ) variable
+	{
+		variable domain;
+		domain = StringTable::domain;
+		StrReplace( domain, "%%pumpID%%", IStr(pumpID) );
+
+		g_BVSLib_comBuffer = command;
+		if ("" != parameter)
+		{
+			g_BVSLib_comBuffer = g_BVSLib_comBuffer + " " + parameter;
+		}
+
+		g_BVSLib_communicate[pumpID].WaitEvent(hslInfinite);
+		onerror goto Unexpected;
+
+		if (0 == g_BVSLib_port[pumpID].WriteRecord())
+		{
+			command ="";
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::writeRecordFailed );
+			g_BVSLib_communicate[pumpID].SetEvent();
+			return(CMD_ERROR);
+		}
+		parameter = "";
+		if (0 == waitForResponse)
+		{
+			g_BVSLib_communicate[pumpID].SetEvent();
+			return(CMD_COMPLET);
+		}
+
+		if (0 == g_BVSLib_port[pumpID].ReadRecord())
+		{
+			FormatTraceEx( domain, StrConcat2(GetFunctionName(),"():"), CMD_ERROR, StringTable::readRecordFailed );
+			g_BVSLib_communicate[pumpID].SetEvent();
+			return(CMD_ERROR);
+		}
+		parameter = g_BVSLib_comBuffer;
+		g_BVSLib_communicate[pumpID].SetEvent();
+		return(CMD_COMPLET);
+
+		Unexpected:
+		{
+			g_BVSLib_communicate[pumpID].SetEvent();
+		}
+	} // end of transmitCmd()
+
+} // end of namespace pump
+
+} // namespace HSLVacuuBrandPump
+
+
+
+
+namespace HSLStarBVSLib
+{
+	// --------------------------------------------------------------------------------------
+	// Exported functions
+	// --------------------------------------------------------------------------------------
+	function BVSInitialize( variable pumpID, variable comPort );
+	function BVSTerminate( variable pumpID );
+	function BVSVacuum( variable pumpID, variable deltaPressure, variable duration,
+					variable openValve, variable threshPressure, variable& reachedPressure ) variable;
+	function BVSVacuumTrack( variable pumpID, device& devMlStarLine,
+					sequence seqFilterPlate, sequence seqElutionPlate,
+					variable elutionVolume, variable deltaPressure, variable duration,
+					variable openValve, variable threshPressure, variable& reachedPressure ) variable;
+	function BVSTrack( variable pumpID, device& devMlStarLine,
+					sequence seqFilterPlate, sequence seqElutionPlate,
+					variable elutionVolume, variable actionState );
+	function BVSSetSimulationMode( variable pumpID, variable simulate );
+	function BVSGetSimulationMode( variable pumpID ) variable;
+	function BVSGetAmbientPressure( variable pumpID ) variable;
+	function BVSAbort();
+
+
+	// --------------------------------------------------------------------------------------
+	// Exported error constants
+	// --------------------------------------------------------------------------------------
+
+	// return values of BVSVacuum() and BVSVacuumTrack()
+	static const variable VacuumateRetVal_noError( 0 );
+	static const variable VacuumateRetVal_pressureNotReached( 1 );
+
+	// Action states which can be tracked
+	static const variable ActionState_NoError( 0 );
+	static const variable ActionState_Fatal( 1 );
+	static const variable ActionState_Error( 2 );
+	static const variable ActionState_Warning( 3 );
+
+
+	// --------------------------------------------------------------------------------------
+	// Constants
+	// --------------------------------------------------------------------------------------
+	static const variable containerTolerance( 0.333 );
+
+	static const variable PrepareErrCode_Successful( 0 );
+	static const variable PrepareErrCode_InvalidFilterPlate( 1 );
+	static const variable PrepareErrCode_InvalidElutionPlate( 2 );
+	static const variable PrepareErrCode_AssigningFailed( 3 );
+
+
+	// --------------------------------------------------------------------------------------
+	// Variables
+	// --------------------------------------------------------------------------------------
+	static global variable g_BVSLib_ambientPressure[](4);		// ambient pressure meassured by the 4 pump units
+	static global variable g_BVSLib_HxStarBVSLibCS(0);			// critical section for namespace functions
+
+
+
+	// --------------------------------------------------------------------------------------
+	// Internal functions
+	// --------------------------------------------------------------------------------------
+	static function EvalPrepareRetVal( variable retVal, variable functionName );
+	static function Vacuumate( variable pumpID, variable deltaPressure, variable duration,
+							variable openValve, variable threshPressure, variable& reachedPressure,
+							variable action ) variable;
+	static function InitLibrary();
+	static function EnterLibrary();
+	static function LeaveLibrary();
+	static global function G_BVSLib_InitHxStarBVSLibCS();
+
+
+
+	// --------------------------------------------------------------------------------------
+	// String table for the namespace HSLStarBVSLib
+	// --------------------------------------------------------------------------------------
+	namespace StringTable
+	{
+		static const string domain						(HSLVacuuBrandPump::StringTable::domain);
+		static const string allPumpIds				(Translate("1-4"));
+		static const string helpFileName				(Translate("HSLVacuuBrandPumpEnu.chm"));
+		static const string invalidPumpId			(HSLVacuuBrandPump::StringTable::invalidPumpId);
+		static const string invalidComPort			(HSLVacuuBrandPump::StringTable::invalidComPort);
+		static const string pumpUnitNotInitialized(Translate("Call BVSInitialize() to initialize the pump unit first."));
+		static const string initFailed				(Translate("Initialization of pump unit failed."));
+		static const string terminationFailed		(Translate("Failed to terminate communication to pump unit."));
+		static const string invalidFilterPlate		(Translate("The passed filter plate sequence is invalid. E.g.:\n- The plate is not located on a BVS carrier."));
+		static const string invalidElutionPlate	(Translate("The passed elution plate sequence is invalid. E.g.:\n-The plate is not located on a BVS carrier."));
+		static const string assigningFailed			(Translate("One or more containers of the filter plate couldn\'t be\nassigned to a container of the elution plate."));
+		static const string openAirValveFailed		(Translate("Failed to open the air admittance valve."));
+		static const string reqActualPressureFailed(Translate("Failed to request the actual pressure."));
+		static const string invalidDeltaPressure	(Translate("The specified delta pressure is invalid.\nPressure must be lower than ambient pressure."));
+		static const string invalidThreshPressure	(Translate("The specified threshold pressure is invalid.\nThreshold pressure must be lower than or equal to the specified delta pressure."));
+		static const string invalidDuration			(Translate("The specified duration is invalid. Duration must be greater than 0."));
+		static const string meassuringAmbientPress(Translate("meassuring ambient pressure"));
+		static const string waitPressureBalanced	(Translate("wait until pressure is balanced"));
+		static const string startPressCtrlFailed	(Translate("Failed to start pressure control."));
+		static const string stopPumpFailed			(Translate("Failed to stop pump."));
+		static const string startPumping				(Translate("Start pressure control. Target pressure: %%targetPressure%% mbar"));
+		static const string stopPumping				(Translate("Stop pressure control. Reached pressure: %%reachedPressure%% mbar"));
+	}
+
+
+	// --------------------------------------------------------------------------------------
+	// Exception handling
+	// --------------------------------------------------------------------------------------
+	namespace Error
+	{
+		static const variable generalHelpId(1);
+
+		static const variable error_invalidPumpId( 1 );
+		static const variable error_invalidComPort( 2 );
+		static const variable error_initFailed( 3 );
+		static const variable error_pumpUnitNotInitialized( 4 );
+		static const variable error_terminationFailed( 5 );
+		static const variable error_invalidFilterPlate( 6 );
+		static const variable error_invalidElutionPlate( 7 );
+		static const variable error_assigningFailed( 8 );
+		static const variable error_openAirValveFailed( 9 );
+		static const variable error_reqActualPressureFailed( 10 );
+		static const variable error_invalidDeltaPressure( 11 );
+		static const variable error_invalidThreshPressure( 12 );
+		static const variable error_invalidDuration( 13 );
+		static const variable error_startPressCtrlFailed( 14 );
+		static const variable error_stopPumpFailed( 15 );
+
+
+		// raises a runtime error
+		static function RaiseEx(
+			variable errorId,			// i: error id, one of IDE (generalHelpId used)
+			variable errorDesc,		// i: error description
+			variable& fileName,		// i: file name
+			variable& funcName,		// i: function name
+			variable& lineNumber)	// i: line number
+		{
+			variable description("");
+
+			// set error description
+			if ("" == funcName)
+				description = fileName + "(" + lineNumber + ") : " + errorDesc;
+			else
+				description = fileName + "(" + lineNumber + ") : " + funcName + "()\n" + errorDesc;
+			err.SetDescription(description);
+
+			
+			LeaveLibrary();
+	
+			// raise error
+			err.Raise(generalHelpId, err.GetDescription(), StringTable::helpFileName);
+		}
+	}
+
+
+	// --------------------------------------------------------------------------------------
+	// Implementation of exported functions
+	// --------------------------------------------------------------------------------------
+
+	// --------------------------------------------------------------------------------------
+	// This function initializes the connection to the specified BVS.
+	//
+	function BVSInitialize(
+					variable pumpID,		// i: Identifier of the BVS controller [1..4].
+					variable comPort )	// i: Used communication port. This parameter is
+												//		necessary to define the used RS-232- communication
+												//		port to talk with the pumping control unit [1..255].
+	{
+		variable retVal;
+		timer openValveTimer;
+		variable domain;
+
+		EnterLibrary();
+
+		onerror goto unexpected;
+
+
+		domain = StringTable::domain;
+		StrReplace( domain, "%%pumpID%%", IStr(pumpID) );
+		FormatTrace( domain, StrConcat2(GetFunctionName(),"():"), HSLVacuuBrandPump::CMD_START );
+
+
+		// check parameter pump id
+		if( pumpID < 1 || pumpID > 4 )
+		{
+			Error::RaiseEx( Error::error_invalidPumpId, StringTable::invalidPumpId,
+						GetFileName(), GetFunctionName(), GetLineNumber() );
+		}
+
+		// check parameter com port
+		if( comPort < 1 || comPort > 255 )
+		{
+			Error::RaiseEx( Error::error_invalidComPort, StringTable::invalidComPort,
+						GetFileName(), GetFunctionName(), GetLineNumber() );
+		}
+
+
+		// initialize the pump unit
+		retVal = HSLVacuuBrandPump::Initialize( pumpID, comPort );
+		if( retVal != HSLVacuuBrandPump::CMD_COMPLET )
+		{
+			Error::RaiseEx( Error::error_initFailed, StringTable::initFailed,
+						GetFileName(), GetFunctionName(), GetLineNumber() );
+		}
+
+		// open the air admittance valve
+		retVal = HSLVacuuBrandPump::OpenAirAdmittanceValve( pumpID );
+		if( retVal != HSLVacuuBrandPump::CMD_COMPLET )
+		{
+			Error::RaiseEx( Error::error_openAirValveFailed, StringTable::openAirValveFailed,
+						GetFileName(), GetFunctionName(), GetLineNumber() );
+		}
+
+		// wait for the pressure to be balanced and meassure the ambient pressure
+		FormatTrace( domain, StrConcat2(GetFunctionName(),"():"), HSLVacuuBrandPump::CMD_PROGRESS, StringTable::meassuringAmbientPress );
+		if( !HSLVacuuBrandPump::pump::isSimulationMode( pumpID-1 ) )
+		{
+			// -> give other units the chance to to start a function too
+			SynLeaveCriticalSection( g_BVSLib_HxStarBVSLibCS );
+
+			openValveTimer.SetTimer( 5 );
+			openValveTimer.WaitTimer( hslFalse );
+
+			SynEnterCriticalSection( g_BVSLib_HxStarBVSLibCS );
+		}
+
+		// meassure the ambient pressure
+		retVal = HSLVacuuBrandPump::ReqActualPressure( pumpID );
+		if( retVal == -1 )
+		{
+			Error::RaiseEx( Error::error_reqActualPressureFailed, StringTable::reqActualPressureFailed,
+						GetFileName(), GetFunctionName(), GetLineNumber() );
+		}
+		g_BVSLib_ambientPressure.SetAt( pumpID-1, retVal );
+
+
+		FormatTrace( domain, StrConcat2(GetFunctionName(),"():"), HSLVacuuBrandPump::CMD_COMPLET );
+
+
+
+		LeaveLibrary();
+		return;
+
+		unexpected:
+		{
+			LeaveLibrary();
+			err.Raise();
+		}
+	}
+
+
+
+	// --------------------------------------------------------------------------------------
+	// This function closes the connection to the specified BVS.
+	//
+	function BVSTerminate(
+					variable pumpID )	// i: Identifier of the BVS controller [1..4].
+	{
+		variable retVal;
+		variable domain;
+
+		EnterLibrary();
+
+		onerror goto unexpected;
+
+
+		domain = StringTable::domain;
+		StrReplace( domain, "%%pumpID%%", IStr(pumpID) );
+		FormatTrace( domain, StrConcat2(GetFunctionName(),"():"), HSLVacuuBrandPump::CMD_START );
+
+
+		// check parameter pump id
+		if( pumpID < 1 || pumpID > 4 )
+		{
+			Error::RaiseEx( Error::error_invalidPumpId, StringTable::invalidPumpId,
+						GetFileName(), GetFunctionName(), GetLineNumber() );
+		}
+
+		// terminate communication to pump unit
+		retVal = HSLVacuuBrandPump::Terminate( pumpID );
+		if( retVal != HSLVacuuBrandPump::CMD_COMPLET )
+		{
+			Error::RaiseEx( Error::error_terminationFailed, StringTable::terminationFailed,
+						GetFileName(), GetFunctionName(), GetLineNumber() );
+		}
+
+
+		FormatTrace( domain, StrConcat2(GetFunctionName(),"():"), HSLVacuuBrandPump::CMD_COMPLET );
+
+
+		LeaveLibrary();
+		return;
+
+		unexpected:
+		{
+			LeaveLibrary();
+			err.Raise();
+		}
+	}
+
+
+
+	// --------------------------------------------------------------------------------------
+	// Runs the vacuum process on the specified BVS.
+	//
+	// Return value:
+	//		0 - Function succeeded.
+	// 	1 - The threshold pressure couldn't be reached.
+	//
+	function BVSVacuum(
+					variable pumpID,				// i: Identifier of the BVS controller [1..4].
+					variable deltaPressure,		// i: Target pressure as difference between
+														//		ambient and under pressure (in mbar).
+					variable duration,			// i: Time of under pressure in seconds.
+					variable openValve,			// i: 0 - Keep pressure after pressure duration.
+														// 	1 - Open air admittance valve after
+														//		    pressure duration.
+					variable threshPressure,	// i: Threshold pressure to be reached to get
+														//		success (in mbar).
+					variable& reachedPressure	// o: The pressure which has been reached within
+														//		the specified time.
+				) variable
+	{
+		variable domain;
+		variable retVal;
+		variable traceStatus( HSLVacuuBrandPump::CMD_COMPLET );
+
+		EnterLibrary();
+
+		onerror goto unexpected;
+
+
+
+		domain = StringTable::domain;
+		StrReplace( domain, "%%pumpID%%", IStr(pumpID) );
+		FormatTrace( domain, StrConcat2(GetFunctionName(),"():"), HSLVacuuBrandPump::CMD_START );
+
+
+		// perform the vacuum action
+		retVal = Vacuumate( pumpID, deltaPressure, duration, openValve, threshPressure,
+						reachedPressure, StrConcat2(GetFunctionName(),"():") );
+		if( retVal != VacuumateRetVal_noError )
+			traceStatus = HSLVacuuBrandPump::CMD_ERROR;
+
+
+		FormatTrace( domain, StrConcat2(GetFunctionName(),"():"), traceStatus );
+
+
+		LeaveLibrary();
+		return( retVal );
+
+		unexpected:
+		{
+			LeaveLibrary();
+			err.Raise();
+		}
+	}
+
+
+
+	// --------------------------------------------------------------------------------------
+	// Runs the vacuum process on the specified BVS. The volume move is tracked to the
+	// vector database.
+	//
+	// Return value:
+	//		0 - Function succeeded.
+	// 	1 - The threshold pressure couldn't be reached.
+	//
+	function BVSVacuumTrack(
+					variable pumpID,					// i: Identifier of the BVS controller [1..4].
+					device& devMlStarLine,			// i: The parent instrument of the BVS.
+					sequence seqFilterPlate,		// i: The sequence of the filter plate.
+					sequence seqElutionPlate,		// i: The sequence of the elution plate.
+					variable elutionVolume,			// i: The elution volume to be tracked.
+					variable deltaPressure,			// i: Target pressure as difference between
+															//		ambient and under pressure (in mbar).
+					variable duration,				// i: Time of under pressure in seconds.
+					variable openValve,				// i: 0 - Keep pressure after pressure duration.
+															// 	1 - Open air admittance valve after
+															//		    pressure duration.
+					variable threshPressure,		// i: Threshold pressure to be reached to get
+															//		success (in mbar).
+					variable& reachedPressure		// o: The pressure which has been reached within
+															//		the specified time.
+				) variable
+	{
+		object helperDll;
+		variable retVal;
+		variable domain;
+		variable actionState( ActionState_NoError );
+		variable traceStatus( HSLVacuuBrandPump::CMD_COMPLET );
+
+		EnterLibrary();
+
+		onerror goto unexpected;
+
+
+
+		domain = StringTable::domain;
+		StrReplace( domain, "%%pumpID%%", IStr(pumpID) );
+		FormatTrace( domain, StrConcat2(GetFunctionName(),"():"), HSLVacuuBrandPump::CMD_START );
+
+
+		// check parameter pump id
+		if( pumpID < 1 || pumpID > 4 )
+		{
+			Error::RaiseEx( Error::error_invalidPumpId, StringTable::invalidPumpId,
+						GetFileName(), GetFunctionName(), GetLineNumber() );
+		}
+
+		// check and prepare data for tracking
+		helperDll.CreateObject( "Hamilton.HxStarBVSLib" );
+		retVal = helperDll.PrepareForTracking(
+						devMlStarLine.GetDeckLayoutObject(),
+						seqFilterPlate.GetSequenceObject(),
+						seqElutionPlate.GetSequenceObject(),
+						elutionVolume, containerTolerance );
+		EvalPrepareRetVal( retVal, GetFunctionName() );
+
+			// run vacuumate process
+		retVal = Vacuumate( pumpID, deltaPressure, duration, openValve, threshPressure,
+						reachedPressure, StrConcat2(GetFunctionName(),"():") );
+		if( retVal != VacuumateRetVal_noError )
+		{
+			actionState = ActionState_Error;
+			traceStatus = HSLVacuuBrandPump::CMD_ERROR;
+		}
+
+		// track action to the database
+		helperDll.TrackData( GetUniqueRunId(), actionState );
+		helperDll.ReleaseObject();
+
+
+		FormatTrace( domain, StrConcat2(GetFunctionName(),"():"), traceStatus );
+
+
+		LeaveLibrary();
+		return( retVal );
+
+		unexpected:
+		{
+			LeaveLibrary();
+			err.Raise();
+		}
+	}
+
+
+
+	// --------------------------------------------------------------------------------------
+	// Tracks a BVS volume move to the vector database.
+	//
+	function BVSTrack(
+					variable pumpID,					// i: Identifier of the BVS controller [1..4].
+					device& devMlStarLine,			// i: The parent instrument of the BVS.
+					sequence seqFilterPlate,		// i: The sequence of the filter plate.
+					sequence seqElutionPlate,		// i: The sequence of the elution plate.
+					variable elutionVolume,			// i: The elution volume to be tracked.
+					variable actionState )			// i: The state to be tracked:
+															//		0 - no error
+															//		1 - fatal error
+															//		2 - error
+															//		3 - warning
+	{
+		object helperDll;
+		variable retVal;
+		variable domain;
+
+		EnterLibrary();
+
+		onerror goto unexpected;
+
+
+		domain = StringTable::domain;
+		StrReplace( domain, "%%pumpID%%", IStr(pumpID) );
+		FormatTrace( domain, StrConcat2(GetFunctionName(),"():"), HSLVacuuBrandPump::CMD_START );
+
+
+		// check parameter pump id
+		if( pumpID < 1 || pumpID > 4 )
+		{
+			Error::RaiseEx( Error::error_invalidPumpId, StringTable::invalidPumpId,
+						GetFileName(), GetFunctionName(), GetLineNumber() );
+		}
+
+		// check and prepare data for tracking
+		helperDll.CreateObject( "Hamilton.HxStarBVSLib" );
+		retVal = helperDll.PrepareForTracking(
+						devMlStarLine.GetDeckLayoutObject(),
+						seqFilterPlate.GetSequenceObject(),
+						seqElutionPlate.GetSequenceObject(),
+						elutionVolume, containerTolerance );
+		EvalPrepareRetVal( retVal, GetFunctionName() );
+
+		// track action to the database
+		helperDll.TrackData( GetUniqueRunId(), actionState );
+		helperDll.ReleaseObject();
+
+
+		FormatTrace( domain, StrConcat2(GetFunctionName(),"():"), HSLVacuuBrandPump::CMD_COMPLET );
+
+
+		LeaveLibrary();
+		return;
+
+		unexpected:
+		{
+			LeaveLibrary();
+			err.Raise();
+		}
+	}
+
+
+
+	// --------------------------------------------------------------------------------------
+	// Sets the specified BVS to simulation mode.
+	//
+	function BVSSetSimulationMode(
+					variable pumpID,		// i: Identifier of the BVS controller [1..4].
+					variable simulate )	// i: 0 - Simulation Off
+												//		1 - Simulation On
+	{
+		variable domain;
+
+		EnterLibrary();
+
+		onerror goto unexpected;
+
+
+		domain = StringTable::domain;
+		StrReplace( domain, "%%pumpID%%", IStr(pumpID) );
+		FormatTrace( domain, StrConcat2(GetFunctionName(),"():"), HSLVacuuBrandPump::CMD_START );
+
+
+		// check parameter pump id
+		if( pumpID < 1 || pumpID > 4 )
+		{
+			Error::RaiseEx( Error::error_invalidPumpId, StringTable::invalidPumpId,
+						GetFileName(), GetFunctionName(), GetLineNumber() );
+		}
+
+
+		g_BVSLib_bvsSimulationOn.SetAt( pumpID-1, simulate );
+
+ 
+		FormatTrace( domain, StrConcat2(GetFunctionName(),"():"), HSLVacuuBrandPump::CMD_COMPLET );
+
+
+		LeaveLibrary();
+		return;
+
+		unexpected:
+		{
+			LeaveLibrary();
+			err.Raise();
+		}
+	}
+
+
+
+	// --------------------------------------------------------------------------------------
+	// Returns whether simulation mode is set for the specified BVS or not.
+	//
+	function BVSGetSimulationMode(
+					variable pumpID	// i: Identifier of the BVS controller [1..4].
+				) variable
+	{
+		variable domain;
+		variable simulation;
+
+		EnterLibrary();
+
+		onerror goto unexpected;
+
+
+		domain = StringTable::domain;
+		StrReplace( domain, "%%pumpID%%", IStr(pumpID) );
+		FormatTrace( domain, StrConcat2(GetFunctionName(),"():"), HSLVacuuBrandPump::CMD_START );
+
+
+		// check parameter pump id
+		if( pumpID < 1 || pumpID > 4 )
+		{
+			Error::RaiseEx( Error::error_invalidPumpId, StringTable::invalidPumpId,
+						GetFileName(), GetFunctionName(), GetLineNumber() );
+		}
+
+		simulation = HSLVacuuBrandPump::pump::isSimulationMode( pumpID-1 );
+
+		FormatTrace( domain, StrConcat2(GetFunctionName(),"():"), HSLVacuuBrandPump::CMD_COMPLET );
+
+
+		LeaveLibrary();
+		return( simulation );
+
+		unexpected:
+		{
+			LeaveLibrary();
+			err.Raise();
+		}
+	}
+
+
+
+	// --------------------------------------------------------------------------------------
+	// Returns the ambient pressure measured with the specified pump unit.
+	//
+	static function BVSGetAmbientPressure(
+							variable pumpID	// i: Identifier of the BVS controller [1..4].
+						 ) variable
+	{
+		variable domain;
+		variable ambient;
+
+		EnterLibrary();
+
+		onerror goto unexpected;
+
+
+		domain = StringTable::domain;
+		StrReplace( domain, "%%pumpID%%", IStr(pumpID) );
+		FormatTrace( domain, StrConcat2(GetFunctionName(),"():"), HSLVacuuBrandPump::CMD_START );
+
+
+		// check parameter pump id
+		if(  pumpID < 1 || pumpID > 4 )
+		{
+			Error::RaiseEx( Error::error_invalidPumpId, StringTable::invalidPumpId,
+						GetFileName(), GetFunctionName(), GetLineNumber() );
+		}
+
+		// check if BVSInitialize has been called
+		if( g_BVSLib_ambientPressure.GetAt( pumpID-1 ) == 0 )
+		{
+			Error::RaiseEx( Error::error_pumpUnitNotInitialized, StringTable::pumpUnitNotInitialized,
+						GetFileName(), GetFunctionName(), GetLineNumber() );
+		}
+
+		ambient = g_BVSLib_ambientPressure.GetAt( pumpID-1 );
+
+		FormatTrace( domain, StrConcat2(GetFunctionName(),"():"), HSLVacuuBrandPump::CMD_COMPLET );
+
+
+		LeaveLibrary();
+		return( ambient );
+
+		unexpected:
+		{
+			LeaveLibrary();
+			err.Raise();
+		}
+	}
+
+
+
+	// --------------------------------------------------------------------------------------
+	// To be used in an abort handler to shut down all pump units.
+	//
+	function BVSAbort()
+	{
+		variable i;
+		variable domain;
+
+		EnterLibrary();
+
+		onerror goto unexpected;
+
+
+		domain = StringTable::domain;
+		StrReplace( domain, "%%pumpID%%", StringTable::allPumpIds );
+		FormatTrace( domain, StrConcat2(GetFunctionName(),"():"), HSLVacuuBrandPump::CMD_START );
+
+		for( i = 0 ; i < 4 ; i++ )
+		{
+			if( HSLVacuuBrandPump::pump::isInitialized( i ) )
+			{
+				// stop each initialized pump unit..
+				HSLVacuuBrandPump::pump::transmitCmd( i,"OUT_VENT","1",0 );
+
+				// and close their communication ports
+				g_BVSLib_port[ i ].RemoveFields();
+				g_BVSLib_port[ i ].Close();
+				g_BVSLib_comPort[ i ] = 0;
+			}
+		}
+
+		FormatTrace( domain, StrConcat2(GetFunctionName(),"():"), HSLVacuuBrandPump::CMD_COMPLET );
+
+
+		LeaveLibrary();
+		return;
+
+		unexpected:
+		{
+			LeaveLibrary();
+			err.Raise();
+		}
+	}
+
+
+
+	// --------------------------------------------------------------------------------------
+	// Implementation of internal functions
+	// --------------------------------------------------------------------------------------
+
+	// --------------------------------------------------------------------------------------
+	// Evaluates the return value of PrepareForTracking() and raises occured errors. 
+	//
+	static function EvalPrepareRetVal(
+							variable retVal,
+							variable functionName )
+	{
+		if( retVal == PrepareErrCode_InvalidFilterPlate )
+		{
+			Error::RaiseEx( Error::error_invalidFilterPlate, StringTable::invalidFilterPlate,
+						GetFileName(), GetFunctionName(), GetLineNumber() );
+		}
+
+		else if( retVal == PrepareErrCode_InvalidElutionPlate )
+		{
+			Error::RaiseEx( Error::error_invalidElutionPlate, StringTable::invalidElutionPlate,
+						GetFileName(), GetFunctionName(), GetLineNumber() );
+		}
+
+		else if( retVal == PrepareErrCode_AssigningFailed )
+		{
+			Error::RaiseEx( Error::error_assigningFailed, StringTable::assigningFailed,
+						GetFileName(), functionName, GetLineNumber() );
+		}
+
+		// retVal == PrepareErrCode_Successful
+		//		-> no error
+
+		return;
+	}
+
+
+
+	// --------------------------------------------------------------------------------------
+	// Internal function to run the vacuum process.
+	//
+	// Return value:
+	//		0 - Function succeeded.
+	// 	1 - The threshold pressure couldn't be reached.
+	//
+	static function Vacuumate(
+							variable pumpID,				// i: Identifier of the BVS controller [1..4].
+							variable deltaPressure,		// i: Target pressure as difference between
+																//		ambient and under pressure (in mbar).
+							variable duration,			// i: Time of under pressure in seconds.
+							variable openValve,			// i: 0 - Keep pressure after pressure duration.
+																// 	1 - Open air admittance valve after
+																//		    pressure duration.
+							variable threshPressure,	// i: Threshold pressure to be reached to get
+																//		success (in mbar).
+							variable& reachedPressure,	// o: The pressure which has been reached within
+																//		the specified time.
+							variable action				// i: The action to be traced.
+					) variable
+	{
+		variable targetPressure;
+		variable checkPressure;
+		variable releaseTime;
+		variable elapsedTime;
+		variable domain;
+		variable retVal;
+		variable str;
+		timer vacuumTimer;
+		timer requestTimer;
+
+
+		domain = StringTable::domain;
+		StrReplace( domain, "%%pumpID%%", IStr(pumpID) );
+
+
+		// check parameter pump id
+		if( pumpID < 1 || pumpID > 4 )
+		{
+			Error::RaiseEx( Error::error_invalidPumpId, StringTable::invalidPumpId,
+						GetFileName(), GetFunctionName(), GetLineNumber() );
+		}
+
+		// check parameter deltaPressure
+		if( deltaPressure < 0 || deltaPressure >= g_BVSLib_ambientPressure.GetAt( pumpID-1 ) )
+		{
+			Error::RaiseEx( Error::error_invalidDeltaPressure, StringTable::invalidDeltaPressure,
+						GetFileName(), GetFunctionName(), GetLineNumber() );
+		}
+
+		// check parameter duration
+		if( duration < 1 )
+		{
+			Error::RaiseEx( Error::error_invalidDuration, StringTable::invalidDuration,
+						GetFileName(), GetFunctionName(), GetLineNumber() );
+		}
+
+		// check parameter threshPressure
+		if( threshPressure < 0 || threshPressure > deltaPressure )
+		{
+			Error::RaiseEx( Error::error_invalidThreshPressure, StringTable::invalidThreshPressure,
+						GetFileName(), GetFunctionName(), GetLineNumber() );
+		}
+
+		// calculate pressures
+		targetPressure = g_BVSLib_ambientPressure.GetAt( pumpID-1 ) - deltaPressure;
+		checkPressure = g_BVSLib_ambientPressure.GetAt( pumpID-1 ) - threshPressure;
+		releaseTime = deltaPressure * 0.005;
+
+
+		// start pumping
+		str = StringTable::startPumping;
+		StrReplace( str, "%%targetPressure%%", IStr(targetPressure) );
+		FormatTrace( domain, action, HSLVacuuBrandPump::CMD_PROGRESS, str );
+		retVal = HSLVacuuBrandPump::StartPressureControl( pumpID, targetPressure, duration, "No", 0 );
+		if( retVal != HSLVacuuBrandPump::CMD_COMPLET )
+		{
+			Error::RaiseEx( Error::error_startPressCtrlFailed, StringTable::startPressCtrlFailed,
+						GetFileName(), GetFunctionName(), GetLineNumber() );
+		}
+
+
+		reachedPressure = g_BVSLib_ambientPressure.GetAt( pumpID-1 );
+
+		vacuumTimer.SetTimer( duration );
+		elapsedTime = vacuumTimer.GetElapsedTime();
+		while( elapsedTime <= duration && !HSLVacuuBrandPump::pump::isSimulationMode( pumpID-1 ) )
+		{
+			// request the reached pressure every second
+			// -> give other units the chance to to start a function too
+			SynLeaveCriticalSection( g_BVSLib_HxStarBVSLibCS );
+
+			requestTimer.SetTimer( 1 );
+			requestTimer.WaitTimer( hslFalse );
+
+			SynEnterCriticalSection( g_BVSLib_HxStarBVSLibCS );
+
+
+			retVal = HSLVacuuBrandPump::ReqActualPressure( pumpID );
+			if( retVal == -1 )
+			{
+				HSLVacuuBrandPump::StopPumpImmediatly( pumpID );
+				Error::RaiseEx( Error::error_reqActualPressureFailed, StringTable::reqActualPressureFailed,
+							GetFileName(), GetFunctionName(), GetLineNumber() );
+			}
+			if( retVal < reachedPressure )
+				reachedPressure = retVal;
+
+			elapsedTime = vacuumTimer.GetElapsedTime();
+		}
+
+
+		// stop pumping
+		str = StringTable::stopPumping;
+		StrReplace( str, "%%reachedPressure%%", IStr(reachedPressure) );
+		FormatTrace( domain, action, HSLVacuuBrandPump::CMD_PROGRESS, str );
+		retVal = HSLVacuuBrandPump::StopPump( pumpID, 1 );
+		if( retVal != HSLVacuuBrandPump::CMD_COMPLET )
+		{
+			Error::RaiseEx( Error::error_stopPumpFailed, StringTable::stopPumpFailed,
+						GetFileName(), GetFunctionName(), GetLineNumber() );
+		}
+
+
+		// finally open the air admittance valve if desired
+		if( openValve != 0 )
+		{
+			timer openValveTimer;
+
+			retVal = HSLVacuuBrandPump::OpenAirAdmittanceValve( pumpID );
+			if( retVal != HSLVacuuBrandPump::CMD_COMPLET )
+			{
+				Error::RaiseEx( Error::error_openAirValveFailed, StringTable::openAirValveFailed,
+							GetFileName(), GetFunctionName(), GetLineNumber() );
+			}
+
+			FormatTrace( domain, action, HSLVacuuBrandPump::CMD_PROGRESS, StringTable::waitPressureBalanced );
+			openValveTimer.SetTimer( releaseTime );
+			openValveTimer.WaitTimer( hslFalse );
+		}
+
+
+		// check if the threshold pressure has been reached
+		if( reachedPressure > checkPressure && !HSLVacuuBrandPump::pump::isSimulationMode( pumpID-1 ) )
+			return( VacuumateRetVal_pressureNotReached );
+
+
+		return( VacuumateRetVal_noError );
+	}
+	
+	
+	
+	// --------------------------------------------------------------------------------------
+	// To be called to initialize the critical section object.
+	//
+	static global function G_BVSLib_InitHxStarBVSLibCS()
+	{
+		if( g_BVSLib_HxStarBVSLibCS == 0  )
+			g_BVSLib_HxStarBVSLibCS = SynInitializeCriticalSection();
+	}
+
+
+
+	// --------------------------------------------------------------------------------------
+	// To be called at the beginning of each library function.
+	//
+	static function EnterLibrary()
+	{
+		// initialize critical section object
+		G_BVSLib_InitHxStarBVSLibCS();
+
+		// lock global resources
+		SynEnterCriticalSection( g_BVSLib_HxStarBVSLibCS );
+
+		HSLVacuuBrandPump::EnableLowLevelTrace( hslFalse );
+	}
+
+
+
+	// --------------------------------------------------------------------------------------
+	// To be called before the library function returns.
+	//
+	static function LeaveLibrary()
+	{
+		HSLVacuuBrandPump::EnableLowLevelTrace( hslTrue );
+
+		// release global resources
+		SynLeaveCriticalSection( g_BVSLib_HxStarBVSLibCS );
+	}
+
+
+} // end of namespace HSLStarBVSLib
+
+#endif  // end of '#ifndef __HSLVacuuBrandPumpImpl_hsl__'
+// $$author=ContainerAdministrator$$valid=1$$time=2025-09-09 20:31$$checksum=c5003539$$length=099$$

@@ -1,0 +1,128 @@
+// ======================================================================
+// Interface of the library for control of the VacuuBrand CVC2000
+// chemistry vacuum pumping controller unit.
+//
+// Copyright (C) by HAMILTON Bonaduz AG, CH-7402 Bonaduz.
+// All rights reserved.
+// ======================================================================
+//
+// Modification History
+//		2003-01-22, Ruedi Vogel, created
+//
+//    2003-03-31, Ruedi Vogel
+//      Optimierung gemäss ersten Feld-Erfahrungen
+//
+//    2003-04-08, Ruedi Vogel:
+//      Erweitert, um mehrere Pumpen aus einer Library anzusteuern
+//      - Trace des Druckes alle 10sec anstatt jede Sekunde (Laufzeit des 
+//
+//    2003-05-09, Ruedi Vogel
+//        Task-Loops)
+//      - PumpID bei 1 (eins) anstatt 0 (null) beginnen
+//    
+//    2006-06-27, G. Zaugg
+//      added namespace HSLStarBVSLib containing functionality to:
+//        - control the BVS in a simplified manner
+//        - track the volume move of the BVS to the Hamilton
+//          Vector Database
+//        - set the BVS to simulation mode
+// 
+//		2008-04-15, Ruedi Vogel
+//			- return value declared of functions in namespace HSLVacuuBrandPump
+//			- no changes within namespace HSLStarBVSLib
+//
+// ======================================================================
+
+#ifndef __HSLVacuuBrandPumpLib_hsl__
+#define __HSLVacuuBrandPumpLib_hsl__	1
+
+
+// Interface to File library 
+#ifndef HSL_RUNTIME
+
+namespace HSLVacuuBrandPump
+{
+	// --------------------------------------------------------------------------------------
+	// Exported error constants
+	// --------------------------------------------------------------------------------------
+	const variable CMD_START(1);
+	const variable CMD_COMPLET(2);
+	const variable CMD_ERROR(3);
+	const variable CMD_PROGRESS(4);
+
+	// --------------------------------------------------------------------------------------
+	// Exported functions
+	// --------------------------------------------------------------------------------------
+	function Initialize(variable pumpID, variable comPort) variable {return(CMD_COMPLET);}
+	function Terminate(variable pumpID) variable {return(CMD_COMPLET);}
+	function ReqActualPressure(variable pumpID) variable {return(CMD_COMPLET);}
+	static function ReqActualFrequency(variable pumpID) variable {return(CMD_COMPLET);}
+	static function ReqConfiguration(variable pumpID) variable {return(CMD_COMPLET);}
+	static function ReqErrorStatus(variable pumpID) variable {return(CMD_COMPLET);}
+	static function ReqProcessStatus(variable pumpID) variable {return(CMD_COMPLET);}
+	static function PreparePressure(variable pumpID, variable pressure) variable {return(CMD_COMPLET);}
+	static function PrepareVentPressure(variable pumpID, variable pressure) variable {return(CMD_COMPLET);}
+	static function PrepareRestartPressure(variable pumpID, variable pressure) variable {return(CMD_COMPLET);}
+	static function PrepareSwitchOffPressure(variable pumpID, variable pressure) variable {return(CMD_COMPLET);}
+	static function PreparePumpingTime(variable pumpID, variable time) variable {return(CMD_COMPLET);}
+	static function PrepareFrequency(variable pumpID, variable frequency) variable {return(CMD_COMPLET);}
+	static function PreparePumpingMode(variable pumpID, variable mode) variable {return(CMD_COMPLET);}
+	static function StartPump(variable pumpID) variable {return(CMD_COMPLET);}
+	static function StopPump(variable pumpID, variable mode) variable {return(CMD_COMPLET);}
+	static function AirAdmittanceValve(variable pumpID, variable mode) variable {return(CMD_COMPLET);}
+	function StartPressureControl(variable pumpID, variable pressure, variable duration, variable releaseAfterPres, variable releaseDuration) variable {return(CMD_COMPLET);}
+	function StopPumpImmediatly(variable pumpID) variable {return(CMD_COMPLET);}
+	function WaitForPumpStopped(variable pumpID) variable {return(CMD_COMPLET);}
+	function OpenAirAdmittanceValve(variable pumpID) variable {return(CMD_COMPLET);}
+
+} // end of namespace HSLVacuuBrandPump
+
+
+namespace HSLStarBVSLib
+{
+	// --------------------------------------------------------------------------------------
+	// Exported functions
+	// --------------------------------------------------------------------------------------
+	function BVSInitialize( variable pumpID, variable comPort ) {}
+	function BVSTerminate( variable pumpID ) {}
+	function BVSVacuum( variable pumpID, variable deltaPressure, variable duration,
+					variable openValve, variable threshPressure, variable& reachedPressure ) variable { return( 0 ); }
+	function BVSVacuumTrack( variable pumpID, device& devMlStarLine,
+					sequence seqFilterPlate, sequence seqElutionPlate,
+					variable elutionVolume, variable deltaPressure, variable duration,
+					variable openValve, variable threshPressure, variable& reachedPressure ) variable { return( 0 ); }
+	function BVSTrack( variable pumpID, device& devMlStarLine,
+					sequence seqFilterPlate, sequence seqElutionPlate,
+					variable elutionVolume, variable actionState ) {}
+	function BVSSetSimulationMode( variable pumpID, variable simulate ) {}
+	function BVSGetSimulationMode( variable pumpID ) variable { return( 0 ); }
+	function BVSGetAmbientPressure( variable pumpID ) variable { return( 0 ); }
+	function BVSAbort() { }
+
+	// --------------------------------------------------------------------------------------
+	// Exported error constants
+	// --------------------------------------------------------------------------------------
+
+	// return values of BVSVacuum() and BVSVacuumTrack()
+	static const variable VacuumateRetVal_noError( 0 );
+	static const variable VacuumateRetVal_pressureNotReached( 1 );
+
+	// Action states which can be tracked
+	static const variable ActionState_NoError( 0 );
+	static const variable ActionState_Fatal( 1 );
+	static const variable ActionState_Error( 2 );
+	static const variable ActionState_Warning( 3 );
+
+
+} // end of namespace HSLStarBVSLib
+
+#endif
+
+
+// Implementation of library 
+#ifdef HSL_RUNTIME
+#include "HSLVacuuBrandPump.hs_"
+#endif
+
+#endif /* end of #ifndef __HSLVacuuBrandPumpLib_hsl__ */
+// $$author=ContainerAdministrator$$valid=1$$time=2025-09-09 20:31$$checksum=183fdbba$$length=099$$

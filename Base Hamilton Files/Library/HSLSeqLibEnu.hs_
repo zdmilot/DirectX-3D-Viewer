@@ -1,0 +1,14 @@
+// This is the language dependant part of the Sequence Library.
+// Copyright (C) by HAMILTON Bonaduz AG, CH-7402 Bonaduz.
+// All rights reserved.
+//
+// Modification History
+// 2002-07-06  bandenmatten : Initial file creation.
+
+function StringTable()
+{
+	Insert(IDE::noError,								"No error."												);
+	Insert(IDE::openFileFailed,					"Failed to open file: "								);
+	Insert(IDS::helpFileName,						"HSLSeqLibEnu.chm"									);
+}
+// $$author=ContainerAdministrator$$valid=1$$time=2025-09-09 20:13$$checksum=97c56d00$$length=099$$

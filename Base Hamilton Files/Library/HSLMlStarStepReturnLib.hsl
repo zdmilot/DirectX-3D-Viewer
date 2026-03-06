@@ -1,0 +1,825 @@
+// This is a part of the Microlab STAR Step Return Library.
+// Copyright (C) by HAMILTON Bonaduz AG, CH-7402 Bonaduz.
+// All rights reserved.
+//
+// Modification History
+// 2001-09-13  bandenmatten : Initial file creation.
+// 2001-11-29  bandenmatten : Added functions StepReturn::SetFieldDelimiter() and StepReturn::SetBlockDelimiter().
+// 2002-03-13  bandenmatten : Added function StepReturn::SetFieldDelimiterEx().
+// 2002-03-18  bandenmatten : Added function StepReturn::GetBarcodeMask().
+// 2002-07-16  bandenmatten : Added function StepReturn::GetBarcodePosition().
+// 2002-07-16  bandenmatten : Replaced condition if (position == IVal(pos)) by if (position == ++pos) in function StepReturn::GetField().
+//										Reason: The position isn't the value at the position field but the current integral position 
+//										in the enumeration of the blocks.
+// 2002-07-16  bandenmatten : Removed all 'trim leading zeros, otherwise the number will be interpreted octal'.
+// 2003-04-29  bandenmatten : Moved all includes into #ifdef HSL_RUNTIME section.
+// 2003-04-28  bandenmatten : Made text corrections.
+// 2003-04-28  bandenmatten : Specified function return values.
+// 2003-04-28  bandenmatten : Added function StepReturn::GetStepData().
+// 2003-04-28  bandenmatten : Added function StepReturn::GetLabwarePositionIds().
+// 2003-04-28  bandenmatten : Added function StepReturn::GetPositionFromNum().
+// 2003-05-12  bandenmatten : Fixed compatibility bug in function StepReturn::GetErrorCode().
+// 2003-06-03  bandenmatten : Fixed another compatibility bug in function StepReturn::GetErrorCode().
+// 2016-05-13  tbenz        : Fixed remove of leading and ending spaces on GetBarcode() new function GetBarcodeField() implemented
+
+#ifndef __HSLMlStarStepReturnLib_hsl__
+#define __HSLMlStarStepReturnLib_hsl__	1
+
+// Interface to the Microlab STAR Step Return Library
+#ifndef HSL_RUNTIME
+namespace StepReturn
+{
+	// --------------------------------------------------------------------------------------
+	// Functions
+	// --------------------------------------------------------------------------------------
+
+	function GetErrorCode(													// Returns the error contained in the step return (integer)
+		variable& stepReturn) variable									// [in] Step return value 3
+	{return(0);}
+
+	function GetNumberOfPositions(										// Retrieves the number of positions in the given step return (integer)
+		variable& stepReturn) variable									// [in] Step return value 3
+	{return(0);}
+
+	function GetPosition(													// Retrieves the position for a specified position (integer)
+		variable position,													// [in] Position
+		variable& stepReturn) variable									// [in] Step return value 3
+	{return(0);}
+
+	function GetMainError(													// Retrieves the main error for a specified position (integer)
+		variable position,													// [in] Position
+		variable& stepReturn) variable									// [in] Step return value 3
+	{return(0);}
+
+	function GetSlaveError(													// Retrieves the slave error for a specified position (integer)
+		variable position,													// [in] Position
+		variable& stepReturn) variable									// [in] Step return value 3
+	{return(0);}
+
+	function GetRecoveryButton(											// Retrieves the id of the recovery button for a specified position (integer)
+		variable position,													// [in] Position
+		variable& stepReturn) variable									// [in] Step return value 3
+	{return(0);}
+
+	function GetBarcode(														// Retrieves the barcode for a specified position (string)
+		variable position,													// [in] Position
+		variable& stepReturn) variable									// [in] Step return value 3 or 4 of LoadCarrier step 
+	{return(0);}
+
+	function GetBarcodeMask(												// Retrieves the barcode mask for a specified position (string)
+		variable position,													// [in] Position
+		variable& stepReturn) variable									// [in] Step return value 5 of LoadCarrier step 
+	{return(0);}
+
+	function GetBarcodePosition(											// Retrieves the barcode position for a specified position (string)
+		variable position,													// [in] Position
+		variable& stepReturn) variable									// [in] Step return value 6 of LoadCarrier step 
+	{return(0);}
+
+	function GetLastLiquidLevel(											// Retrieves the last liquid level for a specified position (string)
+		variable position,													// [in] Position
+		variable& stepReturn) variable									// [in] Step return value 3
+	{return(0);}
+
+	function GetLabwareId(													// Retrieves the labware id for a specified position (string)
+		variable position,													// [in] Position
+		variable& stepReturn) variable									// [in] Step return value 3
+	{return(0);}
+
+	function GetPositionId(													// Retrieves the position id for a specified position (string)
+		variable position,													// [in] Position
+		variable& stepReturn) variable									// [in] Step return value 3
+	{return(0);}
+
+	function GetStepData(													// generic function to retrieve the step data  for a specified position (string).
+		variable position,													// [in] Position
+		variable& stepReturn) variable									// [in] any step return value 3
+	{return(0);}
+
+	function GetLabwarePositionIds(										// Retrieves the labware identifiers with associated position identifiers  for a specified position (array of variables).
+		variable position,													// [in] Position
+		variable& stepReturn,												// [in] The step return value 4 of a LoadCarrier step (string)
+		variable& labwareIds[],												// [out] A reference to an array of variables to retrieve the labware identifiers (array of variables)
+		variable& positionIds[]) void										// [out] A reference to an array of variables to retrieve the associated position identifiers (array of variables)
+	{return;}
+
+	function GetPositionFromNum(											// Searches a step return value for the first match of a specified num value (integer). Returns the one-based position (block delimiter number) of the first match of the specified num value.
+		variable num,															// [in] The num value to search for (integer, a value as returned by the function GetPosition)
+		variable& stepReturn) variable									// [in] Any step return value containing a position field (string)
+	{return(0);}
+
+	function SetFieldDelimiter(											// Sets the field delimiter, defaults to ","
+		variable& fieldDelimiter) variable								// [in] Field delimiter
+	{return(0);}
+
+	function SetBlockDelimiter(											// Sets the block delimiter, defaults to "["
+		variable& blockDelimiter) variable								// [in] Field delimiter (string)
+	{return(0);}
+
+	function SetFieldDelimiterEx(											// Sets the field delimiter, defaults to ","
+		device& ML_STAR) variable											// [in] The device where to query the field delimiter
+	{return(0);}
+
+	function SetBlockDelimiterEx(											// Sets the block delimiter, defaults to "["
+		device& ML_STAR) variable											// [in] The device where to query the block delimiter
+	{return(0);}
+}
+#endif
+
+// Implementation of Microlab STAR Step Return Library
+#ifdef HSL_RUNTIME
+
+#ifndef __HSLStrLib_hsl__
+#include "HSLStrLib.hsl"
+#endif
+
+#ifndef __HSLMlStarCfgKeys_hs___
+#include "HSLMlStarCfgKeys.hs_"
+#endif
+
+namespace StepReturn
+{
+
+	// --------------------------------------------------------------------------------------
+	// String Constants
+	// --------------------------------------------------------------------------------------
+
+	namespace StringConstants
+	{
+		// data
+		static variable blockDelimiter("[");							// block delimter
+		static variable fieldDelimiter(",");							// field delimter
+		static variable subFieldDelimiter(" ");						// sub-field delimter
+		static variable emptySubField("-");								// empty sub-field indicator
+	}
+
+	// --------------------------------------------------------------------------------------
+	// Error Ids
+	// --------------------------------------------------------------------------------------
+
+	namespace IDE
+	{
+		static const variable first(0);									// guard
+		static const variable noError(first);							// No error.
+		static const variable invalidParameter(first + 1);			// The parameter is incorrect.
+		static const variable last(first + 1);							// guard
+	}
+
+	// --------------------------------------------------------------------------------------
+	// String Ids
+	// --------------------------------------------------------------------------------------
+
+	namespace IDS
+	{
+		static const variable first(IDE::last + 1);					// guard
+		static const variable helpFileName(first);					// help file name
+		static const variable last(first);								// guard
+	}
+
+	#ifndef __HSLStringTableLib_hsl__
+	#include "HSLStringTableLib.hs_"
+	#endif
+
+	// --------------------------------------------------------------------------------------
+	// Library Initialization 
+	// --------------------------------------------------------------------------------------
+
+	static variable initializedLib(hslFalse);							// initialization state of the step return library
+
+	static function InitStepReturnLibrary()  variable;				// initializes the step return library (only once)
+
+	// --------------------------------------------------------------------------------------
+	// Utilities
+	// --------------------------------------------------------------------------------------
+
+	namespace Util
+	{
+		// functions
+
+		static function IsString(											// returns true if the variable value is a string
+			variable var) variable											// [in] variable
+		{
+			return(hslString.Compare(GetType(var)) == 0);
+		}
+
+		static function IsInteger(											// returns true if the variable value is an integer
+			variable var) variable											// [in] variable
+		{
+			return(hslInteger.Compare(GetType(var)) == 0);
+		}
+
+		static function IsNegative(										// returns true if the variable value is negative
+			variable number) variable										// [in] number
+		{
+			return(number < 0);
+		}
+
+		// See VBScript 'Split' function.
+		// Remark: Don't pass parameters 'str' and 'delimiter' by reference, because they might be modified.
+		static function Split(variable str, variable delimiter, variable& substrings[]) void
+		{
+			substrings.SetSize(0);
+			if (Util::IsString(str))
+			{
+				object scriptControl;
+
+				// Create script control
+				scriptControl.CreateObject("MSScriptControl.ScriptControl");
+				scriptControl.Language = "VBScript";
+
+				// Escape delimiter
+				StrReplace(str, "\"", "\"\"");
+				StrReplace(delimiter, "\"", "\"\"");
+
+				// Split string
+				substrings = scriptControl.Eval("Split(\"" + str + "\", \"" + delimiter + "\")");
+			}
+		}
+	}
+
+	// --------------------------------------------------------------------------------------
+	// Exception handling
+	// --------------------------------------------------------------------------------------
+
+	namespace Error
+	{
+		static function Raise(												// raises a runtime error
+			variable errorId,													// [in] error id, one of IDE
+			variable& fileName,												// [in] file name
+			variable& funcName,												// [in] function name
+			variable& lineNumber) void										// [in] line number
+		{
+			variable description("");
+
+			// set error description
+			description = fileName + "(" + lineNumber + ") : " + funcName + "()\n" + StringTable::Load(errorId);
+			err.SetDescription(description);
+
+			// raise error
+			err.Raise(errorId, err.GetDescription(), StringTable::Load(IDS::helpFileName));
+		}
+	}
+
+	// --------------------------------------------------------------------------------------
+	// Functions
+	// --------------------------------------------------------------------------------------
+
+	static function InitStepReturnLibrary() variable
+	{
+		// initialize the step return library once only
+		if (!initializedLib)
+		{
+			StringTable::Init("HSLMlStarStepReturnLib");
+			//StringTable::Dump();
+			initializedLib = hslTrue;
+		}
+		return(initializedLib);
+	}
+
+	static function GetField(												// extracts the specified field given a position from the step return
+		variable position, 
+		variable field, 
+		variable& stepReturn) variable
+	{
+		string str1;															// helper string
+		string str2;															// helper string
+		variable pos(0);														// current position
+		variable left(0);														// left index
+		variable right(0);													// right index
+		variable index1(0);													// block index
+		variable index2(0);													// field index
+
+		// get field
+		str1 = stepReturn;
+		if (position == 0)
+			return(str1.Mid(0, 1));
+		index1 = str1.Find(StringConstants::blockDelimiter);
+		while (0 <= index1)
+		{
+			str1 = str1.Mid(index1 + 1, str1.GetLength());
+			if (position == ++pos)
+			{
+				str2 = str1;
+				StrReplace(str2, StringConstants::blockDelimiter, StringConstants::fieldDelimiter);
+				for (index2 = 1; index2 < field; index2++)
+				{
+					left = str2.Find(StringConstants::fieldDelimiter);
+					if (0 <= left)
+						str2 = str2.Mid(left + 1, str2.GetLength());
+					else
+						str2 = "";
+				}
+				right = left + str2.Find(StringConstants::fieldDelimiter);
+				if (left <= right)
+					str2 = str2.Mid(0, right - left);
+				StrTrimLeft(str2, "");
+				StrTrimRight(str2, "");
+				break;
+			}
+			index1 = str1.Find(StringConstants::blockDelimiter);
+		}
+		return(str2);
+	}
+
+	static function GetBarcodeField(										// extracts the specified field given a position from the step return
+		variable position, 
+		variable& stepReturn) variable
+	{
+		string str1;															// helper string
+		string str2;															// helper string
+		variable field(5);                                       // barcode position 
+		variable pos(0);														// current position
+		variable left(0);														// left index
+		variable right(0);													// right index
+		variable index1(0);													// block index
+		variable index2(0);													// field index
+
+		// get field
+		str1 = stepReturn;
+		if (position == 0)
+			return(str1.Mid(0, 1));
+		index1 = str1.Find(StringConstants::blockDelimiter);
+		while (0 <= index1)
+		{
+			str1 = str1.Mid(index1 + 1, str1.GetLength());
+			if (position == ++pos)
+			{
+				str2 = str1;
+				StrReplace(str2, StringConstants::blockDelimiter, StringConstants::fieldDelimiter);
+				for (index2 = 1; index2 < field; index2++)
+				{
+					left = str2.Find(StringConstants::fieldDelimiter);
+					if (0 <= left)
+						str2 = str2.Mid(left + 1, str2.GetLength());
+					else
+						str2 = "";
+				}
+				right = left + str2.Find(StringConstants::fieldDelimiter);
+				if (left <= right)
+					str2 = str2.Mid(0, right - left);
+            // SCR.1627 barcode can contain any spaces, do NOT remove it!
+				//StrTrimLeft(str2, "");
+				//StrTrimRight(str2, "");
+				break;
+			}
+			index1 = str1.Find(StringConstants::blockDelimiter);
+		}
+		return(str2);
+	}
+
+	static function GetNumOfPositions(									// Retrieves the number of positions in the given step return (integer)
+		variable& stepReturn) variable
+	{
+		string str1;															// helper string
+		variable index1(0);													// block index
+		variable numberOfPositions(0);									// number of positions
+
+		// get field
+		str1 = stepReturn;
+		index1 = str1.Find(StringConstants::blockDelimiter);
+		while (0 <= index1)
+		{
+			str1 = str1.Mid(index1 + 1, str1.GetLength());
+			index1 = str1.Find(StringConstants::blockDelimiter);
+			numberOfPositions++;
+		}
+		return(numberOfPositions);
+	}
+
+	static function GetErrorCode(
+		variable& stepReturn) variable
+	{
+		variable position(0);
+		variable field(0);
+		variable errorCode(0);
+
+		// initialize step return library
+		InitStepReturnLibrary();
+
+		// validate input
+		if (!Util::IsString(stepReturn))
+			 Error::Raise(IDE::invalidParameter, GetFileName(), GetFunctionName(), GetLineNumber());
+
+		// extract field
+		errorCode = StepReturn::GetField(position, field, stepReturn);
+
+		// ba 2002-07-16 begin
+		// trim leading zeros, otherwise the number will be interpreted octal
+		//StrTrimLeft(errorCode, "0");
+		// end
+
+		return(IVal(errorCode));
+	}
+
+	function GetNumberOfPositions(
+		variable& stepReturn) variable
+	{
+		// initialize step return library
+		InitStepReturnLibrary();
+
+		// validate input
+		if (!Util::IsString(stepReturn))
+			 Error::Raise(IDE::invalidParameter, GetFileName(), GetFunctionName(), GetLineNumber());
+
+		// get number of positions
+		return(StepReturn::GetNumOfPositions(stepReturn));
+	}
+
+	static function GetPosition(
+		variable position, 
+		variable& stepReturn) variable
+	{
+		variable field(1);
+		variable pos(0);
+
+		// initialize step return library
+		InitStepReturnLibrary();
+
+		// validate input
+		if (!Util::IsInteger(position) ||
+			 !Util::IsString(stepReturn))
+			 Error::Raise(IDE::invalidParameter, GetFileName(), GetFunctionName(), GetLineNumber());
+		if (position < 1 || GetNumOfPositions(stepReturn) < position)
+			 Error::Raise(IDE::invalidParameter, GetFileName(), GetFunctionName(), GetLineNumber());
+
+		// extract field
+		pos = StepReturn::GetField(position, field, stepReturn);
+
+		return(IVal(pos));
+	}
+
+	static function GetMainError(
+		variable position, 
+		variable& stepReturn) variable
+	{
+		variable field(2);
+		variable mainError(0);
+
+		// initialize step return library
+		InitStepReturnLibrary();
+
+		// validate input
+		if (!Util::IsInteger(position) ||
+			 !Util::IsString(stepReturn))
+			 Error::Raise(IDE::invalidParameter, GetFileName(), GetFunctionName(), GetLineNumber());
+		if (position < 1 || GetNumOfPositions(stepReturn) < position)
+			 Error::Raise(IDE::invalidParameter, GetFileName(), GetFunctionName(), GetLineNumber());
+
+		// extract field
+		mainError = StepReturn::GetField(position, field, stepReturn);
+
+		return(IVal(mainError));
+	}
+
+	static function GetSlaveError(
+		variable position, 
+		variable& stepReturn) variable
+	{
+		variable field(3);
+		variable slaveError(0);
+
+		// initialize step return library
+		InitStepReturnLibrary();
+
+		// validate input
+		if (!Util::IsInteger(position) ||
+			 !Util::IsString(stepReturn))
+			 Error::Raise(IDE::invalidParameter, GetFileName(), GetFunctionName(), GetLineNumber());
+		if (position < 1 || GetNumOfPositions(stepReturn) < position)
+			 Error::Raise(IDE::invalidParameter, GetFileName(), GetFunctionName(), GetLineNumber());
+
+		// extract field
+		slaveError = StepReturn::GetField(position, field, stepReturn);
+
+		return(IVal(slaveError));
+	}
+
+	static function GetRecoveryButton(
+		variable position, 
+		variable& stepReturn) variable
+	{
+		variable field(4);
+		variable recoveryButton(0);
+
+		// initialize step return library
+		InitStepReturnLibrary();
+
+		// validate input
+		if (!Util::IsInteger(position) ||
+			 !Util::IsString(stepReturn))
+			 Error::Raise(IDE::invalidParameter, GetFileName(), GetFunctionName(), GetLineNumber());
+		if (position < 1 || GetNumOfPositions(stepReturn) < position)
+			 Error::Raise(IDE::invalidParameter, GetFileName(), GetFunctionName(), GetLineNumber());
+
+		// extract field
+		recoveryButton = StepReturn::GetField(position, field, stepReturn);
+
+		return(IVal(recoveryButton));
+	}
+
+	static function GetBarcode(
+		variable position, 
+		variable& stepReturn) variable
+	{
+		// initialize step return library
+		InitStepReturnLibrary();
+
+		// validate input
+		if (!Util::IsInteger(position) ||
+			 !Util::IsString(stepReturn))
+			 Error::Raise(IDE::invalidParameter, GetFileName(), GetFunctionName(), GetLineNumber());
+		if (position < 1 || GetNumOfPositions(stepReturn) < position)
+			 Error::Raise(IDE::invalidParameter, GetFileName(), GetFunctionName(), GetLineNumber());
+
+		// extract field without delete leading and ending spaces
+		return(StepReturn::GetBarcodeField(position, stepReturn));
+	}
+
+	static function GetBarcodeMask(
+		variable position, 
+		variable& stepReturn) variable
+	{
+		variable field(2);
+
+		// initialize step return library
+		InitStepReturnLibrary();
+
+		// validate input
+		if (!Util::IsInteger(position) ||
+			 !Util::IsString(stepReturn))
+			 Error::Raise(IDE::invalidParameter, GetFileName(), GetFunctionName(), GetLineNumber());
+		if (position < 1 || GetNumOfPositions(stepReturn) < position)
+			 Error::Raise(IDE::invalidParameter, GetFileName(), GetFunctionName(), GetLineNumber());
+
+		// extract field
+		return(StepReturn::GetField(position, field, stepReturn));
+	}
+
+	static function GetBarcodePosition(
+		variable position, 
+		variable& stepReturn) variable
+	{
+		variable field(2);
+
+		// initialize step return library
+		InitStepReturnLibrary();
+
+		// validate input
+		if (!Util::IsInteger(position) ||
+			 !Util::IsString(stepReturn))
+			 Error::Raise(IDE::invalidParameter, GetFileName(), GetFunctionName(), GetLineNumber());
+		if (position < 1 || GetNumOfPositions(stepReturn) < position)
+			 Error::Raise(IDE::invalidParameter, GetFileName(), GetFunctionName(), GetLineNumber());
+
+		// extract field
+		return(StepReturn::GetField(position, field, stepReturn));
+	}
+
+	function GetLastLiquidLevel(
+		variable position,
+		variable& stepReturn) variable
+	{
+		variable field(5);
+		variable liquidLevel(0);
+
+		// initialize step return library
+		InitStepReturnLibrary();
+
+		// validate input
+		if (!Util::IsInteger(position) ||
+			 !Util::IsString(stepReturn))
+			 Error::Raise(IDE::invalidParameter, GetFileName(), GetFunctionName(), GetLineNumber());
+		if (position < 1 || GetNumOfPositions(stepReturn) < position)
+			 Error::Raise(IDE::invalidParameter, GetFileName(), GetFunctionName(), GetLineNumber());
+
+		// extract field
+		liquidLevel = StepReturn::GetField(position, field, stepReturn);
+
+		return(FVal(liquidLevel));
+	}
+
+	static function GetLabwareId(
+		variable position, 
+		variable& stepReturn) variable
+	{
+		variable field(6);
+
+		// initialize step return library
+		InitStepReturnLibrary();
+
+		// validate input
+		if (!Util::IsInteger(position) ||
+			 !Util::IsString(stepReturn))
+			 Error::Raise(IDE::invalidParameter, GetFileName(), GetFunctionName(), GetLineNumber());
+		if (position < 1 || GetNumOfPositions(stepReturn) < position)
+			 Error::Raise(IDE::invalidParameter, GetFileName(), GetFunctionName(), GetLineNumber());
+
+		// extract field
+		return(StepReturn::GetField(position, field, stepReturn));
+	}
+
+	static function GetPositionId(
+		variable position, 
+		variable& stepReturn) variable
+	{
+		variable field(7);
+
+		// initialize step return library
+		InitStepReturnLibrary();
+
+		// validate input
+		if (!Util::IsInteger(position) ||
+			 !Util::IsString(stepReturn))
+			 Error::Raise(IDE::invalidParameter, GetFileName(), GetFunctionName(), GetLineNumber());
+		if (position < 1 || GetNumOfPositions(stepReturn) < position)
+			 Error::Raise(IDE::invalidParameter, GetFileName(), GetFunctionName(), GetLineNumber());
+
+		// extract field
+		return(StepReturn::GetField(position, field, stepReturn));
+	}
+
+	static function GetStepData(
+		variable position,
+		variable& stepReturn) variable
+	{
+		variable field(5);
+
+		// initialize step return library
+		InitStepReturnLibrary();
+
+		// validate input
+		if (!Util::IsInteger(position) ||
+			 !Util::IsString(stepReturn))
+			 Error::Raise(IDE::invalidParameter, GetFileName(), GetFunctionName(), GetLineNumber());
+		if (position < 1 || GetNumOfPositions(stepReturn) < position)
+			 Error::Raise(IDE::invalidParameter, GetFileName(), GetFunctionName(), GetLineNumber());
+
+		// extract field
+		return(StepReturn::GetField(position, field, stepReturn));
+	}
+
+	static function GetLabwarePositionIds(
+		variable position,
+		variable& stepReturn,
+		variable& labwareIds[],
+		variable& positionIds[]) void
+	{
+		variable labField(6);
+		variable posField(7);
+		variable labStr("");
+		variable posStr("");
+		variable size(0);
+		variable index(0);
+
+		// initialize step return library
+		InitStepReturnLibrary();
+
+		// initialize output params
+		labwareIds.SetSize(0);
+		positionIds.SetSize(0);
+
+		// validate input
+		if (!Util::IsInteger(position) ||
+			 !Util::IsString(stepReturn))
+			 Error::Raise(IDE::invalidParameter, GetFileName(), GetFunctionName(), GetLineNumber());
+		if (position < 1 || GetNumOfPositions(stepReturn) < position)
+			 Error::Raise(IDE::invalidParameter, GetFileName(), GetFunctionName(), GetLineNumber());
+
+		// extract fields
+		labStr = StepReturn::GetField(position, labField, stepReturn);
+		posStr = StepReturn::GetField(position, posField, stepReturn);
+
+		// split sub-fields 
+		if ("" != labStr)
+			Util::Split(labStr, StringConstants::subFieldDelimiter, labwareIds);
+		else
+			labwareIds.AddAsLast("");
+		if ("" != posStr)
+			Util::Split(posStr, StringConstants::subFieldDelimiter, positionIds);
+		else
+			positionIds.AddAsLast("");
+
+		// make output arrays having the same size, replace empty filed indicator "-" by ""
+		if(labwareIds.GetSize() < positionIds.GetSize())
+			size = positionIds.GetSize();
+		else
+			size = labwareIds.GetSize();
+		labwareIds.SetSize(size);
+		positionIds.SetSize(size);
+		for (index = 0; index < size; index++)
+		{
+			if (!Util::IsString(labwareIds.ElementAt(index)))
+				labwareIds.SetAt(index, "");
+			if (StringConstants::emptySubField == labwareIds.ElementAt(index))
+				labwareIds.SetAt(index, "");
+			if (!Util::IsString(positionIds.ElementAt(index)))
+				positionIds.SetAt(index, "");
+			if (StringConstants::emptySubField == positionIds.ElementAt(index))
+				positionIds.SetAt(index, "");
+		}
+		return;
+	}
+
+	static function GetPositionFromNum(
+		variable num,
+		variable& stepReturn) variable
+	{
+		variable position(0);												// position found
+		variable index(0);													// block index
+		variable numberOfPositions(0);									// number of positions
+
+		// initialize step return library
+		InitStepReturnLibrary();
+
+		// validate input
+		if (!Util::IsInteger(num) ||
+			 !Util::IsString(stepReturn))
+			 Error::Raise(IDE::invalidParameter, GetFileName(), GetFunctionName(), GetLineNumber());
+
+		// get position from num
+		numberOfPositions = GetNumOfPositions(stepReturn);
+		for (index = 1; index <= numberOfPositions; index++)
+		{
+			if (GetPosition(index, stepReturn) == num)
+			{
+				position = index;
+				break;
+			}
+		}
+		return(position);
+	}
+
+	static function SetFieldDelimiter(
+		variable& fieldDelim) variable
+	{
+		variable oldFieldDelimiter("");
+
+		// initialize step return library
+		InitStepReturnLibrary();
+
+		// validate input
+		if (!Util::IsString(fieldDelim))
+			 Error::Raise(IDE::invalidParameter, GetFileName(), GetFunctionName(), GetLineNumber());
+
+		// remember old field delimiter
+		oldFieldDelimiter = StringConstants::fieldDelimiter;
+
+		// set field delimiter
+		StringConstants::fieldDelimiter = fieldDelim;
+
+		return(oldFieldDelimiter);
+	}
+
+	static function SetBlockDelimiter(
+		variable& blockDelim) variable
+	{
+		variable oldBlockDelimiter("");
+
+		// initialize step return library
+		InitStepReturnLibrary();
+
+		// validate input
+		if (!Util::IsString(blockDelim))
+			 Error::Raise(IDE::invalidParameter, GetFileName(), GetFunctionName(), GetLineNumber());
+
+		// remember old block delimiter
+		oldBlockDelimiter = StringConstants::blockDelimiter;
+
+		// set block delimiter
+		StringConstants::blockDelimiter = blockDelim;
+
+		return(oldBlockDelimiter);
+	}
+
+	function SetFieldDelimiterEx(
+		device& ML_STAR) variable
+	{
+		variable oldFieldDelimiter("");
+
+		// remember old field delimiter
+		oldFieldDelimiter = StringConstants::fieldDelimiter;
+
+		// set field delimiter
+		StringConstants::fieldDelimiter = ML_STAR.GetCfgValueWithKey(MlStarCfgKey::wordSeparator);
+
+		return(oldFieldDelimiter);
+	}
+
+	function SetBlockDelimiterEx(
+		device& ML_STAR) variable
+	{
+		variable oldBlockDelimiter("");
+
+		// remember old block delimiter
+		oldBlockDelimiter = StringConstants::blockDelimiter;
+
+		// set block delimiter
+		StringConstants::blockDelimiter = ML_STAR.GetCfgValueWithKey(MlStarCfgKey::blockSeparator);
+
+		return(oldBlockDelimiter);
+	}
+
+}
+#endif
+#endif
+// $$author=ContainerAdministrator$$valid=1$$time=2025-09-09 20:31$$checksum=fc9b68ff$$length=099$$

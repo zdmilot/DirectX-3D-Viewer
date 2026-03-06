@@ -1,0 +1,35 @@
+HxCfgFile,2;
+
+ConfigIsValid,Y;
+
+DataDef,TEMPLATE,1,default,
+{
+BackgrndClr, "10789024",
+Barcode.Value, "",
+Bitmap, "",
+CategoryCnt, "0",
+Description, "Tip Waste for CO-RE 96 Probe Head (without tip chute)",
+Dim.Dx, "287",
+Dim.Dy, "147",
+Dim.Dz, "174",
+ReadOnly, "1",
+Site.1.Dx, "124",
+Site.1.Dy, "82.6",
+Site.1.Id, "1",
+Site.1.IsCovered, "0",
+Site.1.Label, "1",
+Site.1.LabwareFile, "ml_star\\96corehead\\core96externalwaste.rck",
+Site.1.SnapBase, "1",
+Site.1.Stack, "0",
+Site.1.StackSize, "1",
+Site.1.Visible, "1",
+Site.1.X, "148",
+Site.1.Y, "32.5",
+Site.1.Z, "185",
+Site.Cnt, "1",
+UseBndry, "0",
+ViewName, "Core96ExternalWaste",
+Visible, "1"
+};
+
+* $$author=ContainerAdministrator$$valid=1$$time=2025-06-21 16:40$$checksum=d91e9798$$length=098$$

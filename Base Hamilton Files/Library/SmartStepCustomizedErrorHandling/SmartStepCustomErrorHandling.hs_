@@ -1,0 +1,28 @@
+
+// this ALWAYS GENERATED file contains the sub-method library header
+// Generated at 22.11.2016 11:22:26
+
+#pragma once
+#ifndef HSL_RUNTIME
+namespace SMARTSTEPCUSTOMERRORHANDLING {
+function _InitLibrary() { }
+function _ExitLibrary() { }
+function Aspirate( device & ML_STAR, variable stepID, sequence & aspirateSequence, variable aspirateSequenceCounting, variable aspirateChannelVariable, variable aspirateChannelUse, variable aspirateMode, variable & aspirateVolumes[], variable aspirateUserDefinedLiquidClass, variable aspirateCLLDSensitivity, variable aspirateSubmergeDepth, variable aspiratePLLDSensitivity, variable aspirateMaxHeightDiff, variable aspirateFluidHeight, variable aspirateLiquidFollowing, variable aspirateMixCycles, variable aspirateMixPosition, variable aspirateMixVolume, variable userResponseTime, variable & rc[] ) void { }
+function Calibrate1536Plate( device & ML_STAR, variable stepID, variable calibrateCarrier, variable calibrateCarrierChannel, variable userResponseTime, variable & rc[] ) void { }
+function Dispense( device & ML_STAR, variable stepID, sequence & dispenseSequence, variable dispenseSequenceCounting, variable dispenseChannelVariable, variable dispenseChannelUse, variable dispenseMode, variable & dispenseVolumes[], variable dispenseUserDefinedLiquidClass, variable dispenseCLLDSensitivity, variable dispenseSubmergeDepth, variable dispenseFluidHeight, variable dispenseLiquidFollowing, variable dispenseMixCycles, variable dispenseMixPosition, variable dispenseMixVolume, variable userResponseTime, variable & rc[] ) void { }
+function Initialize( device & ML_STAR, variable stepID, variable initializeAlways, variable userResponseTime, variable & rc[] ) void { }
+function LoadCarrier( device & ML_STAR, variable stepID, variable loadCarrier, variable loadCarrierBarcodeFileName, variable barcodeReadPositions, variable userResponseTime, variable & rc[] ) void { }
+function PostDispense( device & ML_STAR, variable stepID, sequence & dispenseSequence, variable dispenseSequenceCounting, variable dispenseChannelVariable, variable dispenseChannelUse, variable dispenseMode, variable & dispenseVolumes[], variable dispenseUserDefinedLiquidClass, variable dispenseCLLDSensitivity, variable dispenseSubmergeDepth, variable dispenseFluidHeight, variable dispenseLiquidFollowing, variable dispenseMixCycles, variable dispenseMixPosition, variable dispenseMixVolume, variable userResponseTime, variable & rc[] ) void { }
+function PreDispense( device & ML_STAR, variable stepID, sequence & dispenseSequence, variable dispenseSequenceCounting, variable dispenseChannelVariable, variable dispenseChannelUse, variable dispenseMode, variable & dispenseVolumes[], variable dispenseUserDefinedLiquidClass, variable dispenseCLLDSensitivity, variable dispenseSubmergeDepth, variable dispenseFluidHeight, variable dispenseLiquidFollowing, variable dispenseMixCycles, variable dispenseMixPosition, variable dispenseMixVolume, variable userResponseTime, variable & rc[] ) void { }
+function StartNeedleWash( device & ML_STAR, variable stepID, variable washStation, variable rinseTime1, variable soakTime1, variable flowRate1, variable rinseTime2, variable soakTime2, variable flowRate2, variable drainingTime, variable startWashLiquid, variable userResponseTime, variable & rc[] ) void { }
+function TipEject( device & ML_STAR, variable stepID, variable tipEjectUseDefaultWaste, sequence & tipEjectSequence, variable tipEjectSequenceCounting, variable tipEjectChannelVariable, variable tipEjectChannelUse, variable userResponseTime, variable & rc[] ) void { }
+function TipPickUp( device & ML_STAR, variable stepID, sequence & tipPickupSequence, variable tipPickupSequenceCounting, variable tipPickupChannelVariable, variable tipPickupChannelUse, variable userResponseTime, variable & rc[] ) void { }
+function UnloadCarrier( device & ML_STAR, variable stepID, variable unloadCarrier, variable userResponseTime, variable & rc[] ) void { }
+function WaitNeedleWash( device & ML_STAR, variable stepID, variable washStation, variable userResponseTime, variable & rc[] ) void { }
+} // namespace
+#endif
+
+#ifdef HSL_RUNTIME
+#include __filename__ ".hsi"
+#endif
+// $$author=ContainerAdministrator$$valid=1$$time=2025-09-09 20:31$$checksum=da726cc2$$length=099$$

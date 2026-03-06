@@ -1,0 +1,2378 @@
+// ===========================================================================================
+// This is a part of the HSL Mapping Report Library.
+// Copyright (C) by HAMILTON Bonaduz AG, CH-7402 Bonaduz.
+// All rights reserved.
+// ===========================================================================================
+//
+// Modification History
+// 2004-02-12  ubernhard : - Initial file creation.
+// 2004-03-03  ubernhard : - Implement new function SetElementBarcode().
+// 2004-03-09  ubernhard : - Implement new function RemoveElement().
+// 2004-03-18  ubernhard : - Changed series of columns (according new requirements)
+//                           within function FormatReportFile()
+// 2004-04-02  ubernhard : - new function ParseFileName() implemented
+// 2005-04-08  ubernhard : - solved SCR#797
+// 2005-06-06  ubernhard : - renamed global object mg_trackerObject to mg_mapRepTrackerObj
+// 2005-08-18  ubernhard : - solved SCR#902
+//
+// *** Use of HxVectorDB, Generate labware history by HxVectorDB, HxReport filter no longer in use ***
+//
+// 2006-07-26  ubernhard : - use of HxVectorDB interface instead of HxSampleTracker
+// 2006-08-04  ubernhard : - use function GenerateLabwareHistory of HxVectorDB 
+//                           instead of HxReport Filter to create report mapping files
+// 2006-11-15  ubernhard : - changed implementation to get all element ID's within function AddFilterSequence()
+// 2007-07-26  ubernhard : - implemented function GenerateMappingFileV42()
+//                         - enhanced function FormatReportFile() to fulfil new requirements (V4.2) 
+// 2008-12-17  cjoerg :    - Extended for 'exclude of source mix entries' and support of additional 'Action' columns
+//                            - Added new function GenerateMappingFileV43() with new parameter FilterFlagsEx.
+//                            - Extended FormatReportFile().
+//                         - Fixed bug with using of arrExperiments: Start/End index has never been working/implemented.
+//                            - Removed start/end index stuff from ...V43 function, use allways all elements!
+//                         - Removed ...V42 function
+//                         - Removed ...V42 function
+// 2009-01-29  cjoerg :    - Removed temporary added code for new action related customize field.
+//                           This extension is not longer planned for 4.3.
+// 2009-05-05  cjoerg :    - In FormatReportFile() updated WHERE statement in case of 'exclude source mix entries' = true
+//                           to include reccords with [ActionMoveVolume_StepType] is null.
+//                           Otherwise such positions are missing in reports if no ActionMoveVolume has been tracked,
+//                           e.g. if a report file is generated just after a load plate.
+//                           
+// ===========================================================================================
+
+// include guard
+#pragma once
+
+// necessary includes 
+#ifndef __HSLStrLib_hsl__
+#include "HSLStrLib.hsl"
+#endif
+
+#ifndef __HSLSynLib_hsl__
+#include "HSLSynLib.hsl"
+#endif
+
+#ifndef __HSLUtilLib_hsl__
+#include "HSLUtilLib.hsl"
+#endif
+
+#ifndef __HSLUtilLib2_hsl__
+#include "HSLUtilLib2.hsl"
+#endif
+
+#ifndef __HSLUtilLib2Def_hs___
+#include "HSLUtilLib2Def.hs_"
+#endif
+
+#ifndef __HSLSeqLib_hsl__
+#include "HSLSeqLib.hsl"
+#endif
+
+#ifndef __HSLMthLib_hsl__
+#include "HSLMthLib.hsl"
+#endif
+
+// --------------------------------------------------------------------------------------
+// Implementation of Report Mapping Library
+// --------------------------------------------------------------------------------------
+
+namespace HSLMapReport
+{
+	#ifndef __HSLStringTableLib_hsl__
+	#include "HSLStringTableLib.hs_"
+	#endif
+
+	// --------------------------------------------------------------------------------------
+	// Library Data
+	// --------------------------------------------------------------------------------------
+
+	//declaration of global member data
+	global variable mg_IsSampleTrackingEnabled(hslFalse);					// false, if sample tracking is OFF
+	global object mg_mapRepTrackerObj;											// the one and only HxVectorDB tracking object, instantiated from executor
+	global variable mg_mapRepCS(0);												// critical section
+	global variable mg_runID("");													// unique run ID
+	global variable mg_uniqueReportFileIndex(0);								// unique report file index
+	global variable mg_listSeparator("");										// list separator as set in registry HKEY_CURRENT_USER\Control Panel\International\sList
+	global variable mg_arrFilterElementIDs[];									// array containing element IDs underlying given filter sequences
+	global variable mg_sourceElementIDs[];										// array containing all source element IDs (sequences of interest & experiments)
+
+	//declaration of member data valid within namespace of process
+	variable m_initializedLib(hslFalse);										// initialization state of the HSL Mapping Report library
+	variable m_EnhancedLibraryTrace(hslTrue);									// if true, each library function will trace start and end action
+	string m_filePathName("");														// file name for mode 'Create One File'
+
+	object fso;																			// File System Object, used for file handling
+	object scriptControl;															// Script Control, used to evaluate VBScript expressions
+	
+	// --------------------------------------------------------------------------------------
+	// Debugging
+	// --------------------------------------------------------------------------------------
+
+	//#define _DEBUG		1																// specifies the debug version of the library
+
+	// --------------------------------------------------------------------------------------
+	// Tracing
+	// --------------------------------------------------------------------------------------
+
+	namespace TraceStatus
+	{
+		const variable start(1);													// action status for formatted trace
+		const variable complete(2);												// action status for formatted trace
+		const variable error_(3);													// action status for formatted trace
+		const variable progress(4);												// action status for formatted trace
+		const variable completeWithError(5);									// action status for formatted trace
+	}
+
+	// --------------------------------------------------------------------------------------
+	// Error Ids
+	// --------------------------------------------------------------------------------------
+
+	namespace IDE
+	{
+		const variable first(0);													// guard
+		const variable noError(first);											// No error.
+		const variable fatalError(first + 1);									// General unspecific error
+		const variable invalidFileName(first + 2);							// Invalid file name
+		const variable invalidPath(first + 3);									// Invalid path name
+		const variable invalidParameter(first + 4);							// Invalid parameter
+		const variable sampleTrackingDisabled(first + 5);					// Sample tracking disabled
+		const variable elementNotFound(first + 6);							// Element not found, i.e. either not loaded or already unloaded from instrument
+		const variable failedToCreateReportFile(first + 7);				// Failed to build the report file (HxReport exit code = -1)
+		const variable fileNameInvalidCharacter(first + 8);				// Invalid character within file name
+		const variable invalidFileExtension(first + 9);						// Invalid file extension
+		const variable fileNotFound(first + 10);								// File not found
+		const variable failedToDeleteFile(first + 11);						// Failed to delete file
+		const variable unknownLabwareId(first + 12);							// The labware identifier does not exist within decklayout of associated device
+		const variable emptyBarcode(first + 13);								// Empty barcode is not allowed
+		const variable setElementBarcode_NotSupportedLabware(first + 14); // The labware type is not supported by this step
+		const variable deviceWithoutDeck(first + 15);						// deckless instrument
+		const variable unknownPositionId(first + 16);						// The positon identifier for labware does not exist (wrong spelling)
+		const variable noFilterSet(first + 17);								// No filter set for FilterMode::combinationOf
+		const variable writeRecordFailed(first + 18);						// Write Record failed (different naming / number of columns -> open file to append)
+		const variable invalidPlaceHolderLabId(first + 19);				// invalid placeholder used
+		const variable invalidPlaceHolderBC(first + 20);					// invalid placeholder used
+		const variable invalidPlaceHolderNo(first + 21);					// invalid placeholder used
+		const variable last(first + 21);											// guard
+	}
+
+	// --------------------------------------------------------------------------------------
+	// String Ids
+	// --------------------------------------------------------------------------------------
+
+	namespace IDS
+	{
+		// private
+		const variable first(IDE::last + 1);									// guard
+		const variable helpFileName(first);										// help file name
+		const variable traceSource(first + 1);									// trace source						
+		const variable traceGenerateMappingReport(first + 2);				// action for formatted trace
+		const variable traceActionAddFilterSequence(first + 3);			// action for formatted trace
+		const variable traceActionRemoveAllFilterSequences(first + 4);	// action for formatted trace
+		const variable enableSampleTracking(first + 5);						// enable sample tracking
+		const variable traceActionGetListSeparator(first + 6);			// action for formatted trace
+		const variable traceActionDeleteFile(first + 7);					// action for formatted trace
+		const variable listSeparator(first + 8);								// list separator info
+		const variable fileDeleted(first + 9);									// file deleted
+		const variable filterSequence(first + 10);							// filter sequence
+		const variable generateReportFile(first + 11);						// create report file
+		const variable reportFileGenerationFailed(first + 12);			// failed to create the report file
+		const variable noElementFoundWithinTargetSeq(first + 13);		// empty target sequence or no element loaded
+		const variable createReportMappingFile(first + 14);				// create report mapping file
+		const variable reportMappingFileGenerationFailed(first + 15);	// failed to create the report mapping file
+		const variable elementOfFilterSequence(first + 16);				// element (LabId) of sequence
+		const variable traceActionSetElementBarcode(first + 17);			// action for formatted trace
+		const variable setBarcodeOnLabId(first + 18);						// set 'Barcode' on 'LabwareId'
+		const variable traceActionRemoveElement(first + 19);				// action for formatted trace
+		const variable removedElementFromDevice(first + 20);				// removed 'element' from 'device'
+		const variable statusSum_NoError(first + 21);						// human readable summary state description
+		const variable statusSum_WellNotUsed(first + 22);					// human readable summary state description
+		const variable statusSum_BarcodeWarning(first + 23);				// human readable summary state description
+		const variable statusSum_PipetteWarning(first + 24);				// human readable summary state description
+		const variable statusSum_TransportWarning(first + 25);			// human readable summary state description
+		const variable statusSum_LoadWarning(first + 26);					// human readable summary state description
+		const variable statusSum_WashWarning(first + 27);					// human readable summary state description
+		const variable statusSum_PreviousRunWarning(first + 28);			// human readable summary state description
+		const variable statusSum_UnspecifiedWarning(first + 29);			// human readable summary state description
+		const variable statusSum_BarcodeError(first + 30);					// human readable summary state description
+		const variable statusSum_PipetteError(first + 31);					// human readable summary state description
+		const variable statusSum_TransportError(first + 32);				// human readable summary state description
+		const variable statusSum_LoadError(first + 33);						// human readable summary state description
+		const variable statusSum_WashError(first + 34);						// human readable summary state description
+		const variable statusSum_PreviousRunError(first + 35);			// human readable summary state description
+		const variable statusSum_UnspecifiedError(first + 36);			// human readable summary state description
+		const variable last(first + 36);											// guard
+	}
+
+	// --------------------------------------------------------------------------------------
+	// String constants
+	// --------------------------------------------------------------------------------------
+
+	namespace StrConst
+	{
+		const variable crlf("\013\010");											// Carriage return linefeed combination
+		const variable templateDefaultName("default");						// template default name
+		
+		const variable emptyString("");
+		const variable blank(" ");
+		const variable noInformation("----------");							// instead of an empty string, if no information is available
+		const variable semicolon(";");
+		
+		const variable libraryName("HSLMappingReport");						// Library name
+		const variable libraryImplFileName("HSLMappingReportImpl");		// Library implementation file name
+		const variable helpFileExtension(".chm");								// HTML Help file extension
+		
+		// Report Mapping File Table
+		const variable recordId      ("RecordId");							// column name's of report-mapping file
+		const variable tRackBc       ("TRackBC");								// (used from HSL code generated with < 4.2)
+		const variable tLabwareId    ("TLabwareId");							// 
+		const variable tPositionId   ("TPositionId");						// 
+		const variable tPositionBc   ("TPositionBC");						// 
+		const variable tStatusSummary("TStatusSummary");					// 
+		const variable tStateDesc    ("TSumStateDescription");			// 
+		const variable tVolume       ("TVolume");								// 
+		const variable sRackBc       ("SRackBC");								// 
+		const variable sLabwareId    ("SLabwareId");							// 
+		const variable sPositionId   ("SPositionId");						// 
+		const variable sPositionBc   ("SPositionBC");						// 
+		const variable actionDateTime("ActionDateTime");					// 
+		const variable userName      ("UserName");							// 
+		// 2009-01-08/cjoerg: New columns added in 4.3 (additional action cols) are not required because
+		// the column names are allways defined by the generated code
+		
+		const variable tableName("ReportMapping");							// name of the table (for Excel and Access format) 
+
+		const variable failedToCreateReportFile("ErrBuildLabwareHistory"); // Error during build of labware history
+		const variable elementNotFound("ErrElementNotFound");				// The element does not exist in database (never loaded or already unloaded)
+
+		// registry key for list separator of current logged in user
+		const variable regKeyForListSeparator("HKEY_CURRENT_USER\Control Panel\International\sList");
+
+		// invalid characters for filenames
+		const variable backslash("\\");
+		const variable slash("/");
+		const variable colon(":");
+		const variable asterisk("*");
+		const variable questionMark("?");
+		const variable quotationMark("\"");
+		const variable lessThanSign("<");
+		const variable greaterThanSign(">");
+		const variable orSign("|");
+
+		// file extensions
+		const variable excel(".xls");
+		const variable csv(".csv");
+		const variable access(".mdb");
+
+		// filename placeholders
+		const string barcodePlaceholder("<bc>");								// barcode placeholder, may be used in the report output file name
+		const string labIdPlaceholder("<labid>");								// placeholder for labware identifier, may be used in the report output file name
+		const string noPlaceholder("<no>");										// placeholder for a number, may be used in the report output file name
+	}
+
+	// --------------------------------------------------------------------------------------
+	// Number constants
+	// --------------------------------------------------------------------------------------
+
+	namespace NbrConst
+	{
+		// private
+		const variable notUsedWellVolume(1E+9);								// Double value of a well, if no volume move was done
+		const variable barcodeLengthChars(2);									// number of chars representing barcode length
+		const variable fileExtensionLength(4);									// file extension length
+	}
+
+   namespace FilterMode
+   {
+		const variable first(0);
+		const variable showAll(first);
+		const variable showProcessedOnly(first + 1);
+		const variable withoutErrorsOnly(first + 2);
+		const variable withErrorsOnly(first + 3);
+		const variable combinationOf(first + 4);
+		const variable last(first + 4);
+	}
+
+   namespace SortMode
+   {
+		const variable first(0);
+		const variable byColumn(first);
+		const variable byRow(first + 1);
+		const variable last(first + 1);
+	}
+
+	// Report Mapping File Columns Identifiers.
+	// 2009-01-07/cjoerg: Never change the numbers becuase used as ID an saved persistent (e.g. in the generated code).
+	// 2009-01-29/cjoerg: Removed previously added action fields with ID 14-17
+	namespace ColId
+	{
+		const variable first         ( 0);			// used in HSLSTCCLibImpl.hs_ for a range check
+		const variable recordId         ( 0);
+		const variable tRackBC          ( 1);
+		const variable tLabId           ( 2);
+		const variable tPosId           ( 3);
+		const variable tPosBC           ( 4);
+		const variable tStatusSummary   ( 5);
+		const variable tStateDesc       ( 6);		// added in 4.2
+		const variable tVol             ( 7);
+		const variable sRackBC          ( 8);
+		const variable sLabId           ( 9);
+		const variable sPosId           (10);
+		const variable sPosBC           (11);
+		const variable actionDateTime   (12);
+		const variable userName         (13);
+		//const variable actionState      (14);		// added for 4.3: 2009-01-07/cjoerg
+		//const variable actionStateDesc  (15);		// added for 4.3: 2009-01-07/cjoerg
+		//const variable actionVolume     (16);		// added for 4.3: 2009-01-07/cjoerg
+		//const variable actionId         (17);		// added for 4.3: 2009-01-07/cjoerg
+		const variable last          (13);			// used in HSLSTCCLibImpl.hs_ for a range check
+	}
+
+	namespace ErrorId
+	{
+		const variable first(0);
+		const variable errIdNoError(first);
+		const variable errIdWellNotUsed(first + 1);
+		const variable errIdBarcodeWarning(first + 2);
+		const variable errIdPipetteWarning(first + 3);
+		const variable errIdTransportWarning(first + 4);
+		const variable errIdLoadWarning(first + 5);
+		const variable errIdWashWarning(first + 6);
+		const variable errIdPreviousRunWarning(first + 7);
+		const variable errIdUnspecifiedWarning(first + 8);
+		const variable errIdBarcodeError(first + 9);
+		const variable errIdPipetteError(first + 10);
+		const variable errIdTransportError(first + 11);
+		const variable errIdLoadError(first + 12);
+		const variable errIdWashError(first + 13);
+		const variable errIdPreviousRunError(first + 14);
+		const variable errIdUnspecifiedError(first + 15);
+		const variable last(first + 15);
+	}
+
+	namespace Status
+	{
+		const variable noError(0);							// 0x0000000
+		const variable wellNotUsed(1);					// 0x0000001
+		const variable barcodeWarning(2);				// 0x0000002
+		const variable pipettingWarning(4);				// 0x0000004
+		const variable transportWarning(8);				// 0x0000008
+		const variable loadWarning(16);					// 0x0000010
+		const variable washWarning(32);					// 0x0000020
+		const variable previousWarning(2048);			// 0x0000800
+		const variable unspecifiedWarning(4096);		// 0x0001000
+		const variable barcodeError(8192);				// 0x0002000
+		const variable pipettingError(16384);			// 0x0004000
+		const variable transportError(32768);			// 0x0008000
+		const variable loadError(65536);					// 0x0010000
+		const variable washError(131072);				// 0x0020000
+		const variable previousError(8388608);			// 0x0800000
+		const variable unspecifiedError(16777216);	// 0x1000000
+	}
+
+
+   namespace FilterFlagsEx		// Addtional filter flags, added in V4.3, 2008-12-17/cjoerg
+   {
+		const variable none(0);
+		const variable excludeSourceMixEntries(1);	// 0x0000001: added in V4.3
+		//const variable ....(2);							// 0x0000002
+		const variable all(excludeSourceMixEntries);
+	}
+
+
+   namespace HxVectorDbStepType     // added 2008-12-17/cjoerg
+   {
+       const variable Aspirate(1);
+       const variable Dispense(2);
+       const variable Mixing(3);
+       const variable Vacuumate(10);
+   }
+
+   namespace HxVectorDbActionState     // added 2008-12-17/cjoerg
+   {
+      const variable NoError(0);
+      const variable Fatal(1);
+      const variable Error(2);
+      const variable Warning(3);
+   }
+
+
+	// --------------------------------------------------------------------------------------
+	// Helpers
+	// --------------------------------------------------------------------------------------
+	static function GetModuleHelpFileName() variable
+	{
+		variable helpFile("");
+		variable thisFilePath("");
+		variable lastBackSlashPos(-1);
+
+		// Note: The help for this library must be located in same directory as this file.
+		// Evaluate the path to concatniate it with the MolduleName+Extension.
+		thisFilePath = GetFileName();
+		lastBackSlashPos = StrReverseFind(thisFilePath, "\\");
+		if ( -1 < lastBackSlashPos )
+		{
+			thisFilePath = StrLeft(thisFilePath, lastBackSlashPos+1);
+		}
+
+		helpFile = thisFilePath + StrConst::libraryName + GetLanguage() + StrConst::helpFileExtension;		// current language
+		if ("" == SearchPath(helpFile))
+		{
+			helpFile = thisFilePath + StrConst::libraryName + "Enu" + StrConst::helpFileExtension;			// default language, fixed to enu
+			if ("" == SearchPath(helpFile))
+			{
+				helpFile = thisFilePath + StrConst::libraryName + StrConst::helpFileExtension;					// no language
+				if ("" == SearchPath(helpFile))
+				{
+					// no help file found within the search directory
+					// return the helpFileName with current language, but without path.
+					// Maybe its existing/found at other place or its registered and found by this way.
+					helpFile = StrConst::libraryName + GetLanguage() + StrConst::helpFileExtension;
+				}
+			}
+		}
+		
+		#ifdef _DEBUG
+			FormatTrace("DEBUG", GetFunctionName(), TraceStatus::progress, "Module Help File: ", helpFile);
+		#endif
+
+		return( helpFile );
+	}
+	
+	// --------------------------------------------------------------------------------------
+	// Exception Handling
+	// --------------------------------------------------------------------------------------
+
+	namespace Error
+	{
+		static function Raise(														// raises a runtime error
+			variable errorId,															// [in] error id, one of IDE
+			variable& fileName,														// [in] file name
+			variable& funcName,														// [in] function name
+			variable& lineNumber)													// [in] line number
+		{
+			variable description("");
+
+			// set error description
+			description = fileName + "(" + lineNumber + ") : " + funcName + "()\n" + StringTable::Load(errorId);
+			err.SetDescription(description);
+
+			// raise error
+			err.Raise(errorId, err.GetDescription(), GetModuleHelpFileName());
+		}
+
+		function RaiseEx(																// raises a runtime error
+			variable errorId,															// [in] error id, one of IDE
+			variable errorDesc,														// [in] error description
+			variable& fileName,														// [in] file name
+			variable& funcName,														// [in] function name
+			variable& lineNumber)													// [in] line number
+		{
+			variable description("");
+
+			// set error description
+			if ("" == funcName)
+				description = fileName + "(" + lineNumber + ") : " + errorDesc;
+			else
+				description = fileName + "(" + lineNumber + ") : " + funcName + "()\n" + errorDesc;
+			err.SetDescription(description);
+
+			// raise error
+			err.Raise(errorId, err.GetDescription(), GetModuleHelpFileName());
+		}
+
+		function RaiseLast()															// re-throws the last runtime error
+		{
+			// re-raise error
+			err.Raise();
+		}
+	}
+
+	// --------------------------------------------------------------------------------------
+	// Declaration of static functions
+	// --------------------------------------------------------------------------------------
+
+	static function IsSampleTrackerOn();	// returns true, if sample tracker is switched ON
+
+	// --------------------------------------------------------------------------------------
+	// Implementation of static functions
+	// --------------------------------------------------------------------------------------
+
+	static function InitMappingReportLibrary()
+	{
+		// initialize the HSL Mapping Report library once only
+		if (!m_initializedLib)
+		{
+			// load string table
+			StringTable::Init(StrConst::libraryImplFileName);
+			
+			#ifdef _DEBUG
+				StringTable::Dump();
+			#endif
+
+			if(0 == mg_mapRepCS)
+				mg_mapRepCS = SynInitializeCriticalSection();
+
+			// create objects
+			scriptControl.CreateObject("MSScriptControl.ScriptControl");
+			scriptControl.Language = "VBScript";
+
+			fso.CreateObject("Scripting.FileSystemObject");
+
+			if(mg_mapRepTrackerObj.IsNull())
+			{
+				object tmpTrackerObject;
+				// Get Tracking object (= IHxVectorDbTracking2)
+				tmpTrackerObject = GetVectorDbTrackerObject(); // returns IHxVectorDbTracking interface
+				tmpTrackerObject.GetObject("IHxVectorDbTracking2", mg_mapRepTrackerObj); // switch to IHxVectorDbTracking2 interface
+				tmpTrackerObject.ReleaseObject(); // release the temporary object
+			}
+
+			if(mg_runID == StrConst::emptyString)
+				mg_runID = GetUniqueRunId();
+
+			mg_IsSampleTrackingEnabled = IsSampleTrackerOn();
+
+			if(mg_listSeparator == StrConst::emptyString)
+			{
+				object wsShell;
+				wsShell.CreateObject("WScript.Shell");
+
+				mg_listSeparator = wsShell.RegRead(StrConst::regKeyForListSeparator);
+			}
+			
+			m_initializedLib = hslTrue;
+		}
+		return(m_initializedLib);
+	}
+
+
+	static function DisableEnhancedLibraryTraces()
+	{
+		m_EnhancedLibraryTrace = hslFalse;
+	}
+
+
+	static function IsSampleTrackerOn()
+	{
+		variable isOn(hslFalse);
+		variable retVal;
+		
+		retVal = mg_mapRepTrackerObj.Enabled();
+
+		if(retVal == 1)
+			isOn = hslTrue;
+
+		return(isOn); // true, if tracker is on
+	}
+
+	static function InitArrColumnsIds(variable& columnIds[])
+	{
+		// used if called from HSL code generated with < 4.2
+		// (2009-01-08/cjoerg) new columns added in 4.3 are not added to the array)
+		columnIds.SetSize(0);
+		columnIds.AddAsLast(ColId::recordId);
+		columnIds.AddAsLast(ColId::tRackBC);
+		columnIds.AddAsLast(ColId::tLabId);
+		columnIds.AddAsLast(ColId::tPosId);
+		columnIds.AddAsLast(ColId::tPosBC);
+		columnIds.AddAsLast(ColId::tStatusSummary);
+		columnIds.AddAsLast(ColId::tStateDesc);
+		columnIds.AddAsLast(ColId::tVol);
+		columnIds.AddAsLast(ColId::sRackBC);
+		columnIds.AddAsLast(ColId::sLabId);
+		columnIds.AddAsLast(ColId::sPosId);
+		columnIds.AddAsLast(ColId::sPosBC);
+		columnIds.AddAsLast(ColId::actionDateTime);
+		columnIds.AddAsLast(ColId::userName);
+	}
+
+	static function InitArrColumnNames(variable& columnNames[])
+	{
+		// used if called from HSL code generated with < 4.2
+		// (2009-01-08/cjoerg) new columns added in 4.3 are not added to the array)
+		columnNames.SetSize(0);
+		columnNames.AddAsLast(StrConst::recordId);
+		columnNames.AddAsLast(StrConst::tRackBc);
+		columnNames.AddAsLast(StrConst::tLabwareId);
+		columnNames.AddAsLast(StrConst::tPositionId);
+		columnNames.AddAsLast(StrConst::tPositionBc);
+		columnNames.AddAsLast(StrConst::tStatusSummary);
+		columnNames.AddAsLast(StrConst::tStateDesc);
+		columnNames.AddAsLast(StrConst::tVolume);
+		columnNames.AddAsLast(StrConst::sRackBc);
+		columnNames.AddAsLast(StrConst::sLabwareId);
+		columnNames.AddAsLast(StrConst::sPositionId);
+		columnNames.AddAsLast(StrConst::sPositionBc);
+		columnNames.AddAsLast(StrConst::actionDateTime);
+		columnNames.AddAsLast(StrConst::userName);
+	}
+
+	static function GetStateFromErrorId(variable errorId)
+	{
+		if( errorId == ErrorId::errIdNoError )
+			return (Status::noError);
+		else
+		if( errorId == ErrorId::errIdWellNotUsed )
+			return (Status::wellNotUsed);
+		else
+		if( errorId == ErrorId::errIdBarcodeWarning )
+			return (Status::barcodeWarning);
+		else
+		if( errorId == ErrorId::errIdPipetteWarning )
+			return (Status::pipettingWarning);
+		else
+		if( errorId == ErrorId::errIdTransportWarning )
+			return (Status::transportWarning);
+		else
+		if( errorId == ErrorId::errIdLoadWarning )
+			return (Status::loadWarning);
+		else
+		if( errorId == ErrorId::errIdWashWarning )
+			return (Status::washWarning);
+		else
+		if( errorId == ErrorId::errIdPreviousRunWarning )
+			return (Status::previousWarning);
+		else
+		if( errorId == ErrorId::errIdUnspecifiedWarning )
+			return (Status::unspecifiedWarning);
+		else
+		if( errorId == ErrorId::errIdBarcodeError )
+			return (Status::barcodeError);
+		else
+		if( errorId == ErrorId::errIdPipetteError )
+			return (Status::pipettingError);
+		else
+		if( errorId == ErrorId::errIdTransportError )
+			return (Status::transportError);
+		else
+		if( errorId == ErrorId::errIdLoadError )
+			return (Status::loadError);
+		else
+		if( errorId == ErrorId::errIdWashError )
+			return (Status::washError);
+		else
+		if( errorId == ErrorId::errIdPreviousRunError )
+			return (Status::previousError);
+		else // ( errorId == ErrorId::errIdUnspecifiedError )
+			return (Status::unspecifiedError);		
+	}
+
+	static function GetSummaryStateDesc(variable tSummaryState)
+	{
+		string stateDesc(""); // human readable summary state description
+
+		if( tSummaryState == Status::noError )
+		{
+			stateDesc = StringTable::Load(IDS::statusSum_NoError);
+			return (stateDesc);
+		}
+		if( tSummaryState == Status::wellNotUsed )
+		{
+			stateDesc = StringTable::Load(IDS::statusSum_WellNotUsed);
+			return (stateDesc);
+		}
+		if( MthBitwiseAND(Status::barcodeWarning, tSummaryState) / Status::barcodeWarning )
+		{
+			stateDesc = StringTable::Load(IDS::statusSum_BarcodeWarning);
+		}
+		if( MthBitwiseAND(Status::pipettingWarning, tSummaryState) / Status::pipettingWarning )
+		{
+			if(stateDesc.GetLength() != 0)
+				stateDesc = stateDesc + ", ";
+			stateDesc = stateDesc + StringTable::Load(IDS::statusSum_PipetteWarning);
+		}
+		if( MthBitwiseAND(Status::transportWarning, tSummaryState) / Status::transportWarning )
+		{
+			if(stateDesc.GetLength() != 0)
+				stateDesc = stateDesc + ", ";
+			stateDesc = stateDesc + StringTable::Load(IDS::statusSum_TransportWarning);
+		}
+		if( MthBitwiseAND(Status::loadWarning, tSummaryState) / Status::loadWarning )
+		{
+			if(stateDesc.GetLength() != 0)
+				stateDesc = stateDesc + ", ";
+			stateDesc = stateDesc + StringTable::Load(IDS::statusSum_LoadWarning);
+		}
+		if( MthBitwiseAND(Status::washWarning, tSummaryState) / Status::washWarning )
+		{
+			if(stateDesc.GetLength() != 0)
+				stateDesc = stateDesc + ", ";
+			stateDesc = stateDesc + StringTable::Load(IDS::statusSum_WashWarning);
+		}
+		if( MthBitwiseAND(Status::previousWarning, tSummaryState) / Status::previousWarning )
+		{
+			if(stateDesc.GetLength() != 0)
+				stateDesc = stateDesc + ", ";
+			stateDesc = stateDesc + StringTable::Load(IDS::statusSum_PreviousRunWarning);
+		}
+		if( MthBitwiseAND(Status::unspecifiedWarning, tSummaryState) / Status::unspecifiedWarning )
+		{
+			if(stateDesc.GetLength() != 0)
+				stateDesc = stateDesc + ", ";
+			stateDesc = stateDesc + StringTable::Load(IDS::statusSum_UnspecifiedWarning);
+		}
+		if( MthBitwiseAND(Status::barcodeError, tSummaryState) / Status::barcodeError )
+		{
+			if(stateDesc.GetLength() != 0)
+				stateDesc = stateDesc + ", ";
+			stateDesc = stateDesc + StringTable::Load(IDS::statusSum_BarcodeError);
+		}
+		if( MthBitwiseAND(Status::pipettingError, tSummaryState) / Status::pipettingError )
+		{
+			if(stateDesc.GetLength() != 0)
+				stateDesc = stateDesc + ", ";
+			stateDesc = stateDesc + StringTable::Load(IDS::statusSum_PipetteError);
+		}
+		if( MthBitwiseAND(Status::transportError, tSummaryState) / Status::transportError )
+		{
+			if(stateDesc.GetLength() != 0)
+				stateDesc = stateDesc + ", ";
+			stateDesc = stateDesc + StringTable::Load(IDS::statusSum_TransportError);
+		}
+		if( MthBitwiseAND(Status::loadError, tSummaryState) / Status::loadError )
+		{
+			if(stateDesc.GetLength() != 0)
+				stateDesc = stateDesc + ", ";
+			stateDesc = stateDesc + StringTable::Load(IDS::statusSum_LoadError);
+		}
+		if( MthBitwiseAND(Status::washError, tSummaryState) / Status::washError )
+		{
+			if(stateDesc.GetLength() != 0)
+				stateDesc = stateDesc + ", ";
+			stateDesc = stateDesc + StringTable::Load(IDS::statusSum_WashError);
+		}
+		if( MthBitwiseAND(Status::previousError, tSummaryState) / Status::previousError )
+		{
+			if(stateDesc.GetLength() != 0)
+				stateDesc = stateDesc + ", ";
+			stateDesc = stateDesc + StringTable::Load(IDS::statusSum_PreviousRunError);
+		}
+		if( MthBitwiseAND(Status::unspecifiedError, tSummaryState) / Status::unspecifiedError )
+		{
+			if(stateDesc.GetLength() != 0)
+				stateDesc = stateDesc + ", ";
+			stateDesc = stateDesc + StringTable::Load(IDS::statusSum_UnspecifiedError);
+		}
+
+		return (stateDesc);
+	}
+
+	static function GenerateReportFiles(
+		device& deviceContext,
+		sequence& targetSequence,
+		variable& arrExperiments[],
+		variable& arrLabwareAccessName[],
+		variable& arrReportFileName[])
+	{
+		variable instrumentName;
+		variable templateNames[];									// place to hold template names contained in deck layout
+		variable labwareNames[];									// place to hold labware names contained in deck layout
+		variable labwareAccessName;								// labware access name (used to access via HxVectorDB interface)
+		variable dbLabwareID;										// labware ID of database
+		variable labId("");											// deck labware id (e.g. "nun_96_fl_l_0001")
+		variable labIdArr[];											// place to hold all labware id's which underlaying the targetSequence
+		variable isLabwareLoaded(hslFalse);						// true if the labware to generate a report file is loaded.
+		variable traceSource("");									// source for formatted trace
+		variable traceAction("");									// action for formatted trace
+		variable traceInfo("");										// additional trace information
+		variable index(0);
+		variable index2(0);
+		variable templateName("");
+		variable srcExperimentElementIDs[]; 					// array containing source experiment element Id's
+
+		traceSource = StringTable::Load(IDS::traceSource);
+		traceAction = StringTable::Load(IDS::traceGenerateMappingReport);
+
+		// get instrument name
+		instrumentName = deviceContext.GetInstrumentName();
+
+		// get labware names with associated template name
+		deviceContext.GetTemplateLabwareNames(templateNames, labwareNames);
+
+		// check count of sequence
+		if(targetSequence.GetCount() == 0)
+		{
+			// due to empty sequence, no element will be found
+			traceInfo = StringTable::Load(IDS::noElementFoundWithinTargetSeq);
+			StrReplace(traceInfo, "%s", targetSequence.GetName());
+			Error::RaiseEx(IDE::elementNotFound, traceInfo, GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+
+		targetSequence.GetLabwareIds(labIdArr);
+
+		// get Source Element Ids for given experiments from Vector DB
+		srcExperimentElementIDs.SetSize(0);
+		if(arrExperiments.GetSize() > 0)
+		{
+			srcExperimentElementIDs = mg_mapRepTrackerObj.GetExperimentSourceElementIDsByExperimentNames(arrExperiments);
+		}
+
+		// setup filter array
+		mg_sourceElementIDs.SetSize(0);
+
+		// add element ID's from sequences of interest (-> AddFilterSequence() )
+		mg_sourceElementIDs = mg_arrFilterElementIDs;
+
+		for(index = 0; index < srcExperimentElementIDs.GetSize(); index++) 
+		{
+			mg_sourceElementIDs.AddAsLast( srcExperimentElementIDs.GetAt(index) );
+		}
+
+		for(index = 0; index < labIdArr.GetSize(); index++)
+		{
+			labId = labIdArr.GetAt(index);
+
+			// lookup associated template name
+			if (Util::Lookup(labwareNames, labId, index2))
+			{
+				// found an associated template name
+				templateName = templateNames.ElementAt(index2);
+				if (StrConst::templateDefaultName == templateName)
+				{
+					// not really a template
+					templateName = "";
+				}
+
+				// setup labware access name
+				labwareAccessName = instrumentName + StrConst::backslash;
+				if (StrConst::emptyString != templateName)
+					labwareAccessName = labwareAccessName + templateName + StrConst::backslash + labId;
+				else 
+					labwareAccessName = labwareAccessName + labId;
+
+				// add access name
+				arrLabwareAccessName.AddAsLast(labwareAccessName);
+
+				// check if labware is loaded
+				dbLabwareID = mg_mapRepTrackerObj.IsLabwareLoaded(labwareAccessName);
+				
+				if( dbLabwareID != 0 ) // create the report file
+				{
+					variable reportFileName("");
+
+					isLabwareLoaded = hslTrue;
+
+					mg_uniqueReportFileIndex++;
+
+					reportFileName = labId + "_" + mg_runID + "_" + IStr(mg_uniqueReportFileIndex) + StrConst::access;
+
+					// trace progress
+					traceInfo = StringTable::Load(IDS::generateReportFile);
+					StrReplace(traceInfo, "%s", labwareAccessName);
+					FormatTrace(traceSource, traceAction, TraceStatus::progress, traceInfo);
+				
+					onerror goto ErrGenerateLabwareHistory;
+
+					mg_mapRepTrackerObj.GenerateLabwareHistory(reportFileName, dbLabwareID, mg_sourceElementIDs);
+					
+					reportFileName = GetLogFilesPath() + StrConst::backslash + reportFileName;
+
+					arrReportFileName.AddAsLast(reportFileName);
+				}
+				else
+				{
+					// element not found, i.e. element either not loaded or already unloaded from imstrument
+					arrReportFileName.AddAsLast(StrConst::elementNotFound);
+				}
+
+				if(isLabwareLoaded == hslFalse)
+				{
+					traceInfo = StringTable::Load(IDS::noElementFoundWithinTargetSeq);
+					StrReplace(traceInfo, "%s", targetSequence.GetName());
+
+					// trace progress
+					FormatTrace(traceSource, traceAction, TraceStatus::progress, traceInfo);
+				}
+			}
+		}
+
+		return;
+
+		ErrGenerateLabwareHistory:
+		{
+			// failed to create the report file
+			arrReportFileName.AddAsLast(StrConst::failedToCreateReportFile);
+			resume next;
+		}
+	}			
+
+	static function GetDummyCharacters(						// function returns a string of given characters and length
+		variable nbrOfCharcters,								//  [in] the length of the string as integer
+		string character)											//  [in] the wished character
+	{
+		variable i;
+		string s;
+
+		for (i = 0; i < nbrOfCharcters; i++)
+		{
+			s = s + character;
+		}
+
+		return (s);
+	}
+
+	static function ParseFileName(							// function returns the parsed file name as string
+		variable& fileName,										//  [in] the file name to parse
+		variable  createOneFile,								//  [in] hslTrue, if one mapping file shall be generated for all labware
+		variable  openFileToAppend,							//  [in] hslTrue, if data shall be appended to an existing
+		variable& labwareId,										//  [in] the labware identifier used for placeholder <labid>
+		variable& barcode,										//  [in] the barcode of labware used for placeholder <bc>
+		variable& number,											//  [in] the number used for placeholder <no>
+		variable& replacedCharactersOfPlaceholder_No)	// [out]	the number of replaced characters for placeholder <no>
+	{
+		string sFileName;
+		string sParsedFileName;
+		variable index;
+		variable length;
+		string leftSplitter;
+		string rightSplitter;
+
+		// initialize out param
+		replacedCharactersOfPlaceholder_No = 0;
+
+		sFileName = fileName; 			// copy of input param
+		sParsedFileName = fileName;	// copy of input param
+		
+		length = sFileName.GetLength();
+
+		sFileName.MakeLower();
+
+		index = sFileName.Find(StrConst::labIdPlaceholder);
+
+		// check restriction for mode 'Create one file' for all labware within the sequence
+		if( index != -1 && createOneFile)
+		{
+			Error::RaiseEx(IDE::invalidPlaceHolderLabId, StringTable::Load(IDE::invalidPlaceHolderLabId),
+								GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+
+		while(-1 != index)
+		{
+			string sDummyCharacters;
+			
+			leftSplitter = sParsedFileName.Left(index);
+			rightSplitter = sParsedFileName.Right(length - (index + StrConst::labIdPlaceholder.GetLength()));
+			
+			sParsedFileName = leftSplitter + StrConst::labIdPlaceholder + rightSplitter;
+
+			// replace the first found placeholder with dummy characters
+			leftSplitter = sFileName.Left(index);
+			rightSplitter = sFileName.Right(length - (index + StrConst::labIdPlaceholder.GetLength()));
+			sDummyCharacters = GetDummyCharacters((StrConst::labIdPlaceholder.GetLength()), "*");
+
+			sFileName = leftSplitter + sDummyCharacters + rightSplitter;
+
+			// find the next placeholder
+			index = sFileName.Find(StrConst::labIdPlaceholder);
+		}
+
+		index = sFileName.Find(StrConst::barcodePlaceholder);
+
+		// check restriction for mode 'Create one file' for all labware within the sequence
+		if( index != -1 && createOneFile)
+		{
+			Error::RaiseEx(IDE::invalidPlaceHolderBC, StringTable::Load(IDE::invalidPlaceHolderBC),
+								GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+
+		while(-1 != index)
+		{
+			string sDummyCharacters;
+			
+			leftSplitter = sParsedFileName.Left(index);
+			rightSplitter = sParsedFileName.Right(length - (index + StrConst::barcodePlaceholder.GetLength()));
+			
+			sParsedFileName = leftSplitter + StrConst::barcodePlaceholder + rightSplitter;
+
+			// replace the first found placeholder with dummy characters
+			leftSplitter = sFileName.Left(index);
+			rightSplitter = sFileName.Right(length - (index + StrConst::barcodePlaceholder.GetLength()));
+			sDummyCharacters = GetDummyCharacters((StrConst::barcodePlaceholder.GetLength()), "*");
+
+			sFileName = leftSplitter + sDummyCharacters + rightSplitter;
+
+			// find the next placeholder
+			index = sFileName.Find(StrConst::barcodePlaceholder);
+		}
+
+		index = sFileName.Find(StrConst::noPlaceholder);
+
+		// check restriction for mode 'Open file to append' for all labware within the sequence
+		if( index != -1 && openFileToAppend)
+		{
+			Error::RaiseEx(IDE::invalidPlaceHolderNo, StringTable::Load(IDE::invalidPlaceHolderNo),
+								GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+
+		while(-1 != index)
+		{
+			string sDummyCharacters;
+			
+			leftSplitter = sParsedFileName.Left(index);
+			rightSplitter = sParsedFileName.Right(length - (index + StrConst::noPlaceholder.GetLength()));
+			
+			sParsedFileName = leftSplitter + StrConst::noPlaceholder + rightSplitter;
+
+			// replace the first found placeholder with dummy characters
+			leftSplitter = sFileName.Left(index);
+			rightSplitter = sFileName.Right(length - (index + StrConst::noPlaceholder.GetLength()));
+			sDummyCharacters = GetDummyCharacters((StrConst::noPlaceholder.GetLength()), "*");
+
+			sFileName = leftSplitter + sDummyCharacters + rightSplitter;
+
+			// find the next placeholder
+			index = sFileName.Find(StrConst::noPlaceholder);
+		}
+
+		StrReplace(sParsedFileName, StrConst::barcodePlaceholder, barcode);
+		StrReplace(sParsedFileName, StrConst::labIdPlaceholder, labwareId);
+		replacedCharactersOfPlaceholder_No = StrReplace(sParsedFileName, StrConst::noPlaceholder, IStr(number));
+
+		return (sParsedFileName);
+	}
+
+
+	static function FormatReportFile(
+		variable& reportFilePathName,			//  [in] name of the report file (absolute path with filename)
+		variable  filterMode,					//  [in] filter mode to be used
+		variable& arrFilters[],					//  [in] array, contains the filter to be used (may be empty)
+		variable  sortMode,						//  [in] sort mode to be used
+		variable& arrColumnIds[],				//  [in] array contains the column identifier
+		variable& arrColumnNames[],			//  [in] array contains the column names to be used
+		variable& path,							//  [in] absolute path where the report-maping file shall be created in
+		variable& fileName,						//  [in] name of the report-mapping file
+		variable  createOneFile,				//  [in] flag, indicating whether one file must be created
+		variable  openFileToAppend,			//  [in] flag, indicating whether data shall be appended to an existing file
+		variable  filterFlagsEx, 				//  [in] added in V4.3: additional FilterFlagsEx, may be a bitwise combination
+		variable& reportMappingFile[])		//	[out] placeholder for generated report-mapping files
+	{
+		file fLabwareHistory;									
+		variable accSQLSelect("");
+		variable sql_orderBy("");
+		variable sql_where("");
+		string tRackBC;											
+		variable tRackId;
+		variable tPosId;
+		string tPosBC;
+		variable tSummaryState;
+		string tStateDesc;
+		variable tVolume;
+		variable tPosLetters;
+		variable tPosDigits;
+		variable tSortablePosName;
+		string sRackBC;
+		string sRackId;
+		string sPosId;
+		string sPosBC;
+		string actionTime;
+		variable userName;
+
+		file fReportMapping;										// the report-mapping file object
+		string sFilePathName("");								// the report-mapping file name (absolute path with filename)
+		string sPath("");											// the path, where the report-mapping file shall be created
+		variable fileNbr(0);										// may be part of the file name placeholder <No>
+		variable successfullyOpened(hslFalse);				// true, if the report-mapping file is opened successfully
+		variable recordId(0);									// record Id
+		
+		variable traceSource("");								// source for formatted trace
+		variable traceAction("");								// action for formatted trace
+		variable traceInfo("");									// additional trace information
+
+		// error handler
+		onerror goto Unexpected;
+
+		traceSource = StringTable::Load(IDS::traceSource);
+		traceAction = StringTable::Load(IDS::traceGenerateMappingReport);
+
+		fLabwareHistory.AddField("FinalTarget_RackBarcode",          tRackBC,          hslString, 255);
+		fLabwareHistory.AddField("FinalTarget_RackName",             tRackId,          hslString, 255);
+		fLabwareHistory.AddField("FinalTarget_PositionName",         tPosId,           hslString, 255);
+		fLabwareHistory.AddField("FinalTarget_PositionBarcode",      tPosBC,           hslString, 255);
+		fLabwareHistory.AddField("FinalTarget_State",                tSummaryState,    hslInteger);
+		fLabwareHistory.AddField("FinalTarget_Volume",               tVolume,          hslFloat);
+		fLabwareHistory.AddField("FinalTarget_PositionLetters",      tPosLetters,      hslString);
+		fLabwareHistory.AddField("FinalTarget_PositionDigits",       tPosDigits,       hslString);
+		fLabwareHistory.AddField("FinalTarget_SortablePositionName", tSortablePosName, hslString);
+
+		// setup 'ORDER BY' statement
+		if(sortMode == SortMode::byColumn) // (A1, B1, C1...)
+		{
+			sql_orderBy = "ORDER BY [FinalTarget_PositionDigits] ASC, Len([FinalTarget_PositionLetters]) ASC, [FinalTarget_PositionLetters] ASC";
+
+			if(mg_sourceElementIDs.GetSize() > 0)
+			{
+				sql_orderBy = "ORDER BY [FinalTarget_PositionDigits] ASC, Len([FinalTarget_PositionLetters]) ASC, [FinalTarget_PositionLetters] ASC, [ActionTime_SortableFormatedString] DESC";
+			}
+		}
+		else // sort byRow (A1, A2, A3...)
+		{
+			sql_orderBy = "ORDER BY Len([FinalTarget_PositionLetters]) ASC, [FinalTarget_SortablePositionName] ASC";
+
+			if(mg_sourceElementIDs.GetSize() > 0)
+			{
+				sql_orderBy = "ORDER BY Len([FinalTarget_PositionLetters]) ASC, [FinalTarget_SortablePositionName] ASC, [ActionTime_SortableFormatedString] DESC";
+			}
+		}
+
+		// setup 'WHERE' statement
+		if(filterMode == FilterMode::showProcessedOnly)
+		{
+			sql_where = "WHERE [FinalTarget_State] <> " + IStr(Status::wellNotUsed) + StrConst::blank;
+		}
+		else
+		if(filterMode == FilterMode::withoutErrorsOnly)
+		{
+			sql_where = "WHERE [FinalTarget_State] <= " + IStr(Status::wellNotUsed) + StrConst::blank;
+		}
+		else
+		if(filterMode == FilterMode::withErrorsOnly)
+		{
+			sql_where = "WHERE [FinalTarget_State] > " + IStr(Status::wellNotUsed) + StrConst::blank;
+		}
+		else
+		if(filterMode == FilterMode::combinationOf)
+		{
+			sql_where = "";
+
+			if(arrFilters.GetSize() > 0)
+			{
+				variable index, state;
+				sql_where = "WHERE ";
+
+				for(index = 0; index < arrFilters.GetSize(); index++)
+				{
+					// for more information see Microsoft Knowledge Base
+					// Article ID: 194206 ("FIX: Jet drivers do not support bitwise operators")
+					variable sqlFragment("([FinalTarget_State]\\%s) mod 2 = 1 ");
+					
+					state = GetStateFromErrorId( arrFilters.GetAt(index) );
+
+					if(state == Status::noError)
+					{
+						if(index == 0)
+							sql_where = sql_where + " [FinalTarget_State] = 0 ";
+						else
+							sql_where = sql_where +	"OR [FinalTarget_State] = 0 ";
+					}
+					else
+					{
+						StrReplace(sqlFragment, "%s", IStr(state));
+
+						if(index == 0)
+							sql_where = sql_where + sqlFragment;
+						else
+							sql_where = sql_where +	"OR " + sqlFragment;
+					}
+				}
+			}
+		}
+		else // showAll
+		{
+			sql_where = "";
+		}
+
+		// Evaluate the FilterFlagsEx flags, added 2008-12-18/cjoerg
+		if ( (filterFlagsEx & FilterFlagsEx::excludeSourceMixEntries) == FilterFlagsEx::excludeSourceMixEntries )
+		{
+			// exclude mix entries from the mapping file
+			variable sqlTemp("");
+			sqlTemp  =	"("
+								+     "[ActionMoveVolume_StepType] is null"
+								+ " OR [ActionMoveVolume_StepType] <> " + IStr(HxVectorDbStepType::Mixing)
+							+ ") ";
+			
+			if ( sql_where == "" )
+			{
+				sql_where = "WHERE " + sqlTemp;
+			}
+			else
+			{
+				sql_where = sql_where + "AND " + sqlTemp; 
+			}
+		}
+
+
+		// if no filter is used, read every FinalTarget_PositionName from Labware History file once only (GROUP BY)
+		// only "final target" information will be available
+		if(mg_sourceElementIDs.GetSize() == 0)
+		{
+			sRackBC = "";
+			sRackId = "";
+			sPosId = "";
+			sPosBC = "";
+			actionTime = "";
+
+			accSQLSelect =   "SELECT [FinalTarget_RackBarcode], [FinalTarget_RackName], [FinalTarget_PositionName], [FinalTarget_PositionBarcode], [FinalTarget_State], [FinalTarget_Volume], [FinalTarget_SortablePositionName], [FinalTarget_PositionLetters], [FinalTarget_PositionDigits] "
+			 					+ "FROM [LabwareHistory] "
+								+ sql_where
+								+ "GROUP BY [FinalTarget_PositionName], [FinalTarget_RackName], [FinalTarget_RackBarcode], [FinalTarget_PositionBarcode], [FinalTarget_State], [FinalTarget_Volume], [FinalTarget_SortablePositionName], [FinalTarget_PositionLetters], [FinalTarget_PositionDigits] "
+								+ sql_orderBy;
+		}
+		else
+		{
+			// additional source information available
+			fLabwareHistory.AddField("Source_RackBarcode",                sRackBC,    hslString, 255);
+			fLabwareHistory.AddField("Source_RackName",                   sRackId,    hslString, 255);
+			fLabwareHistory.AddField("Source_PositionName",               sPosId,     hslString, 255);
+			fLabwareHistory.AddField("Source_PositionBarcode",            sPosBC,     hslString, 255);
+			fLabwareHistory.AddField("ActionTime_SortableFormatedString", actionTime, hslString, 255);
+
+			accSQLSelect =   "SELECT * FROM [LabwareHistory] "
+								+ sql_where
+			               + sql_orderBy;
+		}
+
+		#ifdef _DEBUG
+		FormatTrace("DEBUG", GetFunctionName(), TraceStatus::progress, "SQL select = '", accSQLSelect, "'");
+		#endif
+
+		// open labware history file
+		fLabwareHistory.Open(reportFilePathName + " LabwareHistory", hslRead, accSQLSelect);
+
+		// get name of current logged in user
+		userName = GetUserName();
+
+		while( !fLabwareHistory.Eof() )							
+		{
+			// read next record
+			fLabwareHistory.ReadRecord();
+
+			// open the report-mapping file
+			while(!successfullyOpened)
+			{
+				string sFileExtension;
+				variable replacedCharacters; 
+
+				sFilePathName = ParseFileName(fileName, createOneFile, openFileToAppend, tRackId, tRackBC, fileNbr, replacedCharacters);
+				
+				// setup path
+				sPath = path;
+				if(sPath.Right(1) != StrConst::backslash)
+					sPath = sPath + StrConst::backslash;
+		
+				sFilePathName = sPath + sFilePathName;
+
+				if(fso.FileExists(sFilePathName) && replacedCharacters == 0 &&
+					openFileToAppend == hslFalse && m_filePathName.GetLength() == 0) // delete file if exist
+				{
+					onerror goto DeleteFileException;
+					fso.DeleteFile(sFilePathName);
+					onerror goto Unexpected;
+				}
+
+				if(fso.FileExists(sFilePathName) && replacedCharacters != 0)
+					fileNbr++;
+				else
+				{
+					variable columnId, index;
+					variable sFilePathNameCopy("");
+					string sExtension;
+
+					if(createOneFile && m_filePathName.GetLength() > 0)
+					{
+						// use the same file name
+						sFilePathName = m_filePathName;					
+					}
+
+					if(reportMappingFile.GetSize() == 0 && createOneFile) //trace once only
+					{
+						traceInfo = StringTable::Load(IDS::createReportMappingFile);
+						StrReplace(traceInfo, "%s", sFilePathName);
+						FormatTrace(traceSource, traceAction, TraceStatus::progress, traceInfo);
+					}
+					else if(!createOneFile)
+					{
+						traceInfo = StringTable::Load(IDS::createReportMappingFile);
+						StrReplace(traceInfo, "%s", sFilePathName);
+						FormatTrace(traceSource, traceAction, TraceStatus::progress, traceInfo);
+					}
+
+					// create report mapping-file
+					fReportMapping.SetDelimiter(mg_listSeparator);
+
+					for(index = 0; index < arrColumnIds.GetSize(); index++)
+					{
+						columnId = arrColumnIds.GetAt(index);
+
+						if( columnId == ColId::recordId )
+							fReportMapping.AddField(arrColumnNames.GetAt(index), recordId, hslInteger);
+						else
+						if( columnId == ColId::tRackBC )
+							fReportMapping.AddField(arrColumnNames.GetAt(index), tRackBC, hslString);
+						else
+						if( columnId == ColId::tLabId )
+							fReportMapping.AddField(arrColumnNames.GetAt(index), tRackId, hslString);
+						else
+						if( columnId == ColId::tPosId )
+							fReportMapping.AddField(arrColumnNames.GetAt(index), tPosId, hslString);
+						else
+						if( columnId == ColId::tPosBC )
+							fReportMapping.AddField(arrColumnNames.GetAt(index), tPosBC, hslString);
+						else
+						if( columnId == ColId::tStatusSummary )
+							fReportMapping.AddField(arrColumnNames.GetAt(index), tSummaryState, hslInteger);
+						else
+						if( columnId == ColId::tStateDesc )
+							fReportMapping.AddField(arrColumnNames.GetAt(index), tStateDesc, hslString);
+						else
+						if( columnId == ColId::tVol )
+							fReportMapping.AddField(arrColumnNames.GetAt(index), tVolume, hslFloat);
+						else
+						if( columnId == ColId::sRackBC )
+							fReportMapping.AddField(arrColumnNames.GetAt(index), sRackBC, hslString);
+						else
+						if( columnId == ColId::sLabId )
+							fReportMapping.AddField(arrColumnNames.GetAt(index), sRackId, hslString);
+						else
+						if( columnId == ColId::sPosId )
+							fReportMapping.AddField(arrColumnNames.GetAt(index), sPosId, hslString);
+						else
+						if( columnId == ColId::sPosBC )
+							fReportMapping.AddField(arrColumnNames.GetAt(index), sPosBC, hslString);
+						else
+						if( columnId == ColId::actionDateTime )
+							fReportMapping.AddField(arrColumnNames.GetAt(index), actionTime, hslString);
+						else
+						if( columnId == ColId::userName )
+							fReportMapping.AddField(arrColumnNames.GetAt(index), userName, hslString);
+						// 2009-01-29/cjoerg:
+						// removed because adding of this coluns is not longer planned for 4.3
+						//else
+						//if( columnId == ColId::actionState )	// added in 4.3
+						//	fReportMapping.AddField(arrColumnNames.GetAt(index), actionState, hslString);
+						//else
+						//if( columnId == ColId::actionStateDesc )	// added in 4.3
+						//	fReportMapping.AddField(arrColumnNames.GetAt(index), actionStateDesc, hslString);
+						//else
+						//if( columnId == ColId::actionVolume )	// added in 4.3
+						//	fReportMapping.AddField(arrColumnNames.GetAt(index), actionVolume, hslString);
+						//else
+						//if( columnId == ColId::actionId )	// added in 4.3
+						//	fReportMapping.AddField(arrColumnNames.GetAt(index), actionId, hslInteger);
+
+						else {} // add nothing
+
+					}
+
+					sExtension = sFilePathName.Right(NbrConst::fileExtensionLength);					
+					sExtension.MakeLower();
+
+					// add table name if file is of type .xls or .mdb
+					if(sExtension.Compare(StrConst::excel) == 0 ||
+						sExtension.Compare(StrConst::access) == 0)
+					{
+						sFilePathNameCopy = sFilePathName; 							// Backup filename without table name
+
+						sFilePathName = sFilePathName + StrConst::blank;		// to fit with the HSL string grammar,
+						sFilePathName = sFilePathName + StrConst::tableName;  // setup sFilePathName in two steps
+					}
+
+					// open the report mapping file
+					if(fReportMapping.Open(sFilePathName, hslAppend))
+					{
+						successfullyOpened = hslTrue;
+
+						// initialize the record Id, data may be appended to an existing file
+						recordId = fReportMapping.Seek(hslCurrent, hslLast);
+					}
+
+					if(sFilePathNameCopy != StrConst::emptyString)
+						// restore filename
+						sFilePathName = sFilePathNameCopy;
+
+					m_filePathName = sFilePathName;
+				}
+			} // while no new report-mapping file was created successfully
+			
+			// set default character string if no value is available
+			if(IsDBNull(tRackBC) || tRackBC.GetLength() == 0)
+				tRackBC = StrConst::noInformation;
+			if(IsDBNull(tPosBC) || tPosBC.GetLength() == 0)
+				tPosBC = StrConst::noInformation;
+			if(IsDBNull(sRackBC) || sRackBC.GetLength() == 0)
+				sRackBC = StrConst::noInformation;
+			if(IsDBNull(sRackId) || sRackId.GetLength() == 0)
+				sRackId = StrConst::noInformation;
+			if(IsDBNull(sPosId) || sPosId.GetLength() == 0)
+				sPosId = StrConst::noInformation;
+			if(IsDBNull(sPosBC) || sPosBC.GetLength() == 0)
+				sPosBC = StrConst::noInformation;
+			if(IsDBNull(actionTime) || actionTime.GetLength() == 0)
+				actionTime = StrConst::noInformation;
+			
+			// if well was not used, set default volume
+			if(IsDBNull(tVolume))
+				tVolume = NbrConst::notUsedWellVolume;
+
+			tStateDesc = GetSummaryStateDesc(tSummaryState);
+
+			recordId++;
+	
+			onerror goto ExceptionWR;
+			// write record to report-mapping file
+			fReportMapping.WriteRecord();
+		}
+		
+		onerror goto Unexpected;
+
+		fLabwareHistory.Close();
+		fReportMapping.Close();
+
+		if(createOneFile)
+		{
+			reportMappingFile.SetSize(0);
+			reportMappingFile.AddAsLast(sFilePathName);
+		}
+		else
+			reportMappingFile.AddAsLast(sFilePathName);
+
+		#ifndef _DEBUG
+			//delete report file
+			fso.DeleteFile(reportFilePathName);
+		#endif
+
+		return;
+
+		DeleteFileException:
+		{
+			variable errorDesc;
+
+			errorDesc = StringTable::Load(IDE::failedToDeleteFile);
+			StrReplace(errorDesc, "%s", sFilePathName);
+			FormatTrace(traceSource, traceAction, TraceStatus::completeWithError, errorDesc);
+
+			// re-throw the error 
+			err.Raise(IDE::failedToDeleteFile, errorDesc, GetModuleHelpFileName());
+		}
+
+		ExceptionWR:
+		{
+			variable errorDesc;
+
+			fLabwareHistory.Close();
+	
+			if (fso.FileExists(reportFilePathName))
+				fso.DeleteFile(reportFilePathName);
+
+			traceInfo = StringTable::Load(IDS::reportMappingFileGenerationFailed);
+			StrReplace(traceInfo, "%s", sFilePathName);
+			// trace progress
+			FormatTrace(traceSource, traceAction, TraceStatus::completeWithError, traceInfo);
+
+			errorDesc = err.GetDescription() + StringTable::Load(IDE::writeRecordFailed);
+
+			// re-throw the error 
+			err.Raise(IDE::writeRecordFailed, errorDesc, GetModuleHelpFileName());
+		}
+		
+		Unexpected:
+		{
+			fLabwareHistory.Close();
+	
+			if (fso.FileExists(reportFilePathName))
+				fso.DeleteFile(reportFilePathName);
+
+			traceInfo = StringTable::Load(IDS::reportMappingFileGenerationFailed);
+			StrReplace(traceInfo, "%s", sFilePathName);
+			// trace progress
+			FormatTrace(traceSource, traceAction, TraceStatus::completeWithError, traceInfo);
+
+			// re-throw the error 
+			Error::RaiseLast();
+		}
+	}
+
+
+	
+	static function GenerateMappingFileV43(		// Generates a mapping file for each rack in target sequence.
+		device&   deviceContext,						// i: instrument on which the target sequence must be valid
+		sequence& targetSequence,						// i: a mapping file for racks between first and end position is generated
+      variable  filterMode,                     // i: FilterMode to be used
+      variable& arrFilters[],                   // i: array, contains the filter to be used with FilterMode::combinationOf (may be empty)
+      variable  sortMode,                       // i: SortMode to be used
+      variable& arrColumnIds[],                 // i: array contains the column identifier
+      variable& arrColumnNames[],               // i: array contains the column names to be used
+      variable& arrExperiments[],  	            // i: array contains experiment names to lookup for additional sources (may be empty)
+		// variable  arrExpStartIndex,				// removed in V4.3
+		// variable  arrExpEndIndex,					// removed in V4.3
+		variable& filename,								// i: file name (with placeholders) used for file generation
+      variable  createOneFile,                  // i: flag, indicating whether one file must be created
+      variable  openFileToAppend,               // i: flag, indicating whether data shall be appended to an existing file
+		variable& path,									// i: path into which the mapping files should be generated (may be empty)
+		variable  filterFlagsEx,						// i: added in V4.3: Additional FilterFlagsEx, bitwise combination.
+		variable& arrGeneratedFiles[]) void			// o: array contains the generated files names as string.
+	{
+		variable arrReportFileName[];						// placeholder for generated report file names
+		variable arrLabwareAccessName[];					// placeholder for labware access names
+		variable traceSource("");							// source for formatted trace
+		variable traceAction("");							// action for formatted trace
+		variable errorDesc;									// description of error
+		variable index;
+//		variable arrMaxValue(0);
+		string sFileName;										// filename as string
+		string sExtension;									// file extension as string
+		object deckLayout;
+
+		// activate error handler
+		onerror goto Unexpected;
+
+		// initialize HSL Mapping Report Library
+		InitMappingReportLibrary();
+
+		// get access to global data
+		SynEnterCriticalSection(mg_mapRepCS);
+
+		if(m_EnhancedLibraryTrace)
+		{
+			// trace start of function
+			traceSource = StringTable::Load(IDS::traceSource);
+			traceAction = StringTable::Load(IDS::traceGenerateMappingReport);
+			FormatTrace(traceSource, traceAction, TraceStatus::start);
+		}
+
+		// check if device has a decklayout
+		deckLayout = deviceContext.GetDeckLayoutObject();
+		if(deckLayout.IsNull())
+			Error::Raise(IDE::deviceWithoutDeck, GetFileName(), GetFunctionName(), GetLineNumber());
+
+		if(!mg_IsSampleTrackingEnabled)
+			Error::RaiseEx(IDE::sampleTrackingDisabled, StringTable::Load(IDS::enableSampleTracking), GetFileName(), GetFunctionName(), GetLineNumber());
+
+		//====================================================================================
+		// check input parameters to be valid
+		errorDesc = GetFunctionName() + StrConst::crlf;
+
+		// filterMode
+		Util2::CheckValueTypeAndRangeMinMax(filterMode, Util2::ValueType::Integer,
+														FilterMode::first, FilterMode::last, errorDesc + "filterMode");
+
+		// arrFilters -> must be checked if FilterMode::combinationOf is used
+		if(filterMode == FilterMode::combinationOf)
+		{
+			if(arrFilters.GetSize() == 0)
+			{
+				Error::Raise(IDE::noFilterSet, GetFileName(), GetFunctionName(), GetLineNumber());
+			}
+		}
+
+		// sortMode
+		Util2::CheckValueTypeAndRangeMinMax(sortMode, Util2::ValueType::Integer,
+														SortMode::first, SortMode::last, errorDesc + "sortMode");
+
+		// arrColumnIds & arrColumnNames
+		if(arrColumnIds.GetSize() == 0 || arrColumnIds.GetSize() != arrColumnNames.GetSize())
+		{
+			Error::Raise(IDE::fatalError, GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+
+		// array of experiments
+		for (index = 0; index < arrExperiments.GetSize(); index++)
+		{
+			Util2::CheckValueTypeAndRange(arrExperiments.ElementAt(index), hslString, 
+										 			Util2::ValueCheck::RangeStringNotEmpty,
+										 			errorDesc + "arrExperiments[" + IStr(index) + "]");
+		}
+
+// removed 2008-12-18/cjoerg
+//		// experiments array start index
+//		arrMaxValue = 0;
+//		if( arrExperiments.GetSize() != 0 )
+//		{
+//			arrMaxValue = arrExperiments.GetSize() - 1;		
+//		}
+//		Util2::CheckValueTypeAndRangeMinMax(arrExpStartIndex, Util2::ValueType::Integer,
+//														0, arrMaxValue, errorDesc + "arrExpStartIndex");
+//
+//		// experiments array end index
+//		Util2::CheckValueTypeAndRangeMinMax(arrExpEndIndex, Util2::ValueType::Integer,
+//														0, arrMaxValue, errorDesc + "arrExpEndIndex");
+
+		// filterFlagsEx (may be a bitwise combination)
+		Util2::CheckValueTypeAndRangeMinMax(filterFlagsEx, Util2::ValueType::Integer,
+														FilterFlagsEx::none, FilterFlagsEx::all, errorDesc + "filterFlagsEx");
+
+		// filename
+		if(!Util::IsString(filename))
+			Error::Raise(IDE::invalidParameter, GetFileName(), GetFunctionName(), GetLineNumber());
+
+		StrTrimLeft(filename, StrConst::blank);
+		StrTrimRight(filename, StrConst::blank);
+		if(StrConst::emptyString == filename)
+			Error::Raise(IDE::invalidFileName, GetFileName(), GetFunctionName(), GetLineNumber());
+
+		// lookup for invalid characters \ / : * ? " < > |
+		sFileName = filename;
+		sFileName.MakeLower();
+		StrReplace(sFileName, StrConst::barcodePlaceholder, StrConst::emptyString);
+		StrReplace(sFileName, StrConst::labIdPlaceholder, StrConst::emptyString);
+		StrReplace(sFileName, StrConst::noPlaceholder, StrConst::emptyString);
+
+		if(-1 != sFileName.Find(StrConst::backslash) ||
+			-1 != sFileName.Find(StrConst::slash) ||
+			-1 != sFileName.Find(StrConst::colon) ||
+			-1 != sFileName.Find(StrConst::asterisk) ||
+			-1 != sFileName.Find(StrConst::questionMark) ||
+			-1 != sFileName.Find(StrConst::quotationMark) ||
+			-1 != sFileName.Find(StrConst::lessThanSign) ||
+			-1 != sFileName.Find(StrConst::greaterThanSign) ||
+			-1 != sFileName.Find(StrConst::orSign))
+		{
+			errorDesc = StringTable::Load(IDE::fileNameInvalidCharacter);
+			StrReplace(errorDesc, "%s", filename);
+			Error::RaiseEx(IDE::fileNameInvalidCharacter, errorDesc, GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+
+		// lookup for invalid file extension
+		sExtension = sFileName.Right(NbrConst::fileExtensionLength);
+		if(0 != sExtension.Compare(StrConst::excel) &&
+			0 != sExtension.Compare(StrConst::csv) &&
+			0 != sExtension.Compare(StrConst::access))
+		{
+			errorDesc = StringTable::Load(IDE::invalidFileExtension);
+			StrReplace(errorDesc, "%s", filename);
+			Error::RaiseEx(IDE::invalidFileExtension, errorDesc, GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+
+      // createOneFile
+		Util2::CheckValueTypeAndRangeMinMax(createOneFile, Util2::ValueType::Integer,
+														hslFalse, hslTrue, errorDesc + "createOneFile");
+
+		// openFileToAppend
+		Util2::CheckValueTypeAndRangeMinMax(openFileToAppend, Util2::ValueType::Integer,
+														hslFalse, hslTrue, errorDesc + "openFileToAppend");
+
+		// path
+		if(!Util::IsString(path))
+			Error::Raise(IDE::invalidParameter, GetFileName(), GetFunctionName(), GetLineNumber());	
+
+		StrTrimLeft(path, StrConst::blank);
+		StrTrimRight(path, StrConst::blank);
+		if(StrConst::emptyString == path)
+		{
+			path = GetLogFilesPath();
+		}
+		else
+		{
+			// lookup path
+			if(!fso.FolderExists(path))
+			{
+				errorDesc = StringTable::Load(IDE::invalidPath);
+				StrReplace(errorDesc, "%s", path);
+				Error::RaiseEx(IDE::invalidPath, errorDesc, GetFileName(), GetFunctionName(), GetLineNumber());
+			}
+		}
+
+		//initialize out param generatedFiles
+		arrGeneratedFiles.SetSize(0);
+
+		GenerateReportFiles(deviceContext, targetSequence, arrExperiments, arrLabwareAccessName, arrReportFileName);
+		
+		// check first if there are any errors occurred
+		for(index = 0; index < arrReportFileName.GetSize(); index++)
+		{
+			if(StrConst::elementNotFound == arrReportFileName.GetAt(index))
+			{
+				errorDesc = StringTable::Load(IDE::elementNotFound);
+				StrReplace(errorDesc, "%s", arrLabwareAccessName.GetAt(index));
+			
+				Error::RaiseEx(IDE::elementNotFound, errorDesc, GetFileName(), GetFunctionName(), GetLineNumber());
+			}
+			
+			if(StrConst::failedToCreateReportFile == arrReportFileName.GetAt(index))
+			{
+				errorDesc = StringTable::Load(IDE::failedToCreateReportFile);
+				StrReplace(errorDesc, "%s", arrLabwareAccessName.GetAt(index));
+			
+				Error::RaiseEx(IDE::failedToCreateReportFile, errorDesc, GetFileName(), GetFunctionName(), GetLineNumber());
+			}
+		}
+
+		// filter report files
+		m_filePathName = StrConst::emptyString; // reset this member
+
+		for(index = 0; index < arrReportFileName.GetSize(); index++)
+		{
+			// the report file must be created successfully, otherwise no report mapping file can be created
+			if(StrConst::elementNotFound != arrReportFileName.GetAt(index) &&
+				StrConst::failedToCreateReportFile != arrReportFileName.GetAt(index))
+			{
+				// create the report mapping files
+				FormatReportFile(arrReportFileName.GetAt(index),
+									  filterMode,
+									  arrFilters,
+									  sortMode,
+									  arrColumnIds,
+									  arrColumnNames,
+									  path,
+									  filename,
+									  createOneFile,
+									  openFileToAppend,
+									  filterFlagsEx,
+									  arrGeneratedFiles);
+			}
+		}
+
+		if(m_EnhancedLibraryTrace)
+			// trace completion of function
+			FormatTrace(traceSource, traceAction, TraceStatus::complete);
+
+		// release access to global data
+		SynLeaveCriticalSection(mg_mapRepCS);
+
+		return;
+
+		Unexpected:
+		{
+			if(m_EnhancedLibraryTrace)
+				// trace completion with error of function
+				FormatTrace(traceSource, traceAction, TraceStatus::completeWithError);
+
+			// release access to global data
+			SynLeaveCriticalSection(mg_mapRepCS);
+
+			// re-throw the error 
+			Error::RaiseLast();
+		}
+	}
+
+
+	// --------------------------------------------------------------------------------------
+	// Interface functions
+	// --------------------------------------------------------------------------------------
+	function GenerateMappingFile(
+		device& deviceContext,
+		sequence& target,
+		variable& filename,
+		variable& path,
+		variable& generatedFiles[])
+	{
+		variable filterMode(FilterMode::showAll);	// default for Mapping file steps generated with Vector Version < 4.2
+		variable sortMode(SortMode::byRow);			// default for Mapping file steps generated with Vector Version < 4.2
+		variable filters[];
+		variable columnIds[];
+		variable columnNames[];
+		variable experiments[];
+		variable createOneFile(hslFalse);			// default for Mapping file steps generated with Vector Version < 4.2
+		variable openFileToAppend(hslFalse);		// default for Mapping file steps generated with Vector Version < 4.2
+		variable filterFlagsEx(HSLMapReport::FilterFlagsEx::none);			// new in 4.3
+		
+		filters.SetSize(0);								// default for Mapping file steps generated with Vector Version < 4.2
+		experiments.SetSize(0);							// default for Mapping file steps generated with Vector Version < 4.2
+		InitArrColumnsIds(columnIds);					// default for Mapping file steps generated with Vector Version < 4.2
+		InitArrColumnNames(columnNames);				// default for Mapping file steps generated with Vector Version < 4.2
+
+		// just forward to
+		GenerateMappingFileV43( 
+			deviceContext,
+			target,
+			filterMode,
+			filters,
+			sortMode,
+			columnIds,
+			columnNames,
+			experiments,
+			filename,
+			createOneFile,
+			openFileToAppend,
+			path,
+			filterFlagsEx,
+			generatedFiles);
+	}
+
+
+	function AddFilterSequence(
+		device& deviceContext,								
+		sequence& filterSequence)
+	{
+		object deckLayout;
+		variable traceSource("");									// source for formatted trace
+		variable traceAction("");									// action for formatted trace
+		variable traceInfo("");										// additional trace information
+		object arrFilterSeqObj[];
+		variable arrFilterLabID[];
+		variable i;
+
+		// activate error handler
+		onerror goto Unexpected;
+
+		// initialize HSL Mapping Report Library
+		InitMappingReportLibrary();
+
+		traceSource = StringTable::Load(IDS::traceSource);
+		traceAction = StringTable::Load(IDS::traceActionAddFilterSequence);
+
+		if(m_EnhancedLibraryTrace)
+		{
+			// trace start of function
+			FormatTrace(traceSource, traceAction, TraceStatus::start);
+		}
+
+		// check if device has a decklayout
+		deckLayout = deviceContext.GetDeckLayoutObject();
+		if(deckLayout.IsNull())
+			Error::Raise(IDE::deviceWithoutDeck, GetFileName(), GetFunctionName(), GetLineNumber());
+
+		// get the element ID's from database and append them within the global array
+		arrFilterSeqObj.SetSize(0);
+		arrFilterSeqObj.AddAsLast(filterSequence.GetSequenceObject());
+		arrFilterLabID = mg_mapRepTrackerObj.GetElementIDsOfSequencePositions(
+																		mg_mapRepTrackerObj.GetDeckID(deviceContext.GetInstrumentName()),
+																		arrFilterSeqObj);
+
+		for(i=0; i < arrFilterLabID.GetSize(); i++)
+		{
+			// add all element ID's within global array
+			mg_arrFilterElementIDs.AddAsLast(arrFilterLabID.GetAt(i));
+		}
+
+		// trace progress			
+		traceInfo = StringTable::Load(IDS::elementOfFilterSequence);
+		StrReplace(traceInfo, "%s", filterSequence.GetName());
+		FormatTrace(traceSource, traceAction, TraceStatus::progress, traceInfo);
+
+		if(m_EnhancedLibraryTrace)
+		{
+			traceInfo = StringTable::Load(IDS::filterSequence);
+			StrReplace(traceInfo, "%s", filterSequence.GetName());				
+			// trace completion with error of function
+			FormatTrace(traceSource, traceAction, TraceStatus::complete, traceInfo);
+		}
+
+		return;
+
+		Unexpected:
+		{
+			if(m_EnhancedLibraryTrace)
+			{
+				traceInfo = StringTable::Load(IDS::filterSequence);
+				StrReplace(traceInfo, "%s", filterSequence.GetName());				
+				// trace completion with error of function
+				FormatTrace(traceSource, traceAction, TraceStatus::completeWithError, traceInfo);
+			}
+
+			// re-throw the error 
+			Error::RaiseLast();
+		}
+	}
+
+	function RemoveAllFilterSequences()
+	{
+		variable traceSource("");							// source for formatted trace
+		variable traceAction("");							// action for formatted trace
+
+		// activate error handler
+		onerror goto Unexpected;
+
+		// initialize HSL Mapping Report Library
+		InitMappingReportLibrary();
+
+		if(m_EnhancedLibraryTrace)
+		{
+			// trace start of function
+			traceSource = StringTable::Load(IDS::traceSource);
+			traceAction = StringTable::Load(IDS::traceActionRemoveAllFilterSequences);
+			FormatTrace(traceSource, traceAction, TraceStatus::start);
+		}
+
+		// remove all filters
+		mg_arrFilterElementIDs.SetSize(0);
+
+		if(m_EnhancedLibraryTrace)
+			// trace completion of function
+			FormatTrace(traceSource, traceAction, TraceStatus::complete);
+
+		return;
+
+		Unexpected:
+		{
+			if(m_EnhancedLibraryTrace)
+				// trace completion with error of function
+				FormatTrace(traceSource, traceAction, TraceStatus::completeWithError);
+
+			// re-throw the error 
+			Error::RaiseLast();
+		}
+	}
+
+	function GetListSeparator()
+	{
+		variable traceSource("");							// source for formatted trace
+		variable traceAction("");							// action for formatted trace
+
+		// activate error handler
+		onerror goto Unexpected;
+
+		// initialize HSL Mapping Report Library
+		InitMappingReportLibrary();
+
+		if(m_EnhancedLibraryTrace)
+		{
+			string traceInfo;
+
+			// trace start of function
+			traceSource = StringTable::Load(IDS::traceSource);
+			traceAction = StringTable::Load(IDS::traceActionGetListSeparator);
+			FormatTrace(traceSource, traceAction, TraceStatus::start);
+			
+			traceInfo = StringTable::Load(IDS::listSeparator);
+			StrReplace(traceInfo, "%s", mg_listSeparator);
+		
+			// trace completion of function
+			FormatTrace(traceSource, traceAction, TraceStatus::complete, traceInfo);
+		}
+
+		return(mg_listSeparator);
+		
+		Unexpected:
+		{
+			if(m_EnhancedLibraryTrace)
+				// trace completion with error of function
+				FormatTrace(traceSource, traceAction, TraceStatus::completeWithError);
+
+			// re-throw the error 
+			Error::RaiseLast();
+		}
+	}
+
+	function DeleteFile(
+		variable& filename)
+	{
+		variable filePathName("");							// path and name of file
+		variable traceSource("");							// source for formatted trace
+		variable traceAction("");							// action for formatted trace
+		variable traceInfo("");								// additional trace information
+		variable errorDesc;									// error description
+		variable deleted(hslFalse);						// true, if the file has been deleted successfully
+
+		// activate error handler
+		onerror goto Unexpected;
+
+		// initialize HSL Mapping Report Library
+		InitMappingReportLibrary();
+
+		if(m_EnhancedLibraryTrace)
+		{
+			// trace start of deleting
+			traceSource = StringTable::Load(IDS::traceSource);
+			traceAction = StringTable::Load(IDS::traceActionDeleteFile);
+			FormatTrace(traceSource, traceAction, TraceStatus::start);
+		}
+
+		// check input parameters to be valid
+		if (!Util::IsString(filename))
+			Error::Raise(IDE::invalidParameter, GetFileName(), GetFunctionName(), GetLineNumber());
+		if ("" == filename)
+			Error::Raise(IDE::invalidFileName, GetFileName(), GetFunctionName(), GetLineNumber());
+
+		// search the file
+		filePathName = SearchPath(filename);
+		if ("" == filePathName)
+			filePathName = SearchPath(GetLogFilesPath() + StrConst::backslash + filename);
+		else if (filePathName != filename)
+			filename = filePathName;
+
+		// dump input params
+		#ifdef _DEBUG
+		FormatTrace("DEBUG", GetFunctionName(), TraceStatus::progress, "filename = '", filename, "'");
+		FormatTrace("DEBUG", GetFunctionName(), TraceStatus::progress, "filePathName = '", filePathName, "'");
+		#endif
+		
+		if (fso.FileExists(filePathName))
+		{
+			onerror goto DeleteFileException;
+			// delete file
+			fso.DeleteFile(filePathName);
+			deleted = hslTrue;
+
+			onerror goto Unexpected;
+		}
+		else 
+		{
+			if(m_EnhancedLibraryTrace)
+			{
+				errorDesc = StringTable::Load(IDE::fileNotFound);
+				StrReplace(errorDesc, "%s", filename);
+				// trace file not found
+				FormatTrace(traceSource, traceAction, TraceStatus::complete, errorDesc);
+			}
+			return(deleted);
+		}
+
+		if(m_EnhancedLibraryTrace)
+		{
+			traceInfo = StringTable::Load(IDS::fileDeleted);
+			StrReplace(traceInfo, "%s", filePathName);
+			// trace completion of deleting
+			FormatTrace(traceSource, traceAction, TraceStatus::complete, traceInfo);
+		}
+
+		return(deleted);
+
+		DeleteFileException:
+		{
+			if(m_EnhancedLibraryTrace)
+			{
+				errorDesc = StringTable::Load(IDE::failedToDeleteFile);
+				StrReplace(errorDesc, "%s", filePathName);
+				FormatTrace(traceSource, traceAction, TraceStatus::completeWithError, errorDesc);
+			}
+			
+			return(hslFalse);							
+		}
+
+		Unexpected:
+		{
+			if(m_EnhancedLibraryTrace)
+				// trace completion with error of formating
+				FormatTrace(traceSource, traceAction, TraceStatus::completeWithError);
+
+			// re-throw the error 
+			Error::RaiseLast();
+		}
+	}
+
+	function SetElementBarcode(
+		device& deviceContext,								
+		variable& labwareId,
+		variable& positionId,
+		variable& barcode)
+	{
+		variable traceSource("");							// source for formatted trace
+		variable traceAction("");							// action for formatted trace
+		variable traceInfo("");								// additional trace information
+
+		variable instrumentName;
+		variable templateNames[];
+		variable labwareNames[];
+		variable labware_id_Carrier;
+		variable size;
+		variable index;
+		variable labwareAccessName("");
+		variable baseName("");								// labwareAccessName without positionId
+		object deckLayout;
+
+		// activate error handler
+		onerror goto Unexpected;
+
+		// initialize HSL Mapping Report Library
+		InitMappingReportLibrary();
+
+		// trace start of SetElementBarcode
+		traceSource = StringTable::Load(IDS::traceSource);
+		traceAction = StringTable::Load(IDS::traceActionSetElementBarcode);
+		if(m_EnhancedLibraryTrace)
+			FormatTrace(traceSource, traceAction, TraceStatus::start);
+	
+		// check if device has a decklayout
+		deckLayout = deviceContext.GetDeckLayoutObject();
+		if(deckLayout.IsNull())
+			Error::Raise(IDE::deviceWithoutDeck, GetFileName(), GetFunctionName(), GetLineNumber());
+		
+		if(!mg_IsSampleTrackingEnabled)
+			Error::Raise(IDE::sampleTrackingDisabled, GetFileName(), GetFunctionName(), GetLineNumber());
+
+		// check input parameters to be valid
+		if (!Util::IsString(labwareId))
+			Error::Raise(IDE::invalidParameter, GetFileName(), GetFunctionName(), GetLineNumber());
+
+		// trimm leading and successional blanks
+		StrTrimLeft(labwareId, StrConst::blank);
+		StrTrimRight(labwareId, StrConst::blank);
+
+		instrumentName = deviceContext.GetInstrumentName( );	// Get Instrument name
+
+		if (StrConst::emptyString == labwareId)
+		{
+			traceInfo = StringTable::Load(IDE::unknownLabwareId);
+			StrReplace(traceInfo, "%s1", labwareId);
+			StrReplace(traceInfo, "%s2", instrumentName);
+			Error::RaiseEx(IDE::unknownLabwareId, traceInfo, GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+
+		if (!Util::IsString(positionId))
+			Error::Raise(IDE::invalidParameter, GetFileName(), GetFunctionName(), GetLineNumber());
+
+		// trimm leading and successional blanks
+		StrTrimLeft(positionId, StrConst::blank);
+		StrTrimRight(positionId, StrConst::blank);
+
+		if (!Util::IsString(barcode))
+			Error::Raise(IDE::invalidParameter, GetFileName(), GetFunctionName(), GetLineNumber());
+
+		if (StrConst::emptyString == barcode)
+			Error::Raise(IDE::emptyBarcode, GetFileName(), GetFunctionName(), GetLineNumber());
+
+		// Search Template name depending on the labwareId
+		deviceContext.GetTemplateLabwareNames(templateNames, labwareNames);
+		size = labwareNames.GetSize();
+		for (index = 0; index < size; index ++)
+			if (labwareNames.GetAt(index) == labwareId)
+				break;
+
+	   // If LabwareName exist
+		if (index < size)
+		{
+			// check if positionId is spelled correctly
+			if(positionId != StrConst::emptyString)
+			{
+				sequence dummySeq;
+				onerror goto WrongSpelledPositionId;
+				dummySeq.Add(labwareId, positionId, deviceContext);
+				onerror goto Unexpected;
+			}
+
+		   labware_id_Carrier = templateNames[index];	// Assign Template Name
+	   
+			if (labware_id_Carrier == StrConst::templateDefaultName)	// If a plate is not on a carrier
+			{
+	         labwareAccessName = instrumentName + StrConst::backslash + labwareId;
+			}
+	      else
+			{
+		      labwareAccessName = instrumentName + StrConst::backslash + labware_id_Carrier + StrConst::backslash + labwareId;
+			}
+
+			// make a copy of the labwareAccessName (may be used to add the element within tracker database)
+			baseName = labwareAccessName;
+
+			if(positionId != StrConst::emptyString)
+				labwareAccessName = labwareAccessName + StrConst::backslash + positionId;
+		}
+		else
+		{
+			// labware with given Id not found within decklayout
+			traceInfo = StringTable::Load(IDE::unknownLabwareId);
+			StrReplace(traceInfo, "%s1", labwareId);
+			StrReplace(traceInfo, "%s2", instrumentName);
+			Error::RaiseEx(IDE::unknownLabwareId, traceInfo, GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+
+		// block HxVectorDB Tracking
+		{
+			object actionSetBarcode;
+			actionSetBarcode.CreateObject("HXPARAMSLib.HxPars");
+			
+			actionSetBarcode.Add(1, mg_mapRepTrackerObj.HxVectorDbParsKey_ActionPars_ActionCount);
+
+			actionSetBarcode.Add(labwareAccessName,
+										mg_mapRepTrackerObj.HxVectorDbParsKey_ActionPars_Actions,
+										1,
+										mg_mapRepTrackerObj.HxVectorDbParsKey_ActionPars_Target);
+
+			actionSetBarcode.Add(mg_mapRepTrackerObj.HxVectorDbLabwareHandling_IfNotExists_Create,
+										mg_mapRepTrackerObj.HxVectorDbParsKey_ActionPars_Actions,
+										1,
+										mg_mapRepTrackerObj.HxVectorDbParsKey_ActionPars_TargetLabwareHandling);
+
+			actionSetBarcode.Add(barcode,
+										mg_mapRepTrackerObj.HxVectorDbParsKey_ActionPars_Actions,
+										1,
+										mg_mapRepTrackerObj.HxVectorDbParsKey_ActionPars_Barcode);
+			
+			actionSetBarcode.Add(mg_mapRepTrackerObj.HxVectorDbActionState_NoError,
+										mg_mapRepTrackerObj.HxVectorDbParsKey_ActionPars_Actions,
+										1,
+										mg_mapRepTrackerObj.HxVectorDbParsKey_ActionPars_ActionState);
+			
+			actionSetBarcode.Add(hslFalse,
+										mg_mapRepTrackerObj.HxVectorDbParsKey_ActionPars_Actions,
+										1,
+										mg_mapRepTrackerObj.HxVectorDbParsKey_ActionPars_ErrorAvailable);
+			
+			mg_mapRepTrackerObj.TrackAction_SetBarcode(actionSetBarcode);
+		}
+
+		// trace start of SetElementBarcode
+		traceInfo = StringTable::Load(IDS::setBarcodeOnLabId);
+		StrReplace(traceInfo, "%s1", barcode);
+		StrReplace(traceInfo, "%s2", labwareAccessName);
+		if(m_EnhancedLibraryTrace)
+			FormatTrace(traceSource, traceAction, TraceStatus::complete, traceInfo);
+		else
+			FormatTrace(traceSource, traceAction, TraceStatus::progress, traceInfo);
+
+		return;
+
+		WrongSpelledPositionId:
+		{
+			traceInfo = StringTable::Load(IDE::unknownPositionId);
+			StrReplace(traceInfo, "%s1", positionId);
+			StrReplace(traceInfo, "%s2", labwareId);
+			Error::RaiseEx(IDE::unknownPositionId, traceInfo, GetFileName(), GetFunctionName(), GetLineNumber());		
+		}
+
+		Unexpected:
+		{
+			if(m_EnhancedLibraryTrace)
+				// trace completion with error of formating
+				FormatTrace(traceSource, traceAction, TraceStatus::completeWithError);
+
+			// re-throw the error 
+			Error::RaiseLast();
+		}
+	}
+
+	function RemoveElement(
+		device& deviceContext,								
+		variable& labwareId,
+		variable& positionId)
+	{
+		variable traceSource("");							// source for formatted trace
+		variable traceAction("");							// action for formatted trace
+		variable traceInfo("");								// additional trace information
+
+		variable instrumentName;
+		variable templateNames[];
+		variable labwareNames[];
+		variable labware_id_Carrier;
+		variable size;
+		variable index;
+		variable labwareAccessName("");
+		object deckLayout;
+		
+		// activate error handler
+		onerror goto Unexpected;
+
+		// initialize HSL Mapping Report Library
+		InitMappingReportLibrary();
+
+		// check if device has a decklayout
+		deckLayout = deviceContext.GetDeckLayoutObject();
+		if(deckLayout.IsNull())
+			Error::Raise(IDE::deviceWithoutDeck, GetFileName(), GetFunctionName(), GetLineNumber());
+
+		// trace start of RemoveElement
+		traceSource = StringTable::Load(IDS::traceSource);
+		traceAction = StringTable::Load(IDS::traceActionRemoveElement);
+		if(m_EnhancedLibraryTrace)
+			FormatTrace(traceSource, traceAction, TraceStatus::start);
+
+		if(!mg_IsSampleTrackingEnabled)
+			Error::Raise(IDE::sampleTrackingDisabled, GetFileName(), GetFunctionName(), GetLineNumber());
+
+		// check input parameters to be valid
+		if (!Util::IsString(labwareId))
+			Error::Raise(IDE::invalidParameter, GetFileName(), GetFunctionName(), GetLineNumber());
+
+		// trimm leading and successional blanks
+		StrTrimLeft(labwareId, StrConst::blank);
+		StrTrimRight(labwareId, StrConst::blank);
+
+		instrumentName = deviceContext.GetInstrumentName( );	// Get Instrument name
+
+		if (StrConst::emptyString == labwareId)
+		{
+			traceInfo = StringTable::Load(IDE::unknownLabwareId);
+			StrReplace(traceInfo, "%s1", labwareId);
+			StrReplace(traceInfo, "%s2", instrumentName);
+			Error::RaiseEx(IDE::unknownLabwareId, traceInfo, GetFileName(), GetFunctionName(), GetLineNumber());
+		}
+
+		if (!Util::IsString(positionId))
+			Error::Raise(IDE::invalidParameter, GetFileName(), GetFunctionName(), GetLineNumber());
+
+		// trimm leading and successional blanks
+		StrTrimLeft(positionId, StrConst::blank);
+		StrTrimRight(positionId, StrConst::blank);
+
+		// Search Template name depending on the labwareId
+		deviceContext.GetTemplateLabwareNames(templateNames, labwareNames);
+		size = labwareNames.GetSize();
+		for (index = 0; index < size; index ++)
+			if (labwareNames.GetAt(index) == labwareId)
+				break;
+
+	   // If LabwareName exist
+		if (index < size)
+		{
+			// check if position Id is spelled correctly
+			if(positionId != StrConst::emptyString)
+			{
+				sequence dummySeq;
+				onerror goto WrongSpelledPositionId;
+				dummySeq.Add(labwareId, positionId, deviceContext);
+				onerror goto Unexpected;
+			}
+
+		   labware_id_Carrier = templateNames[index];	// Assign Template Name
+	   
+			if (labware_id_Carrier == StrConst::templateDefaultName)	// If a plate is not on a carrier
+			{
+	         labwareAccessName = instrumentName + StrConst::backslash + labwareId;
+			}
+	      else
+			{
+		      labwareAccessName = instrumentName + StrConst::backslash + labware_id_Carrier + StrConst::backslash + labwareId;
+			}
+
+			if(positionId != StrConst::emptyString)
+				labwareAccessName = labwareAccessName + StrConst::backslash + positionId;
+
+			// block HxVectorDB Tracking
+			{
+				object actionUnload;
+				actionUnload.CreateObject("HXPARAMSLib.HxPars");
+			
+				actionUnload.Add(	1, mg_mapRepTrackerObj.HxVectorDbParsKey_ActionPars_ActionCount );
+
+				actionUnload.Add(	labwareAccessName,
+										mg_mapRepTrackerObj.HxVectorDbParsKey_ActionPars_Actions,
+										1,
+										mg_mapRepTrackerObj.HxVectorDbParsKey_ActionPars_Source );
+
+				actionUnload.Add(	mg_mapRepTrackerObj.HxVectorDbLabwareHandling_IfNotExists_IgnoreAction,
+										mg_mapRepTrackerObj.HxVectorDbParsKey_ActionPars_Actions,
+										1,
+										mg_mapRepTrackerObj.HxVectorDbParsKey_ActionPars_SourceLabwareHandling );
+
+				actionUnload.Add(	mg_mapRepTrackerObj.HxVectorDbActionState_NoError,
+										mg_mapRepTrackerObj.HxVectorDbParsKey_ActionPars_Actions,
+										1,
+										mg_mapRepTrackerObj.HxVectorDbParsKey_ActionPars_ActionState );
+			
+				actionUnload.Add(	hslFalse,
+										mg_mapRepTrackerObj.HxVectorDbParsKey_ActionPars_Actions,
+										1,
+										mg_mapRepTrackerObj.HxVectorDbParsKey_ActionPars_ErrorAvailable );
+			
+				mg_mapRepTrackerObj.TrackAction_Unload( actionUnload );
+			}
+		}
+		else
+		{
+			traceInfo = StringTable::Load(IDE::unknownLabwareId);
+			StrReplace(traceInfo, "%s1", labwareId);
+			StrReplace(traceInfo, "%s2", instrumentName);
+			Error::RaiseEx(IDE::unknownLabwareId, traceInfo, GetFileName(), GetFunctionName(), GetLineNumber());		
+		}
+
+		// trace completion of RemoveElement
+		traceInfo = StringTable::Load(IDS::removedElementFromDevice);
+		StrReplace(traceInfo, "%s1", labwareAccessName);
+		StrReplace(traceInfo, "%s2", instrumentName);
+		if(m_EnhancedLibraryTrace)
+			FormatTrace(traceSource, traceAction, TraceStatus::complete, traceInfo);
+		else
+			FormatTrace(traceSource, traceAction, TraceStatus::progress, traceInfo);
+
+		return;
+
+		WrongSpelledPositionId:
+		{
+			traceInfo = StringTable::Load(IDE::unknownPositionId);
+			StrReplace(traceInfo, "%s1", positionId);
+			StrReplace(traceInfo, "%s2", labwareId);
+			Error::RaiseEx(IDE::unknownPositionId, traceInfo, GetFileName(), GetFunctionName(), GetLineNumber());		
+		}
+		
+		Unexpected:
+		{
+			if(m_EnhancedLibraryTrace)
+				// trace completion with error
+				FormatTrace(traceSource, traceAction, TraceStatus::completeWithError);
+
+			// re-throw the error 
+			Error::RaiseLast();
+		}
+	}
+} // end of namespace HSLMapReport
+// $$author=ContainerAdministrator$$valid=1$$time=2025-09-09 20:13$$checksum=6f6d3c76$$length=099$$

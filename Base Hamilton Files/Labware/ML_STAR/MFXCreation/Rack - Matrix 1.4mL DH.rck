@@ -1,0 +1,71 @@
+HxCfgFile,3;
+
+ConfigIsValid,Y;
+
+DataDef,RECTRACK,3,default,
+{
+BackgrndClr, "32768",
+Barcode.Unique, "0",
+Barcode.Value, "",
+BndryX, "14",
+BndryY, "11.5",
+Category.0.Id, "1003",
+Category.1.Id, "1006",
+CategoryCnt, "2",
+Clearance, "58",
+Cntr.1.base, "3",
+Cntr.1.file, "ML_STAR\\MFXCreation\\Container - Matrix 1.4mL DH.ctr",
+Cntr.1.fileRel, ".\\Container - Matrix 1.4mL DH.ctr",
+Cntr.1.offsetx, "0",
+Cntr.1.offsety, "0",
+Columns, "12",
+ConnectedCtr, "0",
+DataType, "1",
+Description, "Multiflex module for a 96 2D barcoded Matrix storage tubes rack with 1.4ml tubes in downholder module SN 188313",
+Dim.Dx, "127",
+Dim.Dy, "86",
+Dim.Dz, "58",
+Dx, "9",
+Dy, "9",
+Hole.Shape, "0",
+Hole.X, "0",
+Hole.Y, "0",
+Hole.Z, "8.7",
+IX.First, "1",
+IX.Inc, "0",
+IX.Index, "1",
+IX.Start, "0",
+Options, "0",
+ReadOnly, "1",
+Rows, "8",
+SegmentCount_x, "0",
+SegmentCount_y, "0",
+Shape, "1",
+SingleCntr, "1",
+StackHt, "58",
+Stagger, "9",
+UseBndry, "1",
+ViewName, "",
+Visible, "1"
+};
+
+DataDef,HxPars,3,AuditTrailData,
+[
+"(1",
+"3-532742140",
+"2",
+"1-532742141",
+" ",
+"1-532742142",
+"Mamaev_V",
+"5-532742143",
+"44427.4318403",
+"1-532742138",
+"0",
+"1-532742139",
+"1",
+")",
+")"
+];
+
+* $$author=ContainerAdministrator$$valid=1$$time=2025-06-21 16:40$$checksum=99c808ab$$length=098$$

@@ -1,0 +1,59 @@
+//  ------------------------------------------------------------------------------------
+//  Hamilton Company Software Product
+//  File: HSLUtilLib2Def.hs_
+//
+//  This is a part of the module HxUtilLib.
+//
+//  File creation date:  2006-02-14 by bandenmatten
+//
+//  Copyright (c) 2006 by Hamilton Bonaduz AG.
+//
+//
+//  Modification History
+//  --------------------
+//  1.00  2006-02-14 / bandenmatten  Initial file creation.
+//
+//  ------------------------------------------------------------------------------------
+
+#ifndef __HSLUtilLib2Def_hs___
+#define __HSLUtilLib2Def_hs___	1
+
+// ----------------------------------------------------------------------------------------------------
+// Definitions
+// ----------------------------------------------------------------------------------------------------
+
+namespace Util2
+{
+	namespace ValueCheck
+	{
+		static const variable First(0);
+
+		const variable RangeNoCheck(0);
+
+		const variable RangeStringEmpty(1);							// string, must be empty
+		const variable RangeStringNotEmpty(2);						// string, must not be empty (1 or more chars)
+
+		const variable RangeNumberNotZero(3);						// number, 'x != 0'
+		const variable RangeNumberEqualToZero(4);					// number, 'x == 0'
+		const variable RangeNumberLessOrEqualToZero(5);			// number, 'x <= 0'
+		const variable RangeNumberLessOrEqualToMinusOne(6);	// number, 'x <= -1'
+		const variable RangeNumberLessThanZero(7);				// number, 'x < 0'
+		const variable RangeNumberGreaterThanZero(8);			// number, 'x > 0'
+		const variable RangeNumberGreaterOrEqualToZero(9);		// number, 'x >= 0'
+		const variable RangeNumberGreaterOrEqualToOne(10);		// number, 'x >= 1'
+
+		static const variable Last(RangeNumberGreaterOrEqualToOne);
+
+	}
+
+	namespace ValueType
+	{
+		const variable Integer(hslInteger);
+		const variable Float(hslFloat);
+		const variable String(hslString);
+	}
+}
+
+#endif // __HSLUtilLib2Def_hs___
+
+// $$author=ContainerAdministrator$$valid=1$$time=2025-09-09 20:13$$checksum=be53e23f$$length=099$$

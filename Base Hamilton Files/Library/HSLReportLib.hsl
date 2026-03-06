@@ -1,0 +1,51 @@
+// ======================================================================
+// This is a part of the HSL Report Lib.
+// Copyright (C) by HAMILTON Bonaduz AG, CH-7402 Bonaduz.
+// All rights reserved.
+// ======================================================================
+//
+// Modification History
+// 2003-02-17  ubernhard	: Initial file creation.
+//	2003-04-03  ubernhard	: add function CreateATBarcodeFile()
+// 2006-08-30	fgarcia		: declared CreateReportFile() as static
+// ======================================================================
+
+#ifndef __HSLReportLib_hsl__
+#define __HSLReportLib_hsl__	1
+
+// Interface to File library 
+#ifndef HSL_RUNTIME
+
+namespace HSLReport
+{
+	function AddToReportListFromLabware(
+		device& Device,
+		variable& Labware_id) variable 				{return(0);}
+
+	function AddToReportList(
+		device& Device,
+		sequence& Sequence) variable 					{return(0);}
+
+	static function CreateReportFile(
+		variable completeList,
+		variable removeFromList,
+		variable& reportFileCfgName) variable 		{return(0);} 
+
+	function CreateATBarcodeFile(
+		variable completeList,
+		variable removeFromList,
+		variable& plateName) variable 				{return(0);}
+
+} // end of namespace HSLReport
+
+#endif
+
+// ==========================================================================
+// Implementation of File library 
+// ==========================================================================
+#ifdef HSL_RUNTIME
+#include "HSLReportLib.hs_"
+#endif
+
+#endif /* end of #ifndef __HSLReportLib_hsl__ */
+// $$author=ContainerAdministrator$$valid=1$$time=2025-09-09 20:13$$checksum=5c6c37e8$$length=099$$
