@@ -389,7 +389,7 @@
         // Track number labels (sprite-based text above every track)
         for (let i = 1; i <= DECK.TRACK_COUNT; i++) {
             const x = DECK.FIRST_TRACK_X + (i - 1) * DECK.TRACK_SPACING;
-            const color = (i === 5) ? '#ee2222' : undefined; // track 5 in red
+            const color = (i === 4) ? '#ee2222' : undefined; // track 4 in red
             addTrackLabel(String(i), x, isDark, color);
         }
 
@@ -640,7 +640,7 @@
         cv.width = size; cv.height = size;
         const ctx = cv.getContext('2d');
         ctx.clearRect(0, 0, size, size);
-        ctx.fillStyle = overrideColor || (isDark ? '#7aafdf' : '#2a5580');
+        ctx.fillStyle = overrideColor || '#ffffff';
         ctx.font = 'bold 28px sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
@@ -649,7 +649,7 @@
         const mat = new THREE.SpriteMaterial({ map: tex, transparent: true });
         const sprite = new THREE.Sprite(mat);
         sprite.scale.set(14, 14, 1);
-        sprite.position.set(xPos + DECK.TRACK_WIDTH / 2, DECK.SURFACE_Z + 16, DECK.TRACK_Y_START - 16);
+        sprite.position.set(xPos + DECK.TRACK_WIDTH / 2, DECK.SURFACE_Z + 12, DECK.TRACK_Y_START + DECK.TRACK_DEPTH + 12);
         sprite.name = `__tracklabel_${text}__`;
         vlState.scene.add(sprite);
     }
@@ -899,9 +899,9 @@
         const def = CARRIER_LIBRARY[carrierType];
         if (!def) return null;
 
-        // Validate track range — placement allowed from track 5 onward
-        if (trackStart < 5 || trackStart + def.tWidth - 1 > DECK.TRACK_COUNT) {
-            showVLStatus('Cannot place: track out of range (min track 5).', 'error');
+        // Validate track range — placement allowed from track 4 onward
+        if (trackStart < 4 || trackStart + def.tWidth - 1 > DECK.TRACK_COUNT) {
+            showVLStatus('Cannot place: track out of range (min track 4).', 'error');
             return null;
         }
 
@@ -1168,7 +1168,7 @@
 
         const { carrier } = vlState.canvasCarrierDrag;
         const trackNum    = snapToTrack(hits[0].point.x);
-        const clamped     = Math.max(5, Math.min(DECK.TRACK_COUNT - carrier.def.tWidth + 1, trackNum));
+        const clamped     = Math.max(4, Math.min(DECK.TRACK_COUNT - carrier.def.tWidth + 1, trackNum));
         const snappedX    = DECK.FIRST_TRACK_X + (clamped - 1) * DECK.TRACK_SPACING;
 
         if (vlState.ghostMesh) {
@@ -1394,7 +1394,7 @@
         const point = hits[0].point;
         const def   = vlState.paletteDrag.def;
         const trackNum    = snapToTrack(point.x);
-        const clampedTrack = Math.max(5, Math.min(DECK.TRACK_COUNT - def.tWidth + 1, trackNum));
+        const clampedTrack = Math.max(4, Math.min(DECK.TRACK_COUNT - def.tWidth + 1, trackNum));
         const snappedX     = DECK.FIRST_TRACK_X + (clampedTrack - 1) * DECK.TRACK_SPACING;
 
         if (vlState.ghostMesh) {
@@ -1467,10 +1467,10 @@
         $('#vl-pd-twidth').textContent = `${def.tWidth}T wide (${def.dx}mm)`;
         $('#vl-pd-sites').textContent = `${def.sites.length} site${def.sites.length !== 1 ? 's' : ''}`;
 
-        // Set default track (next available, min track 5)
+        // Set default track (next available, min track 4)
         const track = findNextFreeTrack(def.tWidth);
         $('#vl-pd-track').value = track;
-        $('#vl-pd-track').min = '5';
+        $('#vl-pd-track').min = '4';
         $('#vl-pd-track').max = String(DECK.TRACK_COUNT - def.tWidth + 1);
 
         dialog.dataset.carrierType = carrierType;
@@ -1478,10 +1478,10 @@
     }
 
     function findNextFreeTrack(tWidth) {
-        for (let t = 5; t <= DECK.TRACK_COUNT - tWidth + 1; t++) {
+        for (let t = 4; t <= DECK.TRACK_COUNT - tWidth + 1; t++) {
             if (!checkCarrierCollision(t, tWidth, -1)) return t;
         }
-        return 5;
+        return 4;
     }
 
     // ================================================================
