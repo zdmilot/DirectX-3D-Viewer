@@ -457,6 +457,19 @@
                 vlState._gltfBasePos = model.position.clone();
                 vlState.scene.add(model);
 
+                // Restore any saved debug offsets from a previous session
+                try {
+                    const saved = JSON.parse(localStorage.getItem('vl-deck-debug-offsets'));
+                    if (saved && (saved.x || saved.y || saved.z)) {
+                        model.position.set(
+                            vlState._gltfBasePos.x + (saved.x || 0),
+                            vlState._gltfBasePos.y + (saved.y || 0),
+                            vlState._gltfBasePos.z + (saved.z || 0)
+                        );
+                        vlState._gltfBasePos = model.position.clone();
+                    }
+                } catch (_) { /* ignore */ }
+
                 // Collect cover node references by traversal (robust — avoids getObjectByName issues)
                 collectDeckCoverNodes();
 
@@ -1726,6 +1739,19 @@
                     showVLStatus('No GLTF deck model loaded yet.', 'error');
                     return;
                 }
+                const dx = parseFloat(document.getElementById('vl-dbg-x')?.value) || 0;
+                const dy = parseFloat(document.getElementById('vl-dbg-y')?.value) || 0;
+                const dz = parseFloat(document.getElementById('vl-dbg-z')?.value) || 0;
+                // Save cumulative offsets to localStorage
+                try {
+                    const prev = JSON.parse(localStorage.getItem('vl-deck-debug-offsets')) || { x: 0, y: 0, z: 0 };
+                    const cumulative = {
+                        x: (prev.x || 0) + dx,
+                        y: (prev.y || 0) + dy,
+                        z: (prev.z || 0) + dz
+                    };
+                    localStorage.setItem('vl-deck-debug-offsets', JSON.stringify(cumulative));
+                } catch (_) { /* ignore */ }
                 // Bake current position as new base
                 vlState._gltfBasePos = model.position.clone();
                 // Reset debug inputs to 0
@@ -1734,7 +1760,7 @@
                     if (inp) inp.value = 0;
                 });
                 refreshDeckDebugReadout();
-                showVLStatus('Offsets applied to base position', 'ok');
+                showVLStatus('Offsets applied and saved', 'ok');
             });
         }
 
