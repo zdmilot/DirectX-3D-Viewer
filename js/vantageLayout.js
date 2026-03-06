@@ -324,6 +324,9 @@
         wireTMLImport();
         wireCarrierPalette();
         wireCanvasEvents();
+
+        // Enable drag-to-place by default
+        setDragToPlace(true);
         wireVLPanelToggles();
         populateCarrierPalette();
         resetVLCamera();
@@ -1764,6 +1767,26 @@
                 }
             });
         }
+
+        // ── Grid toggle ──────────────────────────────────────────────
+        const gridToggle = document.getElementById('settings-grid-toggle');
+        if (gridToggle) {
+            gridToggle.checked = vlState.gridVisible;
+            gridToggle.addEventListener('change', function () {
+                vlState.gridVisible = gridToggle.checked;
+                const grid = vlState.scene.getObjectByName('__vlgrid__');
+                if (grid) grid.visible = vlState.gridVisible;
+            });
+        }
+
+        // ── Drag-to-Place toggle ─────────────────────────────────────
+        const dragPlaceToggle = document.getElementById('settings-drag-place-toggle');
+        if (dragPlaceToggle) {
+            dragPlaceToggle.checked = vlState.dragToPlaceEnabled;
+            dragPlaceToggle.addEventListener('change', function () {
+                setDragToPlace(dragPlaceToggle.checked);
+            });
+        }
     }
 
     // ================================================================
@@ -1821,8 +1844,7 @@
         // Perspective toggle
         wireBtn('#vl-vt-perspective', toggleVLPerspective);
 
-        // Grid toggle
-        wireBtn('#vl-btn-grid', toggleVLGrid);
+
 
         // Top-down view
         wireBtn('#vl-vt-topdown', setTopDownView);
@@ -1834,8 +1856,7 @@
         // Pan mode
         wireBtn('#vl-vt-pan', toggleVLPan);
 
-        // Drag-to-place toggle
-        wireBtn('#vl-vt-drag-place', () => setDragToPlace(!vlState.dragToPlaceEnabled));
+
 
         // Drag-to-move toolbar
         wireDragHandle('#vl-vt-grab-handle', '#vl-toolbar');

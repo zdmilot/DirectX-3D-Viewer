@@ -869,10 +869,6 @@
                             <button class="vt-btn" id="vl-vt-perspective" title="Toggle perspective / orthographic">
                                 <i class="fas fa-cube"></i>
                             </button>
-                            <button class="vt-btn grid-toggle" id="vl-btn-grid" title="Toggle grid">
-                                <i class="fas fa-border-all"></i>
-                                <span class="grid-slash" aria-hidden="true"></span>
-                            </button>
                             <div class="vt-separator"></div>
                             <button class="vt-btn vt-btn-round" id="vl-vt-zoom-in" title="Zoom in">
                                 <i class="fas fa-plus"></i>
@@ -882,10 +878,6 @@
                             </button>
                             <button class="vt-btn vt-btn-round" id="vl-vt-pan" title="Pan mode">
                                 <i class="fas fa-hand-paper"></i>
-                            </button>
-                            <div class="vt-separator"></div>
-                            <button class="vt-btn" id="vl-vt-drag-place" title="Drag-to-Place: drag carriers from the palette onto the deck">
-                                <i class="fas fa-hand-pointer"></i>
                             </button>
                             <div class="vt-separator"></div>
                             <div class="vt-grab-handle" id="vl-vt-grab-handle" title="Drag to move toolbar">
@@ -1105,6 +1097,27 @@
                         <span class="settings-switch-slider"></span>
                     </label>
                 </div>
+
+                <div class="settings-divider"></div>
+
+                <!-- Display Options -->
+                <div class="settings-section-title"><i class="fas fa-eye"></i> Display Options</div>
+                <div class="settings-toggle-row">
+                    <span class="settings-toggle-label">Show Grid Lines</span>
+                    <label class="settings-switch">
+                        <input type="checkbox" id="settings-grid-toggle" checked>
+                        <span class="settings-switch-slider"></span>
+                    </label>
+                </div>
+                <div class="settings-toggle-row">
+                    <span class="settings-toggle-label">Drag-to-Place</span>
+                    <label class="settings-switch">
+                        <input type="checkbox" id="settings-drag-place-toggle" checked>
+                        <span class="settings-switch-slider"></span>
+                    </label>
+                </div>
+
+                <div class="settings-divider"></div>
 
                 <div class="settings-relocate-panel" id="settings-relocate-panel">
                     <div class="settings-xyz-row">
