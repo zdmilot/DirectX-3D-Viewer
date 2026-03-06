@@ -592,18 +592,23 @@
                 model.renderOrder = i;
 
                 // Apply polygon offset to prevent z-fighting between
-                // overlapping meshes.  Mesh 0 (outer shell) gets zero
-                // offset; later meshes are pushed progressively behind
-                // so the outer shell always wins at coplanar surfaces.
-                // Cap at reasonable values so models with hundreds of
-                // meshes don't get extreme depth offsets.
+                // overlapping meshes.  Mesh 0 (outer shell / body) is
+                // pushed slightly back; later meshes (labels, decals,
+                // text, barcodes) are pulled toward the camera so they
+                // always win the depth test against coplanar surfaces.
                 if (model.material) {
                     const applyOffset = (m, meshIdx) => {
-                        if (meshIdx > 0) {
+                        if (meshIdx === 0) {
+                            // Push the body/shell slightly back
+                            m.polygonOffset = true;
+                            m.polygonOffsetFactor = 1;
+                            m.polygonOffsetUnits  = 1;
+                        } else {
+                            // Pull labels/decals toward camera
                             const capped = Math.min(meshIdx, 10);
                             m.polygonOffset = true;
-                            m.polygonOffsetFactor = capped;
-                            m.polygonOffsetUnits  = capped * 4;
+                            m.polygonOffsetFactor = -capped;
+                            m.polygonOffsetUnits  = -capped * 4;
                         }
                     };
                     if (Array.isArray(model.material)) {

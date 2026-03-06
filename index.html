@@ -860,6 +860,38 @@
         </div>
     </div>
 
+    <!-- Screenshot Preview Modal -->
+    <div class="ss-overlay" id="ss-overlay">
+        <div class="ss-modal">
+            <div class="ss-header">
+                <div class="ss-title"><i class="fas fa-camera"></i> Screenshot Preview</div>
+                <button class="ss-close-btn" id="ss-close" title="Close">&times;</button>
+            </div>
+            <div class="ss-body">
+                <div class="ss-preview-wrap">
+                    <img id="ss-preview-img" class="ss-preview-img" alt="Screenshot preview" />
+                </div>
+                <div class="ss-options">
+                    <label class="ss-toggle">
+                        <input type="checkbox" id="ss-opt-grid" checked />
+                        <span class="ss-toggle-slider"></span>
+                        <span class="ss-toggle-label">Show Grid</span>
+                    </label>
+                    <label class="ss-toggle">
+                        <input type="checkbox" id="ss-opt-bg" checked />
+                        <span class="ss-toggle-slider"></span>
+                        <span class="ss-toggle-label">Show Background</span>
+                    </label>
+                </div>
+            </div>
+            <div class="ss-footer">
+                <button class="ss-save-btn" data-format="png"><i class="fas fa-file-image"></i> Save .PNG</button>
+                <button class="ss-save-btn" data-format="jpg"><i class="fas fa-file-image"></i> Save .JPG</button>
+                <button class="ss-save-btn" data-format="svg"><i class="fas fa-file-code"></i> Save .SVG</button>
+            </div>
+        </div>
+    </div>
+
     <!-- About Modal -->
     <div class="about-overlay" id="about-overlay">
         <div class="about-modal">
