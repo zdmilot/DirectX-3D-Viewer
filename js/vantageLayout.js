@@ -828,18 +828,17 @@
             });
         }
 
-        // Site wells — always added on top of whichever body is used
+        // Site wells — always added on top of whichever body is used.
+        // When a .x model is present, make them invisible (raycast-only).
+        const hasXModel = !!cachedXModel;
         const siteMeshes = [];
         carrierDef.sites.forEach(site => {
             const wellGeo = new THREE.BoxGeometry(site.dx, 6, site.dy);
             const wellMat = new THREE.MeshLambertMaterial({
                 color: 0x1a2530,
-                polygonOffset: true,
-                polygonOffsetFactor: -1,
-                polygonOffsetUnits: -1,
+                visible: !hasXModel,
             });
             const wellMesh = new THREE.Mesh(wellGeo, wellMat);
-            wellMesh.renderOrder = 50;
             wellMesh.position.set(
                 site.x + site.dx / 2,
                 site.z - carrierDef.dz * 0.10,
