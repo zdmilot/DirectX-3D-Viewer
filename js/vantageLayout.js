@@ -174,11 +174,22 @@
         dragToPlaceEnabled: true,
         paletteDrag: null,    // { type, def } while dragging from palette
 
+        // Canvas carrier drag state (moving a placed carrier)
+        canvasCarrierDrag: null,  // { carrier } while dragging placed carrier
+
+        // GLTF deck model reference (for debug positioning)
+        gltfModel: null,
+        debugDeckMode: false,
+        sitesPanelOpen: false,
+
         // TML import state
         importedCarrier: null,
 
         // Currently selected carrier
         selectedCarrierId: null,
+
+        // Cache of THREE.Group models loaded from .x files, keyed by carrier key
+        xModelCache: {},
 
         // Raycaster helpers
         _raycaster: null,
@@ -431,6 +442,8 @@
                     deckCenterZ - center.z
                 );
 
+                vlState.gltfModel = model;
+                vlState._gltfBasePos = model.position.clone();
                 vlState.scene.add(model);
 
                 // Hide procedural geometry — GLTF provides authentic deck visuals
@@ -444,7 +457,7 @@
                     if (o) o.visible = false;
                 }
 
-                setStatus('Vantage deck model loaded');
+                showVLStatus('Vantage deck model loaded', 'ok');
             },
             undefined,
             function (err) {
@@ -525,50 +538,128 @@
     // ================================================================
     //  3D Carrier Builder
     // ================================================================
+
+    /**
+     * Return the cache key used to look up a carrier's .x model.
+     */
+    function getCarrierCacheKey(def) {
+        return (def.viewName || '').toUpperCase().replace(/\s+/g, '_');
+    }
+
+    /**
+     * Apply a left-handed (DirectX) → right-handed (Three.js) fix to a group.
+     * Negates X on all vertex positions and normals, flips winding order.
+     * Mirrors window._fixLeftHandedCoords from app.js (which loads after this
+     * module, so we keep a local copy here).
+     */
+    function fixXFileCoords(group) {
+        group.traverse(function (child) {
+            if (!child.isMesh || !child.geometry) return;
+            const pos = child.geometry.attributes.position;
+            if (pos) {
+                for (let i = 0; i < pos.count; i++) pos.setX(i, -pos.getX(i));
+                pos.needsUpdate = true;
+            }
+            const norm = child.geometry.attributes.normal;
+            if (norm) {
+                for (let i = 0; i < norm.count; i++) norm.setX(i, -norm.getX(i));
+                norm.needsUpdate = true;
+            }
+            const idx = child.geometry.index;
+            if (idx) {
+                for (let f = 0; f < idx.count; f += 3) {
+                    const a = idx.getX(f), b = idx.getX(f + 1);
+                    idx.setX(f, b); idx.setX(f + 1, a);
+                }
+                idx.needsUpdate = true;
+            }
+            child.geometry.computeBoundingBox();
+            child.geometry.computeBoundingSphere();
+        });
+    }
+
     function buildCarrierMesh(carrierDef, trackStart) {
         const group = new THREE.Group();
         const x0 = DECK.FIRST_TRACK_X + (trackStart - 1) * DECK.TRACK_SPACING;
         const y0 = DECK.TRACK_Y_START;
         const z0 = DECK.SURFACE_Z;
 
-        // Carrier body
-        const bodyGeo = new THREE.BoxGeometry(carrierDef.dx, carrierDef.dz * 0.15, carrierDef.dy);
-        const bodyMat = new THREE.MeshLambertMaterial({
-            color: carrierDef.color || 0x607080,
-            transparent: true,
-            opacity: 0.92,
-        });
-        const bodyMesh = new THREE.Mesh(bodyGeo, bodyMat);
-        bodyMesh.position.set(
-            carrierDef.dx / 2,
-            carrierDef.dz * 0.075,
-            carrierDef.dy / 2,
-        );
-        bodyMesh.name = '__carrier_body__';
-        group.add(bodyMesh);
+        // Check for a cached .x model first
+        const cacheKey = getCarrierCacheKey(carrierDef);
+        const cachedXModel = cacheKey ? vlState.xModelCache[cacheKey] : null;
 
-        // Side rails
-        const railH = carrierDef.dz * 0.65;
-        const railGeo = new THREE.BoxGeometry(4, railH, carrierDef.dy);
-        const railMat = new THREE.MeshLambertMaterial({ color: 0x304050 });
-        [-1, 1].forEach(side => {
-            const rail = new THREE.Mesh(railGeo, railMat);
-            rail.position.set(side === -1 ? 2 : carrierDef.dx - 2, railH / 2 + carrierDef.dz * 0.15, carrierDef.dy / 2);
-            group.add(rail);
-        });
+        if (cachedXModel) {
+            // Clone the cached model so each placed carrier is independent
+            const xModel = cachedXModel.clone(true);
+            xModel.name = '__carrier_body_x__';
 
-        // Site wells
+            // Deep-clone materials so selection highlight is per-carrier
+            xModel.traverse(function (child) {
+                if (!child.isMesh) return;
+                child.frustumCulled = false;
+                if (Array.isArray(child.material)) {
+                    child.material = child.material.map(function (m) { return m ? m.clone() : m; });
+                } else if (child.material) {
+                    child.material = child.material.clone();
+                }
+                // Treat blue-dominant materials as translucent (polycarbonate covers)
+                const mats = Array.isArray(child.material) ? child.material : [child.material];
+                mats.forEach(function (m) {
+                    if (!m || !m.color) return;
+                    if (m.color.b > m.color.r * 1.5 && m.color.b > 0.1) {
+                        m.transparent = true;
+                        if (m.opacity >= 1.0) m.opacity = 0.4;
+                        m.depthWrite = false;
+                        m.side = THREE.DoubleSide;
+                    }
+                });
+            });
+
+            // Fit the model: center it over the TML footprint, bottom at y=0
+            const box = new THREE.Box3().setFromObject(xModel);
+            const modelCenter = box.getCenter(new THREE.Vector3());
+            xModel.position.set(
+                carrierDef.dx / 2 - modelCenter.x,
+                -box.min.y,                           // lift so base is at y=0
+                carrierDef.dy / 2 - modelCenter.z
+            );
+            group.add(xModel);
+        } else {
+            // ── Procedural fallback (box + rails) ─────────────────────
+            const bodyGeo = new THREE.BoxGeometry(carrierDef.dx, carrierDef.dz * 0.15, carrierDef.dy);
+            const bodyMat = new THREE.MeshLambertMaterial({
+                color: carrierDef.color || 0x607080,
+                transparent: true,
+                opacity: 0.92,
+            });
+            const bodyMesh = new THREE.Mesh(bodyGeo, bodyMat);
+            bodyMesh.position.set(
+                carrierDef.dx / 2,
+                carrierDef.dz * 0.075,
+                carrierDef.dy / 2,
+            );
+            bodyMesh.name = '__carrier_body__';
+            group.add(bodyMesh);
+
+            const railH = carrierDef.dz * 0.65;
+            const railGeo = new THREE.BoxGeometry(4, railH, carrierDef.dy);
+            const railMat = new THREE.MeshLambertMaterial({ color: 0x304050 });
+            [-1, 1].forEach(side => {
+                const rail = new THREE.Mesh(railGeo, railMat);
+                rail.position.set(side === -1 ? 2 : carrierDef.dx - 2, railH / 2 + carrierDef.dz * 0.15, carrierDef.dy / 2);
+                group.add(rail);
+            });
+        }
+
+        // Site wells — always added on top of whichever body is used
         const siteMeshes = [];
         carrierDef.sites.forEach(site => {
-            // Site recess (empty slot)
             const wellGeo = new THREE.BoxGeometry(site.dx, 6, site.dy);
             const wellMat = new THREE.MeshLambertMaterial({ color: 0x1a2530 });
             const wellMesh = new THREE.Mesh(wellGeo, wellMat);
-            // site.y is from carrier origin (Y = carrier front in Hamilton coords)
-            // Hamilton Y = 0 at front, increases going rearward
             wellMesh.position.set(
                 site.x + site.dx / 2,
-                site.z - carrierDef.dz * 0.10,    // site surface height
+                site.z - carrierDef.dz * 0.10,
                 site.y + site.dy / 2,
             );
             wellMesh.name = `__site_${site.id}__`;
@@ -730,25 +821,35 @@
     // ================================================================
     //  Carrier selection highlight
     // ================================================================
-    function selectCarrier(carrierId) {
-        // Deselect previous
-        vlState.placedCarriers.forEach(c => {
-            c.mesh.traverse(child => {
-                if (child.isMesh && child.name === '__carrier_body__') {
-                    child.material.emissive = new THREE.Color(0x000000);
-                }
+
+    /** Apply or clear a selection emissive highlight on a carrier group. */
+    function setCarrierHighlight(carrierMesh, highlight) {
+        const emissiveColor = highlight
+            ? new THREE.Color(vlState.isDark ? 0x103050 : 0x2060a0)
+            : new THREE.Color(0x000000);
+
+        carrierMesh.traverse(function (child) {
+            if (!child.isMesh) return;
+            // Skip site-well meshes (names start with __site_)
+            if (child.name && child.name.startsWith('__site_')) return;
+            const mats = Array.isArray(child.material) ? child.material : [child.material];
+            mats.forEach(function (m) {
+                if (m && m.emissive) m.emissive.copy(emissiveColor);
             });
         });
+    }
+
+    function selectCarrier(carrierId) {
+        // Deselect all
+        vlState.placedCarriers.forEach(c => setCarrierHighlight(c.mesh, false));
 
         vlState.selectedCarrierId = carrierId;
         const carrier = vlState.placedCarriers.find(c => c.id === carrierId);
         if (carrier) {
-            carrier.mesh.traverse(child => {
-                if (child.isMesh && child.name === '__carrier_body__') {
-                    child.material.emissive = new THREE.Color(vlState.isDark ? 0x103050 : 0x2060a0);
-                }
-            });
+            setCarrierHighlight(carrier.mesh, true);
             updateSitePanel(carrier);
+            // Auto-open the sites panel when a carrier is selected
+            if (!vlState.sitesPanelOpen) setSitesPanelOpen(true);
         } else {
             updateSitePanel(null);
         }
@@ -760,48 +861,198 @@
     }
 
     // ================================================================
-    //  Canvas Mouse Events (click to select, drag from palette)
+    //  Site Panel open/close
+    // ================================================================
+    function setSitesPanelOpen(open) {
+        vlState.sitesPanelOpen = open;
+        const panel = $('#vl-right-panel');
+        const host  = vlState.host;
+        // Use is-collapsed on the panel when closed (CSS slides it out right)
+        if (panel) panel.classList.toggle('is-collapsed', !open);
+        if (host)  host.classList.toggle('vl-right-collapsed', !open);
+        // Always clear any inline right override — CSS handles it
+        const toolbar = $('#vl-toolbar');
+        if (toolbar) toolbar.style.right = '';
+        // Outer tab icon: chevron-left (close) when open, chevron-right (open) when closed
+        const outerIcon = document.querySelector('#vl-right-toggle i');
+        if (outerIcon) outerIcon.className = open ? 'fas fa-chevron-right' : 'fas fa-chevron-left';
+    }
+
+    // ================================================================
+    //  Canvas Mouse Events (click to select, drag placed carrier to move)
     // ================================================================
     function wireCanvasEvents() {
         const canvas = vlState.canvas;
         if (!canvas) return;
 
-        canvas.addEventListener('click', onDeckClick);
+        // Track mousedown position to distinguish click vs orbit drag
+        let _downX = 0, _downY = 0;
+
+        canvas.addEventListener('mousedown', e => {
+            // Ignore if a palette drag is already active
+            if (vlState.paletteDrag) return;
+            _downX = e.clientX;
+            _downY = e.clientY;
+
+            // Check if pressing on a placed carrier → start carrier drag
+            const hit = hitTestCarriers(e);
+            if (hit) {
+                // Prevent OrbitControls from rotating while we drag a carrier
+                e.stopPropagation();
+                vlState.controls.enabled = false;
+                startCanvasCarrierDrag(e, hit.carrier);
+            }
+        });
+
+        canvas.addEventListener('mouseup', e => {
+            if (vlState.canvasCarrierDrag) return; // handled by drag end
+            // Treat as click if mouse barely moved
+            const dx = e.clientX - _downX;
+            const dy = e.clientY - _downY;
+            if (Math.sqrt(dx * dx + dy * dy) < 6) {
+                onDeckClick(e);
+            }
+        });
     }
 
-    function onDeckClick(e) {
-        if (!vlState.scene || !vlState.camera) return;
+    // Hit-test placed carriers; returns { carrier } or null
+    function hitTestCarriers(e) {
+        if (!vlState.scene || !vlState.camera) return null;
         const rect = vlState.canvas.getBoundingClientRect();
         vlState._mouse.x =  ((e.clientX - rect.left)  / rect.width)  * 2 - 1;
         vlState._mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-
         vlState._raycaster.setFromCamera(vlState._mouse, vlState.camera);
 
-        // Check if a placed carrier was clicked
         const carrierObjects = [];
         vlState.placedCarriers.forEach(c => {
             c.mesh.traverse(child => { if (child.isMesh) carrierObjects.push(child); });
         });
 
         const hits = vlState._raycaster.intersectObjects(carrierObjects, false);
-        if (hits.length > 0) {
-            // Find which carrier this mesh belongs to
-            let target = hits[0].object;
-            while (target.parent && !target.parent.name?.startsWith('__carrier')) {
-                if (target.parent.userData?.carrierId) break;
-                target = target.parent;
+        if (!hits.length) return null;
+
+        for (const carrier of vlState.placedCarriers) {
+            let found = false;
+            carrier.mesh.traverse(child => { if (child === hits[0].object) found = true; });
+            if (found) return { carrier };
+        }
+        return null;
+    }
+
+    // ── Drag a placed carrier to a new track ──────────────────────
+    function startCanvasCarrierDrag(e, carrier) {
+        selectCarrier(carrier.id);
+        vlState.canvasCarrierDrag = { carrier };
+
+        // Build a ghost at current track
+        destroyGhostMesh();
+        const { group } = buildCarrierMesh(carrier.def, carrier.trackStart);
+        group.traverse(child => {
+            if (child.isMesh) {
+                child.material = child.material.clone();
+                child.material.transparent = true;
+                child.material.opacity = 0.42;
+                child.material.color.set(0x44aaee);
+                child.material.depthWrite = false;
             }
-            // Walk up scene graph to find the carrier group
-            for (const carrier of vlState.placedCarriers) {
-                let found = false;
-                carrier.mesh.traverse(child => { if (child === hits[0].object) found = true; });
-                if (found) {
-                    selectCarrier(carrier.id);
-                    return;
-                }
+        });
+        vlState.ghostMesh = group;
+        vlState.scene.add(group);
+
+        // Hide the real carrier mesh while dragging
+        carrier.mesh.visible = false;
+
+        document.addEventListener('mousemove', onCanvasCarrierDragMove);
+        document.addEventListener('mouseup',   onCanvasCarrierDragEnd);
+    }
+
+    function onCanvasCarrierDragMove(e) {
+        if (!vlState.canvasCarrierDrag || !vlState._deckPlane) return;
+
+        const canvas = vlState.canvas;
+        const rect = canvas.getBoundingClientRect();
+        vlState._mouse.x =  ((e.clientX - rect.left)  / rect.width)  * 2 - 1;
+        vlState._mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+        vlState._raycaster.setFromCamera(vlState._mouse, vlState.camera);
+
+        const hits = vlState._raycaster.intersectObject(vlState._deckPlane, false);
+        if (!hits.length) return;
+
+        const { carrier } = vlState.canvasCarrierDrag;
+        const trackNum    = snapToTrack(hits[0].point.x);
+        const clamped     = Math.max(1, Math.min(DECK.TRACK_COUNT - carrier.def.tWidth + 1, trackNum));
+        const snappedX    = DECK.FIRST_TRACK_X + (clamped - 1) * DECK.TRACK_SPACING;
+
+        if (vlState.ghostMesh) {
+            vlState.ghostMesh.position.set(snappedX, DECK.SURFACE_Z, DECK.TRACK_Y_START);
+            vlState.ghostMesh.visible = true;
+            const hasCollision = checkCarrierCollision(clamped, carrier.def.tWidth, carrier.id);
+            vlState.ghostMesh.traverse(child => {
+                if (child.isMesh) child.material.color.set(hasCollision ? 0xee4444 : 0x44aaee);
+            });
+        }
+        vlState.hoveredTrack = clamped;
+    }
+
+    function onCanvasCarrierDragEnd(e) {
+        document.removeEventListener('mousemove', onCanvasCarrierDragMove);
+        document.removeEventListener('mouseup',   onCanvasCarrierDragEnd);
+
+        if (!vlState.canvasCarrierDrag) return;
+        const { carrier } = vlState.canvasCarrierDrag;
+        vlState.canvasCarrierDrag = null;
+
+        // Re-enable orbit controls
+        vlState.controls.enabled = true;
+
+        const newTrack = vlState.hoveredTrack;
+        destroyGhostMesh();
+        vlState.hoveredTrack = null;
+
+        // Restore carrier mesh visibility
+        carrier.mesh.visible = true;
+
+        if (newTrack !== null && newTrack !== carrier.trackStart) {
+            if (!checkCarrierCollision(newTrack, carrier.def.tWidth, carrier.id)) {
+                // Remove old mesh and rebuild at new track
+                vlState.scene.remove(carrier.mesh);
+                carrier.mesh.traverse(child => {
+                    if (child.geometry) child.geometry.dispose();
+                    if (child.material) {
+                        (Array.isArray(child.material) ? child.material : [child.material])
+                            .forEach(m => m.dispose());
+                    }
+                });
+                const { group, siteMeshes } = buildCarrierMesh(carrier.def, newTrack);
+                // Re-add any plates
+                carrier.plateMeshes.forEach(pm => {
+                    const site = carrier.def.sites.find(s => s.id === pm.siteId);
+                    if (site) {
+                        const newPm = buildPlateMesh(site, carrier.def);
+                        group.add(newPm);
+                        pm.mesh = newPm;
+                    }
+                });
+                vlState.scene.add(group);
+                carrier.mesh = group;
+                carrier.siteMeshes = siteMeshes;
+                carrier.trackStart = newTrack;
+                selectCarrier(carrier.id);
+                updateCarrierList();
+                showVLStatus(`Moved ${carrier.def.viewName} to track ${newTrack}.`);
+            } else {
+                showVLStatus('Cannot move: track position occupied.', 'error');
             }
         }
+    }
 
+    function onDeckClick(e) {
+        if (!vlState.scene || !vlState.camera) return;
+        const hit = hitTestCarriers(e);
+        if (hit) {
+            selectCarrier(hit.carrier.id);
+            return;
+        }
         // Deselect if clicked empty space
         selectCarrier(null);
         updateSitePanel(null);
@@ -1129,8 +1380,8 @@
         if (openBtn && fileInput) {
             openBtn.addEventListener('click', () => fileInput.click());
             fileInput.addEventListener('change', e => {
-                const file = e.target.files[0];
-                if (file) loadTMLFile(file);
+                const files = Array.from(e.target.files);
+                if (files.length > 0) processTMLDrop(files);
                 fileInput.value = '';
             });
         }
@@ -1141,19 +1392,54 @@
             dropZone.addEventListener('drop', e => {
                 e.preventDefault();
                 dropZone.classList.remove('drag-over');
-                const file = e.dataTransfer.files[0];
-                if (file && /\.tml$/i.test(file.name)) loadTMLFile(file);
-                else showVLStatus('Please drop a .tml carrier template file.', 'error');
+                const files = Array.from(e.dataTransfer.files);
+                if (files.length > 0) processTMLDrop(files);
             });
         }
     }
 
-    function loadTMLFile(file) {
+    /**
+     * Process a batch of dropped/selected files, routing .tml files through
+     * loadTMLFile() and .x files through loadXModelForCarrierKey().
+     * When a .tml and .x share the same base name (or only one of each is
+     * present), the .x model is associated with that carrier automatically.
+     */
+    function processTMLDrop(files) {
+        const tmlFiles = files.filter(f => /\.tml$/i.test(f.name));
+        const xFiles   = files.filter(f => /\.x$/i.test(f.name));
+
+        if (tmlFiles.length === 0 && xFiles.length === 0) {
+            showVLStatus('Please drop a .tml carrier template file (optionally with a .x model).', 'error');
+            return;
+        }
+
+        // Match each .tml with its companion .x by base name, or by sole-file pairing
+        tmlFiles.forEach(function (tmlFile) {
+            const baseName = tmlFile.name.replace(/\.tml$/i, '').toLowerCase();
+            let companionX = xFiles.find(f => f.name.replace(/\.x$/i, '').toLowerCase() === baseName);
+            // Fall back: if exactly one .tml and one .x are dropped together, pair them
+            if (!companionX && tmlFiles.length === 1 && xFiles.length === 1) {
+                companionX = xFiles[0];
+            }
+            loadTMLFile(tmlFile, companionX || null);
+        });
+
+        // If only .x files were dropped (no .tml), attach to the most-recently imported carrier
+        if (tmlFiles.length === 0 && xFiles.length > 0) {
+            if (vlState.importedCarrier) {
+                xFiles.forEach(f => loadXModelForCarrierKey(vlState.importedCarrier, f));
+            } else {
+                showVLStatus('Drop a .tml alongside the .x to assign the 3D model.', 'error');
+            }
+        }
+    }
+
+    function loadTMLFile(tmlFile, xFile) {
         const reader = new FileReader();
-        reader.onload = e => {
+        reader.onload = function (e) {
             const text = e.target.result;
             const parsed = parseTML(text);
-            if (!parsed.viewName) parsed.viewName = file.name.replace(/\.tml$/i, '');
+            if (!parsed.viewName) parsed.viewName = tmlFile.name.replace(/\.tml$/i, '');
             if (!parsed.description) parsed.description = 'Imported carrier';
 
             // Register in library
@@ -1163,10 +1449,105 @@
 
             showVLStatus(`Loaded ${parsed.viewName}: ${parsed.sites.length} sites, ${parsed.tWidth}T`, 'ok');
             populateCarrierPalette();
+
+            // Load companion .x model if provided
+            if (xFile) {
+                loadXModelForCarrierKey(key, xFile);
+            }
+
             // Auto-open place dialog
             showPlaceDialog(key);
         };
-        reader.readAsText(file);
+        reader.readAsText(tmlFile);
+    }
+
+    /**
+     * Load a .x file and cache its geometry under the given carrier key.
+     * Any already-placed carriers of that type are rebuilt with the new model.
+     */
+    function loadXModelForCarrierKey(carrierKey, file) {
+        const fileURL = URL.createObjectURL(file);
+        showVLStatus('Loading 3D model for ' + carrierKey + '…');
+
+        const manager = new THREE.LoadingManager();
+        const loader = new THREE.XFileLoader(manager);
+
+        loader.load(fileURL, function (object) {
+            URL.revokeObjectURL(fileURL);
+
+            if (!object || !object.models || object.models.length === 0) {
+                showVLStatus('No geometry found in .x file.', 'error');
+                return;
+            }
+
+            const group = new THREE.Group();
+            group.name = '__xmodel_template_' + carrierKey + '__';
+            object.models.forEach(function (m, idx) {
+                m.renderOrder = idx;
+                if (m.material) {
+                    const mats = Array.isArray(m.material) ? m.material : [m.material];
+                    mats.forEach(function (mat, mi) {
+                        if (!mat) return;
+                        mat.polygonOffset = true;
+                        mat.polygonOffsetFactor = idx === 0 ? 1 : -Math.min(idx, 10);
+                        mat.polygonOffsetUnits  = idx === 0 ? 1 : -Math.min(idx, 10) * 4;
+                    });
+                }
+                group.add(m);
+            });
+
+            // Convert DirectX left-handed coords → Three.js right-handed
+            fixXFileCoords(group);
+
+            // Store as the template (will be cloned on each placement)
+            vlState.xModelCache[carrierKey] = group;
+
+            // Rebuild any already-placed carriers of this type
+            const toRefresh = vlState.placedCarriers.filter(c => c.type === carrierKey);
+            toRefresh.forEach(function (carrier) {
+                const trackStart = carrier.trackStart;
+                const def        = carrier.def;
+
+                // Dispose old mesh
+                carrier.mesh.traverse(function (child) {
+                    if (child.geometry) child.geometry.dispose();
+                    if (child.material) {
+                        (Array.isArray(child.material) ? child.material : [child.material])
+                            .forEach(function (m) { if (m) m.dispose(); });
+                    }
+                });
+                vlState.scene.remove(carrier.mesh);
+
+                // Build new mesh with .x model
+                const { group: newGroup, siteMeshes } = buildCarrierMesh(def, trackStart);
+                vlState.scene.add(newGroup);
+
+                // Re-attach any existing plates
+                const plateMeshes = [];
+                carrier.plateMeshes.forEach(function (pm) {
+                    const site = def.sites.find(s => s.id === pm.siteId);
+                    if (site) {
+                        const newPm = buildPlateMesh(site, def);
+                        newGroup.add(newPm);
+                        plateMeshes.push({ siteId: pm.siteId, mesh: newPm });
+                    }
+                });
+
+                carrier.mesh        = newGroup;
+                carrier.siteMeshes  = siteMeshes;
+                carrier.plateMeshes = plateMeshes;
+            });
+
+            if (toRefresh.length > 0) {
+                showVLStatus('3D model applied to ' + toRefresh.length + ' carrier(s).', 'ok');
+            } else {
+                showVLStatus('3D model cached — place ' + carrierKey + ' to see it.', 'ok');
+            }
+        }, undefined, function (err) {
+            URL.revokeObjectURL(fileURL);
+            showVLStatus('Failed to load .x model.', 'error');
+            console.error('VantageLayout: xModel load error for', carrierKey, err);
+        });
     }
 
     // ================================================================
@@ -1273,6 +1654,101 @@
 
         const resetCamBtn = $('#vl-reset-cam-btn');
         if (resetCamBtn) resetCamBtn.addEventListener('click', resetVLCamera);
+
+        wireDeckDebugPanel();
+    }
+
+    // ================================================================
+    //  GLTF Deck Debug / Alignment Panel
+    // ================================================================
+    function wireDeckDebugPanel() {
+        const toggleBtn = document.getElementById('vl-vt-deck-debug');
+        const panel     = document.getElementById('vl-deck-debug-panel');
+        if (!toggleBtn || !panel) return;
+
+        toggleBtn.addEventListener('click', () => {
+            vlState.debugDeckMode = !vlState.debugDeckMode;
+            toggleBtn.classList.toggle('is-active', vlState.debugDeckMode);
+            panel.classList.toggle('is-open', vlState.debugDeckMode);
+            if (vlState.debugDeckMode) refreshDeckDebugReadout();
+        });
+
+        // Wire XYZ step inputs
+        ['x', 'y', 'z'].forEach(axis => {
+            const input = document.getElementById(`vl-dbg-${axis}`);
+            if (!input) return;
+            input.addEventListener('input', () => applyDebugDeckOffset());
+            input.addEventListener('change', () => applyDebugDeckOffset());
+        });
+
+        // Step buttons
+        document.querySelectorAll('#vl-deck-debug-panel .dbg-step-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const axis  = btn.dataset.axis;
+                const delta = parseFloat(btn.dataset.delta);
+                const inp   = document.getElementById(`vl-dbg-${axis}`);
+                if (inp) {
+                    inp.value = (parseFloat(inp.value) || 0) + delta;
+                    applyDebugDeckOffset();
+                }
+            });
+        });
+
+        // Copy button
+        const copyBtn = document.getElementById('vl-dbg-copy');
+        if (copyBtn) {
+            copyBtn.addEventListener('click', () => {
+                const x = document.getElementById('vl-dbg-x')?.value || 0;
+                const y = document.getElementById('vl-dbg-y')?.value || 0;
+                const z = document.getElementById('vl-dbg-z')?.value || 0;
+                const txt = `deckCenterX + (${x}),  DECK.SURFACE_Z - box.max.y + (${y}),  deckCenterZ + (${z})`;
+                navigator.clipboard?.writeText(txt).then(() => showVLStatus('Offset copied to clipboard', 'ok'))
+                    .catch(() => showVLStatus(txt, 'ok'));
+            });
+        }
+
+        // Reset button
+        const resetBtn = document.getElementById('vl-dbg-reset');
+        if (resetBtn) {
+            resetBtn.addEventListener('click', () => {
+                ['x', 'y', 'z'].forEach(a => {
+                    const inp = document.getElementById(`vl-dbg-${a}`);
+                    if (inp) inp.value = 0;
+                });
+                applyDebugDeckOffset();
+            });
+        }
+    }
+
+    function applyDebugDeckOffset() {
+        const model = vlState.gltfModel;
+        if (!model) { showVLStatus('No GLTF deck model loaded yet.', 'error'); return; }
+
+        const dx = parseFloat(document.getElementById('vl-dbg-x')?.value) || 0;
+        const dy = parseFloat(document.getElementById('vl-dbg-y')?.value) || 0;
+        const dz = parseFloat(document.getElementById('vl-dbg-z')?.value) || 0;
+
+        // Re-compute base position (same as loadDeckModel)
+        const box = new THREE.Box3().setFromObject(model);
+        // Note: box changes as model moves, so store the original base offset
+        if (!vlState._gltfBasePos) {
+            vlState._gltfBasePos = model.position.clone();
+        }
+        model.position.set(
+            vlState._gltfBasePos.x + dx,
+            vlState._gltfBasePos.y + dy,
+            vlState._gltfBasePos.z + dz
+        );
+        refreshDeckDebugReadout();
+    }
+
+    function refreshDeckDebugReadout() {
+        const el = document.getElementById('vl-dbg-readout');
+        if (!el) return;
+        const model = vlState.gltfModel;
+        if (!model) { el.textContent = 'No model'; return; }
+        const p = model.position;
+        el.textContent = `pos  X: ${p.x.toFixed(2)}  Y: ${p.y.toFixed(2)}  Z: ${p.z.toFixed(2)}`;
     }
 
     // ================================================================
@@ -1296,12 +1772,16 @@
 
         if (rightToggle && rightPanel && host) {
             rightToggle.addEventListener('click', () => {
-                const collapsed = rightPanel.classList.toggle('is-collapsed');
-                host.classList.toggle('vl-right-collapsed', collapsed);
-                const icon = $('#vl-right-toggle-icon');
-                if (icon) icon.className = collapsed ? 'fas fa-chevron-left' : 'fas fa-chevron-right';
+                setSitesPanelOpen(!vlState.sitesPanelOpen);
             });
         }
+        // Also wire the in-header close button
+        const rightClose = document.getElementById('vl-right-panel-close');
+        if (rightClose) {
+            rightClose.addEventListener('click', () => setSitesPanelOpen(false));
+        }
+        // Default: right panel collapsed
+        setSitesPanelOpen(false);
     }
 
     function wireVLToolbar() {
@@ -1344,6 +1824,49 @@
 
         // Drag-to-move toolbar
         wireDragHandle('#vl-vt-grab-handle', '#vl-toolbar');
+
+        // Wire JS tooltips (bypasses vt-collapsible overflow:hidden clip)
+        wireVLTooltips();
+    }
+
+    // ================================================================
+    //  Toolbar tooltip portal (avoids overflow:hidden clipping)
+    // ================================================================
+    function wireVLTooltips() {
+        const toolbarEl = $('#vl-toolbar');
+        const host      = vlState.host;
+        if (!toolbarEl || !host) return;
+
+        // Create a floating tooltip div inside the host
+        let tipEl = document.getElementById('vl-tip-portal');
+        if (!tipEl) {
+            tipEl = document.createElement('div');
+            tipEl.id = 'vl-tip-portal';
+            tipEl.className = 'vl-tip-portal';
+            host.appendChild(tipEl);
+        }
+
+        let hideTimer = null;
+
+        toolbarEl.querySelectorAll('.vt-btn[title], .vt-toggle[title]').forEach(btn => {
+            const label = btn.title;
+            // Remove title so native browser tooltip doesn't double-show
+            btn.removeAttribute('title');
+            btn.dataset.vtLabel = label;
+
+            btn.addEventListener('mouseenter', () => {
+                clearTimeout(hideTimer);
+                const hostRect = host.getBoundingClientRect();
+                const btnRect  = btn.getBoundingClientRect();
+                tipEl.textContent = label;
+                tipEl.style.top   = (btnRect.top  - hostRect.top  + btnRect.height / 2) + 'px';
+                tipEl.style.right = (hostRect.right - btnRect.left + 10) + 'px';
+                tipEl.classList.add('visible');
+            });
+            btn.addEventListener('mouseleave', () => {
+                hideTimer = setTimeout(() => tipEl.classList.remove('visible'), 80);
+            });
+        });
     }
 
     function wireBtn(selector, fn) {
