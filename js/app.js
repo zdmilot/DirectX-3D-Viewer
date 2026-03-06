@@ -686,8 +686,6 @@
         if (window.PlacerModule) window.PlacerModule.updateTheme();
         // Also update labware generator theme
         if (window.LabwareGenModule) window.LabwareGenModule.updateTheme();
-        // Also update HXX exporter theme
-        if (window.HxxExportModule) window.HxxExportModule.updateTheme();
 
     }
 
@@ -722,11 +720,6 @@
         // Initialize labware generator on first switch
         if (viewName === 'labware' && window.LabwareGenModule) {
             setTimeout(() => window.LabwareGenModule.init(), 50);
-        }
-
-        // Initialize HXX exporter on first switch
-        if (viewName === 'hxxexport' && window.HxxExportModule) {
-            setTimeout(() => window.HxxExportModule.init(), 50);
         }
 
         // Auto-collapse sidebar after navigation
@@ -1733,6 +1726,35 @@
         downloadBlob(new Blob([glb], { type: 'model/gltf-binary' }), viewerFileName() + '.glb');
     }
 
+    // ── HXX ──────────────────────────────────────────────────────
+    function exportViewerHXX() {
+        const model = getViewerModel();
+        if (!model) return;
+        if (!window.ConverterModule || !window.ConverterModule.generateXFileText) {
+            alert('Converter module not loaded — cannot generate .x data for .hxx export.');
+            return;
+        }
+        if (!window.HXXLoader || !window.HXXLoader.composeHXX) {
+            alert('HXXLoader.composeHXX not available.');
+            return;
+        }
+        try {
+            const xText = window.ConverterModule.generateXFileText(model);
+            HXXLoader.composeHXX(xText).then(function (hxxBuffer) {
+                downloadBlob(
+                    new Blob([hxxBuffer], { type: 'application/octet-stream' }),
+                    viewerFileName() + '.hxx'
+                );
+            }).catch(function (err) {
+                console.error('HXX compose error:', err);
+                alert('HXX export error: ' + (err.message || err));
+            });
+        } catch (err) {
+            console.error('HXX export error:', err);
+            alert('HXX export error: ' + err.message);
+        }
+    }
+
     // ── Export dispatcher ────────────────────────────────────────
     function doViewerExport(fmt) {
         const model = getViewerModel();
@@ -1742,6 +1764,7 @@
                 case 'obj': exportViewerOBJ(); break;
                 case 'stl': exportViewerSTL(); break;
                 case 'glb': exportViewerGLB(); break;
+                case 'hxx': exportViewerHXX(); break;
                 default: alert('Unknown format: ' + fmt);
             }
         } catch (err) {
