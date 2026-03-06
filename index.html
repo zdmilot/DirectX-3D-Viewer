@@ -215,23 +215,15 @@
                         <i class="fas fa-save"></i> Save
                     </button>
                     <div class="cv-ctrl-divider"></div>
-                    <span class="viewer-cam-display" id="viewer-cam-display">X: 0.0  Y: 0.0  Z: 0.0  |  Pitch: 0.0°  Yaw: 0.0°  Roll: 0.0°</span>
+                    <div class="viewer-info-stack">
+                        <span class="viewer-file-path" id="viewer-file-path" title=""><span id="viewer-file-path-text">No file loaded</span></span>
+                        <span class="viewer-cam-display" id="viewer-cam-display">X: 0.0  Y: 0.0  Z: 0.0  |  Pitch: 0.0°  Yaw: 0.0°  Roll: 0.0°</span>
+                    </div>
                     <div class="cv-ctrl-spacer"></div>
                     <div class="screenshot-group" id="screenshot-group">
                         <button class="cv-ctrl-btn cv-ctrl-btn-accent" id="vt-screenshot" title="Save screenshot">
                             <i class="fas fa-camera"></i> Screenshot
                         </button>
-                        <div class="screenshot-dropdown" id="screenshot-dropdown">
-                            <button class="screenshot-option" data-format="png">
-                                <i class="fas fa-file-image"></i> Save as .PNG
-                            </button>
-                            <button class="screenshot-option" data-format="jpg">
-                                <i class="fas fa-file-image"></i> Save as .JPG
-                            </button>
-                            <button class="screenshot-option" data-format="svg">
-                                <i class="fas fa-file-code"></i> Save as .SVG
-                            </button>
-                        </div>
                     </div>
                     <div class="export-group" id="export-group">
                         <button class="cv-ctrl-btn cv-ctrl-btn-accent" id="vt-export" title="Export model">
@@ -559,17 +551,6 @@
                         <button class="cv-ctrl-btn cv-ctrl-btn-accent" id="pp-screenshot" title="Save screenshot">
                             <i class="fas fa-camera"></i> Screenshot
                         </button>
-                        <div class="screenshot-dropdown" id="pp-screenshot-dropdown">
-                            <button class="screenshot-option" data-format="png">
-                                <i class="fas fa-file-image"></i> Save as .PNG
-                            </button>
-                            <button class="screenshot-option" data-format="jpg">
-                                <i class="fas fa-file-image"></i> Save as .JPG
-                            </button>
-                            <button class="screenshot-option" data-format="svg">
-                                <i class="fas fa-file-code"></i> Save as .SVG
-                            </button>
-                        </div>
                     </div>
                     <div class="export-group" id="pp-export-group">
                         <button class="cv-ctrl-btn cv-ctrl-btn-accent" id="pp-export" title="Export model">
@@ -857,6 +838,38 @@
         </div>
     </div>
 
+    <!-- Screenshot Preview Modal -->
+    <div class="ss-overlay" id="ss-overlay">
+        <div class="ss-modal">
+            <div class="ss-header">
+                <div class="ss-title"><i class="fas fa-camera"></i> Screenshot Preview</div>
+                <button class="ss-close-btn" id="ss-close" title="Close">&times;</button>
+            </div>
+            <div class="ss-body">
+                <div class="ss-preview-wrap">
+                    <img id="ss-preview-img" class="ss-preview-img" alt="Screenshot preview" />
+                </div>
+                <div class="ss-options">
+                    <label class="ss-toggle">
+                        <input type="checkbox" id="ss-opt-grid" checked />
+                        <span class="ss-toggle-slider"></span>
+                        <span class="ss-toggle-label">Show Grid</span>
+                    </label>
+                    <label class="ss-toggle">
+                        <input type="checkbox" id="ss-opt-bg" checked />
+                        <span class="ss-toggle-slider"></span>
+                        <span class="ss-toggle-label">Show Background</span>
+                    </label>
+                </div>
+            </div>
+            <div class="ss-footer">
+                <button class="ss-save-btn" data-format="png"><i class="fas fa-file-image"></i> Save .PNG</button>
+                <button class="ss-save-btn" data-format="jpg"><i class="fas fa-file-image"></i> Save .JPG</button>
+                <button class="ss-save-btn" data-format="svg"><i class="fas fa-file-code"></i> Save .SVG</button>
+            </div>
+        </div>
+    </div>
+
     <!-- About Modal -->
     <div class="about-overlay" id="about-overlay">
         <div class="about-modal">
@@ -895,6 +908,7 @@
         </div>
     </div>
 
+    <script src="js/lib/pako.min.js"></script>
     <script src="js/lib/three.min.js"></script>
     <script src="js/lib/OrbitControls.js"></script>
     <script src="js/lib/XFileLoader.js?v=20260304a"></script>
@@ -906,6 +920,6 @@
     <script src="js/converter.js?v=20260304d"></script>
     <script src="js/platePlacer.js?v=20260304d"></script>
     <script src="js/labwareGenerator.js?v=20260305a"></script>
-    <script src="js/app.js?v=20260305a"></script>
+    <script src="js/app.js?v=20260305c"></script>
 </body>
 </html>

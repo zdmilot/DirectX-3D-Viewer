@@ -60,6 +60,7 @@
         toolbarCollapsed: false,
         activeView: 'viewer',
         loadedFileName: 'test',
+        loadedFilePath: null,  // Full path or name of the loaded file for display
         lastLoadedUrl: null,   // URL of the last loaded .x file (for passing to placer)
         rawXFileContent: null, // Raw .x file text content for save/transform
     };
@@ -190,6 +191,7 @@
     // -- Load generated .x file from labware generator ---------------
     window._loadGeneratedXFile = function (url, name) {
         state.loadedFileName = name || 'labware.x';
+        state.loadedFilePath = name || 'labware.x';
         state.lastLoadedUrl = url;
         clearModel();
         const loading = $('#viewer-loading');
@@ -225,6 +227,14 @@
 
     // -- File Open ---------------------------------------------------
     function openFileDialog() {
+        // Always use the hidden <input type="file"> for maximum
+        // cross-platform reliability.  The File System Access API
+        // (showOpenFilePicker) can silently error after showing
+        // its own dialog on some browser/OS combos, which falls
+        // back to a SECOND native dialog — causing the user to
+        // have to select the file twice.  A single <input> click
+        // avoids this entirely and works on every browser.
+        if (!dom.fileInput) return;
         dom.fileInput.click();
     }
 
@@ -244,8 +254,10 @@
         const loading = $('#viewer-loading');
         const errorEl = $('#viewer-error');
 
-        // Track loaded file name for screenshot naming
+        // Track loaded file name and path for screenshot naming / display
         state.loadedFileName = file.name;
+        // Try to get the best available path: file.path (Electron/NW.js), webkitRelativePath, or just name
+        state.loadedFilePath = file.path || file.webkitRelativePath || file.name;
 
         // Clear previous model
         clearModel();
@@ -258,9 +270,6 @@
         }
         if (errorEl) errorEl.classList.add('viewer-hidden');
 
-        // Update filename display
-        setFilenameDisplay();
-
         if (HXXLoader.isHXXFilename(file.name)) {
             // Read as ArrayBuffer, decompress, then load
             const reader = new FileReader();
@@ -268,6 +277,8 @@
                 HXXLoader.toXFileBlob(reader.result).then(function (blob) {
                     const url = URL.createObjectURL(blob);
                     state.lastLoadedUrl = url;
+                    // Update filename display after URL is set
+                    setFilenameDisplay();
                     loadXFile(url, loading, errorEl);
                 }).catch(function (err) {
                     if (loading) loading.classList.add('viewer-hidden');
@@ -283,6 +294,8 @@
         } else {
             const url = URL.createObjectURL(file);
             state.lastLoadedUrl = url;
+            // Update filename display after URL is set
+            setFilenameDisplay();
             loadXFile(url, loading, errorEl);
         }
     }
@@ -312,6 +325,19 @@
         const subtitle = document.querySelector('.navbar-subtitle');
         if (subtitle) {
             subtitle.textContent = 'FOR DIRECT3D';
+        }
+        // Update loaded file path in bottom bar
+        const pathText = $('#viewer-file-path-text');
+        const pathWrap = $('#viewer-file-path');
+        if (pathText) {
+            let display = state.loadedFilePath || state.loadedFileName || 'No file loaded';
+            // For server-loaded files (non blob/data URLs), show decoded URL as path
+            if (display === state.loadedFileName && state.lastLoadedUrl
+                && !/^blob:|^data:/i.test(state.lastLoadedUrl)) {
+                try { display = decodeURIComponent(state.lastLoadedUrl.split('?')[0]); } catch(e) {}
+            }
+            pathText.textContent = display;
+            if (pathWrap) pathWrap.title = display;
         }
     }
 
@@ -405,6 +431,7 @@
         renderer = new THREE.WebGLRenderer({
             canvas: canvas,
             antialias: true,
+            alpha: true,
             preserveDrawingBuffer: true
         });
         renderer.setPixelRatio(window.devicePixelRatio);
@@ -433,8 +460,6 @@
         const gridColor = state.isDark ? DARK_GRID : LIGHT_GRID;
         const grid = new THREE.GridHelper(200, 20, gridColor, gridColor);
         grid.name = '__grid__';
-        grid.renderOrder = -1;
-        grid.material.depthWrite = false;
         grid.visible = state.gridVisible;
         scene.add(grid);
 
@@ -471,6 +496,7 @@
 
         // ── Load the default .x model ────────────────────────
         console.log('[Viewer] Starting loadXFile...');
+        state.loadedFilePath = DEFAULT_X_FILENAME;
         setFilenameDisplay();
         state.lastLoadedUrl = DEFAULT_X_FILENAME;
         loadXFile(DEFAULT_X_FILENAME, loading, errorEl);
@@ -532,18 +558,23 @@
                 model.renderOrder = i;
 
                 // Apply polygon offset to prevent z-fighting between
-                // overlapping meshes.  Mesh 0 (outer shell) gets zero
-                // offset; later meshes are pushed progressively behind
-                // so the outer shell always wins at coplanar surfaces.
-                // Cap at reasonable values so models with hundreds of
-                // meshes don't get extreme depth offsets.
+                // overlapping meshes.  Mesh 0 (outer shell / body) is
+                // pushed slightly back; later meshes (labels, decals,
+                // text, barcodes) are pulled toward the camera so they
+                // always win the depth test against coplanar surfaces.
                 if (model.material) {
                     const applyOffset = (m, meshIdx) => {
-                        if (meshIdx > 0) {
+                        if (meshIdx === 0) {
+                            // Push the body/shell slightly back
+                            m.polygonOffset = true;
+                            m.polygonOffsetFactor = 1;
+                            m.polygonOffsetUnits  = 1;
+                        } else {
+                            // Pull labels/decals toward camera
                             const capped = Math.min(meshIdx, 10);
                             m.polygonOffset = true;
-                            m.polygonOffsetFactor = capped;
-                            m.polygonOffsetUnits  = capped * 4;
+                            m.polygonOffsetFactor = -capped;
+                            m.polygonOffsetUnits  = -capped * 4;
                         }
                     };
                     if (Array.isArray(model.material)) {
@@ -570,6 +601,9 @@
             // like real polycarbonate covers.
             group.traverse(function (child) {
                 if (!child.isMesh) return;
+                // Disable frustum culling so small meshes (e.g. rack labels)
+                // remain visible at all zoom levels
+                child.frustumCulled = false;
                 var mats = Array.isArray(child.material) ? child.material : [child.material];
                 var isTransparent = false;
                 mats.forEach(function (m) {
@@ -624,10 +658,6 @@
                 const gColor = state.isDark ? DARK_GRID : LIGHT_GRID;
                 const newGrid = new THREE.GridHelper(gridSize, gridDiv, gColor, gColor);
                 newGrid.name = '__grid__';
-                // Render grid behind everything & disable depth write
-                // so grid lines never z-fight with model surfaces
-                newGrid.renderOrder = -1;
-                newGrid.material.depthWrite = false;
                 newGrid.visible = state.gridVisible;
                 // Position grid slightly below model bottom to avoid z-fighting
                 newGrid.position.y = -size.y / 2 - maxDim * 0.002;
@@ -1345,17 +1375,30 @@
         return parts.join('\n');
     }
 
-    function saveScreenshot(format) {
+    function saveScreenshot(format, opts) {
         if (!renderer || !scene || !camera) return;
 
-        // Render one fresh frame to ensure canvas is up-to-date
+        const showGrid = opts ? opts.showGrid : true;
+        const showBg   = opts ? opts.showBg   : true;
+
+        // Temporarily toggle grid visibility
+        const grid = scene.getObjectByName('__grid__');
+        const origGridVis = grid ? grid.visible : false;
+        if (grid) grid.visible = showGrid && state.gridVisible;
+
+        // Temporarily toggle background
+        const origBg = scene.background;
+        if (!showBg) {
+            scene.background = null;
+            renderer.setClearColor(0x000000, 0);
+        }
+
         renderer.render(scene, camera);
 
         const canvas = renderer.domElement;
         const fileName = (state.loadedFileName || 'screenshot').replace(/\.[^.]+$/, '');
 
         if (format === 'svg') {
-            // True vector SVG: project geometry through the camera
             const svgContent = exportVectorSVG();
             const blob = new Blob([svgContent], { type: 'image/svg+xml' });
             downloadBlob(blob, fileName + '.svg');
@@ -1364,12 +1407,132 @@
                 if (blob) downloadBlob(blob, fileName + '.jpg');
             }, 'image/jpeg', 0.92);
         } else {
-            // PNG (default)
             canvas.toBlob(function(blob) {
                 if (blob) downloadBlob(blob, fileName + '.png');
             }, 'image/png');
         }
+
+        // Restore originals
+        if (grid) grid.visible = origGridVis;
+        scene.background = origBg;
+        if (!showBg) renderer.setClearColor(state.isDark ? DARK_BG : LIGHT_BG, 1);
+        renderer.render(scene, camera);
     }
+
+    /** Render a preview dataURL for the screenshot modal */
+    function screenshotPreviewDataURL(opts) {
+        if (!renderer || !scene || !camera) return '';
+
+        const showGrid = opts ? opts.showGrid : true;
+        const showBg   = opts ? opts.showBg   : true;
+
+        const grid = scene.getObjectByName('__grid__');
+        const origGridVis = grid ? grid.visible : false;
+        if (grid) grid.visible = showGrid && state.gridVisible;
+
+        const origBg = scene.background;
+        if (!showBg) {
+            scene.background = null;
+            renderer.setClearColor(0x000000, 0);
+        }
+
+        renderer.render(scene, camera);
+        const dataURL = renderer.domElement.toDataURL('image/png');
+
+        // Restore
+        if (grid) grid.visible = origGridVis;
+        scene.background = origBg;
+        if (!showBg) renderer.setClearColor(state.isDark ? DARK_BG : LIGHT_BG, 1);
+        renderer.render(scene, camera);
+
+        return dataURL;
+    }
+
+    // ── Screenshot modal ─────────────────────────────────────
+    let ssModalSource = null; // 'viewer' or 'placer'
+
+    function openScreenshotModal(source) {
+        ssModalSource = source;
+        const overlay = $('#ss-overlay');
+        const img     = $('#ss-preview-img');
+        const optGrid = $('#ss-opt-grid');
+        const optBg   = $('#ss-opt-bg');
+        if (!overlay || !img) return;
+
+        // Reset toggles
+        optGrid.checked = true;
+        optBg.checked   = true;
+
+        // Generate preview
+        updateScreenshotPreview();
+
+        overlay.classList.add('is-open');
+    }
+
+    function closeScreenshotModal() {
+        const overlay = $('#ss-overlay');
+        if (overlay) overlay.classList.remove('is-open');
+        ssModalSource = null;
+    }
+
+    function updateScreenshotPreview() {
+        const img     = $('#ss-preview-img');
+        const optGrid = $('#ss-opt-grid');
+        const optBg   = $('#ss-opt-bg');
+        if (!img) return;
+
+        const opts = {
+            showGrid: optGrid ? optGrid.checked : true,
+            showBg:   optBg   ? optBg.checked   : true,
+        };
+
+        if (ssModalSource === 'placer' && window.PlacerModule && window.PlacerModule.screenshotPreviewDataURL) {
+            img.src = window.PlacerModule.screenshotPreviewDataURL(opts);
+        } else {
+            img.src = screenshotPreviewDataURL(opts);
+        }
+    }
+
+    function ssModalSave(format) {
+        const optGrid = $('#ss-opt-grid');
+        const optBg   = $('#ss-opt-bg');
+        const opts = {
+            showGrid: optGrid ? optGrid.checked : true,
+            showBg:   optBg   ? optBg.checked   : true,
+        };
+
+        if (ssModalSource === 'placer' && window.PlacerModule && window.PlacerModule.saveScreenshot) {
+            window.PlacerModule.saveScreenshot(format, opts);
+        } else {
+            saveScreenshot(format, opts);
+        }
+        closeScreenshotModal();
+    }
+
+    // Wire screenshot modal controls (called once in init)
+    function initScreenshotModal() {
+        const overlay = $('#ss-overlay');
+        const closeBtn = $('#ss-close');
+        const optGrid = $('#ss-opt-grid');
+        const optBg   = $('#ss-opt-bg');
+
+        if (closeBtn) closeBtn.addEventListener('click', closeScreenshotModal);
+        if (overlay) overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) closeScreenshotModal();
+        });
+
+        // Toggle changes → live preview update
+        if (optGrid) optGrid.addEventListener('change', updateScreenshotPreview);
+        if (optBg)   optBg.addEventListener('change', updateScreenshotPreview);
+
+        // Save buttons
+        document.querySelectorAll('.ss-save-btn').forEach(btn => {
+            btn.addEventListener('click', () => ssModalSave(btn.dataset.format));
+        });
+    }
+
+    // Expose openScreenshotModal so platePlacer can call it
+    window.openScreenshotModal = openScreenshotModal;
 
     function downloadBlob(blob, filename) {
         const url = URL.createObjectURL(blob);
@@ -2103,31 +2266,11 @@
         if (dom.vtMirrorY) dom.vtMirrorY.addEventListener('click', () => mirrorModel('y'));
         if (dom.vtMirrorZ) dom.vtMirrorZ.addEventListener('click', () => mirrorModel('z'));
 
-        // Screenshot button & dropdown
+        // Screenshot button → open modal
         const ssBtn = $('#vt-screenshot');
-        const ssDrop = $('#screenshot-dropdown');
-        if (ssBtn && ssDrop) {
-            ssBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                ssDrop.classList.toggle('is-open');
-                // Close export dropdown if open
-                const exDrop = $('#export-dropdown');
-                if (exDrop) exDrop.classList.remove('is-open');
-            });
-            document.addEventListener('click', () => {
-                ssDrop.classList.remove('is-open');
-                const exDrop = $('#export-dropdown');
-                if (exDrop) exDrop.classList.remove('is-open');
-                // Close transform flyout too
-                if (dom.tfFlyout) dom.tfFlyout.classList.remove('is-open');
-                if (dom.vtTransformToggle) dom.vtTransformToggle.classList.remove('is-active');
-            });
-            ssDrop.addEventListener('click', (e) => e.stopPropagation());
-            ssDrop.querySelectorAll('.screenshot-option').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    saveScreenshot(btn.dataset.format);
-                    ssDrop.classList.remove('is-open');
-                });
+        if (ssBtn) {
+            ssBtn.addEventListener('click', () => {
+                openScreenshotModal('viewer');
             });
         }
 
@@ -2138,8 +2281,6 @@
             exBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 exDrop.classList.toggle('is-open');
-                // Close screenshot dropdown if open
-                if (ssDrop) ssDrop.classList.remove('is-open');
             });
             exDrop.addEventListener('click', (e) => e.stopPropagation());
             exDrop.querySelectorAll('.export-option').forEach(btn => {
@@ -2150,6 +2291,14 @@
             });
         }
 
+        // Close dropdowns / flyouts on outside click
+        document.addEventListener('click', () => {
+            if (exDrop) exDrop.classList.remove('is-open');
+            if (dom.tfFlyout) dom.tfFlyout.classList.remove('is-open');
+            if (dom.vtTransformToggle) dom.vtTransformToggle.classList.remove('is-active');
+        });
+
+        initScreenshotModal();
         initSplash();
         initDraggablePanels();
     }

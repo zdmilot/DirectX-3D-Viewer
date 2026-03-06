@@ -1,0 +1,282 @@
+<html>
+<head>
+    <title>Interface Overview</title>
+    <link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+<div class="header">Interface Overview</div>
+<div class="main">
+<div class="breadcrumb"><a href="Overview.html">3D File Tools</a> &raquo; Interface Overview</div>
+
+<h2>Application Layout</h2>
+<p>3D File Tools is a single-page application with four main areas: the top navigation bar, the left sidebar, the active tool panel, and the bottom controls bar.</p>
+<div class="image-placeholder">PLACE ANNOTATED SCREENSHOT OF FULL APPLICATION LAYOUT HERE</div>
+
+<h2>Top Navigation Bar</h2>
+<p>The navigation bar spans the top of the application and contains:</p>
+<table>
+<thead><tr><th>Element</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><b>Sidebar Toggle</b> (&#9776;)</td><td>Expands or collapses the left sidebar. When collapsed, only icons are shown; when expanded, labels appear next to each icon.</td></tr>
+<tr><td><b>App Logo &amp; Title</b></td><td>The teapot logo and &ldquo;3D File Tools / FOR DIRECT3D&rdquo; branding.</td></tr>
+<tr><td><b>Theme Button</b> (moon icon)</td><td>Toggles between light mode and dark mode. All viewports update simultaneously.</td></tr>
+<tr><td><b>About Button</b> (&#9432;)</td><td>Opens the About dialog showing version, author, and third-party license information.</td></tr>
+</tbody>
+</table>
+
+<h2>Left Sidebar Navigation</h2>
+<p>The sidebar provides navigation between the four tool panels:</p>
+<table>
+<thead><tr><th>Button</th><th>Icon</th><th>Tool</th></tr></thead>
+<tbody>
+<tr><td><b>3D Viewer</b></td><td>Cube</td><td>View and interact with <code>.x</code> and <code>.hxx</code> 3D models</td></tr>
+<tr><td><b>Convert to .x</b></td><td>Exchange arrows</td><td>Import OBJ/STL/GLB and export as <code>.x</code></td></tr>
+<tr><td><b>Plate Placer</b></td><td>Grid / th</td><td>Overlay model on a 96-well plate for offset calculation</td></tr>
+<tr><td><b>Integra Gen</b></td><td>Flask</td><td>Parametric SBS labware model generator</td></tr>
+</tbody>
+</table>
+<p>The active tool is highlighted. Click any button to switch panels.</p>
+
+<h2>3D Viewer Panel</h2>
+<p>The 3D Viewer is the default panel. It contains:</p>
+<ul>
+  <li><b>3D Canvas</b> &mdash; WebGL viewport displaying the loaded model</li>
+  <li><b>Floating Toolbar</b> &mdash; Collapsible panel with camera controls, view options, transform tools, and a drag handle to reposition the toolbar</li>
+  <li><b>Transform Flyout</b> &mdash; Opened from the rotate button in the toolbar; provides &#177;90&deg; rotation around X/Y/Z and mirror/reflect controls</li>
+  <li><b>Drop Zone</b> &mdash; Semi-transparent overlay shown when dragging a file over the viewport</li>
+  <li><b>Bottom Controls Bar</b> &mdash; Open, Save, file name, camera position display, Screenshot, and Export buttons</li>
+  <li><b>Debug Panel</b> &mdash; Hidden diagnostic info panel (see <a href="3DViewer.html#debug">Debug Panel</a>)</li>
+</ul>
+<div class="image-placeholder">PLACE ANNOTATED SCREENSHOT OF 3D VIEWER PANEL HERE</div>
+
+<h2>Convert to .x Panel</h2>
+<p>The converter tool has a two-column layout:</p>
+<ul>
+  <li><b>Left column</b> &mdash; Main 3D viewport with floating toolbar, file format badge, and bottom controls bar (Open, rotation buttons, Reset, Export .x)</li>
+  <li><b>Right column</b> &mdash; Six synchronized orthographic views: Top, Front, Right, Bottom, Back, Left</li>
+</ul>
+<div class="image-placeholder">PLACE ANNOTATED SCREENSHOT OF CONVERTER PANEL HERE</div>
+
+<h2>Plate Placer Panel</h2>
+<p>The Plate Placer panel contains:</p>
+<ul>
+  <li><b>3D Canvas</b> &mdash; Shows the loaded model and the reference 96-well plate in the same scene</li>
+  <li><b>Floating Toolbar</b> &mdash; Standard camera controls (same as the viewer)</li>
+  <li><b>Placement Offsets Overlay</b> &mdash; Collapsible panel (bottom-right) with Model Position, Plate Position &amp; Scale, and Calculated Offset fields</li>
+  <li><b>Bottom Controls Bar</b> &mdash; Open, Reset Positions, camera display, Screenshot, and Export buttons</li>
+</ul>
+<div class="image-placeholder">PLACE ANNOTATED SCREENSHOT OF PLATE PLACER PANEL HERE</div>
+
+<h2>Integra Generator Panel</h2>
+<p>The generator has a two-column layout:</p>
+<ul>
+  <li><b>Left column (parameter panel)</b> &mdash; Import XML button, parameter form (General, Footprint, Wells, Well Geometry, A1 Position), SBS compliance badge, and action buttons (Generate 3D Model, Save as .x, Load into Viewer)</li>
+  <li><b>Right column (3D preview)</b> &mdash; Live 3D preview with floating toolbar including a <b>Ruler</b> tool; bottom status/camera bar</li>
+</ul>
+<div class="image-placeholder">PLACE ANNOTATED SCREENSHOT OF INTEGRA GENERATOR PANEL HERE</div>
+
+<h2>About Dialog</h2>
+<p>Click the <b>&#9432;</b> button in the navigation bar to open the About dialog. It shows:</p>
+<ul>
+  <li>Application name and version (1.0.0)</li>
+  <li>Author: Zachary Milot</li>
+  <li>Third-party library licenses (Three.js, OrbitControls, OBJLoader, MTLLoader, GLTFLoader, STLLoader, Font Awesome, Inter Font)</li>
+</ul>
+<p>Clicking the teapot logo in the About dialog cycles it through 0&deg;, 90&deg;, 180&deg;, and 270&deg; rotations. When upside-down (180&deg;), a <b>Debug Panel</b> is revealed in each viewport showing mesh statistics, bounding box data, and NaN checks.</p>
+
+<h2>Screenshot Modal</h2>
+<p>The Screenshot modal appears after clicking the <b>Screenshot</b> button in any bottom controls bar. It shows a preview of the captured image and options to:</p>
+<ul>
+  <li>Toggle the grid on/off in the screenshot</li>
+  <li>Toggle the background on/off (transparent background)</li>
+  <li>Save as <b>PNG</b>, <b>JPG</b>, or <b>SVG</b></li>
+</ul>
+<p>See <a href="Screenshot.html">Screenshot</a> for full details.</p>
+
+<h2>Splash Screen</h2>
+<p>On startup, a splash screen with the teapot wireframe logo is displayed for approximately 2.2 seconds before the application fades in.</p>
+</div>
+<div class="footer">
+<p>3D File Tools Help</p>
+</div>
+</body>
+</html>
+
+<h2>Main Window Layout</h2>
+<p>The Venus Library Manager graphical user interface is built around a card-based library browser with navigation tabs, a sidebar for groups and VENUS tool shortcuts, and contextual detail modals.</p>
+<div class="image-placeholder">PLACE IMAGE OF MAIN WINDOW WITH LABELED REGIONS (SIDEBAR, CARD AREA, TABS) HERE</div>
+
+<h2>Navigation Tabs</h2>
+<p>The top of the main window provides tabs for different views of your library collection:</p>
+<table>
+<thead><tr><th>Tab</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><b>All</b></td><td>Displays every installed (non-deleted) library as a card</td></tr>
+<tr><td><b>Recent</b></td><td>Shows recently imported libraries, limited by the configurable maximum (default: 20)</td></tr>
+<tr><td><b>System</b></td><td>Shows Hamilton system libraries discovered from the VENUS installation. This is a read-only auto-detected group.</td></tr>
+<tr><td><b>Hamilton</b></td><td>Shows libraries authored by Hamilton. This is a protected default group with a solid checkmark icon. See <a href="LibraryGrouping.html">Library Grouping</a> for details on its protections.</td></tr>
+<tr><td><b>Unsigned</b></td><td>Shows unsigned libraries discovered by scanning. Only visible when the feature is enabled and libraries have been found. See <a href="UnsignedLibraries.html">Unsigned Libraries</a> for details.</td></tr>
+<tr><td><b>Import</b></td><td>Provides the import workflow for <code>.hxlibpkg</code> and <code>.hxlibarch</code> files</td></tr>
+<tr><td><b>Custom Groups</b></td><td>Filtered views showing only libraries assigned to a specific group</td></tr>
+</tbody>
+</table>
+<div class="image-placeholder">PLACE IMAGE OF NAVIGATION TABS HERE</div>
+
+<h2>Library Cards</h2>
+<p>Each installed library is displayed as a visual card showing:</p>
+<ul>
+  <li><b>Library Icon/Image</b> - The embedded library image, or a default icon if none was provided</li>
+  <li><b>Library Name</b> and <b>Version</b></li>
+  <li><b>Author</b> and <b>Description</b> (truncated)</li>
+  <li><b>Tags</b> - Searchable keyword labels</li>
+  <li><b>Status Badges:</b>
+    <ul>
+      <li><b>COM badge</b> - Indicates the library requires COM DLL registration</li>
+      <li><b>COM warning</b> - COM registration failed or was incomplete</li>
+      <li><b>Deleted badge</b> - Library has been soft-deleted</li>
+    </ul>
+  </li>
+  <li><b>Integrity Indicator</b> - Shows whether tracked files have been modified, are missing, or pass verification</li>
+</ul>
+<div class="image-placeholder">PLACE IMAGE OF A LIBRARY CARD WITH ANNOTATIONS HERE</div>
+
+<h2>Search Improvements</h2>
+<p>The global library search now supports richer discovery across both user and system libraries:</p>
+<ul>
+  <li><b>Cross-library search:</b> Matches library name, author, description, tags, and public function names.</li>
+  <li><b>Function-aware search:</b> Public function names from <code>.hsl</code> files are indexed and matched, including system libraries.</li>
+  <li><b>Tag-only mode:</b> Prefix with <code>#</code> to search only by tags (example: <code>#pipetting</code>).</li>
+  <li><b>System tag behavior:</b> System libraries include virtual system tags, so queries like <code>#system</code> return system libraries.</li>
+  <li><b>One-click tag search:</b> Clicking a tag badge on a card automatically populates the search box in <code>#tag</code> mode.</li>
+  <li><b>Fast keyboard controls:</b> <code>Ctrl+F</code> focuses search, and <code>Esc</code> clears search when focused.</li>
+</ul>
+
+<h3>Search Mode Behavior</h3>
+<p>When a query is active, the UI enters search mode, temporarily clears the current tab highlight, and shows a consolidated result list. Clearing the query restores the previously active tab.</p>
+
+<h3>Card Styling States</h3>
+<p>Cards use visual styling to indicate health and quality:</p>
+<table>
+<thead><tr><th>Style</th><th>Meaning</th></tr></thead>
+<tbody>
+<tr><td>Normal card</td><td>Library is installed and all tracked files pass integrity checks</td></tr>
+<tr><td>Integrity error style</td><td>One or more tracked files are missing or have been modified</td></tr>
+<tr><td>COM warning style</td><td>COM DLL registration is incomplete or failed</td></tr>
+<tr><td>Deleted style</td><td>Library has been soft-deleted (files removed, history preserved)</td></tr>
+</tbody>
+</table>
+
+<h2>Library Detail Modal</h2>
+<p>Clicking a library card opens a detailed modal showing comprehensive information about the library:</p>
+<ul>
+  <li>Full metadata: name, version, author, organization, VENUS compatibility, created and installed dates</li>
+  <li>Full description and tags</li>
+  <li>Library image preview</li>
+  <li>Complete lists of installed library files and demo method files</li>
+  <li>Install paths for library and demo directories</li>
+  <li>COM registration details with success/warning state</li>
+  <li>File integrity verification results: missing files, modified files, legacy warnings, and pass status</li>
+  <li>Public function signatures parsed from <code>.hsl</code> files</li>
+</ul>
+<div class="image-placeholder">PLACE IMAGE OF LIBRARY DETAIL MODAL HERE</div>
+
+<h3>Actions Available in Detail Modal</h3>
+<table>
+<thead><tr><th>Action</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><b>Export Library</b></td><td>Opens the Export Choice Modal where you can export the library as a single <code>.hxlibpkg</code> package, or export it together with all recursively-resolved dependencies as a <code>.hxlibarch</code> archive</td></tr>
+<tr><td><b>Delete</b></td><td>Remove the library from disk and mark as deleted in the database</td></tr>
+</tbody>
+</table>
+
+<h2>Import Workflow</h2>
+<p>The Import tab provides two workflows:</p>
+
+<h3>Single Package Import (<code>.hxlibpkg</code>)</h3>
+<ol>
+  <li>Browse and select a <code>.hxlibpkg</code> file</li>
+  <li>The package's HMAC-SHA256 signature is automatically verified</li>
+  <li>Review the pre-install preview modal showing metadata, file lists, install paths, signature verification status, and COM DLL notices</li>
+  <li>If the signature verification fails, a warning dialog prompts you to confirm or cancel the import</li>
+  <li>If the library is already installed, an overwrite/update warning is displayed</li>
+  <li>Confirm to extract and install</li>
+  <li>A post-install success modal summarizes the outcome</li>
+</ol>
+<div class="image-placeholder">PLACE IMAGE OF PRE-INSTALL PREVIEW MODAL WITH SIGNATURE STATUS HERE</div>
+
+<h3>Archive Import (<code>.hxlibarch</code>)</h3>
+<ol>
+  <li>Select a <code>.hxlibarch</code> file</li>
+  <li>Review all contained packages in the confirmation dialog</li>
+  <li>Each package's signature is verified before installation - packages that fail verification are automatically rejected and skipped</li>
+  <li>Each passing package is extracted and installed sequentially</li>
+  <li>An aggregate summary reports success/failure for each library</li>
+</ol>
+
+<h2>Library Packager</h2>
+<p>The built-in Library Packager creates <code>.hxlibpkg</code> files from raw source files. It provides fields for all metadata (author, version, description, tags, etc.) and supports adding individual files or folders as payload.</p>
+<div class="image-placeholder">PLACE IMAGE OF LIBRARY PACKAGER UI HERE</div>
+<p>See <a href="CreatingPackages.html">Creating Packages</a> for a detailed walkthrough.</p>
+
+<h2>Settings</h2>
+<p>The settings area allows you to:</p>
+<ul>
+  <li>Manage custom library groups (create, rename, delete, reorder)</li>
+  <li>Assign and move libraries between groups via drag-and-drop</li>
+  <li>Configure the recent imports list size</li>
+  <li>Control auto-group assignment behavior</li>
+  <li>Enable unsigned library scanning with a <b>Scan Now</b> button (shows a spinning loading indicator during the scan and a green checkmark on completion), and optionally enable <b>Scan for new unsigned libraries each launch</b> to auto-scan at startup. See <a href="UnsignedLibraries.html">Unsigned Libraries</a> for details.</li>
+  <li>Require operator comments and/or operator signature for destructive or potentially destructive actions (delete, rollback, overwrite/upgrade, and archive overwrite decisions)</li>
+  <li>Set user data directory path</li>
+</ul>
+<div class="image-placeholder">PLACE IMAGE OF SETTINGS PANEL HERE</div>
+
+<h3>Tag Editing Rules</h3>
+<p>Tags are user-editable and are normalized/sanitized before saving:</p>
+<ul>
+  <li>Converted to lowercase and spaces are removed</li>
+  <li>Allowed characters are <code>a-z</code>, <code>0-9</code>, and <code>-</code></li>
+  <li>Underscores are blocked except the special-case tag <code>ml_star</code></li>
+  <li>Minimum length is 2, maximum length is 24, and maximum tag count per item is 12</li>
+  <li>Numeric-only tags are rejected</li>
+  <li>Tags containing reserved words (for example: <code>system</code>, <code>hamilton</code>, <code>starred</code>, <code>signed</code>, <code>unsigned</code>, <code>registered</code>, <code>unregistered</code>) are blocked</li>
+</ul>
+<p>See <a href="UnsignedLibraries.html">Unsigned Libraries</a> and <a href="PackageSpecSchema.html">Package Spec JSON Schema</a> for complete tag policy details.</p>
+
+<h2>VENUS Tool Shortcuts</h2>
+<p>The sidebar provides quick-launch shortcuts to Hamilton VENUS utilities. See <a href="VENUSIntegration.html">VENUS Integration</a> for the full list.</p>
+
+<h2>Help Menu</h2>
+<p>Access the compiled help file (<code>Venus Library Manager.chm</code>) from the overflow menu. Video tutorial infrastructure is also available for in-app help playback.</p>
+
+<h2>Verify &amp; Repair Tool</h2>
+<p>The overflow menu includes a <b>Verify &amp; Repair</b> tool that provides a comprehensive integrity scan and one-click repair for <b>all</b> libraries - both Hamilton system libraries and user-installed libraries. See <a href="IntegrityVerification.html">Integrity Verification</a> for the full technical documentation.</p>
+
+<h3>How It Works</h3>
+<ol>
+  <li><b>Scan:</b> When opened, the tool scans every library in the system:
+    <ul>
+      <li><b>System libraries</b> are verified using Hamilton's metadata footer fields (<code>$$valid$$</code>, <code>$$checksum$$</code>) compared against a stored baseline.</li>
+      <li><b>User-installed libraries</b> are verified by recomputing SHA-256 hashes for all tracked files and comparing them against the stored baselines.</li>
+    </ul>
+  </li>
+  <li><b>Report:</b> Results are displayed in two sections - <b>System Libraries</b> (with a [System] badge) followed by <b>Installed Libraries</b>. Each library shows one of three statuses: <b>OK</b> (green), <b>WARNING</b> (yellow), or <b>FAILED</b> (red), along with specific error details per file.</li>
+  <li><b>Repair:</b> For any library with issues, if a cached or backup <code>.hxlibpkg</code> exists in the package store, a <b>Repair</b> button re-extracts the original files. The cached package's HMAC-SHA256 signature is verified before repair to prevent restoring from a corrupt source.</li>
+  <li><b>Batch Repair:</b> A <b>Repair Selected</b> button repairs all failed libraries (system and user) in one operation. A confirmation dialog lists the libraries before proceeding, and a summary is shown afterward.</li>
+</ol>
+
+<h3>First-Run System Library Backup</h3>
+<p>On the very first launch, Venus Library Manager automatically creates a signed <code>.hxlibpkg</code> backup for every Hamilton system library and stores it in the package store. This ensures that system libraries can always be repaired even though they were not originally imported through the application. See <a href="IntegrityVerification.html#repair">Integrity Verification - First-Run System Library Backup</a> for details.</p>
+
+<h3>Repair from the Detail Modal</h3>
+<p>You can also repair a single library directly from its detail modal. Open any library card and scroll to the <b>File Integrity</b> section. If errors are detected and a backup/cached package exists, a <b>Repair from Backup</b> button appears below the error list. This works for both system and user-installed libraries.</p>
+
+<div class="note">
+<p><b>Note:</b> Libraries imported with <code>--no-cache</code> have no cached package in the store and cannot be repaired through this tool. Re-import the original package file instead. System libraries without a first-run backup (e.g., if the first run failed) can be re-backed-up by removing the <code>sysLibBackupComplete</code> setting and restarting.</p>
+</div>
+</div>
+<div class="footer">
+<p>Venus Library Manager Help</p>
+</div>
+</body>
+</html>

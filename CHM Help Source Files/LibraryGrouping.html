@@ -1,0 +1,113 @@
+<html>
+<head>
+    <title>Library Grouping</title>
+    <link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+<div class="header">Library Grouping</div>
+<div class="main">
+<div class="breadcrumb"><a href="Overview.html">Venus Library Manager</a> &raquo; Library Grouping</div>
+
+<h2>Overview</h2>
+<p>Venus Library Manager supports organizing installed libraries into custom groups for easier navigation and management. Groups appear as tabs in the main window, allowing you to filter the library view to show only libraries assigned to a specific group.</p>
+
+<h2>Default Groups (Hardcoded)</h2>
+<p>The application defines six built-in groups that are <b>hardcoded</b> in the application source code via a <code>DEFAULT_GROUPS</code> map. These groups are never stored in <code>groups.json</code> - they are resolved in-memory at runtime. A startup migration automatically strips any stale default-group records from the external JSON file to prevent duplicates.</p>
+
+<table>
+<thead><tr><th>ID</th><th>Name</th><th>Icon</th><th>Side</th><th>Purpose</th></tr></thead>
+<tbody>
+<tr><td><code>gAll</code></td><td>All</td><td><code>fa-th</code></td><td>left</td><td>Shows all installed (non-deleted) libraries</td></tr>
+<tr><td><code>gRecent</code></td><td>Recent</td><td><code>fa-clock</code></td><td>left</td><td>Recently imported libraries</td></tr>
+<tr><td><code>gHamilton</code></td><td>Hamilton</td><td><code>fa-check-circle</code> (solid)</td><td>left</td><td>Protected Hamilton-authored libraries</td></tr>
+<tr><td><code>gFolders</code></td><td>Import</td><td><code>fa-file-import</code></td><td>right</td><td>Import workflow tab</td></tr>
+<tr><td><code>gEditors</code></td><td>Export</td><td><code>fa-file-export</code></td><td>right</td><td>Export workflow tab</td></tr>
+<tr><td><code>gHistory</code></td><td>History</td><td><code>fa-history</code></td><td>right</td><td>Action history</td></tr>
+</tbody>
+</table>
+
+<p>User-created groups are stored in <code>groups.json</code> with <code>"default": false</code> and auto-generated <code>_id</code> values.</p>
+
+<h2>Hamilton Default Group</h2>
+<p>The <b>Hamilton</b> group (<code>gHamilton</code>) is a special protected group that ships with the application. It is designed to contain libraries authored by Hamilton and is distinguished from regular custom groups in several important ways:</p>
+
+<h3>Protection</h3>
+<ul>
+  <li><b>Non-deletable and non-renamable</b> - The Hamilton group has <code>"protected": true</code> in the <code>DEFAULT_GROUPS</code> map, preventing users from deleting or renaming it through the settings panel.</li>
+  <li><b>Always visible</b> - It appears in the left-side navigation between the System libraries group and user-created groups. It cannot be hidden.</li>
+  <li><b>Solid checkmark icon</b> - Uses the Font Awesome 5 Solid <code>fa-check-circle</code> icon to visually distinguish it from user-created groups.</li>
+</ul>
+
+<h3>Password-Protected Author Name</h3>
+<p>The author name <b>"Hamilton"</b> is restricted to prevent unauthorized attribution of packages to Hamilton. This restriction is enforced in both the GUI and CLI:</p>
+<ul>
+  <li><b>GUI:</b> When a user enters "Hamilton" (case-insensitive) as the author in the Library Packager, a password prompt modal (<code>#authorPasswordModal</code>) is displayed. The modal appears when the author field loses focus. The user must enter the correct password before the package can be built. If the password is incorrect or the modal is dismissed, the author field is cleared.</li>
+  <li><b>CLI:</b> When the spec file contains <code>"author": "Hamilton"</code>, the <code>--author-password</code> flag must be supplied on the command line. If the password is missing or incorrect, the CLI exits with an error.</li>
+</ul>
+
+<h3>Empty State</h3>
+<p>When no Hamilton-authored packages are installed, the Hamilton tab displays a dedicated placeholder message: <i>"No Hamilton packages installed yet. Import a Hamilton-authored library package to see it here."</i></p>
+
+<h2>Managing Groups</h2>
+
+<h3>Creating a Group</h3>
+<p>Create new groups from the Settings panel. Each group has a name and an icon class. New groups are added to the navigation tree and immediately become available as filter tabs.</p>
+<div class="image-placeholder">PLACE IMAGE OF GROUP CREATION IN SETTINGS HERE</div>
+
+<h3>Renaming and Deleting Groups</h3>
+<p>Groups can be renamed or deleted from the Settings panel. Deleting a group does not delete the libraries assigned to it - they become "unassigned" and remain visible in the All view.</p>
+
+<h3>Reordering Groups</h3>
+<p>Drag-and-drop reordering is supported in the Settings panel. The order you set determines the tab display order in the main window.</p>
+
+<h2>Assigning Libraries to Groups</h2>
+
+<h3>Automatic Assignment</h3>
+<p>When a library is imported, it is automatically assigned to the first non-default custom group. If no custom groups exist, a default group named <b>"Libraries"</b> is created and the library is assigned to it.</p>
+<p>This behavior is controlled by the <code>chk_autoAddToGroup</code> setting. It can be disabled in settings or bypassed during CLI imports with the <code>--no-group</code> flag.</p>
+
+<h3>Manual Assignment</h3>
+<p>In the Settings panel, libraries can be drag-and-dropped between groups. An <b>"Unassigned Libraries"</b> pseudo-group shows all libraries that are not currently in any group.</p>
+<div class="image-placeholder">PLACE IMAGE OF DRAG-AND-DROP GROUP ASSIGNMENT IN SETTINGS HERE</div>
+
+<h2>Group Visibility</h2>
+<p>Groups can be shown or hidden in the navigation using the favorite/show-hide toggle. Hidden groups and their assigned libraries still exist but are not displayed as navigation tabs.</p>
+
+<h2>Data Persistence</h2>
+<p>Default groups (All, Recent, Hamilton, Import, Export, History) are <b>not</b> stored in <code>groups.json</code>. They are defined in a hardcoded <code>DEFAULT_GROUPS</code> map in the application source code and resolved in-memory. Only user-created custom groups are stored in <code>groups.json</code>.</p>
+<p>Group-to-library assignments are stored in <code>tree.json</code> within the user data directory. See <a href="DataModel.html">Data Model &amp; Persistence</a> for details.</p>
+
+<h2>Group Record Structure (User-Created Groups)</h2>
+<div class="code"><pre>{
+  "_id": "abc123",
+  "name": "Pipetting Libraries",
+  "icon-class": "fa-book",
+  "default": false,
+  "navbar": "left",
+  "favorite": true
+}</pre></div>
+
+<h2>Tree Assignment Structure</h2>
+<div class="code"><pre>{
+  "group-id": "abc123",
+  "method-ids": ["lib-id-1", "lib-id-2", "lib-id-3"],
+  "locked": false
+}</pre></div>
+
+<h2>Unsigned Group</h2>
+<p>When the <a href="UnsignedLibraries.html">Unsigned Libraries</a> feature is enabled and at least one unsigned library has been discovered by scanning, a special <b>Unsigned</b> group is injected into the navigation bar. This group is distinct from both default and custom groups:</p>
+<ul>
+  <li>Uses the <code>far fa-times-circle</code> icon</li>
+  <li>Appears after the Hamilton group in the left navigation</li>
+  <li><b>Locked</b> - libraries cannot be dragged into or out of it</li>
+  <li>Not stored in <code>tree.json</code> or <code>groups.json</code> - it is generated dynamically</li>
+  <li>Not included in the sortable group ordering</li>
+  <li>Hidden automatically when the feature is disabled or no unsigned libraries exist</li>
+</ul>
+<p>See <a href="UnsignedLibraries.html">Unsigned Libraries</a> for full details on enabling and using this feature.</p>
+</div>
+<div class="footer">
+<p>Venus Library Manager Help</p>
+</div>
+</body>
+</html>

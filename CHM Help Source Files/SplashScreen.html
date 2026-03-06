@@ -1,0 +1,181 @@
+<html>
+<head>
+    <title>Splash Screen &amp; Startup Architecture</title>
+    <link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+<div class="header">Splash Screen &amp; Startup Architecture</div>
+<div class="main">
+<div class="breadcrumb"><a href="Overview.html">Venus Library Manager</a> &raquo; <a href="GUIOverview.html">GUI Overview</a> &raquo; Splash Screen &amp; Startup Architecture</div>
+
+<h2>Overview</h2>
+<p>When Venus Library Manager launches, a <b>splash screen</b> is displayed as a <b>true loading gate</b> &mdash; the main application interface is not revealed to the user until every startup task has completed successfully. This ensures the user never sees a partially-rendered interface or interacts with the application before system library integrity checks have finished.</p>
+
+<h2>What the User Sees</h2>
+<p>The splash screen displays:</p>
+<ul>
+    <li>An <b>animated SVG logo</b> (the Venus Library Manager icon with a smooth CSS keyframe animation)</li>
+    <li>The application name: <i>Venus Library Manager</i></li>
+    <li>The subtitle: <i>Hamilton VENUS</i></li>
+    <li>A <b>live status line</b> that updates in real time as each startup phase completes (e.g., <code>Loading library data...</code>, <code>Building interface...</code>, <code>Verifying system libraries...</code>, <code>Finalizing...</code>, <code>Ready</code>)</li>
+</ul>
+<p>The splash fades out smoothly once all work is done, revealing the fully-rendered home screen.</p>
+
+<h2>Performance Design</h2>
+<p>Several techniques are used to ensure the splash screen appears <b>instantly</b> with a <b>smooth, jank-free animation</b>:</p>
+
+<h3>Instant First Paint (No White Flash)</h3>
+<table>
+<thead><tr><th>Technique</th><th>Purpose</th></tr></thead>
+<tbody>
+<tr>
+    <td><b>NW.js <code>show: false</code></b></td>
+    <td>The window is created hidden (<code>"show": false</code> in <code>package.json</code>). The NW.js window is only made visible via <code>win.show()</code> after the splash screen DOM has painted. This eliminates the white flash that would otherwise appear while the browser engine initializes.</td>
+</tr>
+<tr>
+    <td><b>Inline critical CSS</b></td>
+    <td>All splash screen styles are inlined in the <code>&lt;head&gt;</code> as a <code>&lt;style&gt;</code> block, placed <i>before</i> any external stylesheet <code>&lt;link&gt;</code> tags. This means the splash renders from the inline styles alone, without waiting for Bootstrap, Font Awesome, or <code>main.css</code> to load.</td>
+</tr>
+<tr>
+    <td><b>Deferred external CSS</b></td>
+    <td>The three external stylesheets (<code>bootstrap.min.css</code>, <code>all.min.css</code>, <code>main.css</code>) use <code>rel="preload"</code> with an <code>onload</code> handler that switches them to <code>rel="stylesheet"</code> once loaded. This makes them non-render-blocking &mdash; the splash paints instantly from inline styles.</td>
+</tr>
+<tr>
+    <td><b>Inline SVG</b></td>
+    <td>The animated logo SVG is embedded directly in the HTML rather than loaded as an external file. This eliminates a network/file-system fetch and ensures the animation begins on the very first paint frame.</td>
+</tr>
+<tr>
+    <td><b>Double <code>requestAnimationFrame</code> for <code>win.show()</code></b></td>
+    <td>A tiny inline <code>&lt;script&gt;</code> placed immediately after the splash <code>&lt;div&gt;</code> uses a double <code>requestAnimationFrame</code> to ensure the splash has actually composited before making the window visible.</td>
+</tr>
+<tr>
+    <td><b><code>html, body</code> background color</b></td>
+    <td>The <code>html</code> and <code>body</code> elements have their background set to <code>#002e48</code> (the splash gradient&rsquo;s darkest color) via inline CSS. Even if a single frame renders before the splash gradient, it will be dark blue instead of white.</td>
+</tr>
+</tbody>
+</table>
+
+<h3>Smooth Animation (No Jitter)</h3>
+<table>
+<thead><tr><th>Technique</th><th>Purpose</th></tr></thead>
+<tbody>
+<tr>
+    <td><b>GPU compositing</b></td>
+    <td>The animated SVG element uses <code>will-change: transform; transform: translateZ(0)</code>, which promotes it to its own GPU compositor layer. The browser&rsquo;s compositor thread handles the animation independently of what the main JavaScript thread is doing.</td>
+</tr>
+<tr>
+    <td><b>Child-process worker (<code>syscheck-worker.js</code>)</b></td>
+    <td>All heavy file I/O &mdash; reading HSL files from disk, parsing Hamilton metadata footers, verifying checksums, scanning the package store for missing backups &mdash; runs in a <b>separate Node.js child process</b> forked via <code>child_process.fork()</code>. This completely removes file system work from the main thread, keeping the compositor layer unblocked.</td>
+</tr>
+<tr>
+    <td><b><code>requestAnimationFrame</code> yields</b></td>
+    <td>The main-thread init steps (path setup, group creation, navigation) are separated by <code>requestAnimationFrame</code> calls rather than <code>setTimeout(0)</code>. This guarantees at least one animation frame renders between each step, even if a step takes a few milliseconds.</td>
+</tr>
+<tr>
+    <td><b>Deferred heavy work from <code>initVENUSData()</code></b></td>
+    <td>The <code>initVENUSData()</code> function only sets VENUS path defaults in the database (fast, &lt;5ms). The three heavy operations &mdash; metadata stamping, system library backup, and integrity checking &mdash; are handled by the worker process.</td>
+</tr>
+</tbody>
+</table>
+
+<h2>Startup Sequence</h2>
+<p>The following steps occur in order. The splash screen gates each phase and only dismisses after all steps have completed.</p>
+
+<table>
+<thead><tr><th>Phase</th><th>Thread</th><th>Status Text</th><th>What Happens</th></tr></thead>
+<tbody>
+<tr>
+    <td>1</td>
+    <td>Main</td>
+    <td><code>Initializing...</code></td>
+    <td>NW.js creates the hidden window. Inline splash styles + inline SVG render. <code>win.show()</code> fires after first paint. External CSS begins preloading in the background.</td>
+</tr>
+<tr>
+    <td>2</td>
+    <td>Main + Worker</td>
+    <td><code>Loading library data...</code></td>
+    <td>The system-check worker is forked and sent the system libraries list, baseline data, and package store path. Simultaneously, <code>initVENUSData()</code> runs on the main thread to set VENUS path defaults.</td>
+</tr>
+<tr>
+    <td>3</td>
+    <td>Main</td>
+    <td><code>Building interface...</code></td>
+    <td><code>createGroups()</code> builds the navigation bar, group containers, settings accordion, and system library entries in the DOM.</td>
+</tr>
+<tr>
+    <td>4</td>
+    <td>Main</td>
+    <td>&mdash;</td>
+    <td><code>navigateHome()</code> activates the home screen and builds all library cards. The main UI is now fully rendered behind the splash.</td>
+</tr>
+<tr>
+    <td>5</td>
+    <td>Main (waiting)</td>
+    <td><code>Verifying system libraries...</code></td>
+    <td>The main thread waits for the worker process to finish. The worker performs: baseline generation (if none exists), missing-backup detection, and integrity verification of every system library&rsquo;s HSL files against stored checksums.</td>
+</tr>
+<tr>
+    <td>6</td>
+    <td>Main</td>
+    <td><code>Finalizing...</code></td>
+    <td>Worker results arrive via IPC. The main thread processes them: persists any newly generated baseline, stamps metadata (first run only), creates missing backup packages, and auto-repairs any integrity failures from cached packages.</td>
+</tr>
+<tr>
+    <td>7</td>
+    <td>Main</td>
+    <td><code>Ready</code></td>
+    <td>All work is complete. The splash fades out over 700ms. The user sees the fully-rendered, fully-verified application.</td>
+</tr>
+</tbody>
+</table>
+
+<h2>Worker Process Architecture</h2>
+<p>The worker script (<code>html/js/syscheck-worker.js</code>) is a standalone Node.js script with no DOM or NW.js dependencies. It communicates with the main process via IPC messages:</p>
+
+<h3>Input Message</h3>
+<div class="code"><pre>{
+  type: "run",
+  payload: {
+    sysLibDir:       "C:\\Program Files (x86)\\HAMILTON\\Library",
+    systemLibraries: [ /* array of system library objects */ ],
+    baseline:        { /* integrity baseline from system_library_hashes.json */ },
+    packageStoreDir: "C:\\...\\Library\\LibraryPackages",
+    settingsFlags:   { sysLibMetadataComplete: true, sysLibBackupComplete: true }
+  }
+}</pre></div>
+
+<h3>Output Message</h3>
+<div class="code"><pre>{
+  type: "result",
+  payload: {
+    integrityResults:  { "LibName": { valid: false, errors: [...], warnings: [...] } },
+    missingPackages:   [ "LibName1", "LibName2" ],
+    baselineGenerated: null | { /* new baseline data */ },
+    metadataNeeded:    false,
+    backupsNeeded:     false,
+    error:             null | "error message"
+  }
+}</pre></div>
+
+<p>The worker exits after sending its result. If the worker crashes or fails to respond, the main thread falls back to running the integrity checks inline (which may cause brief animation jitter but ensures the checks still complete before the splash is dismissed).</p>
+
+<h2>Gating Behavior</h2>
+<p>The splash screen is a <b>hard gate</b>:</p>
+<ul>
+    <li>The user <b>cannot interact</b> with the application while the splash is visible (it is a full-viewport fixed overlay at <code>z-index: 99999</code>).</li>
+    <li>The splash is <b>only dismissed</b> after all seven phases above have completed.</li>
+    <li>If any phase encounters an error, it is caught and logged, but the startup sequence continues. The splash still gates until completion.</li>
+    <li>The fade-out animation (<code>opacity</code> transition over 700ms) provides a smooth visual transition. The splash DOM element is removed from the document after the fade completes.</li>
+</ul>
+
+<h2>Related Topics</h2>
+<ul>
+    <li><a href="GUIOverview.html">GUI Overview</a></li>
+    <li><a href="IntegrityVerification.html">Integrity Verification</a></li>
+    <li><a href="GettingStarted.html">Getting Started</a></li>
+    <li><a href="VisualIdentity.html">Visual Identity &amp; Assets</a></li>
+</ul>
+
+</div>
+</body>
+</html>

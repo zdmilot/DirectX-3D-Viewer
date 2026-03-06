@@ -79,6 +79,7 @@
         ppState.renderer = new THREE.WebGLRenderer({
             canvas: canvas,
             antialias: true,
+            alpha: true,
             preserveDrawingBuffer: true
         });
         ppState.renderer.setPixelRatio(window.devicePixelRatio);
@@ -104,8 +105,6 @@
         const gc = ppState.isDark ? DARK_GRID : LIGHT_GRID;
         const grid = new THREE.GridHelper(400, 40, gc, gc);
         grid.name = '__ppgrid__';
-        grid.renderOrder = -1;
-        grid.material.depthWrite = false;
         grid.visible = ppState.gridVisible;
         ppState.scene.add(grid);
 
@@ -327,8 +326,6 @@
                 const gColor = ppState.isDark ? DARK_GRID : LIGHT_GRID;
                 const newGrid = new THREE.GridHelper(gridSize, gridDiv, gColor, gColor);
                 newGrid.name = '__ppgrid__';
-                newGrid.renderOrder = -1;
-                newGrid.material.depthWrite = false;
                 newGrid.visible = ppState.gridVisible;
                 newGrid.position.y = -size.y / 2 - maxDim * 0.002;
                 ppState.scene.add(newGrid);
@@ -979,8 +976,22 @@
         return parts.join('\n');
     }
 
-    function ppSaveScreenshot(format) {
+    function ppSaveScreenshot(format, opts) {
         if (!ppState.renderer || !ppState.scene || !ppState.camera) return;
+
+        const showGrid = opts ? opts.showGrid : true;
+        const showBg   = opts ? opts.showBg   : true;
+
+        const grid = ppState.scene.getObjectByName('__ppgrid__');
+        const origGridVis = grid ? grid.visible : false;
+        if (grid) grid.visible = showGrid && ppState.gridVisible;
+
+        const origBg = ppState.scene.background;
+        if (!showBg) {
+            ppState.scene.background = null;
+            ppState.renderer.setClearColor(0x000000, 0);
+        }
+
         ppState.renderer.render(ppState.scene, ppState.camera);
         const canvas = ppState.renderer.domElement;
         const fileName = ppFileName();
@@ -992,6 +1003,39 @@
         } else {
             canvas.toBlob(function (blob) { if (blob) ppDownloadBlob(blob, fileName + '.png'); }, 'image/png');
         }
+
+        // Restore
+        if (grid) grid.visible = origGridVis;
+        ppState.scene.background = origBg;
+        if (!showBg) ppState.renderer.setClearColor(ppState.isDark ? DARK_BG : LIGHT_BG, 1);
+        ppState.renderer.render(ppState.scene, ppState.camera);
+    }
+
+    function ppScreenshotPreviewDataURL(opts) {
+        if (!ppState.renderer || !ppState.scene || !ppState.camera) return '';
+
+        const showGrid = opts ? opts.showGrid : true;
+        const showBg   = opts ? opts.showBg   : true;
+
+        const grid = ppState.scene.getObjectByName('__ppgrid__');
+        const origGridVis = grid ? grid.visible : false;
+        if (grid) grid.visible = showGrid && ppState.gridVisible;
+
+        const origBg = ppState.scene.background;
+        if (!showBg) {
+            ppState.scene.background = null;
+            ppState.renderer.setClearColor(0x000000, 0);
+        }
+
+        ppState.renderer.render(ppState.scene, ppState.camera);
+        const dataURL = ppState.renderer.domElement.toDataURL('image/png');
+
+        if (grid) grid.visible = origGridVis;
+        ppState.scene.background = origBg;
+        if (!showBg) ppState.renderer.setClearColor(ppState.isDark ? DARK_BG : LIGHT_BG, 1);
+        ppState.renderer.render(ppState.scene, ppState.camera);
+
+        return dataURL;
     }
 
     // ── OBJ ──────────────────────────────────────────────────────
@@ -1184,26 +1228,11 @@
 
     function wireScreenshotExport() {
         // Screenshot button & dropdown
+        // Screenshot button → open modal
         const ssBtn = $('#pp-screenshot');
-        const ssDrop = $('#pp-screenshot-dropdown');
-        if (ssBtn && ssDrop) {
-            ssBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                ssDrop.classList.toggle('is-open');
-                const exDrop = $('#pp-export-dropdown');
-                if (exDrop) exDrop.classList.remove('is-open');
-            });
-            document.addEventListener('click', () => {
-                ssDrop.classList.remove('is-open');
-                const exDrop = $('#pp-export-dropdown');
-                if (exDrop) exDrop.classList.remove('is-open');
-            });
-            ssDrop.addEventListener('click', (e) => e.stopPropagation());
-            ssDrop.querySelectorAll('.screenshot-option').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    ppSaveScreenshot(btn.dataset.format);
-                    ssDrop.classList.remove('is-open');
-                });
+        if (ssBtn) {
+            ssBtn.addEventListener('click', () => {
+                if (window.openScreenshotModal) window.openScreenshotModal('placer');
             });
         }
 
@@ -1214,7 +1243,9 @@
             exBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 exDrop.classList.toggle('is-open');
-                if (ssDrop) ssDrop.classList.remove('is-open');
+            });
+            document.addEventListener('click', () => {
+                if (exDrop) exDrop.classList.remove('is-open');
             });
             exDrop.addEventListener('click', (e) => e.stopPropagation());
             exDrop.querySelectorAll('.export-option').forEach(btn => {
@@ -1247,6 +1278,8 @@
     window.PlacerModule = {
         init: initPlacer,
         updateTheme: updatePlacerTheme,
+        saveScreenshot: ppSaveScreenshot,
+        screenshotPreviewDataURL: ppScreenshotPreviewDataURL,
     };
 
 })();

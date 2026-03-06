@@ -1,0 +1,102 @@
+<html>
+<head>
+    <title>Visual Identity &amp; Assets</title>
+    <link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+<div class="header">Visual Identity &amp; Assets</div>
+<div class="main">
+<div class="breadcrumb"><a href="Overview.html">Venus Library Manager</a> &raquo; Visual Identity &amp; Assets</div>
+
+<h2>Overview</h2>
+<p>Venus Library Manager uses a consistent visual branding system across packages and archives. All visual assets are <b>pre-rendered</b> and stored in the <code>assets/</code> directory to avoid runtime conversion overhead and ensure reliable rendering across environments.</p>
+
+<h2>Assets Folder</h2>
+<p>The <code>assets/</code> directory contains the following pre-rendered PNG files:</p>
+
+<table>
+<thead><tr><th>File</th><th>Dimensions</th><th>Purpose</th></tr></thead>
+<tbody>
+<tr><td><code>app_logo_gray_128.png</code></td><td>128 &times; 128 px</td><td>Grayscale version of the application logo, used as a brand overlay during package icon compositing</td></tr>
+<tr><td><code>archive_icon_64.png</code></td><td>64 &times; 64 px</td><td>Purple archive icon (small resolution)</td></tr>
+<tr><td><code>archive_icon_128.png</code></td><td>128 &times; 128 px</td><td>Purple archive icon, embedded into <code>.hxlibarch</code> exports as the archive-level icon</td></tr>
+<tr><td><code>archive_icon_256.png</code></td><td>256 &times; 256 px</td><td>Purple archive icon (large resolution)</td></tr>
+</tbody>
+</table>
+
+<h2>Asset Generation</h2>
+<p>The static assets are generated from source files using two methods:</p>
+
+<h3>Archive Icon (<code>archive_icon_*.png</code>)</h3>
+<p>Rendered from <code>ArchiveIcon.svg</code> using the Inkscape command-line interface at 64, 128, and 256 pixel resolutions. The SVG depicts <b>three stacked purple diamonds</b> representing a multi-library bundle. Example generation command:</p>
+<div class="code"><pre>inkscape ArchiveIcon.svg --export-type=png --export-width=128 --export-filename=assets/archive_icon_128.png</pre></div>
+
+<h3>Grayscale Logo (<code>app_logo_gray_128.png</code>)</h3>
+<p>Generated from the application's full-colour logo using Python's <b>Pillow</b> library. The process applies full desaturation (grayscale conversion) and resizes the image to 128 &times; 128 pixels. Example generation script:</p>
+<div class="code"><pre>from PIL import Image
+img = Image.open("icons/app_logo.png").convert("L").convert("RGBA").resize((128, 128))
+img.save("assets/app_logo_gray_128.png")</pre></div>
+
+<p>These pre-rendered PNGs replace earlier runtime approaches (SVG-to-Canvas rendering and live grayscale conversion), reducing code complexity and improving reliability.</p>
+
+<h2>Package Icon Compositing</h2>
+<p>When a <code>.hxlibpkg</code> is built through the GUI Library Packager, a <b>composited icon</b> is generated and written <b>only</b> to the <code>icon/</code> directory inside the package ZIP. This composited icon is what Windows displays for the <code>.hxlibpkg</code> file in Explorer. The package manifest's <code>library_image_base64</code> field stores the <b>raw, uncomposited</b> library image so that imported libraries display the original artwork without any overlay.</p>
+
+<h3>With a User-Supplied Image</h3>
+<ol>
+  <li>The user's chosen library image is drawn at full size on an HTML5 Canvas</li>
+  <li>The grayscale Library Manager logo (<code>app_logo_gray_128.png</code>) is loaded from the assets folder</li>
+  <li>The grayscale logo is overlaid in the <b>bottom-right corner</b> of the canvas at one-third of the canvas dimensions</li>
+  <li>The resulting composited image is exported as a base64-encoded PNG and written to the <code>icon/</code> directory in the ZIP</li>
+</ol>
+<p>This produces a branded file-system icon that prominently shows the library's own artwork while indicating it is a Venus Library Manager package - similar to how Windows draws shortcut arrows on desktop shortcuts.</p>
+
+<h3>Without a User-Supplied Image</h3>
+<p>If no image was selected by the user and no matching <code>.bmp</code> was auto-detected from the library files, the grayscale Library Manager logo is drawn at full canvas size and used as the file-system icon. The manifest will contain no image data in this case.</p>
+
+<h3>Implementation</h3>
+<p>The compositing is performed by the <code>pkgCompositeLibraryIcon()</code> function in <code>main.js</code>. It uses the HTML5 Canvas API (<code>&lt;canvas&gt;</code> element) to draw and composite the images, and returns the result as a base64-encoded PNG. The composited result is used exclusively for the <code>icon/</code> ZIP entry; the manifest retains the original library image.</p>
+
+<h2>Archive Icon</h2>
+<p>Multi-library archive files (<code>.hxlibarch</code>) embed a distinctive <b>purple archive icon</b> that visually identifies the file as containing multiple library packages. The icon depicts three stacked purple diamonds.</p>
+
+<h3>How It Is Embedded</h3>
+<p>When an archive is exported:</p>
+<ol>
+  <li>The static asset <code>assets/archive_icon_128.png</code> is read from disk using synchronous file I/O</li>
+  <li>The PNG data is base64-encoded and stored in the <code>archive_manifest.json</code> file under the <code>archive_icon_base64</code> and <code>archive_icon_mime</code> fields</li>
+  <li>The PNG file is also written as a physical file to <code>icon/archive_icon.png</code> inside the archive ZIP</li>
+</ol>
+
+<h3>Implementation</h3>
+<p>The archive icon is loaded by the <code>getArchiveIconPng()</code> function in <code>main.js</code>, which returns a Node.js <code>Buffer</code> containing the raw PNG data. This function reads the file synchronously from the assets directory.</p>
+
+<h2>Font Awesome Icons</h2>
+<p>The application uses <b>Font Awesome Pro 5.15.1</b> for navigation and UI icons. Key icon usage:</p>
+<table>
+<thead><tr><th>Element</th><th>Icon</th><th>Prefix</th><th>Notes</th></tr></thead>
+<tbody>
+<tr><td>Hamilton group</td><td><code>fa-check-circle</code></td><td><code>fas</code> (Solid)</td><td>Visually distinguishes Hamilton from user groups</td></tr>
+<tr><td>All group</td><td><code>fa-th</code></td><td><code>far</code> (Regular)</td><td>Grid-style overview icon</td></tr>
+<tr><td>Recent group</td><td><code>fa-clock</code></td><td><code>far</code> (Regular)</td><td>Clock / recency icon</td></tr>
+<tr><td>User groups</td><td>Configurable</td><td><code>far</code> (Regular)</td><td>User selects icon when creating group</td></tr>
+</tbody>
+</table>
+
+<div class="note">
+<p><b>Note:</b> Font Awesome 5 uses different icon names than Font Awesome 6. For example, <code>fa-check-circle</code> (FA5) is named <code>fa-circle-check</code> in FA6. Always use the FA5 naming convention in this application.</p>
+</div>
+
+<h2>Related</h2>
+<ul>
+  <li><a href="CreatingPackages.html">Creating Packages</a> - How compositing integrates into the package build workflow</li>
+  <li><a href="ExportingLibraries.html">Exporting Libraries</a> - How the archive icon is embedded during archive export</li>
+  <li><a href="PackageFormats.html">Package Formats</a> - Manifest fields for images and icons</li>
+  <li><a href="LibraryGrouping.html">Library Grouping</a> - Hamilton group icon and visual identity</li>
+</ul>
+</div>
+<div class="footer">
+<p>Venus Library Manager Help</p>
+</div>
+</body>
+</html>

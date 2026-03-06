@@ -1,0 +1,160 @@
+<html>
+<head>
+    <title>GitHub Repository Link</title>
+    <link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+<div class="header">GitHub Repository Link</div>
+<div class="main">
+<div class="breadcrumb"><a href="Overview.html">Venus Library Manager</a> &raquo; <a href="CreatingPackages.html">Creating Packages</a> &raquo; GitHub Repository Link</div>
+
+<h2>Overview</h2>
+<p>Library packages can optionally include the URL of their source <b>GitHub repository</b>. When present, this link is displayed in the library detail views so that users can navigate directly to the project's source code, issues, documentation, and releases.</p>
+
+<p>The field is labelled <b>"GitHub Repository"</b> in both the GUI Library Packager and the Unsigned Library detail editor. The label is intentionally descriptive: it asks for the repository URL &mdash; not a personal profile, organization page, or other GitHub link.</p>
+
+<h2>Where the Field Appears</h2>
+
+<h3>Authoring (Input)</h3>
+<ul>
+  <li><b>GUI Library Packager</b> &mdash; an optional text field between <em>Description</em> and <em>Default Tags</em> in the Package Metadata card.</li>
+  <li><b>Unsigned Library Detail Editor</b> &mdash; an identical field in the Package Metadata card of the unsigned library modal.</li>
+  <li><b>CLI <code>create-package --spec</code></b> &mdash; the <code>github_url</code> key in the <a href="PackageSpecSchema.html">package spec JSON</a>.</li>
+</ul>
+
+<h3>Viewing (Output)</h3>
+<ul>
+  <li><b>Library Detail Modal</b> (&ldquo;View More Details&rdquo;) &mdash; a <em>GitHub</em> section appears immediately below <em>Description</em>, showing the URL as a clickable link. <b>If the library has no GitHub URL, this section is completely hidden.</b></li>
+  <li><b>Import Preview Modal</b> &mdash; the same conditional section is shown during the pre-import preview so users can see the repository before confirming the import.</li>
+</ul>
+
+<h2>Data Flow</h2>
+<ol>
+  <li><b>Packaging:</b> When a <code>.hxlibpkg</code> file is built, the URL is written into the <code>manifest.json</code> inside the package ZIP as the <code>github_url</code> field. If the field is empty, it is omitted from the manifest entirely.</li>
+  <li><b>Importing:</b> All import code paths (GUI single-file import, GUI archive import, and CLI <code>import-lib</code> / <code>import-archive</code>) copy <code>manifest.github_url</code> into the installed library database record.</li>
+  <li><b>Exporting:</b> When a library is re-exported (GUI or CLI <code>export-lib</code> / <code>export-archive</code>), the stored <code>github_url</code> is written back into the new manifest so it round-trips through export/import cycles.</li>
+  <li><b>Viewing:</b> The detail modal checks the <code>github_url</code> property of the database record <em>and</em> the <code>chk_showGitHubLinks</code> display setting. If present and the setting is enabled, the GitHub section is shown with a clickable link; otherwise, the section remains hidden (<code>d-none</code>).</li>
+</ol>
+
+<h2>Validation Rules</h2>
+<p>The field is <b>optional</b>. When left empty it is silently omitted. When a value <em>is</em> provided, it must pass the <code>validateGitHubRepoUrl()</code> validation (defined in <code>lib/shared.js</code>) before the package can be created or the record saved. Invalid URLs are rejected with a descriptive error message and the field is highlighted in red.</p>
+
+<h3>Accepted Formats</h3>
+<ul>
+  <li><code>https://github.com/<var>owner</var>/<var>repo</var></code> (with or without trailing slash)</li>
+  <li><code>https://github.com/<var>owner</var>/<var>repo</var>.git</code></li>
+  <li><code>https://github.com/<var>owner</var>/<var>repo</var>/issues</code>, <code>/pulls</code>, <code>/tree/main</code>, <code>/blob/main/README.md</code>, <code>/releases</code>, and other repo-scoped routes</li>
+  <li>Both <code>http</code> and <code>https</code> schemes are allowed</li>
+  <li>Non-GitHub hostnames are permitted (e.g., GitHub Enterprise, GitLab, or Gitea instances)</li>
+</ul>
+
+<h3>Rejection Criteria</h3>
+<p>The validator enforces a comprehensive set of rules to ensure the URL points to an actual repository and not a profile page, settings screen, or other non-repository GitHub resource:</p>
+
+<table>
+<thead><tr><th>Rule</th><th>Example Rejected</th></tr></thead>
+<tbody>
+<tr>
+  <td>Scheme must be <code>http</code> or <code>https</code></td>
+  <td><code>ftp://github.com/owner/repo</code>, <code>ssh://git@github.com/owner/repo</code></td>
+</tr>
+<tr>
+  <td>Hostname must be present</td>
+  <td><code>https:///owner/repo</code></td>
+</tr>
+<tr>
+  <td>Path must have at least two non-empty segments (<code>/{owner}/{repo}</code>)</td>
+  <td><code>https://github.com/octocat</code> (owner only)</td>
+</tr>
+<tr>
+  <td>Neither segment may contain spaces or URL-encoded control characters</td>
+  <td><code>https://github.com/my%20owner/repo</code></td>
+</tr>
+<tr>
+  <td>Neither segment may contain <code>@</code></td>
+  <td><code>https://github.com/user@host/repo</code></td>
+</tr>
+<tr>
+  <td>Owner segment must not start or end with <code>.</code> or contain <code>..</code></td>
+  <td><code>https://github.com/.hidden/repo</code>, <code>https://github.com/ow..ner/repo</code></td>
+</tr>
+<tr>
+  <td>Repo must not be empty after stripping <code>.git</code></td>
+  <td><code>https://github.com/owner/.git</code></td>
+</tr>
+<tr>
+  <td>First segment must not be a reserved GitHub top-level route</td>
+  <td><code>https://github.com/settings/profile</code>, <code>https://github.com/login/oauth</code></td>
+</tr>
+<tr>
+  <td>Second segment must not be a reserved GitHub route</td>
+  <td><code>https://github.com/owner/settings</code>, <code>https://github.com/owner/marketplace</code></td>
+</tr>
+<tr>
+  <td>Path must not match reserved non-repo prefix patterns</td>
+  <td><code>https://github.com/users/someone/repos</code>, <code>https://github.com/orgs/myorg/repos</code></td>
+</tr>
+<tr>
+  <td>Third segment (if present) must not indicate a non-repo context</td>
+  <td><code>https://github.com/owner/repo/organizations</code>, <code>https://github.com/owner/repo/search</code></td>
+</tr>
+</tbody>
+</table>
+
+<h3>Reserved Top-Level Routes</h3>
+<p>The following first-segment values are blocked (case-insensitive). They are known GitHub platform routes that cannot be user/organization names:</p>
+<div class="code"><pre>settings    organizations  orgs         users        sessions
+login       logout         join         pricing      features
+marketplace topics         explore      trending     collections
+events      sponsors       security     site         about
+contact     customer-stories  readme    codespaces   copilot
+enterprises enterprise     account      notifications  inbox
+watch       pulls          issues       search       apps
+new         gist           gists        blog         discussions
+actions     support</pre></div>
+
+<h2>Manifest Schema</h2>
+<p>In the <a href="PackageSpecSchema.html">package spec JSON schema</a> (<code>cli-schema.json</code>), the field is defined as:</p>
+<div class="code"><pre>{
+  "github_url": {
+    "type": "string",
+    "format": "uri",
+    "description": "URL to the library's GitHub repository. Optional.",
+    "examples": ["https://github.com/user/venus-library"]
+  }
+}</pre></div>
+
+<h2>Examples</h2>
+
+<h3>GUI Library Packager</h3>
+<p>In the Package Metadata card, fill in the <b>GitHub Repository</b> field with the repository's web URL:</p>
+<div class="code"><pre>https://github.com/acme-pharma/venus-ml600-helpers</pre></div>
+<p>Leave the field blank to omit the link from the package.</p>
+
+<h3>CLI Spec File</h3>
+<div class="code"><pre>{
+  "author": "Jane Smith",
+  "organization": "Acme Pharma",
+  "version": "1.0.0",
+  "venus_compatibility": "4.7+",
+  "description": "High-level pipetting helpers for the ML600.",
+  "github_url": "https://github.com/acme-pharma/venus-ml600-helpers",
+  "tags": ["pipetting", "ML600"],
+  "library_files": ["ML600Helpers.hsl", "ML600Helpers.hs_"]
+}</pre></div>
+
+<h3>Library Detail Modal</h3>
+<p>After importing a package that contains a <code>github_url</code>, opening <b>View More Details</b> shows a <em>GitHub</em> section below the description with the URL rendered as a clickable hyperlink. Libraries without a <code>github_url</code> do not display this section at all.</p>
+
+<h3>Display Setting &mdash; Regulated Environments</h3>
+<p>In regulated or locked-down environments, administrators may want to prevent external links from appearing in library detail views. The <b>Settings &gt; Display</b> section provides a checkbox:</p>
+<blockquote><b>Show GitHub repository links in library details</b></blockquote>
+<p>When <b>unchecked</b>, the GitHub section is hidden from both the <em>Library Detail Modal</em> and the <em>Import Preview Modal</em>, regardless of whether a <code>github_url</code> value exists in the library record. The underlying data is preserved &mdash; only the display is suppressed. Re-enabling the checkbox immediately restores GitHub link visibility.</p>
+<p>This setting is stored as <code>chk_showGitHubLinks</code> in the settings database. It defaults to <code>true</code> (enabled). See <a href="DataModel.html">Data Model</a> for details.</p>
+
+</div>
+<div class="footer">
+<p>Venus Library Manager Help</p>
+</div>
+</body>
+</html>

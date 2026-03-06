@@ -1,0 +1,278 @@
+<html>
+<head>
+    <title>Data Model</title>
+    <link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+<div class="header">Data Model</div>
+<div class="main">
+<div class="breadcrumb"><a href="Overview.html">Venus Library Manager</a> &raquo; Data Model</div>
+
+<h2>Overview</h2>
+<p>Venus Library Manager uses <b>diskdb</b>, a lightweight JSON-backed database, to persist all application state. The database resides in the <code>db/</code> directory within the application folder. Each collection is stored as a separate <code>.json</code> file.</p>
+
+<div class="image-placeholder">PLACE IMAGE OF THE DB FOLDER STRUCTURE HERE</div>
+
+<h2>Collections</h2>
+<table>
+<thead><tr><th>Collection</th><th>File</th><th>Purpose</th></tr></thead>
+<tbody>
+<tr><td><code>installed_libs</code></td><td>installed_libs.json</td><td>Registry of all installed (and soft-deleted) libraries</td></tr>
+<tr><td><code>links</code></td><td>links.json</td><td>VENUS tool shortcuts and directory shortcuts</td></tr>
+<tr><td><code>groups</code></td><td>groups.json</td><td>Navigation groups (tabs) for organizing libraries</td></tr>
+<tr><td><code>tree</code></td><td>tree.json</td><td>Group-to-library membership assignments</td></tr>
+<tr><td><code>settings</code></td><td>settings.json</td><td>Application settings</td></tr>
+<tr><td><code>unsigned_libs</code></td><td>unsigned_libs.json</td><td>Auto-detected unsigned libraries (see <a href="UnsignedLibraries.html">Unsigned Libraries</a>)</td></tr>
+</tbody>
+</table>
+
+<p>Additionally, the <code>db/</code> folder contains read-only reference data:</p>
+<table>
+<thead><tr><th>File</th><th>Purpose</th></tr></thead>
+<tbody>
+<tr><td><code>system_libraries.json</code></td><td>List of Hamilton built-in system libraries and their known files</td></tr>
+<tr><td><code>system_library_hashes.json</code></td><td>Generated integrity baseline for system libraries (created by <a href="CLIGenerateSyslibHashes.html"><code>generate-syslib-hashes</code></a>)</td></tr>
+</tbody>
+</table>
+
+<h2>installed_libs Collection</h2>
+<p>Each record represents one installed library. This is the primary data store for the application.</p>
+
+<h3>Record Fields</h3>
+<table>
+<thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>_id</code></td><td>string</td><td>Auto-generated unique identifier (UUID-style hex string)</td></tr>
+<tr><td><code>library_name</code></td><td>string</td><td>Display name of the library</td></tr>
+<tr><td><code>author</code></td><td>string</td><td>Author name from the package manifest</td></tr>
+<tr><td><code>organization</code></td><td>string</td><td>Author's organization</td></tr>
+<tr><td><code>version</code></td><td>string</td><td>Version string</td></tr>
+<tr><td><code>venus_compatibility</code></td><td>string</td><td>VENUS version compatibility</td></tr>
+<tr><td><code>description</code></td><td>string</td><td>Library description text</td></tr>
+<tr><td><code>tags</code></td><td>string[]</td><td>Searchable keyword tags. The values <code>"System"</code> and <code>"Hamilton"</code> are reserved and rejected during package creation (case-insensitive).</td></tr>
+<tr><td><code>created_date</code></td><td>string (ISO 8601)</td><td>Date the package was originally created</td></tr>
+<tr><td><code>library_image</code></td><td>string | null</td><td>Image filename (or null if no image)</td></tr>
+<tr><td><code>library_image_base64</code></td><td>string | null</td><td>Base64-encoded image data for display in the GUI</td></tr>
+<tr><td><code>library_image_mime</code></td><td>string | null</td><td>MIME type of the image (e.g., <code>image/png</code>)</td></tr>
+<tr><td><code>library_files</code></td><td>string[]</td><td>List of library payload filenames</td></tr>
+<tr><td><code>demo_method_files</code></td><td>string[]</td><td>List of demo method filenames</td></tr>
+<tr><td><code>help_files</code></td><td>string[]</td><td>List of .chm help file basenames</td></tr>
+<tr><td><code>com_register_dlls</code></td><td>string[]</td><td>DLL basenames requiring COM registration</td></tr>
+<tr><td><code>com_warning</code></td><td>boolean</td><td>Whether the COM registration warning has been shown</td></tr>
+<tr><td><code>lib_install_path</code></td><td>string</td><td>Full path where library files are installed</td></tr>
+<tr><td><code>demo_install_path</code></td><td>string</td><td>Full path where demo methods are installed</td></tr>
+<tr><td><code>installed_date</code></td><td>string (ISO 8601)</td><td>When the library was imported</td></tr>
+<tr><td><code>source_package</code></td><td>string</td><td>Filename of the source <code>.hxlibpkg</code></td></tr>
+<tr><td><code>file_hashes</code></td><td>object</td><td>Map of filename → SHA-256 hash for integrity-tracked files</td></tr>
+<tr><td><code>public_functions</code></td><td>object[]</td><td>Parsed public function signatures from <code>.hsl</code> files (see below)</td></tr>
+<tr><td><code>deleted</code></td><td>boolean</td><td>Soft-delete flag. <code>true</code> means the library has been deleted</td></tr>
+<tr><td><code>deleted_date</code></td><td>string (ISO 8601)</td><td>When the library was soft-deleted</td></tr>
+</tbody>
+</table>
+
+<h3>file_hashes Object</h3>
+<p>Maps each integrity-tracked file to its SHA-256 hash. Only files with extensions <code>.hsl</code>, <code>.hs_</code>, <code>.sub</code>, and COM <code>.dll</code> files are tracked.</p>
+<div class="code"><pre>"file_hashes": {
+  "ExampleLib.hsl": "612b778dde75f7e93c2894845e1f9f7e...",
+  "ExampleLib.hs_": "cdd4d99218e02df8972ab8dbb1b6be43...",
+  "ExampleLib.dll": "f30cb612945c0af795b134cd6b964e70..."
+}</pre></div>
+
+<h3>public_functions Array</h3>
+<p>Each entry describes a public function parsed from the library's <code>.hsl</code> files:</p>
+<div class="code"><pre>{
+  "name": "Add",
+  "qualifiedName": "ExampleComHelper::Add",
+  "params": [
+    { "type": "variable", "name": "a", "byRef": false, "array": false },
+    { "type": "variable", "name": "b", "byRef": false, "array": false }
+  ],
+  "returnType": "variable",
+  "doc": "Function documentation from comments...",
+  "file": "ExampleComHelper.hsl"
+}</pre></div>
+
+<h2>links Collection</h2>
+<p>Stores VENUS tool shortcuts and directory shortcuts displayed in the GUI sidebar. Records come in two types:</p>
+
+<h3>Tool Shortcut (type: "file")</h3>
+<div class="code"><pre>{
+  "_id": "met-editor",
+  "name": "Method Editor",
+  "description": "",
+  "icon-customImage": "HxMet.png",
+  "icon-class": "fa-folder",
+  "icon-color": "color-blue",
+  "path": "C:\\Program Files (x86)\\Hamilton\\Bin\\HxMetEd.exe",
+  "type": "file",
+  "default": true,
+  "favorite": true,
+  "last-started": "",
+  "last-startedUTC": 0
+}</pre></div>
+
+<h3>Directory Shortcut (type: "folder")</h3>
+<div class="code"><pre>{
+  "_id": "lib-folder",
+  "name": "Library",
+  "description": "VENUS software library files",
+  "icon-customImage": "",
+  "icon-class": "fa-folder",
+  "icon-color": "color-blue",
+  "path": "C:\\Program Files (x86)\\Hamilton\\Library",
+  "type": "folder",
+  "default": true,
+  "favorite": true
+}</pre></div>
+
+<h3>Default Links</h3>
+<table>
+<thead><tr><th>ID</th><th>Type</th><th>Name</th></tr></thead>
+<tbody>
+<tr><td><code>met-editor</code></td><td>file</td><td>Method Editor</td></tr>
+<tr><td><code>lc-editor</code></td><td>file</td><td>Liquid Class Editor</td></tr>
+<tr><td><code>lbw-editor</code></td><td>file</td><td>Labware Editor</td></tr>
+<tr><td><code>hsl-editor</code></td><td>file</td><td>HSL Editor</td></tr>
+<tr><td><code>sysCfg-editor</code></td><td>file</td><td>System Configuration Editor</td></tr>
+<tr><td><code>run-control</code></td><td>file</td><td>Run Control</td></tr>
+<tr><td><code>ham-version</code></td><td>file</td><td>Hamilton Version</td></tr>
+<tr><td><code>bin-folder</code></td><td>folder</td><td>Bin</td></tr>
+<tr><td><code>cfg-folder</code></td><td>folder</td><td>Config</td></tr>
+<tr><td><code>lbw-folder</code></td><td>folder</td><td>Labware</td></tr>
+<tr><td><code>lib-folder</code></td><td>folder</td><td>Library</td></tr>
+<tr><td><code>log-folder</code></td><td>folder</td><td>LogFiles</td></tr>
+<tr><td><code>met-folder</code></td><td>folder</td><td>Methods</td></tr>
+</tbody>
+</table>
+
+<div class="tip">
+<b>Note:</b> The <code>lib-folder</code> and <code>met-folder</code> links serve double duty - they provide user-facing shortcuts <i>and</i> are used by the CLI to resolve the library and methods installation directories.
+</div>
+
+<h2>groups Collection</h2>
+<p>Defines the navigation groups (tabs) shown in the GUI. The application uses a <b>two-tier group architecture</b>:</p>
+
+<h3>Default Groups (Hardcoded)</h3>
+<p>Six built-in groups are defined in a <code>DEFAULT_GROUPS</code> map in the application source code. These are <b>never stored</b> in <code>groups.json</code> - they are resolved in-memory at runtime. A startup migration automatically strips any stale default-group records from the JSON file to prevent duplicates.</p>
+
+<table>
+<thead><tr><th>ID</th><th>Name</th><th>Icon</th><th>Side</th><th>Purpose</th></tr></thead>
+<tbody>
+<tr><td><code>gAll</code></td><td>All</td><td><code>fa-th</code></td><td>left</td><td>Shows all installed libraries</td></tr>
+<tr><td><code>gRecent</code></td><td>Recent</td><td><code>fa-clock</code></td><td>left</td><td>Recently accessed libraries</td></tr>
+<tr><td><code>gHamilton</code></td><td>Hamilton</td><td><code>fa-check-circle</code> (solid)</td><td>left</td><td>Protected Hamilton-authored libraries</td></tr>
+<tr><td><code>gFolders</code></td><td>Import</td><td><code>fa-file-import</code></td><td>right</td><td>Import workflow tab</td></tr>
+<tr><td><code>gEditors</code></td><td>Export</td><td><code>fa-file-export</code></td><td>right</td><td>Export workflow tab</td></tr>
+<tr><td><code>gHistory</code></td><td>History</td><td><code>fa-history</code></td><td>right</td><td>Action history</td></tr>
+</tbody>
+</table>
+
+<p>The <code>gHamilton</code> group has an additional <code>"protected": true</code> property that prevents it from being deleted or renamed. See <a href="LibraryGrouping.html">Library Grouping</a> for full details on Hamilton group protections.</p>
+
+<h3>User-Created Groups (Stored in groups.json)</h3>
+<p>User-created groups have auto-generated <code>_id</code> values and <code>"default": false</code>. Each group has a name, FontAwesome icon class, and display metadata.</p>
+
+<div class="code"><pre>{
+  "_id": "gAll",
+  "name": "All",
+  "icon-class": "fa-th",
+  "default": true,
+  "navbar": "left",
+  "favorite": true
+}</pre></div>
+
+<h3>Default Groups</h3>
+<p>The following default groups are <b>hardcoded</b> and not stored in <code>groups.json</code>. See the table above for the complete list. The code sample below shows what a default group entry looks like in the <code>DEFAULT_GROUPS</code> map (but this is not persisted to disk):</p>
+
+<div class="code"><pre>// In-memory only - not stored in groups.json
+{
+  "_id": "gHamilton",
+  "name": "Hamilton",
+  "icon-class": "fa-check-circle",
+  "default": true,
+  "protected": true,
+  "navbar": "left",
+  "favorite": true
+}</pre></div>
+
+<p>User-created groups have auto-generated <code>_id</code> values and <code>"default": false</code>.</p>
+
+<h2>tree Collection</h2>
+<p>Maps groups to their member libraries. Each record links a <code>group-id</code> to an array of library <code>_id</code> values.</p>
+
+<div class="code"><pre>{
+  "_id": "0fd24a893e6544688b33102aa00739f3",
+  "group-id": "7d23d70f46ee4071adcfaffbb99f4f47",
+  "method-ids": [
+    "6398df8b4d2e4555b44b719910f3db60",
+    "73519ab128354b2bace3eb37ca237d20"
+  ],
+  "locked": false
+}</pre></div>
+
+<table>
+<thead><tr><th>Field</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>_id</code></td><td>Tree record ID</td></tr>
+<tr><td><code>group-id</code></td><td>The group this membership record belongs to</td></tr>
+<tr><td><code>method-ids</code></td><td>Array of library <code>_id</code> values assigned to this group</td></tr>
+<tr><td><code>locked</code></td><td>Whether the membership is locked against editing</td></tr>
+</tbody>
+</table>
+
+<h2>settings Collection</h2>
+<p>Stores application preferences. Always a single record with <code>_id</code> of <code>"0"</code>.</p>
+
+<p><b>Storage note:</b> Settings are intentionally stored in the application-local <code>db/settings.json</code> file (program directory), not in the user data directory. This keeps small, non-personally-identifiable toggle preferences local to the app install.</p>
+
+<div class="code"><pre>{
+  "_id": "0",
+  "recent-max": "20",
+  "chk_confirmBeforeInstall": true,
+  "chk_autoAddToGroup": true,
+  "chk_requireActionComment": false,
+  "chk_requireActionSignature": false,
+  "chk_showGitHubLinks": true,
+  "userDataPath": "C:\\Program Files (x86)\\Hamilton\\Library\\VenusLibraryManager",
+  "windowMaximized": true
+}</pre></div>
+
+<table>
+<thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>recent-max</code></td><td>string (number)</td><td>Maximum number of items in the Recent group</td></tr>
+<tr><td><code>chk_confirmBeforeInstall</code></td><td>boolean</td><td>Prompt for confirmation before importing</td></tr>
+<tr><td><code>chk_autoAddToGroup</code></td><td>boolean</td><td>Automatically assign imported libraries to a user-created group</td></tr>
+<tr><td><code>chk_hideSystemLibraries</code></td><td>boolean</td><td>Hide system libraries on the front page (libraries with warnings still shown)</td></tr>
+<tr><td><code>chk_showGitHubLinks</code></td><td>boolean</td><td>Show GitHub repository links in library detail views. Defaults to <code>true</code>. Disable for regulated environments where external links should not appear. See <a href="GitHubRepository.html">GitHub Repository</a>.</td></tr>
+<tr><td><code>chk_requireActionComment</code></td><td>boolean</td><td>Require audit comment fields for destructive/potentially destructive GUI actions</td></tr>
+<tr><td><code>chk_requireActionSignature</code></td><td>boolean</td><td>Require operator signature fields for destructive/potentially destructive GUI actions</td></tr>
+<tr><td><code>chk_includeUnsignedLibs</code></td><td>boolean</td><td>Enable unsigned library scanning and display (see <a href="UnsignedLibraries.html">Unsigned Libraries</a>)</td></tr>
+<tr><td><code>chk_scanUnsignedOnLaunch</code></td><td>boolean</td><td>Automatically scan for new unsigned libraries each time the application launches</td></tr>
+<tr><td><code>userDataPath</code></td><td>string</td><td>User data directory (where the user's copy of the database is stored)</td></tr>
+<tr><td><code>windowMaximized</code></td><td>boolean</td><td>Whether the main window should start maximized</td></tr>
+</tbody>
+</table>
+
+<h2>User Data Directory</h2>
+<p>The application database in the <code>db/</code> folder serves as the <b>default template</b>. On first run or when importing, the user's working database is stored at the configured <code>userDataPath</code>:</p>
+<div class="code"><pre>C:\Program Files (x86)\Hamilton\Library\VenusLibraryManager\</pre></div>
+<p>This directory mirrors the <code>db/</code> structure and contains the live, mutable copy of the database that reflects the current installation state. It also contains:</p>
+<ul>
+  <li><code>audit_trail.json</code> - A persistent audit trail recording all library lifecycle events (package creation, import, delete, rollback) with environmental context such as the Windows username, Windows OS version, VENUS version, and hostname. See <a href="LibraryAuditLog.html">Library Audit Log</a> for details.</li>
+  <li><code>system_library_metadata.json</code> - VENUS install metadata for system libraries (populated on first launch)</li>
+</ul>
+
+<h2>Related</h2>
+<ul>
+  <li><a href="LibraryGrouping.html">Library Grouping</a> - How groups and tree records work together</li>
+  <li><a href="IntegrityVerification.html">Integrity Verification</a> - How <code>file_hashes</code> are used</li>
+  <li><a href="VENUSIntegration.html">VENUS Integration</a> - Links and directory shortcuts</li>
+  <li><a href="GettingStarted.html">Getting Started</a> - User data directory setup</li>
+</ul>
+</div>
+<div class="footer">
+<p>Venus Library Manager Help</p>
+</div>
+</body>
+</html>

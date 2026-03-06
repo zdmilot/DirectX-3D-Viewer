@@ -1458,6 +1458,82 @@
   }
 
   /**
+   * Decompress an MSZIP-compressed .x file (tzip or bzip format).
+   *
+   * Layout after the 16-byte header:
+   *   4 bytes  – total decompressed size (uint32 LE, includes the 16-byte header)
+   *   Blocks[] – each block:
+   *     2 bytes – decompressed size of this block (uint16 LE)
+   *     2 bytes – compressed size of this block (uint16 LE)
+   *     N bytes – compressed data: 2-byte "CK" signature + raw deflate stream
+   *
+   * MSZIP blocks can reference the previous block's output as a LZ77 dictionary.
+   *
+   * @param {ArrayBuffer} arrayBuffer  The raw compressed file bytes.
+   * @returns {ArrayBuffer} The decompressed payload (binary .x data without header).
+   */
+  function decompressMSZIP(arrayBuffer) {
+    var view = new DataView(arrayBuffer);
+    var bytes = new Uint8Array(arrayBuffer);
+
+    if (typeof pako === 'undefined') {
+      throw 'pako library is required for compressed .x file support.';
+    }
+
+    // Total decompressed size at offset 16 (includes 16-byte header)
+    var totalDecomp = view.getUint32(16, true) - 16;
+    var result = new Uint8Array(totalDecomp);
+    var resultOffset = 0;
+    var off = 20; // past header (16) + total size field (4)
+    var prevBlock = null;
+
+    while (off < bytes.length - 4) {
+      var decompSize = view.getUint16(off, true);
+      var compSize   = view.getUint16(off + 2, true);
+      off += 4;
+
+      if (compSize === 0) break;
+      if (off + compSize > bytes.length) break;
+
+      // Verify CK signature
+      if (bytes[off] !== 0x43 || bytes[off + 1] !== 0x4B) { // 'C','K'
+        throw 'Invalid MSZIP block: missing CK signature at offset ' + off;
+      }
+
+      // Raw deflate data follows the 2-byte CK signature
+      var deflateData = bytes.subarray(off + 2, off + compSize);
+
+      // Inflate with optional dictionary from previous block
+      var inflateOpts = { raw: true };
+      if (prevBlock) {
+        var dictSlice = prevBlock.length > 32768
+          ? prevBlock.subarray(prevBlock.length - 32768)
+          : prevBlock;
+        inflateOpts.dictionary = dictSlice;
+      }
+      var inflator = new pako.Inflate(inflateOpts);
+      inflator.push(deflateData, true);
+      if (inflator.err) {
+        // Retry without dictionary (some encoders emit independent blocks)
+        inflator = new pako.Inflate({ raw: true });
+        inflator.push(deflateData, true);
+        if (inflator.err) {
+          throw 'MSZIP inflate error in block at offset ' + off + ': ' + inflator.msg;
+        }
+      }
+      var decompressed = inflator.result;
+
+      result.set(decompressed, resultOffset);
+      resultOffset += decompressed.length;
+      prevBlock = decompressed;
+
+      off += compSize;
+    }
+
+    return result.buffer.slice(0, resultOffset);
+  }
+
+  /**
    * Convert a binary .x ArrayBuffer into a text string that the
    * existing TextParser can parse.  Template definitions are
    * skipped; data tokens are expanded into their text equivalents.
@@ -1818,8 +1894,43 @@
             // Prepend a dummy first line because TextParser skips the first line
             parser = new TextParser('\n' + textFromBin);
 
+          } else if (this._headerInfo._fileCompressed) {
+            // ── COMPRESSED FORMAT (MSZIP: tzip or bzip) ──────────
+            var arrBuf = (typeof rawData === 'string') ? null : rawData;
+            if (!arrBuf) throw 'Compressed .x data must be loaded as ArrayBuffer.';
+            console.log('[XFileLoader] Compressed .x detected (format=' + this._headerInfo._fileFormat + ') — decompressing…');
+
+            var decompressedBuf = decompressMSZIP(arrBuf);
+
+            if (this._headerInfo._fileBinary) {
+              // bzip: decompressed data is binary tokens
+              var floatSize = parseInt(headerStr.substring(12, 16), 10) || 32;
+              console.log('[XFileLoader] bzip → binary-to-text conversion (floatSize=' + floatSize + ')');
+              // Build a fake ArrayBuffer with a 16-byte header so binaryToText can skip it
+              var withHeader = new Uint8Array(16 + decompressedBuf.byteLength);
+              // Copy original header
+              withHeader.set(new Uint8Array(arrBuf, 0, 16), 0);
+              withHeader.set(new Uint8Array(decompressedBuf), 16);
+              var textFromComp = binaryToText(withHeader.buffer, floatSize);
+              parser = new TextParser('\n' + textFromComp);
+            } else {
+              // tzip: decompressed data is plain text
+              var textData;
+              if (typeof TextDecoder !== 'undefined') {
+                textData = new TextDecoder('utf-8').decode(new Uint8Array(decompressedBuf));
+              } else {
+                var arr = new Uint8Array(decompressedBuf);
+                var ch = [];
+                var CK = 8192;
+                for (var ci = 0; ci < arr.length; ci += CK) {
+                  ch.push(String.fromCharCode.apply(null, arr.subarray(ci, Math.min(ci + CK, arr.length))));
+                }
+                textData = ch.join('');
+              }
+              parser = new TextParser(textData);
+            }
           } else {
-            throw 'Compressed .x files are not yet supported.';
+            throw 'Unsupported .x file format.';
           }
 
           // ── Common processing for both text and binary ────────
@@ -2170,7 +2281,10 @@
             mesh = new THREE.Mesh(geometry, materials.length === 1 ? materials[0] : materials);
           }
           mesh.name = this._currentMesh.name;
-          // Apply the full Frame transformation hierarchy to position the mesh correctly
+          // Apply the full Frame transformation hierarchy to position the mesh correctly.
+          // We bake the transform into the geometry (not the Object3D) so that the
+          // subsequent left-handed → right-handed X-flip in app.js operates on
+          // world-space vertices rather than local-frame vertices.
           if (currentObject && currentObject.transformation) {
             var worldBaseMx = new THREE.Matrix4();
             // Walk the Frame hierarchy from root to this frame, accumulating transforms
@@ -2186,7 +2300,7 @@
             for (var fi = frameChain.length - 1; fi >= 0; fi--) {
               worldBaseMx.multiply(frameChain[fi]);
             }
-            mesh.applyMatrix4(worldBaseMx);
+            geometry.applyMatrix4(worldBaseMx);
           }
           this.meshes.push(mesh);
         }

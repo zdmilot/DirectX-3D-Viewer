@@ -1,0 +1,185 @@
+﻿<html>
+<head>
+    <title>Package Formats</title>
+    <link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+<div class="header">Package Formats</div>
+<div class="main">
+<div class="breadcrumb"><a href="Overview.html">Venus Library Manager</a> &raquo; Package Formats</div>
+
+<h2>Overview</h2>
+<p>Venus Library Manager uses two file formats for distributing and archiving Hamilton VENUS libraries: <code>.hxlibpkg</code> (single library package) and <code>.hxlibarch</code> (multi-library archive). Both formats use a <b>custom binary container</b> that wraps an internal ZIP archive inside a proprietary envelope. The binary container prevents the files from being opened, browsed, or extracted using standard tools such as 7-Zip, WinRAR, or Windows Explorer.</p>
+
+<p>For full details on the binary container layer - including the header layout, XOR scrambling, HMAC-SHA256 integrity verification, and fail-closed design - see <a href="BinaryContainerFormat.html">Binary Container Format</a>.</p>
+
+<p>This page describes the <b>internal ZIP structure</b> that lives inside each binary container: the manifest, signature, file layout, and metadata schema.</p>
+
+<h2>Single Library Package (<code>.hxlibpkg</code>)</h2>
+<p>A <code>.hxlibpkg</code> file is a <a href="BinaryContainerFormat.html">binary container</a> that encapsulates one complete library: its source files, demo methods, icon, and all metadata needed to install and manage the library. The container's internal ZIP archive has the following structure:</p>
+
+<h3>Internal ZIP Structure</h3>
+<div class="code"><pre>MyLibrary.hxlibpkg (binary container → internal ZIP)
+  ├── manifest.json            &lt;-- Required: library metadata
+  ├── signature.json           &lt;-- Automatic: HMAC-SHA256 integrity signature
+  ├── library/                 &lt;-- Library payload files
+  │   ├── MyLibrary.hsl
+  │   ├── MyLibrary.hs_
+  │   ├── MyLibrary.stp
+  │   ├── MyLibrary.bmp
+  │   └── MyLibrary.chm
+  ├── demo_methods/            &lt;-- Optional: demo/example methods
+  │   ├── Demo_MyLibrary.hsl
+  │   └── Demo_MyLibrary.lay
+  └── icon/                    &lt;-- Optional: library icon image
+      └── MyLibrary.png</pre></div>
+
+<h3>Manifest (<code>manifest.json</code>)</h3>
+<p>Every <code>.hxlibpkg</code> must contain a <code>manifest.json</code> at the archive root. This file holds all metadata and the file inventory. Missing or invalid manifests cause the import to fail with an error.</p>
+
+<table>
+<thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>format_version</code></td><td>string</td><td>No</td><td>Package format version (currently <code>"1.0"</code>)</td></tr>
+<tr><td><code>library_name</code></td><td>string</td><td>Yes</td><td>Name of the library (used as the install directory name)</td></tr>
+<tr><td><code>author</code></td><td>string</td><td>Yes</td><td>Library author's name</td></tr>
+<tr><td><code>organization</code></td><td>string</td><td>No</td><td>Author's organization or company</td></tr>
+<tr><td><code>version</code></td><td>string</td><td>Yes</td><td>Library version string (e.g., <code>"1.0.0"</code>)</td></tr>
+<tr><td><code>venus_compatibility</code></td><td>string</td><td>No</td><td>Compatible VENUS version range (e.g., <code>"4.7+"</code>)</td></tr>
+<tr><td><code>description</code></td><td>string</td><td>No</td><td>Human-readable description of the library</td></tr>
+<tr><td><code>tags</code></td><td>string[]</td><td>No</td><td>Searchable keyword tags. The values <code>"System"</code> and <code>"Hamilton"</code> are reserved and cannot be used (case-insensitive).</td></tr>
+<tr><td><code>created_date</code></td><td>string</td><td>No</td><td>ISO 8601 timestamp of package creation</td></tr>
+<tr><td><code>library_image</code></td><td>string</td><td>No</td><td>Filename of the library icon image</td></tr>
+<tr><td><code>library_image_base64</code></td><td>string</td><td>No</td><td>Base64-encoded <b>raw</b> library image data (no overlay). The composited icon with the Library Manager logo overlay is stored separately in the <code>icon/</code> directory for Windows file-system display only (see <a href="VisualIdentity.html">Visual Identity</a>)</td></tr>
+<tr><td><code>library_image_mime</code></td><td>string</td><td>No</td><td>MIME type of the library image</td></tr>
+<tr><td><code>library_files</code></td><td>string[]</td><td>Yes</td><td>Basenames of all library payload files (including CHMs)</td></tr>
+<tr><td><code>demo_method_files</code></td><td>string[]</td><td>No</td><td>Basenames of demo method files</td></tr>
+<tr><td><code>help_files</code></td><td>string[]</td><td>No</td><td>Basenames of <code>.chm</code> help files</td></tr>
+<tr><td><code>com_register_dlls</code></td><td>string[]</td><td>No</td><td>Basenames of DLLs requiring COM registration</td></tr>
+</tbody>
+</table>
+
+<h3>Example Manifest</h3>
+<div class="code"><pre>{
+  "format_version": "1.0",
+  "library_name": "MyVenusLibrary",
+  "author": "Jane Smith",
+  "organization": "Acme Pharma",
+  "version": "1.0.0",
+  "venus_compatibility": "4.7+",
+  "description": "High-level pipetting helpers for the ML600.",
+  "tags": ["pipetting", "ML600"],
+  "created_date": "2026-01-15T10:30:00.000Z",
+  "library_image": "MyVenusLibrary.png",
+  "library_image_base64": "iVBORw0KGgo...",
+  "library_image_mime": "image/png",
+  "library_files": [
+    "MyVenusLibrary.hsl",
+    "MyVenusLibrary.hs_",
+    "MyVenusLibrary.stp",
+    "MyVenusLibrary.bmp"
+  ],
+  "demo_method_files": ["Demo_MyVenusLibrary.hsl"],
+  "help_files": ["MyVenusLibrary.chm"],
+  "com_register_dlls": []
+}</pre></div>
+
+<h3>Package Signature (<code>signature.json</code>)</h3>
+<p>Every <code>.hxlibpkg</code> created by Venus Library Manager includes a <code>signature.json</code> entry in the internal ZIP containing an HMAC-SHA256 cryptographic signature. This inner signature covers every other entry in the ZIP and provides per-file integrity verification, complementing the outer container-level HMAC that covers the entire file. See <a href="BinaryContainerFormat.html">Binary Container Format</a> for how these two integrity layers work together.</p>
+
+<table>
+<thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>algorithm</code></td><td>string</td><td>Always <code>"HMAC-SHA256"</code></td></tr>
+<tr><td><code>created</code></td><td>string</td><td>ISO 8601 timestamp of when the signature was generated</td></tr>
+<tr><td><code>files</code></td><td>object</td><td>Sorted map of <code>{ "entryName": "sha256hex" }</code> for every ZIP entry except <code>signature.json</code></td></tr>
+<tr><td><code>hmac</code></td><td>string</td><td>HMAC-SHA256 computed over the canonical JSON representation of the <code>files</code> map</td></tr>
+</tbody>
+</table>
+
+<h3>Example Signature</h3>
+<div class="code"><pre>{
+  "algorithm": "HMAC-SHA256",
+  "created": "2026-01-15T10:30:00.000Z",
+  "files": {
+    "demo_methods/Demo_MyVenusLibrary.hsl": "b2c3d4e5...",
+    "icon/MyVenusLibrary.png": "c3d4e5f6...",
+    "library/MyVenusLibrary.hsl": "d4e5f6a7...",
+    "library/MyVenusLibrary.hs_": "e5f6a7b8...",
+    "manifest.json": "a1b2c3d4..."
+  },
+  "hmac": "9f8e7d6c..."
+}</pre></div>
+
+<div class="note">
+<p><b>Note:</b> The inner <code>signature.json</code> provides per-file integrity checking within the ZIP. The outer binary container HMAC provides whole-file integrity checking. Together they form a defense-in-depth strategy. See <a href="BinaryContainerFormat.html">Binary Container Format</a> and <a href="IntegrityVerification.html">Integrity Verification</a> for details.</p>
+</div>
+
+<p>See <a href="IntegrityVerification.html">Integrity Verification</a> for details on how signing relates to file-level integrity checking, and <a href="CLIVerifyPackage.html">CLI: verify-package</a> for standalone package verification.</p>
+
+<h2>Multi-Library Archive (<code>.hxlibarch</code>)</h2>
+<p>A <code>.hxlibarch</code> file is a <a href="BinaryContainerFormat.html">binary container</a> whose internal ZIP contains multiple <code>.hxlibpkg</code> entries plus an archive-level manifest. Each inner <code>.hxlibpkg</code> entry is itself a full binary container (not a raw ZIP), providing consistent integrity verification at every level. See <a href="BinaryContainerFormat.html#nested">Nested Containers in Archives</a> for the nesting structure.</p>
+
+<h3>Internal ZIP Structure</h3>
+<div class="code"><pre>bundle.hxlibarch (binary container → internal ZIP)
+  ├── archive_manifest.json    &lt;-- Archive-level metadata
+  ├── LibraryA.hxlibpkg        &lt;-- Binary container for LibraryA
+  ├── LibraryB.hxlibpkg        &lt;-- Binary container for LibraryB
+  └── LibraryC.hxlibpkg        &lt;-- Binary container for LibraryC</pre></div>
+
+<h3>Archive Manifest (<code>archive_manifest.json</code>)</h3>
+<table>
+<thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>format_version</code></td><td>string</td><td>Archive format version (<code>"1.0"</code>)</td></tr>
+<tr><td><code>archive_type</code></td><td>string</td><td>Always <code>"hxlibarch"</code></td></tr>
+<tr><td><code>created_date</code></td><td>string</td><td>ISO 8601 timestamp of archive creation</td></tr>
+<tr><td><code>library_count</code></td><td>integer</td><td>Number of packages in the archive</td></tr>
+<tr><td><code>libraries</code></td><td>string[]</td><td>List of library names included</td></tr>
+<tr><td><code>archive_icon_base64</code></td><td>string</td><td>Base64-encoded purple archive icon PNG</td></tr>
+<tr><td><code>archive_icon_mime</code></td><td>string</td><td>MIME type of the archive icon (<code>"image/png"</code>)</td></tr>
+</tbody>
+</table>
+
+<p>In addition to the manifest fields, the archive ZIP also contains a physical icon file at <code>icon/archive_icon.png</code>. This purple archive icon (three stacked purple diamonds) visually identifies the file as a multi-library archive. See <a href="VisualIdentity.html">Visual Identity &amp; Assets</a> for details on how the icon is generated and stored.</p>
+
+<h2>Supported Image Formats</h2>
+<p>Library icons/images can use the following formats:</p>
+<table>
+<thead><tr><th>Extension</th><th>MIME Type</th></tr></thead>
+<tbody>
+<tr><td><code>.png</code></td><td><code>image/png</code></td></tr>
+<tr><td><code>.jpg</code> / <code>.jpeg</code></td><td><code>image/jpeg</code></td></tr>
+<tr><td><code>.bmp</code></td><td><code>image/bmp</code></td></tr>
+<tr><td><code>.gif</code></td><td><code>image/gif</code></td></tr>
+<tr><td><code>.ico</code></td><td><code>image/x-icon</code></td></tr>
+<tr><td><code>.svg</code></td><td><code>image/svg+xml</code></td></tr>
+</tbody>
+</table>
+
+<h2>File Type Reference</h2>
+<p>Library payload files can include any of the following Hamilton VENUS file types:</p>
+<table>
+<thead><tr><th>Extension</th><th>Description</th><th>Integrity Tracked</th></tr></thead>
+<tbody>
+<tr><td><code>.hsl</code></td><td>HSL library definition (primary entry point)</td><td>Yes (SHA-256 for user libs; footer for system libs)</td></tr>
+<tr><td><code>.hs_</code></td><td>HSL include / string table / implementation</td><td>Yes</td></tr>
+<tr><td><code>.hsi</code></td><td>HSL include (alternate convention)</td><td>No</td></tr>
+<tr><td><code>.smt</code></td><td>Step module template</td><td>Footer tracked for system libs only</td></tr>
+<tr><td><code>.stp</code></td><td>Step template parameters</td><td>No</td></tr>
+<tr><td><code>.sub</code></td><td>Sub-method file</td><td>Yes (SHA-256)</td></tr>
+<tr><td><code>.dll</code></td><td>Dynamic-link library (may require COM registration)</td><td>Yes (SHA-256, if COM-registered)</td></tr>
+<tr><td><code>.bmp</code></td><td>Library icon bitmap</td><td>No</td></tr>
+<tr><td><code>.chm</code></td><td>Compiled HTML Help file</td><td>No</td></tr>
+</tbody>
+</table>
+
+<div class="note">
+<p><b>Note:</b> During import, <code>.chm</code> files are automatically detected from the library files list and tracked separately in the <code>help_files</code> field so the GUI can provide quick-access help links.</p>
+</div>
+</div>
+<div class="footer">
+<p>Venus Library Manager Help</p>
+</div>
+</body>
+</html>

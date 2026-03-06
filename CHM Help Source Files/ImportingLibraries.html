@@ -1,0 +1,137 @@
+﻿<html>
+<head>
+    <title>Importing Libraries</title>
+    <link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+<div class="header">Importing Libraries</div>
+<div class="main">
+<div class="breadcrumb"><a href="Overview.html">Venus Library Manager</a> &raquo; Importing Libraries</div>
+
+<h2>Overview</h2>
+<p>Importing is the primary way to install new VENUS libraries. Venus Library Manager supports importing a single library package (<code>.hxlibpkg</code>) or a multi-library archive (<code>.hxlibarch</code>). Both file types use the <a href="BinaryContainerFormat.html">binary container format</a> - they are not plain ZIP files and cannot be opened by standard archive tools. Both the GUI and the CLI provide full import capabilities.</p>
+
+<h2>Single Package Import (<code>.hxlibpkg</code>)</h2>
+
+<h3>GUI Workflow</h3>
+<ol>
+  <li>Navigate to the <b>Import</b> tab in the main window</li>
+  <li>Browse and select a <code>.hxlibpkg</code> file</li>
+  <li>Venus Library Manager validates the <a href="BinaryContainerFormat.html">binary container</a> integrity (HMAC-SHA256), then reads the package contents and validates that a <code>manifest.json</code> is present</li>
+  <li><b>Signature verification:</b> The package's HMAC-SHA256 signature is checked. The result is displayed in a <b>Signature Status</b> section of the preview modal:
+    <ul>
+      <li><b>Verified</b> (green) - All file hashes match and the HMAC is valid</li>
+      <li><b>Unsigned</b> (yellow) - No signature found (legacy/third-party package). Import proceeds normally.</li>
+      <li><b>Failed</b> (red) - Package may be corrupt or tampered with. A confirmation dialog warns the user before proceeding.</li>
+    </ul>
+  </li>
+  <li>A <b>pre-install preview modal</b> appears showing:
+    <ul>
+      <li>Library metadata (name, version, author, organization, VENUS compatibility)</li>
+      <li>Embedded icon/image preview</li>
+      <li>Signature verification status</li>
+      <li>Lists of library files and demo method files</li>
+      <li>COM DLL indicators and registration notices</li>
+      <li>Destination install paths</li>
+      <li>An overwrite/update warning if a library with the same name is already installed</li>
+    </ul>
+  </li>
+  <li>Confirm the import to proceed</li>
+  <li>If the package is an upgrade/overwrite of an existing library, a destructive confirmation modal requires re-typing the library name before installation can continue</li>
+  <li>If audit-enforcement settings are enabled, the same destructive modal can also require an audit comment and/or operator signature before the action can proceed</li>
+</ol>
+<div class="image-placeholder">PLACE IMAGE OF IMPORT PREVIEW MODAL WITH LIBRARY METADATA AND SIGNATURE STATUS HERE</div>
+
+<h3>What Happens During Import</h3>
+<p>When an import is confirmed, Venus Library Manager performs the following steps in order:</p>
+<ol>
+  <li><b>Directory Creation:</b> Creates the target library directory at <code>&lt;Library Root&gt;\&lt;LibraryName&gt;</code> and the demo methods directory at <code>&lt;Methods Root&gt;\Library Demo Methods\&lt;LibraryName&gt;</code> if they do not exist</li>
+  <li><b>File Extraction:</b> Extracts all files from the <code>library/</code> folder in the ZIP to the library directory, and all files from <code>demo_methods/</code> to the demo directory. Help files from <code>help_files/</code> are also extracted to the library directory.</li>
+  <li><b>CHM Detection:</b> Any <code>.chm</code> files among the library files are automatically identified and tracked separately in the <code>help_files</code> field</li>
+  <li><b>COM Registration (GUI only):</b> If the manifest lists COM DLLs, the GUI initiates a UAC elevation flow to register them with <code>RegAsm.exe /codebase</code>. If registration fails, the user can choose to continue (with a warning badge) or cancel and clean up</li>
+  <li><b>Integrity Hashing:</b> SHA-256 hashes are computed for all tracked file types (<code>.hsl</code>, <code>.hs_</code>, <code>.sub</code>, and COM-registered <code>.dll</code> files) and stored in the database record</li>
+  <li><b>HSL Function Parsing:</b> Public function signatures are extracted from all <code>.hsl</code> files and stored in the database for indexing and display</li>
+  <li><b>Database Record:</b> A comprehensive record is created (or updated if overwriting) in the <code>installed_libs</code> collection, including all metadata, file lists, paths, hashes, and parsed functions</li>
+  <li><b>Group Assignment:</b> The library is automatically assigned to the first non-default custom group, or a new "Libraries" group is created if none exists</li>
+  <li><b>Package Caching:</b> The <code>.hxlibpkg</code> file is copied to the package store for future rollback</li>
+</ol>
+
+<h3>Post-Install Summary</h3>
+<p>After a successful import, the GUI displays a summary showing the number of extracted files, output paths, and COM registration outcome.</p>
+<div class="image-placeholder">PLACE IMAGE OF POST-IMPORT SUCCESS MODAL HERE</div>
+
+<h2>Archive Import (<code>.hxlibarch</code>)</h2>
+
+<h3>GUI Workflow</h3>
+<ol>
+  <li>Use the <b>Import Archive</b> workflow from the Import tab</li>
+  <li>Select a <code>.hxlibarch</code> file</li>
+  <li>Venus Library Manager validates the archive and lists all contained <code>.hxlibpkg</code> entries</li>
+  <li>If conflicts are detected (same library already installed), a conflict-resolution modal requires an explicit decision per library: <b>Skip</b> or <b>Overwrite</b></li>
+  <li>The import cannot continue until every conflict row has an explicit action</li>
+  <li>If at least one conflict is set to overwrite and audit-enforcement settings are enabled, the modal also requires audit comment/signature fields before continuing</li>
+</ol>
+
+<h3>Archive Processing</h3>
+<p>Each embedded <code>.hxlibpkg</code> is extracted and installed sequentially using the same process as single-package import. For each package:</p>
+<ul>
+  <li>The inner <code>.hxlibpkg</code> binary container is validated, opened, and its HMAC-SHA256 signature is verified - packages that fail container or signature verification are <b>automatically rejected</b> and skipped</li>
+  <li>The inner package’s <code>manifest.json</code> is read</li>
+  <li>Files are extracted to the appropriate directories</li>
+  <li>Integrity hashes are computed</li>
+  <li>The database record is created/updated</li>
+  <li>The package is cached in the package store</li>
+  <li>Group auto-assignment is performed based on settings</li>
+</ul>
+<p>An aggregate completion summary reports per-library success or failure. The library card view refreshes after the import completes.</p>
+
+<h2>CLI Import</h2>
+<p>See <a href="CLIImportLib.html">CLI: import-lib</a> for single package imports and <a href="CLIImportArchive.html">CLI: import-archive</a> for archive imports.</p>
+
+<h2>Overwrite Behavior</h2>
+<p>If a library with the same name is already installed:</p>
+<ul>
+  <li><b>GUI:</b> The pre-install preview shows a warning. The user must complete a destructive confirmation modal by typing the exact library name before overwrite is allowed.</li>
+  <li><b>CLI:</b> The command fails with an error unless <code>--force</code> is specified. With <code>--force</code>, the existing database record is removed and the new package is installed in its place.</li>
+</ul>
+
+<h3>Audit Comment and Signature Requirements</h3>
+<p>In GUI workflows, overwrite/upgrade actions can be configured to require additional audit fields:</p>
+<ul>
+  <li><b>Required Audit Comment:</b> At least 26 characters, must include a space, must contain more than 10 letters, and must include at least one sequence of 2 or more letters.</li>
+  <li><b>Required Signature:</b> Must be longer than 4 characters and include at least one space (intended to enforce first + last name style signatures).</li>
+  <li>These fields appear only when enabled in Settings; otherwise they are hidden and not required.</li>
+</ul>
+
+<div class="warning">
+<p><b>Warning:</b> Overwriting a library replaces all existing files and the database record. The previous version is only recoverable if it was cached in the package store. Use <a href="VersionRollback.html">Version Rollback</a> to restore earlier versions.</p>
+</div>
+
+<h2>COM DLL Registration</h2>
+<p>Some libraries include .NET DLLs that must be registered as COM objects for use in VENUS methods. The manifest's <code>com_register_dlls</code> field identifies which DLLs require this.</p>
+<ul>
+  <li><b>GUI:</b> Automatically initiates COM registration via <code>RegAsm.exe /codebase</code> with UAC elevation during import</li>
+  <li><b>CLI:</b> Does <b>not</b> perform COM registration automatically. The CLI records COM DLL intent in the database. You must run <code>RegAsm.exe /codebase &lt;dll&gt;</code> manually with administrator rights after import.</li>
+</ul>
+
+<div class="note">
+<p><b>Note:</b> COM registration requires administrator privileges. If registration fails in the GUI, you are given the choice to continue the import (with a COM warning badge on the library card) or cancel and clean up the extracted files.</p>
+</div>
+
+<h2>Audit Trail</h2>
+<p>Every import operation (single package or archive) is automatically recorded in the persistent <b>audit trail</b> (<code>audit_trail.json</code>). The entry captures:</p>
+<ul>
+  <li>The Windows username of the person who performed the import</li>
+  <li>The Windows OS version of the importing machine</li>
+  <li>The installed Hamilton VENUS version at the time of import</li>
+  <li>The computer hostname</li>
+  <li>The library name, version, author, source file path, install paths, and signature verification status</li>
+  <li>When required in GUI destructive flows, operator-provided <code>action_comment</code> and <code>action_signature</code> values</li>
+</ul>
+<p>This enables full traceability of who installed each library, on which system, and under what environmental conditions. Combined with the packaging audit trail entry (recorded on the packager's machine), a complete chain of custody is established from package creation to deployment. See <a href="LibraryAuditLog.html">Library Audit Log</a> for details.</p>
+</div>
+<div class="footer">
+<p>Venus Library Manager Help</p>
+</div>
+</body>
+</html>

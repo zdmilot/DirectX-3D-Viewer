@@ -58,8 +58,6 @@
         const gridColor = exState.isDark ? DARK_GRID : LIGHT_GRID;
         const grid = new THREE.GridHelper(200, 20, gridColor, gridColor);
         grid.name = '__exgrid__';
-        grid.renderOrder = -1;
-        grid.material.depthWrite = false;
         grid.visible = exState.gridVisible;
         scene.add(grid);
 
@@ -194,8 +192,6 @@
         const gc = exState.isDark ? DARK_GRID : LIGHT_GRID;
         const newGrid = new THREE.GridHelper(exState.modelMaxDim * 3, 20, gc, gc);
         newGrid.name = '__exgrid__';
-        newGrid.renderOrder = -1;
-        newGrid.material.depthWrite = false;
         newGrid.visible = exState.gridVisible;
         newGrid.position.y = -size.y / 2 - exState.modelMaxDim * 0.002;
         exState.scene.add(newGrid);

@@ -1,0 +1,76 @@
+<html>
+<head>
+    <title>CLI: import-archive</title>
+    <link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+<div class="header">CLI: import-archive</div>
+<div class="main">
+<div class="breadcrumb"><a href="Overview.html">Venus Library Manager</a> &raquo; <a href="CLIReference.html">CLI Reference</a> &raquo; import-archive</div>
+
+<h2>Description</h2>
+<p>Extracts every <code>.hxlibpkg</code> embedded inside a <code>.hxlibarch</code> ZIP archive and installs each one sequentially. This is the batch import command for multi-library distribution bundles. Each inner package's HMAC-SHA256 signature is verified before installation - packages that fail verification are automatically skipped.</p>
+
+<h2>Usage</h2>
+<div class="code"><pre>node cli.js import-archive --file &lt;path&gt; [options]</pre></div>
+
+<h2>Options</h2>
+<table>
+<thead><tr><th>Flag</th><th>Required</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>--file &lt;path&gt;</code></td><td><span class="badge badge-required">Required</span></td><td>Path to the <code>.hxlibarch</code> file</td></tr>
+<tr><td><code>--lib-dir &lt;path&gt;</code></td><td>No</td><td>Override library install root</td></tr>
+<tr><td><code>--met-dir &lt;path&gt;</code></td><td>No</td><td>Override methods (demo) install root</td></tr>
+<tr><td><code>--force</code></td><td>No</td><td>Overwrite already-installed libraries without error</td></tr>
+<tr><td><code>--no-group</code></td><td>No</td><td>Skip auto-assigning libraries to groups</td></tr>
+<tr><td><code>--no-cache</code></td><td>No</td><td>Skip caching packages in the package store</td></tr>
+<tr><td><code>--db-path &lt;dir&gt;</code></td><td>No</td><td>Override the user data directory path</td></tr>
+<tr><td><code>--store-dir &lt;dir&gt;</code></td><td>No</td><td>Override the package store directory</td></tr>
+</tbody>
+</table>
+
+<h2>Processing</h2>
+<ol>
+  <li>The <code>.hxlibarch</code> file is opened as a ZIP archive</li>
+  <li>All entries ending in <code>.hxlibpkg</code> are identified (non-package entries are ignored)</li>
+  <li>If no <code>.hxlibpkg</code> entries are found, the command fails</li>
+  <li>Each <code>.hxlibpkg</code> entry is processed sequentially:
+    <ul>
+      <li>The inner ZIP is opened in memory and its HMAC-SHA256 signature is verified (failed packages are skipped)</li>
+      <li>The inner ZIP's <code>manifest.json</code> is read</li>
+      <li>If a library with the same name exists without <code>--force</code>, that entry is skipped as an error</li>
+      <li>Files are extracted, hashes computed, functions parsed, and the database record created</li>
+      <li>The inner package is cached in the package store</li>
+    </ul>
+  </li>
+  <li>An aggregate summary is printed showing success and failure counts</li>
+</ol>
+
+<h2>Examples</h2>
+<div class="code"><pre>:: Import all libraries in a bundle
+node cli.js import-archive --file bundle.hxlibarch
+
+:: Force overwrite all
+node cli.js import-archive --file bundle.hxlibarch --force
+
+:: Use custom paths and test database
+node cli.js import-archive --file bundle.hxlibarch ^
+    --db-path tests\scratch-db ^
+    --lib-dir tests\scratch-lib ^
+    --met-dir tests\scratch-met</pre></div>
+
+<h2>Exit Behavior</h2>
+<p>If any individual package fails to import, the remaining packages still attempt to install. The command exits with code <code>1</code> if one or more packages failed. Individual failure messages are printed to stderr.</p>
+
+<h2>Related</h2>
+<ul>
+  <li><a href="ImportingLibraries.html">Importing Libraries</a></li>
+  <li><a href="CLIImportLib.html">CLI: import-lib</a></li>
+  <li><a href="PackageFormats.html">Package Formats</a></li>
+</ul>
+</div>
+<div class="footer">
+<p>Venus Library Manager Help</p>
+</div>
+</body>
+</html>

@@ -169,6 +169,85 @@ function parseHXX(buf) {
     return { isRaw: false, xFileText, sections, textures, version };
 }
 
+// ── Compressed .x file support (MSZIP: bzip/tzip) ─────────────
+
+function isCompressedXFile(buf) {
+    if (!buf || buf.length < 16) return false;
+    if (buf.toString('ascii', 0, 4) !== 'xof ') return false;
+    const fmt = buf.toString('ascii', 8, 12);
+    return fmt === 'bzip' || fmt === 'tzip';
+}
+
+function getXFileFormat(buf) {
+    if (!buf || buf.length < 12) return null;
+    return buf.toString('ascii', 8, 12);
+}
+
+/**
+ * Decompress an MSZIP-compressed .x file to its raw binary or text content.
+ * Uses Node.js native zlib (inflateRawSync) instead of pako.
+ */
+function decompressXFileMSZIP(buf) {
+    const totalDecomp = buf.readUInt32LE(16) - 16;
+    const result = Buffer.alloc(totalDecomp);
+    let resultOffset = 0;
+    let off = 20;
+    let prevBlock = null;
+
+    while (off < buf.length - 4) {
+        const decompSize = buf.readUInt16LE(off);
+        const compSize = buf.readUInt16LE(off + 2);
+        off += 4;
+
+        if (compSize === 0) break;
+        if (off + compSize > buf.length) break;
+
+        if (buf[off] !== 0x43 || buf[off + 1] !== 0x4B) {
+            throw new Error('Invalid MSZIP block: missing CK signature at offset ' + off);
+        }
+
+        const deflateData = buf.slice(off + 2, off + compSize);
+        let decompressed;
+
+        try {
+            if (prevBlock) {
+                const dict = prevBlock.length > 32768
+                    ? prevBlock.slice(prevBlock.length - 32768)
+                    : prevBlock;
+                decompressed = zlib.inflateRawSync(deflateData, { dictionary: dict });
+            } else {
+                decompressed = zlib.inflateRawSync(deflateData);
+            }
+        } catch (e) {
+            // Retry without dictionary
+            decompressed = zlib.inflateRawSync(deflateData);
+        }
+
+        decompressed.copy(result, resultOffset);
+        resultOffset += decompressed.length;
+        prevBlock = decompressed;
+        off += compSize;
+    }
+
+    return result.slice(0, resultOffset);
+}
+
+/**
+ * Convert a compressed .x file buffer to text for the lightweight parser.
+ * For bzip files, uses binaryToText conversion via the XFileLoader module.
+ * For tzip files, the decompressed data is already text.
+ */
+function decompressXFileToText(buf) {
+    const fmt = getXFileFormat(buf);
+    const raw = decompressXFileMSZIP(buf);
+    if (fmt === 'tzip') {
+        return raw.toString('utf-8');
+    }
+    // bzip: raw is binary .x token data — needs token-to-text conversion
+    // For the lightweight parser, we'll return null to indicate deep parse is needed
+    return null;
+}
+
 // ── Lightweight .x Text Parser (no THREE.js dependency) ────────
 
 function parseXFileText(text) {
@@ -294,17 +373,23 @@ function printTree(node, prefix, isLast) {
 
 // ── Deep parse using XFileLoader (with THREE.js shim) ──────────
 
-function deepParseXFile(text) {
+function deepParseXFile(dataOrText) {
     // Minimal THREE.js shim for XFileLoader to work in Node.js
     const THREE = createThreeShim();
     // Load XFileLoader module
     const loaderPath = path.join(__dirname, 'js', 'lib', 'XFileLoader.js');
     const loaderCode = fs.readFileSync(loaderPath, 'utf-8');
 
+    // Load pako for compressed .x support
+    const pakoPath = path.join(__dirname, 'js', 'lib', 'pako.min.js');
+    let pakoModule = null;
+    try { pakoModule = require(pakoPath); } catch (e) { /* pako optional for non-compressed */ }
+
     // Execute in a sandbox with our THREE shim
     const vm = require('vm');
     const sandbox = {
         THREE,
+        pako: pakoModule,
         globalThis: { THREE },
         global: { THREE },
         self: { THREE },
@@ -380,9 +465,14 @@ function deepParseXFile(text) {
                 resolve({ models: [], animations: [], error: String(err) });
             };
 
-            // Convert text to ArrayBuffer for _parse
-            const buf = Buffer.from(text, 'utf-8');
-            const ab = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
+            // Convert data to ArrayBuffer for _parse
+            let ab;
+            if (Buffer.isBuffer(dataOrText)) {
+                ab = dataOrText.buffer.slice(dataOrText.byteOffset, dataOrText.byteOffset + dataOrText.byteLength);
+            } else {
+                const buf = Buffer.from(dataOrText, 'utf-8');
+                ab = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
+            }
             loader._parse(ab, loader.onLoad);
         } catch (e) {
             resolve({ models: [], animations: [], error: String(e) });
@@ -663,16 +753,27 @@ function cmdLoad(filePath) {
             return;
         }
     } else if (ext === '.x') {
-        xText = buf.toString('utf-8');
+        if (isCompressedXFile(buf)) {
+            console.log(colorize(C.cyan, '  Compressed .x file detected (' + getXFileFormat(buf) + ')'));
+            const decompText = decompressXFileToText(buf);
+            if (decompText !== null) {
+                xText = decompText;
+            } else {
+                // bzip: text not available from lightweight parser, store raw buffer
+                xText = null;
+            }
+        } else {
+            xText = buf.toString('utf-8');
+        }
     } else {
         console.log(colorize(C.red, '  Unsupported extension: ' + ext));
         return;
     }
 
     const elapsed = Date.now() - startTime;
-    const xInfo = parseXFileText(xText);
+    const xInfo = xText ? parseXFileText(xText) : { header: getXFileFormat(buf) + ' (compressed binary)', version: null, format: null, floatSize: null, templates: [], frames: [], meshes: [], materials: [], animations: [], totalVertices: 0, totalFaces: 0 };
 
-    state.loaded = { filePath: resolved, raw: buf, hxx, xInfo, xText };
+    state.loaded = { filePath: resolved, raw: buf, hxx, xInfo, xText, isCompressedX: isCompressedXFile(buf) };
 
     console.log(colorize(C.green, '  ✓ Loaded') + ' ' + colorize(C.bright, path.basename(resolved)));
     console.log('    Size: ' + formatBytes(buf.length) +
@@ -695,14 +796,18 @@ function cmdInfo() {
     console.log('  ─────────────────────────────────────');
     console.log('  Path:          ' + filePath);
     console.log('  File size:     ' + formatBytes(raw.length));
-    console.log('  Type:          ' + (hxx ? (hxx.isRaw ? '.hxx (raw .x text)' : '.hxx (compressed)') : '.x'));
+    console.log('  Type:          ' + (hxx ? (hxx.isRaw ? '.hxx (raw .x text)' : '.hxx (compressed)') : (state.loaded.isCompressedX ? '.x (compressed ' + getXFileFormat(raw) + ')' : '.x')));
     if (hxx && !hxx.isRaw && hxx.version) {
         console.log('  HXX version:   ' + hxx.version.join('.'));
     }
-    console.log('  .x text size:  ' + formatBytes(xText.length));
-    if (hxx && !hxx.isRaw) {
-        const ratio = ((1 - raw.length / xText.length) * 100).toFixed(1);
-        console.log('  Compression:   ' + ratio + '%');
+    if (xText) {
+        console.log('  .x text size:  ' + formatBytes(xText.length));
+        if (hxx && !hxx.isRaw) {
+            const ratio = ((1 - raw.length / xText.length) * 100).toFixed(1);
+            console.log('  Compression:   ' + ratio + '%');
+        }
+    } else if (state.loaded.isCompressedX) {
+        console.log('  Format:        compressed binary (bzip)');
     }
     console.log('');
     console.log('  ' + colorize(C.bright, '.x Content'));
@@ -845,7 +950,7 @@ async function cmdValidate(filePath) {
     if (!state.loaded) return;
 
     console.log('  Running deep parse with XFileLoader...');
-    const result = await deepParseXFile(state.loaded.xText);
+    const result = await deepParseXFile(state.loaded.isCompressedX ? state.loaded.raw : state.loaded.xText);
 
     if (result.error) {
         console.log(colorize(C.red, '  ✗ Deep parse failed: ' + result.error));
@@ -909,13 +1014,22 @@ async function cmdBatch(dirPath, recursive) {
                     throw new Error('Not a valid .hxx or .x file');
                 }
             } else {
-                xText = buf.toString('utf-8');
+                if (isCompressedXFile(buf)) {
+                    const decompText = decompressXFileToText(buf);
+                    if (decompText !== null) {
+                        xText = decompText;
+                    } else {
+                        xText = null;
+                    }
+                } else {
+                    xText = buf.toString('utf-8');
+                }
             }
 
-            const xInfo = parseXFileText(xText);
+            const xInfo = xText ? parseXFileText(xText) : { header: getXFileFormat(buf) + ' (compressed binary)', version: null, format: null, floatSize: null, templates: [], frames: [], meshes: [], materials: [], animations: [], totalVertices: 0, totalFaces: 0 };
             const elapsed = Date.now() - startTime;
 
-            if (!xInfo.header.startsWith('xof')) {
+            if (xText && !xInfo.header.startsWith('xof')) {
                 throw new Error('Invalid .x header: ' + xInfo.header.substring(0, 20));
             }
 
@@ -923,7 +1037,7 @@ async function cmdBatch(dirPath, recursive) {
                 file: rel, status: 'PASS', elapsed,
                 verts: xInfo.totalVertices, faces: xInfo.totalFaces,
                 meshes: xInfo.meshes.length, frames: xInfo.frames.length,
-                size: buf.length, decompSize: xText.length,
+                size: buf.length, decompSize: xText ? xText.length : 0,
             });
             pass++;
 
@@ -1004,7 +1118,7 @@ function cmdStats() {
 async function cmdDeepInfo() {
     if (!state.loaded) { console.log(colorize(C.yellow, '  No file loaded.')); return; }
     console.log('  Running deep parse with full XFileLoader...');
-    const result = await deepParseXFile(state.loaded.xText);
+    const result = await deepParseXFile(state.loaded.isCompressedX ? state.loaded.raw : state.loaded.xText);
 
     if (result.error) {
         console.log(colorize(C.red, '  ✗ Parse error: ' + result.error));

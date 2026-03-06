@@ -1,0 +1,66 @@
+<html>
+<head>
+    <title>CLI: list-libs</title>
+    <link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+<div class="header">CLI: list-libs</div>
+<div class="main">
+<div class="breadcrumb"><a href="Overview.html">Venus Library Manager</a> &raquo; <a href="CLIReference.html">CLI Reference</a> &raquo; list-libs</div>
+
+<h2>Description</h2>
+<p>Prints a summary of every installed library record in the database. For each library, displays the database ID, name, version, author, tags, install paths, install date, COM DLL list, and public function signatures parsed from <code>.hsl</code> files.</p>
+
+<h2>Usage</h2>
+<div class="code"><pre>node cli.js list-libs [options]</pre></div>
+
+<h2>Options</h2>
+<table>
+<thead><tr><th>Flag</th><th>Required</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>--include-deleted</code></td><td>No</td><td>Include soft-deleted library entries in the output. By default, deleted libraries are hidden.</td></tr>
+<tr><td><code>--json</code></td><td>No</td><td>Output the full library records as a raw JSON array. Useful for scripting and piping to other tools.</td></tr>
+<tr><td><code>--db-path &lt;dir&gt;</code></td><td>No</td><td>Override the user data directory path</td></tr>
+</tbody>
+</table>
+
+<h2>Output Format</h2>
+<p>In human-readable mode, each library is printed with labeled fields followed by a separator line. Public function signatures are listed with their qualified names, parameter types, and return types.</p>
+<p>In JSON mode (<code>--json</code>), the full database record array is printed, including all metadata, file lists, hashes, and parsed function data.</p>
+
+<h2>Examples</h2>
+<div class="code"><pre>:: Human-readable summary
+node cli.js list-libs
+
+:: JSON output for scripting
+node cli.js list-libs --json
+
+:: Include deleted libraries
+node cli.js list-libs --include-deleted --json
+
+:: Against a specific database
+node cli.js list-libs --db-path D:\test\scratch-db</pre></div>
+
+<h2>Sample Output (Human-Readable)</h2>
+<div class="code"><pre>Installed Libraries
+================================================================
+  ID:          a1b2c3d4
+  Name:        MyVenusLibrary
+  Version:     1.0.0
+  Author:      Jane Smith
+  Tags:        pipetting, ML600
+  Lib path:    C:\Program Files (x86)\HAMILTON\Library\MyVenusLibrary
+  Demo path:   C:\Program Files (x86)\HAMILTON\Methods\Library Demo Methods\MyVenusLibrary
+  Installed:   2026-01-15T10:30:00.000Z
+  Functions (3):
+    MyVenusLibrary::Init(variable config) void
+    MyVenusLibrary::Pipette(variable& volume, variable channel) variable
+    MyVenusLibrary::Cleanup() void
+----------------------------------------------------------------
+Total: 1 library</pre></div>
+</div>
+<div class="footer">
+<p>Venus Library Manager Help</p>
+</div>
+</body>
+</html>

@@ -1,0 +1,97 @@
+<html>
+<head>
+    <title>CLI: create-package</title>
+    <link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+<div class="header">CLI: create-package</div>
+<div class="main">
+<div class="breadcrumb"><a href="Overview.html">Venus Library Manager</a> &raquo; <a href="CLIReference.html">CLI Reference</a> &raquo; create-package</div>
+
+<h2>Description</h2>
+<p>Creates a <code>.hxlibpkg</code> from library source files and metadata defined in a JSON specification file. This is the CLI equivalent of the GUI Library Packager, ideal for automated builds and CI/CD pipelines. The resulting package is automatically signed with an HMAC-SHA256 integrity signature (see <a href="IntegrityVerification.html">Integrity Verification</a>).</p>
+
+<h2>Usage</h2>
+<div class="code"><pre>node cli.js create-package --spec &lt;spec.json&gt; --output &lt;output.hxlibpkg&gt;</pre></div>
+
+<h2>Options</h2>
+<table>
+<thead><tr><th>Flag</th><th>Required</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>--spec &lt;path&gt;</code></td><td><span class="badge badge-required">Required</span></td><td>Path to the JSON specification file (see <a href="PackageSpecSchema.html">Package Spec JSON Schema</a>)</td></tr>
+<tr><td><code>--output &lt;path&gt;</code></td><td><span class="badge badge-required">Required</span></td><td>Output <code>.hxlibpkg</code> file path</td></tr>
+</tbody>
+</table>
+
+<h2>Specification File</h2>
+<p>The spec file is a JSON document that defines all metadata and which files to bundle. It is validated against <a href="PackageSpecSchema.html"><code>cli-schema.json</code></a>. All file paths are resolved <b>relative to the directory containing the spec file</b>.</p>
+
+<h3>Required Fields</h3>
+<table>
+<thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>author</code></td><td>string</td><td>Library author name</td></tr>
+<tr><td><code>version</code></td><td>string</td><td>Library version string (e.g., <code>"1.0.0"</code>)</td></tr>
+<tr><td><code>library_files</code></td><td>string[]</td><td>Paths to library payload files (at least one required)</td></tr>
+</tbody>
+</table>
+
+<h3>Optional Fields</h3>
+<table>
+<thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>library_name</code></td><td>string</td><td>Override library name. Auto-detected from <code>.hsl</code>/<code>.hs_</code>/<code>.smt</code> if omitted</td></tr>
+<tr><td><code>organization</code></td><td>string</td><td>Author's organization</td></tr>
+<tr><td><code>venus_compatibility</code></td><td>string</td><td>VENUS version compatibility</td></tr>
+<tr><td><code>description</code></td><td>string</td><td>Human-readable description</td></tr>
+<tr><td><code>tags</code></td><td>string[]</td><td>Searchable keyword tags. The values <code>"System"</code> and <code>"Hamilton"</code> are <b>reserved</b> and will cause the command to fail with an error (case-insensitive).</td></tr>
+<tr><td><code>library_image</code></td><td>string</td><td>Path to icon/image file. Falls back to matching <code>.bmp</code> if omitted</td></tr>
+<tr><td><code>demo_method_files</code></td><td>string[]</td><td>Paths to demo/example method files</td></tr>
+<tr><td><code>help_files</code></td><td>string[]</td><td>Basenames of <code>.chm</code> help files</td></tr>
+<tr><td><code>com_register_dlls</code></td><td>string[]</td><td>Basenames of DLLs requiring COM registration</td></tr>
+</tbody>
+</table>
+
+<h2>Library Name Auto-Detection</h2>
+<p>If <code>library_name</code> is not specified in the spec, it is auto-detected using this priority:</p>
+<ol>
+  <li>Basename of the first <code>.hsl</code> file (without extension)</li>
+  <li>Basename of the first <code>.hs_</code> file (without extension)</li>
+  <li>Basename of the first <code>.smt</code> file (without extension)</li>
+  <li>Parent directory name of the first library file</li>
+</ol>
+
+<h2>Image Handling</h2>
+<p>If <code>library_image</code> is specified and the file exists, it is embedded as the library icon (base64-encoded in the manifest and packed into the <code>icon/</code> directory).</p>
+<p>If no image is specified, the packager looks for a <code>.bmp</code> file among the library files whose basename (lowercase) matches the library name. If found, it is used as the icon.</p>
+
+<h2>Examples</h2>
+<div class="code"><pre>:: Basic package creation
+node cli.js create-package --spec MyLib.spec.json --output MyLib.hxlibpkg
+
+:: Output to a subdirectory
+node cli.js create-package --spec specs/proj.json --output dist/proj.hxlibpkg</pre></div>
+
+<h2>Validation</h2>
+<p>The command validates before building:</p>
+<ul>
+  <li><code>author</code> is present</li>
+  <li><code>version</code> is present</li>
+  <li><code>library_files</code> has at least one entry</li>
+  <li>All referenced files exist on disk</li>
+  <li>All referenced help files exist on disk</li>
+</ul>
+<p>If any validation fails, the command prints a descriptive error and exits.</p>
+
+<h2>Related</h2>
+<ul>
+  <li><a href="CreatingPackages.html">Creating Packages</a></li>
+  <li><a href="PackageSpecSchema.html">Package Spec JSON Schema</a></li>
+  <li><a href="PackageFormats.html">Package Formats</a></li>
+</ul>
+</div>
+<div class="footer">
+<p>Venus Library Manager Help</p>
+</div>
+</body>
+</html>
