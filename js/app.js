@@ -433,8 +433,6 @@
         const gridColor = state.isDark ? DARK_GRID : LIGHT_GRID;
         const grid = new THREE.GridHelper(200, 20, gridColor, gridColor);
         grid.name = '__grid__';
-        grid.renderOrder = -1;
-        grid.material.depthWrite = false;
         grid.visible = state.gridVisible;
         scene.add(grid);
 
@@ -624,10 +622,6 @@
                 const gColor = state.isDark ? DARK_GRID : LIGHT_GRID;
                 const newGrid = new THREE.GridHelper(gridSize, gridDiv, gColor, gColor);
                 newGrid.name = '__grid__';
-                // Render grid behind everything & disable depth write
-                // so grid lines never z-fight with model surfaces
-                newGrid.renderOrder = -1;
-                newGrid.material.depthWrite = false;
                 newGrid.visible = state.gridVisible;
                 // Position grid slightly below model bottom to avoid z-fighting
                 newGrid.position.y = -size.y / 2 - maxDim * 0.002;

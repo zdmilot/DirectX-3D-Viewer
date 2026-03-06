@@ -97,8 +97,6 @@
         const gc = cvState.isDark ? DARK_GRID : LIGHT_GRID;
         const grid = new THREE.GridHelper(10, 20, gc, gc);
         grid.name = '__cvgrid__';
-        grid.renderOrder = -1;
-        grid.material.depthWrite = false;
         grid.visible = cvState.gridVisible;
         cvState.scene.add(grid);
 
@@ -398,8 +396,6 @@
         const gc = cvState.isDark ? DARK_GRID : LIGHT_GRID;
         const newGrid = new THREE.GridHelper(cvState.modelMaxDim * 3, 20, gc, gc);
         newGrid.name = '__cvgrid__';
-        newGrid.renderOrder = -1;
-        newGrid.material.depthWrite = false;
         newGrid.position.y = -size.y / 2 - cvState.modelMaxDim * 0.002;
         cvState.scene.add(newGrid);
 

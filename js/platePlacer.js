@@ -104,8 +104,6 @@
         const gc = ppState.isDark ? DARK_GRID : LIGHT_GRID;
         const grid = new THREE.GridHelper(400, 40, gc, gc);
         grid.name = '__ppgrid__';
-        grid.renderOrder = -1;
-        grid.material.depthWrite = false;
         grid.visible = ppState.gridVisible;
         ppState.scene.add(grid);
 
@@ -327,8 +325,6 @@
                 const gColor = ppState.isDark ? DARK_GRID : LIGHT_GRID;
                 const newGrid = new THREE.GridHelper(gridSize, gridDiv, gColor, gColor);
                 newGrid.name = '__ppgrid__';
-                newGrid.renderOrder = -1;
-                newGrid.material.depthWrite = false;
                 newGrid.visible = ppState.gridVisible;
                 newGrid.position.y = -size.y / 2 - maxDim * 0.002;
                 ppState.scene.add(newGrid);
