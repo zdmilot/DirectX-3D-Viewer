@@ -18,11 +18,11 @@
         TRACK_DEPTH:   497.0,   // mm front-to-back
         TRACK_Y_START:  63.0,   // mm Y of first track
         FIRST_TRACK_X: 100.25,  // mm X of track 1
-        TRACK_COUNT:    54,
+        TRACK_COUNT:    80,
         SURFACE_Z:     100.0,   // mm deck surface height
-        CANVAS_W:      1600,
+        CANVAS_W:      2200,
         CANVAS_D:       520,
-        LABELED_TRACKS: new Set([1,7,13,19,25,31,37,43,49]),
+        LABELED_TRACKS: new Set([1,7,13,19,25,31,37,43,49,55,61,67,73,79]),
     };
 
     // Carrier library — populated from parsed .tml files + built-ins
@@ -266,7 +266,8 @@
         vlState.isPerspective = true;
         vlState.camera = new THREE.PerspectiveCamera(45, w / h, 0.1, 100000);
         // Position camera top-down, slightly tilted so it reads naturally
-        vlState.camera.position.set(700, 1200, 600);
+        const deckCX = DECK.FIRST_TRACK_X + (DECK.TRACK_COUNT * DECK.TRACK_SPACING) / 2;
+        vlState.camera.position.set(deckCX, 1600, 600);
         vlState.camera.up.set(0, 1, 0);
 
         // -- Renderer --
@@ -284,7 +285,7 @@
         vlState.controls = new THREE.OrbitControls(vlState.camera, vlState.renderer.domElement);
         vlState.controls.enableDamping = true;
         vlState.controls.dampingFactor = 0.12;
-        vlState.controls.target.set(700, 0, 280);
+        vlState.controls.target.set(deckCX, 0, 280);
         vlState.controls.update();
 
         // -- Lights --
@@ -301,7 +302,7 @@
         const planeMat = new THREE.MeshBasicMaterial({ visible: false, side: THREE.DoubleSide });
         vlState._deckPlane = new THREE.Mesh(planeGeo, planeMat);
         vlState._deckPlane.rotation.x = -Math.PI / 2;
-        vlState._deckPlane.position.set(700, DECK.SURFACE_Z + 1, 280);
+        vlState._deckPlane.position.set(deckCX, DECK.SURFACE_Z + 1, 280);
         vlState._deckPlane.name = '__deckplane__';
         vlState.scene.add(vlState._deckPlane);
 
@@ -384,11 +385,11 @@
             scene.add(mesh);
         }
 
-        // Track number labels (sprite-based text above labeled tracks)
-        for (let i = 1; i <= 9; i++) {
-            const trackNum = 1 + (i - 1) * 6;
-            const x = DECK.FIRST_TRACK_X + (trackNum - 1) * DECK.TRACK_SPACING;
-            addTrackLabel(i.toString(), x, isDark);
+        // Track number labels (sprite-based text above every track)
+        for (let i = 1; i <= DECK.TRACK_COUNT; i++) {
+            const x = DECK.FIRST_TRACK_X + (i - 1) * DECK.TRACK_SPACING;
+            const color = (i === 5) ? '#ee2222' : undefined; // track 5 in red
+            addTrackLabel(String(i), x, isDark, color);
         }
 
         // Deck frame walls (side rails)
@@ -407,21 +408,14 @@
         backMesh.name = '__rail_back__';
         scene.add(backMesh);
 
-        // Waste block area indicator (right end of deck, tracks ~50-54)
-        const wasteX = DECK.FIRST_TRACK_X + 49 * DECK.TRACK_SPACING;
-        const wasteGeo = new THREE.BoxGeometry(DECK.TRACK_SPACING * 4, 3, DECK.TRACK_DEPTH * 0.3);
-        const wasteMat = new THREE.MeshLambertMaterial({ color: isDark ? 0x3a2020 : 0xc08080, transparent: true, opacity: 0.7 });
-        const wasteMesh = new THREE.Mesh(wasteGeo, wasteMat);
-        wasteMesh.position.set(wasteX + DECK.TRACK_SPACING * 2, DECK.SURFACE_Z + 2, DECK.TRACK_Y_START + DECK.TRACK_DEPTH * 0.15);
-        wasteMesh.name = '__wastearea__';
-        scene.add(wasteMesh);
+        // (Waste block area indicator removed — no restricted tracks from 5 onward)
 
         // Grid overlay on deck surface
         const gridColor = isDark ? DARK_GRID : LIGHT_GRID;
         const grid = new THREE.GridHelper(2000, 80, gridColor, gridColor);
         grid.name = '__vlgrid__';
         grid.visible = vlState.gridVisible;
-        grid.position.set(1000, DECK.SURFACE_Z + 4.1, 310);
+        grid.position.set(DECK.FIRST_TRACK_X + (DECK.TRACK_COUNT * DECK.TRACK_SPACING) / 2, DECK.SURFACE_Z + 4.1, 310);
         scene.add(grid);
     }
 
@@ -639,13 +633,13 @@
         });
     }
 
-    function addTrackLabel(text, xPos, isDark) {
+    function addTrackLabel(text, xPos, isDark, overrideColor) {
         const size = 64;
         const cv = document.createElement('canvas');
         cv.width = size; cv.height = size;
         const ctx = cv.getContext('2d');
         ctx.clearRect(0, 0, size, size);
-        ctx.fillStyle = isDark ? '#7aafdf' : '#2a5580';
+        ctx.fillStyle = overrideColor || (isDark ? '#7aafdf' : '#2a5580');
         ctx.font = 'bold 28px sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
@@ -653,9 +647,9 @@
         const tex = new THREE.CanvasTexture(cv);
         const mat = new THREE.SpriteMaterial({ map: tex, transparent: true });
         const sprite = new THREE.Sprite(mat);
-        sprite.scale.set(18, 18, 1);
-        sprite.position.set(xPos + DECK.TRACK_WIDTH / 2, DECK.SURFACE_Z + 16, DECK.TRACK_Y_START - 22);
-        sprite.name = `__label_${text}__`;
+        sprite.scale.set(14, 14, 1);
+        sprite.position.set(xPos + DECK.TRACK_WIDTH / 2, DECK.SURFACE_Z + 16, DECK.TRACK_Y_START - 16);
+        sprite.name = `__tracklabel_${text}__`;
         vlState.scene.add(sprite);
     }
 
@@ -725,7 +719,7 @@
 
     /**
      * Apply a left-handed (DirectX) → right-handed (Three.js) fix to a group.
-     * Negates X on all vertex positions and normals, flips winding order.
+     * Negates Z on all vertex positions and normals, flips winding order.
      * Mirrors window._fixLeftHandedCoords from app.js (which loads after this
      * module, so we keep a local copy here).
      */
@@ -904,9 +898,9 @@
         const def = CARRIER_LIBRARY[carrierType];
         if (!def) return null;
 
-        // Validate track range
-        if (trackStart < 1 || trackStart + def.tWidth - 1 > DECK.TRACK_COUNT) {
-            showVLStatus('Cannot place: track out of range.', 'error');
+        // Validate track range — placement allowed from track 5 onward
+        if (trackStart < 5 || trackStart + def.tWidth - 1 > DECK.TRACK_COUNT) {
+            showVLStatus('Cannot place: track out of range (min track 5).', 'error');
             return null;
         }
 
@@ -1173,7 +1167,7 @@
 
         const { carrier } = vlState.canvasCarrierDrag;
         const trackNum    = snapToTrack(hits[0].point.x);
-        const clamped     = Math.max(1, Math.min(DECK.TRACK_COUNT - carrier.def.tWidth + 1, trackNum));
+        const clamped     = Math.max(5, Math.min(DECK.TRACK_COUNT - carrier.def.tWidth + 1, trackNum));
         const snappedX    = DECK.FIRST_TRACK_X + (clamped - 1) * DECK.TRACK_SPACING;
 
         if (vlState.ghostMesh) {
@@ -1399,7 +1393,7 @@
         const point = hits[0].point;
         const def   = vlState.paletteDrag.def;
         const trackNum    = snapToTrack(point.x);
-        const clampedTrack = Math.max(1, Math.min(DECK.TRACK_COUNT - def.tWidth + 1, trackNum));
+        const clampedTrack = Math.max(5, Math.min(DECK.TRACK_COUNT - def.tWidth + 1, trackNum));
         const snappedX     = DECK.FIRST_TRACK_X + (clampedTrack - 1) * DECK.TRACK_SPACING;
 
         if (vlState.ghostMesh) {
@@ -1472,9 +1466,10 @@
         $('#vl-pd-twidth').textContent = `${def.tWidth}T wide (${def.dx}mm)`;
         $('#vl-pd-sites').textContent = `${def.sites.length} site${def.sites.length !== 1 ? 's' : ''}`;
 
-        // Set default track (next available)
+        // Set default track (next available, min track 5)
         const track = findNextFreeTrack(def.tWidth);
         $('#vl-pd-track').value = track;
+        $('#vl-pd-track').min = '5';
         $('#vl-pd-track').max = String(DECK.TRACK_COUNT - def.tWidth + 1);
 
         dialog.dataset.carrierType = carrierType;
@@ -1482,10 +1477,10 @@
     }
 
     function findNextFreeTrack(tWidth) {
-        for (let t = 1; t <= DECK.TRACK_COUNT - tWidth + 1; t++) {
+        for (let t = 5; t <= DECK.TRACK_COUNT - tWidth + 1; t++) {
             if (!checkCarrierCollision(t, tWidth, -1)) return t;
         }
-        return 1;
+        return 5;
     }
 
     // ================================================================
@@ -2255,7 +2250,10 @@
         const cx = DECK.FIRST_TRACK_X + (DECK.TRACK_COUNT * DECK.TRACK_SPACING) / 2;
         const cy = DECK.TRACK_Y_START + DECK.TRACK_DEPTH / 2;
         vlState.controls.target.set(cx, DECK.SURFACE_Z, cy);
-        vlState.camera.position.set(cx, 1400, cy + 200);
+        const maxDim = DECK.TRACK_COUNT * DECK.TRACK_SPACING;
+        const fov = vlState.camera.fov || 45;
+        const dist = (maxDim / 2) / Math.tan(THREE.MathUtils.degToRad(fov / 2)) * 1.15;
+        vlState.camera.position.set(cx, DECK.SURFACE_Z + dist, cy + dist * 0.15);
         vlState.camera.up.set(0, 1, 0);
         vlState.camera.near = 1;
         vlState.camera.far  = 100000;
@@ -2268,14 +2266,53 @@
         const cx = DECK.FIRST_TRACK_X + (DECK.TRACK_COUNT * DECK.TRACK_SPACING) / 2;
         const cy = DECK.TRACK_Y_START + DECK.TRACK_DEPTH / 2;
         vlState.controls.target.set(cx, DECK.SURFACE_Z, cy);
-        vlState.camera.position.set(cx, 1800, cy + 0.01); // near-zero Z offset avoids gimbal lock
+        const maxDimTD = DECK.TRACK_COUNT * DECK.TRACK_SPACING;
+        const fovTD = vlState.camera.fov || 45;
+        const distTD = (maxDimTD / 2) / Math.tan(THREE.MathUtils.degToRad(fovTD / 2)) * 1.15;
+        vlState.camera.position.set(cx, DECK.SURFACE_Z + distTD, cy + 0.01); // near-zero Z offset avoids gimbal lock
         vlState.camera.up.set(0, 0, -1);
         vlState.camera.updateProjectionMatrix();
         vlState.controls.update();
     }
 
     function zoomToFitDeck() {
-        resetVLCamera();
+        if (!vlState.camera || !vlState.controls) return;
+
+        // Compute bounding box of all visible scene objects (deck model + carriers)
+        const box = new THREE.Box3();
+        vlState.scene.traverse(function (obj) {
+            if (!obj.visible) return;
+            if (obj.name === '__deckplane__' || obj.name === '__vlgrid__') return;
+            if (obj.isMesh) box.expandByObject(obj);
+        });
+
+        // Fallback to deck track extents if scene is empty
+        if (box.isEmpty()) {
+            const x0 = DECK.FIRST_TRACK_X;
+            const x1 = DECK.FIRST_TRACK_X + (DECK.TRACK_COUNT - 1) * DECK.TRACK_SPACING + DECK.TRACK_WIDTH;
+            const z0 = DECK.TRACK_Y_START;
+            const z1 = DECK.TRACK_Y_START + DECK.TRACK_DEPTH;
+            box.set(
+                new THREE.Vector3(x0, DECK.SURFACE_Z - 10, z0),
+                new THREE.Vector3(x1, DECK.SURFACE_Z + 200, z1)
+            );
+        }
+
+        const center = box.getCenter(new THREE.Vector3());
+        const size   = box.getSize(new THREE.Vector3());
+        const maxDim = Math.max(size.x, size.z);
+
+        // Camera distance for perspective FOV to fully contain the deck
+        const fov = vlState.camera.fov || 45;
+        const dist = (maxDim / 2) / Math.tan(THREE.MathUtils.degToRad(fov / 2)) * 1.15;
+
+        vlState.controls.target.set(center.x, DECK.SURFACE_Z, center.z);
+        vlState.camera.position.set(center.x, DECK.SURFACE_Z + dist, center.z + dist * 0.15);
+        vlState.camera.up.set(0, 1, 0);
+        vlState.camera.near = 1;
+        vlState.camera.far  = 100000;
+        vlState.camera.updateProjectionMatrix();
+        vlState.controls.update();
     }
 
     function doVLZoom(factor) {
