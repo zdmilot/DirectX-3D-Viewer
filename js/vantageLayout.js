@@ -177,9 +177,8 @@
         // Canvas carrier drag state (moving a placed carrier)
         canvasCarrierDrag: null,  // { carrier } while dragging placed carrier
 
-        // GLTF deck model reference (for debug positioning)
+        // GLTF deck model reference
         gltfModel: null,
-        debugDeckMode: false,
         sitesPanelOpen: false,
 
         // TML import state
@@ -443,9 +442,9 @@
                 const deckCenterZ = DECK.TRACK_Y_START + DECK.TRACK_DEPTH / 2;
 
                 model.position.set(
-                    deckCenterX - center.x,
-                    DECK.SURFACE_Z - box.max.y,   // top of GLTF = deck surface level
-                    deckCenterZ - center.z
+                    deckCenterX + (0),
+                    DECK.SURFACE_Z - box.max.y + (59),
+                    deckCenterZ + (91)
                 );
 
                 vlState.gltfModel = model;
@@ -1667,101 +1666,7 @@
         const resetCamBtn = $('#vl-reset-cam-btn');
         if (resetCamBtn) resetCamBtn.addEventListener('click', resetVLCamera);
 
-        wireDeckDebugPanel();
         wireVLSettingsPanel();
-    }
-
-    // ================================================================
-    //  GLTF Deck Debug / Alignment Panel
-    // ================================================================
-    function wireDeckDebugPanel() {
-        const toggleBtn = document.getElementById('vl-vt-deck-debug');
-        const panel     = document.getElementById('vl-deck-debug-panel');
-        if (!toggleBtn || !panel) return;
-
-        toggleBtn.addEventListener('click', () => {
-            vlState.debugDeckMode = !vlState.debugDeckMode;
-            toggleBtn.classList.toggle('is-active', vlState.debugDeckMode);
-            panel.classList.toggle('is-open', vlState.debugDeckMode);
-            if (vlState.debugDeckMode) refreshDeckDebugReadout();
-        });
-
-        // Wire XYZ step inputs
-        ['x', 'y', 'z'].forEach(axis => {
-            const input = document.getElementById(`vl-dbg-${axis}`);
-            if (!input) return;
-            input.addEventListener('input', () => applyDebugDeckOffset());
-            input.addEventListener('change', () => applyDebugDeckOffset());
-        });
-
-        // Step buttons
-        document.querySelectorAll('#vl-deck-debug-panel .dbg-step-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const axis  = btn.dataset.axis;
-                const delta = parseFloat(btn.dataset.delta);
-                const inp   = document.getElementById(`vl-dbg-${axis}`);
-                if (inp) {
-                    inp.value = (parseFloat(inp.value) || 0) + delta;
-                    applyDebugDeckOffset();
-                }
-            });
-        });
-
-        // Copy button
-        const copyBtn = document.getElementById('vl-dbg-copy');
-        if (copyBtn) {
-            copyBtn.addEventListener('click', () => {
-                const x = document.getElementById('vl-dbg-x')?.value || 0;
-                const y = document.getElementById('vl-dbg-y')?.value || 0;
-                const z = document.getElementById('vl-dbg-z')?.value || 0;
-                const txt = `deckCenterX + (${x}),  DECK.SURFACE_Z - box.max.y + (${y}),  deckCenterZ + (${z})`;
-                navigator.clipboard?.writeText(txt).then(() => showVLStatus('Offset copied to clipboard', 'ok'))
-                    .catch(() => showVLStatus(txt, 'ok'));
-            });
-        }
-
-        // Reset button
-        const resetBtn = document.getElementById('vl-dbg-reset');
-        if (resetBtn) {
-            resetBtn.addEventListener('click', () => {
-                ['x', 'y', 'z'].forEach(a => {
-                    const inp = document.getElementById(`vl-dbg-${a}`);
-                    if (inp) inp.value = 0;
-                });
-                applyDebugDeckOffset();
-            });
-        }
-    }
-
-    function applyDebugDeckOffset() {
-        const model = vlState.gltfModel;
-        if (!model) { showVLStatus('No GLTF deck model loaded yet.', 'error'); return; }
-
-        const dx = parseFloat(document.getElementById('vl-dbg-x')?.value) || 0;
-        const dy = parseFloat(document.getElementById('vl-dbg-y')?.value) || 0;
-        const dz = parseFloat(document.getElementById('vl-dbg-z')?.value) || 0;
-
-        // Re-compute base position (same as loadDeckModel)
-        const box = new THREE.Box3().setFromObject(model);
-        // Note: box changes as model moves, so store the original base offset
-        if (!vlState._gltfBasePos) {
-            vlState._gltfBasePos = model.position.clone();
-        }
-        model.position.set(
-            vlState._gltfBasePos.x + dx,
-            vlState._gltfBasePos.y + dy,
-            vlState._gltfBasePos.z + dz
-        );
-        refreshDeckDebugReadout();
-    }
-
-    function refreshDeckDebugReadout() {
-        const el = document.getElementById('vl-dbg-readout');
-        if (!el) return;
-        const model = vlState.gltfModel;
-        if (!model) { el.textContent = 'No model'; return; }
-        const p = model.position;
-        el.textContent = `pos  X: ${p.x.toFixed(2)}  Y: ${p.y.toFixed(2)}  Z: ${p.z.toFixed(2)}`;
     }
 
     // ================================================================
