@@ -466,6 +466,7 @@
         renderer = new THREE.WebGLRenderer({
             canvas: canvas,
             antialias: true,
+            alpha: true,
             preserveDrawingBuffer: true
         });
         renderer.setPixelRatio(window.devicePixelRatio);
@@ -1409,17 +1410,30 @@
         return parts.join('\n');
     }
 
-    function saveScreenshot(format) {
+    function saveScreenshot(format, opts) {
         if (!renderer || !scene || !camera) return;
 
-        // Render one fresh frame to ensure canvas is up-to-date
+        const showGrid = opts ? opts.showGrid : true;
+        const showBg   = opts ? opts.showBg   : true;
+
+        // Temporarily toggle grid visibility
+        const grid = scene.getObjectByName('__grid__');
+        const origGridVis = grid ? grid.visible : false;
+        if (grid) grid.visible = showGrid && state.gridVisible;
+
+        // Temporarily toggle background
+        const origBg = scene.background;
+        if (!showBg) {
+            scene.background = null;
+            renderer.setClearColor(0x000000, 0);
+        }
+
         renderer.render(scene, camera);
 
         const canvas = renderer.domElement;
         const fileName = (state.loadedFileName || 'screenshot').replace(/\.[^.]+$/, '');
 
         if (format === 'svg') {
-            // True vector SVG: project geometry through the camera
             const svgContent = exportVectorSVG();
             const blob = new Blob([svgContent], { type: 'image/svg+xml' });
             downloadBlob(blob, fileName + '.svg');
@@ -1428,12 +1442,132 @@
                 if (blob) downloadBlob(blob, fileName + '.jpg');
             }, 'image/jpeg', 0.92);
         } else {
-            // PNG (default)
             canvas.toBlob(function(blob) {
                 if (blob) downloadBlob(blob, fileName + '.png');
             }, 'image/png');
         }
+
+        // Restore originals
+        if (grid) grid.visible = origGridVis;
+        scene.background = origBg;
+        if (!showBg) renderer.setClearColor(state.isDark ? DARK_BG : LIGHT_BG, 1);
+        renderer.render(scene, camera);
     }
+
+    /** Render a preview dataURL for the screenshot modal */
+    function screenshotPreviewDataURL(opts) {
+        if (!renderer || !scene || !camera) return '';
+
+        const showGrid = opts ? opts.showGrid : true;
+        const showBg   = opts ? opts.showBg   : true;
+
+        const grid = scene.getObjectByName('__grid__');
+        const origGridVis = grid ? grid.visible : false;
+        if (grid) grid.visible = showGrid && state.gridVisible;
+
+        const origBg = scene.background;
+        if (!showBg) {
+            scene.background = null;
+            renderer.setClearColor(0x000000, 0);
+        }
+
+        renderer.render(scene, camera);
+        const dataURL = renderer.domElement.toDataURL('image/png');
+
+        // Restore
+        if (grid) grid.visible = origGridVis;
+        scene.background = origBg;
+        if (!showBg) renderer.setClearColor(state.isDark ? DARK_BG : LIGHT_BG, 1);
+        renderer.render(scene, camera);
+
+        return dataURL;
+    }
+
+    // ── Screenshot modal ─────────────────────────────────────
+    let ssModalSource = null; // 'viewer' or 'placer'
+
+    function openScreenshotModal(source) {
+        ssModalSource = source;
+        const overlay = $('#ss-overlay');
+        const img     = $('#ss-preview-img');
+        const optGrid = $('#ss-opt-grid');
+        const optBg   = $('#ss-opt-bg');
+        if (!overlay || !img) return;
+
+        // Reset toggles
+        optGrid.checked = true;
+        optBg.checked   = true;
+
+        // Generate preview
+        updateScreenshotPreview();
+
+        overlay.classList.add('is-open');
+    }
+
+    function closeScreenshotModal() {
+        const overlay = $('#ss-overlay');
+        if (overlay) overlay.classList.remove('is-open');
+        ssModalSource = null;
+    }
+
+    function updateScreenshotPreview() {
+        const img     = $('#ss-preview-img');
+        const optGrid = $('#ss-opt-grid');
+        const optBg   = $('#ss-opt-bg');
+        if (!img) return;
+
+        const opts = {
+            showGrid: optGrid ? optGrid.checked : true,
+            showBg:   optBg   ? optBg.checked   : true,
+        };
+
+        if (ssModalSource === 'placer' && window.PlacerModule && window.PlacerModule.screenshotPreviewDataURL) {
+            img.src = window.PlacerModule.screenshotPreviewDataURL(opts);
+        } else {
+            img.src = screenshotPreviewDataURL(opts);
+        }
+    }
+
+    function ssModalSave(format) {
+        const optGrid = $('#ss-opt-grid');
+        const optBg   = $('#ss-opt-bg');
+        const opts = {
+            showGrid: optGrid ? optGrid.checked : true,
+            showBg:   optBg   ? optBg.checked   : true,
+        };
+
+        if (ssModalSource === 'placer' && window.PlacerModule && window.PlacerModule.saveScreenshot) {
+            window.PlacerModule.saveScreenshot(format, opts);
+        } else {
+            saveScreenshot(format, opts);
+        }
+        closeScreenshotModal();
+    }
+
+    // Wire screenshot modal controls (called once in init)
+    function initScreenshotModal() {
+        const overlay = $('#ss-overlay');
+        const closeBtn = $('#ss-close');
+        const optGrid = $('#ss-opt-grid');
+        const optBg   = $('#ss-opt-bg');
+
+        if (closeBtn) closeBtn.addEventListener('click', closeScreenshotModal);
+        if (overlay) overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) closeScreenshotModal();
+        });
+
+        // Toggle changes → live preview update
+        if (optGrid) optGrid.addEventListener('change', updateScreenshotPreview);
+        if (optBg)   optBg.addEventListener('change', updateScreenshotPreview);
+
+        // Save buttons
+        document.querySelectorAll('.ss-save-btn').forEach(btn => {
+            btn.addEventListener('click', () => ssModalSave(btn.dataset.format));
+        });
+    }
+
+    // Expose openScreenshotModal so platePlacer can call it
+    window.openScreenshotModal = openScreenshotModal;
 
     function downloadBlob(blob, filename) {
         const url = URL.createObjectURL(blob);
@@ -2167,31 +2301,11 @@
         if (dom.vtMirrorY) dom.vtMirrorY.addEventListener('click', () => mirrorModel('y'));
         if (dom.vtMirrorZ) dom.vtMirrorZ.addEventListener('click', () => mirrorModel('z'));
 
-        // Screenshot button & dropdown
+        // Screenshot button → open modal
         const ssBtn = $('#vt-screenshot');
-        const ssDrop = $('#screenshot-dropdown');
-        if (ssBtn && ssDrop) {
-            ssBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                ssDrop.classList.toggle('is-open');
-                // Close export dropdown if open
-                const exDrop = $('#export-dropdown');
-                if (exDrop) exDrop.classList.remove('is-open');
-            });
-            document.addEventListener('click', () => {
-                ssDrop.classList.remove('is-open');
-                const exDrop = $('#export-dropdown');
-                if (exDrop) exDrop.classList.remove('is-open');
-                // Close transform flyout too
-                if (dom.tfFlyout) dom.tfFlyout.classList.remove('is-open');
-                if (dom.vtTransformToggle) dom.vtTransformToggle.classList.remove('is-active');
-            });
-            ssDrop.addEventListener('click', (e) => e.stopPropagation());
-            ssDrop.querySelectorAll('.screenshot-option').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    saveScreenshot(btn.dataset.format);
-                    ssDrop.classList.remove('is-open');
-                });
+        if (ssBtn) {
+            ssBtn.addEventListener('click', () => {
+                openScreenshotModal('viewer');
             });
         }
 
@@ -2202,8 +2316,6 @@
             exBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 exDrop.classList.toggle('is-open');
-                // Close screenshot dropdown if open
-                if (ssDrop) ssDrop.classList.remove('is-open');
             });
             exDrop.addEventListener('click', (e) => e.stopPropagation());
             exDrop.querySelectorAll('.export-option').forEach(btn => {
@@ -2214,6 +2326,14 @@
             });
         }
 
+        // Close dropdowns / flyouts on outside click
+        document.addEventListener('click', () => {
+            if (exDrop) exDrop.classList.remove('is-open');
+            if (dom.tfFlyout) dom.tfFlyout.classList.remove('is-open');
+            if (dom.vtTransformToggle) dom.vtTransformToggle.classList.remove('is-active');
+        });
+
+        initScreenshotModal();
         initSplash();
         initDraggablePanels();
     }
