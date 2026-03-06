@@ -202,9 +202,11 @@
 
         // Settings: deck cutout cover visibility [cover0, cover1, cover2, cover3]
         deckCutouts: [true, true, true, true],
+        // Cached Three.js object references for the 4 cover panels (populated after GLTF loads)
+        deckCoverNodes: null,
 
         // Settings: deck repositioning offset (applied on top of auto-calculated base pos)
-        deckRelocateOffset: { x: 0, y: 0, z: 0 },
+
     };
 
     const LIGHT_BG   = 0xf0f0f0;
@@ -455,11 +457,11 @@
                 vlState._gltfBasePos = model.position.clone();
                 vlState.scene.add(model);
 
-                // Apply any pre-set settings (cutout visibility, relocation offset)
+                // Collect cover node references by traversal (robust — avoids getObjectByName issues)
+                collectDeckCoverNodes();
+
+                // Apply any pre-set settings (cutout visibility)
                 applyCutoutVisibility();
-                if (vlState.deckRelocateOffset.x !== 0 || vlState.deckRelocateOffset.y !== 0 || vlState.deckRelocateOffset.z !== 0) {
-                    applySettingsDeckOffset();
-                }
 
                 // Hide procedural geometry — GLTF provides authentic deck visuals
                 const procNames = ['__decksurf__', '__rail_front__', '__rail_back__', '__wastearea__'];
@@ -1783,97 +1785,45 @@
     // ================================================================
     //  Settings Panel — Cutout Visibility + Deck Repositioning
     // ================================================================
-    const CUTOUT_COVER_NAMES = [
-        'VANTAGE_DECK_COVER',
-        'VANTAGE_DECK_COVER.001',
-        'VANTAGE_DECK_COVER.002',
-        'VANTAGE_DECK_COVER.003',
-    ];
+
+    // Collect the 4 VANTAGE_DECK_COVER Object3D references by traversal.
+    // Stored in vlState.deckCoverNodes sorted by name (panel 1..4).
+    // Called once after the GLTF finishes loading.
+    function collectDeckCoverNodes() {
+        const covers = [];
+        if (!vlState.gltfModel) return;
+        vlState.gltfModel.traverse(function (obj) {
+            if (/^VANTAGE_DECK_COVER/i.test(obj.name)) {
+                covers.push(obj);
+            }
+        });
+        covers.sort(function (a, b) { return a.name.localeCompare(b.name); });
+        vlState.deckCoverNodes = covers;
+        console.log('[VantageLayout] deck cover nodes:', covers.map(function (n) { return n.name; }));
+    }
 
     function applyCutoutVisibility() {
         if (!vlState.gltfModel) return;
-        CUTOUT_COVER_NAMES.forEach(function (name, i) {
-            const node = vlState.gltfModel.getObjectByName(name);
-            if (node) node.visible = vlState.deckCutouts[i] !== false;
+        // Lazy-collect if not yet done (unlikely path, but safe)
+        if (!vlState.deckCoverNodes) collectDeckCoverNodes();
+        vlState.deckCoverNodes.forEach(function (node, i) {
+            node.visible = !!vlState.deckCutouts[i];
         });
-    }
-
-    function applySettingsDeckOffset() {
-        const model = vlState.gltfModel;
-        if (!model) return;
-        if (!vlState._gltfBasePos) {
-            vlState._gltfBasePos = model.position.clone();
-        }
-        const o = vlState.deckRelocateOffset;
-        model.position.set(
-            vlState._gltfBasePos.x + o.x,
-            vlState._gltfBasePos.y + o.y,
-            vlState._gltfBasePos.z + o.z
-        );
+        showVLStatus('Cover panel ' + (vlState.deckCutouts.map(function (v, i) { return v ? null : 'Panel ' + (i + 1); }).filter(Boolean).join(', ') || 'none') + ' hidden', '');
     }
 
     function wireVLSettingsPanel() {
         // ── Cutout toggles ───────────────────────────────────────────
-        CUTOUT_COVER_NAMES.forEach(function (_name, i) {
-            const cb = document.getElementById('settings-cover-' + i);
-            if (!cb) return;
-            cb.checked = vlState.deckCutouts[i] !== false;
-            cb.addEventListener('change', function () {
-                vlState.deckCutouts[i] = cb.checked;
-                applyCutoutVisibility();
-            });
-        });
-
-        // ── Relocate toggle ──────────────────────────────────────────
-        const relocateToggle = document.getElementById('settings-relocate-toggle');
-        const relocatePanel  = document.getElementById('settings-relocate-panel');
-        if (relocateToggle && relocatePanel) {
-            relocateToggle.addEventListener('change', function () {
-                relocatePanel.classList.toggle('is-open', relocateToggle.checked);
-            });
-        }
-
-        // ── X / Y / Z inputs ────────────────────────────────────────
-        ['x', 'y', 'z'].forEach(function (axis) {
-            const input = document.getElementById('settings-deck-' + axis);
-            if (!input) return;
-            input.value = vlState.deckRelocateOffset[axis];
-            input.addEventListener('input', function () {
-                vlState.deckRelocateOffset[axis] = parseFloat(input.value) || 0;
-                applySettingsDeckOffset();
-            });
-        });
-
-        // ── Step buttons ─────────────────────────────────────────────
-        if (relocatePanel) {
-            relocatePanel.querySelectorAll('.settings-step-btn').forEach(function (btn) {
-                btn.addEventListener('click', function () {
-                    const axis  = btn.dataset.axis;
-                    const delta = parseFloat(btn.dataset.delta);
-                    const input = document.getElementById('settings-deck-' + axis);
-                    if (input) {
-                        const newVal = (parseFloat(input.value) || 0) + delta;
-                        input.value = newVal;
-                        vlState.deckRelocateOffset[axis] = newVal;
-                        applySettingsDeckOffset();
-                    }
+        for (let i = 0; i < 4; i++) {
+            (function (idx) {
+                const cb = document.getElementById('settings-cover-' + idx);
+                if (!cb) return;
+                cb.checked = !!vlState.deckCutouts[idx];
+                cb.addEventListener('change', function () {
+                    vlState.deckCutouts[idx] = cb.checked;
+                    applyCutoutVisibility();
                 });
-            });
-        }
-
-        // ── Reset position ───────────────────────────────────────────
-        const resetBtn = document.getElementById('settings-deck-reset-pos');
-        if (resetBtn) {
-            resetBtn.addEventListener('click', function () {
-                vlState.deckRelocateOffset = { x: 0, y: 0, z: 0 };
-                ['x', 'y', 'z'].forEach(function (axis) {
-                    const input = document.getElementById('settings-deck-' + axis);
-                    if (input) input.value = 0;
-                });
-                if (vlState.gltfModel && vlState._gltfBasePos) {
-                    vlState.gltfModel.position.copy(vlState._gltfBasePos);
-                }
-            });
+            })(i);
         }
 
         // ── Grid toggle ──────────────────────────────────────────────
