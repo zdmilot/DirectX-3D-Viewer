@@ -1,0 +1,82 @@
+<html>
+<head>
+    <title>Hamilton .hxx Format</title>
+    <link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+<div class="header">Hamilton .hxx Format</div>
+<div class="main">
+<div class="breadcrumb"><a href="Overview.html">3D File Tools</a> &raquo; <a href="FileFormats.html">File Formats</a> &raquo; Hamilton .hxx Format</div>
+
+<h2>Overview</h2>
+<p>The <code>.hxx</code> format is a Hamilton-proprietary binary container called <b>Hamilton3dData</b>. It wraps one or more named sections, each containing gzip-compressed data. The primary section (<code>__Main3dData__</code>) holds a standard DirectX ASCII <code>.x</code> file. Additional sections may hold PNG texture images.</p>
+<p>The 3D Viewer reads <code>.hxx</code> files transparently &mdash; from the user's perspective, they behave identically to <code>.x</code> files. The HXX Loader decompresses the <code>.x</code> data on-the-fly and passes it directly to the XFileLoader.</p>
+
+<h2>Binary Layout</h2>
+<table>
+<thead><tr><th>Offset</th><th>Size</th><th>Field</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>0</code></td><td>14 bytes</td><td>Magic</td><td>ASCII string <code>Hamilton3dData</code> (no null terminator)</td></tr>
+<tr><td><code>14</code></td><td>2 bytes</td><td>Version</td><td>Two version bytes (not further validated)</td></tr>
+<tr><td><code>16</code></td><td>4 bytes</td><td>Section Count (N)</td><td>Big-endian uint32: number of sections in the file</td></tr>
+<tr><td><code>20</code></td><td>N &times; 12 bytes</td><td>Section Table</td><td>Array of N section descriptors (see below)</td></tr>
+<tr><td><code>20 + N&times;12</code></td><td>variable</td><td>Section Data Blocks</td><td>Section name + gzip-compressed data, laid out sequentially</td></tr>
+</tbody>
+</table>
+
+<h3>Section Table Entry (12 bytes each)</h3>
+<table>
+<thead><tr><th>Byte Offset</th><th>Size</th><th>Field</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td>0</td><td>4 bytes</td><td>Data Offset</td><td>Big-endian uint32: byte offset from file start to the section&rsquo;s data block</td></tr>
+<tr><td>4</td><td>4 bytes</td><td>Name Length</td><td>Big-endian uint32: length of the section name in bytes</td></tr>
+<tr><td>8</td><td>4 bytes</td><td>Decompressed Size</td><td>Big-endian uint32: expected size of the decompressed data</td></tr>
+</tbody>
+</table>
+
+<h3>Section Data Block</h3>
+<p>Each section data block consists of:</p>
+<ol>
+  <li><b>Section Name</b> &mdash; ASCII string, <code>nameLength</code> bytes, no null terminator</li>
+  <li><b>Compressed Data</b> &mdash; gzip-compressed payload. Compressed size is implied: from <code>(offset + nameLength)</code> to the next section&rsquo;s offset (or end of file for the last section)</li>
+</ol>
+
+<h2>Section Names</h2>
+<table>
+<thead><tr><th>Section Name</th><th>Content</th></tr></thead>
+<tbody>
+<tr><td><code>__Main3dData__</code></td><td>The main gzip-compressed DirectX <code>.x</code> ASCII text file</td></tr>
+<tr><td>Other names (e.g. texture paths)</td><td>gzip-compressed PNG texture data (not currently rendered by the viewer)</td></tr>
+</tbody>
+</table>
+
+<h2>Gzip Decompression</h2>
+<p>The HXX Loader uses <b>pako</b> (a pure-JavaScript zlib/gzip implementation) to decompress section data. The loader:</p>
+<ol>
+  <li>Parses the gzip header to find the DEFLATE payload start</li>
+  <li>Locates the ISIZE trailer field (last 4 bytes of the gzip stream) to find the exact end of the compressed stream</li>
+  <li>Calls <code>pako.inflate()</code> on the raw DEFLATE data with <code>raw: true</code></li>
+  <li>Decodes the resulting bytes as UTF-8 to recover the <code>.x</code> text</li>
+</ol>
+
+<h2>Detection</h2>
+<p>The HXX Loader checks for the <code>Hamilton3dData</code> magic header at offset 0 before attempting to parse. Files that do not begin with this magic string are rejected. This check is exposed as <code>HXXLoader.isHXX(arrayBuffer)</code>.</p>
+
+<h2>Writing .hxx Files</h2>
+<p>The <b>Export as .HXX</b> option in the 3D Viewer creates a valid <code>.hxx</code> container from the current <code>.x</code> model data. The <code>.x</code> text is gzip-compressed and wrapped in a single-section Hamilton3dData envelope with the <code>__Main3dData__</code> section name.</p>
+
+<h2>Public API (hxxLoader.js)</h2>
+<table>
+<thead><tr><th>Method</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>HXXLoader.parse(arrayBuffer)</code></td><td>Parses the full HXX file. Returns a Promise resolving to <code>{ xFileText, textures: [{name, blob}] }</code></td></tr>
+<tr><td><code>HXXLoader.isHXX(arrayBuffer)</code></td><td>Returns <code>true</code> if the buffer starts with the Hamilton3dData magic header</td></tr>
+<tr><td><code>HXXLoader.toXFileBlob(arrayBuffer)</code></td><td>Convenience method: returns a Promise resolving to a Blob containing only the decompressed <code>.x</code> text from the <code>__Main3dData__</code> section</td></tr>
+</tbody>
+</table>
+</div>
+<div class="footer">
+<p>3D File Tools Help</p>
+</div>
+</body>
+</html>

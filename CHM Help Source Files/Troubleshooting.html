@@ -6,160 +6,110 @@
 <body>
 <div class="header">Troubleshooting</div>
 <div class="main">
-<div class="breadcrumb"><a href="Overview.html">Venus Library Manager</a> &raquo; Troubleshooting</div>
+<div class="breadcrumb"><a href="Overview.html">3D File Tools</a> &raquo; Troubleshooting</div>
 
 <h2>Common Issues</h2>
 
-<h3>Import fails with "manifest.json not found"</h3>
-<p><b>Cause:</b> The <code>.hxlibpkg</code> file is corrupt or was not created correctly. Every valid package must contain a <code>manifest.json</code> at the root of the ZIP archive.</p>
+<h3>The page opens but the 3D viewer is blank / black canvas</h3>
+<p><b>Cause:</b> WebGL is not available or has been disabled in the browser.</p>
 <p><b>Solution:</b></p>
 <ul>
-  <li>Re-create the package using the <a href="CLICreatePackage.html"><code>create-package</code></a> CLI command or the GUI Library Packager</li>
-  <li>Do not manually rename <code>.zip</code> files to <code>.hxlibpkg</code> - the internal structure must follow the <a href="PackageFormats.html">package format specification</a></li>
-</ul>
-
-<h3>COM DLLs not registered after CLI import</h3>
-<p><b>Cause:</b> COM registration is only performed automatically by the GUI. The CLI extracts files but cannot run <code>RegAsm.exe</code>.</p>
-<p><b>Solution:</b> Register manually from an elevated command prompt:</p>
-<div class="code"><pre>RegAsm.exe /codebase "C:\Program Files (x86)\HAMILTON\Library\MyLib\MyComHelper.dll"</pre></div>
-<p>Or import the same package using the GUI, which handles registration automatically.</p>
-
-<h3>"System library - cannot delete" error</h3>
-<p><b>Cause:</b> The library is a Hamilton built-in system library. These are protected from deletion to prevent breaking the VENUS installation.</p>
-<p><b>Solution:</b> System libraries cannot be deleted through Venus Library Manager. If you need to modify a system library, work directly in the file system (not recommended).</p>
-
-<h3>"System library - cannot export" error</h3>
-<p><b>Cause:</b> System libraries are read-only and cannot be exported as <code>.hxlibpkg</code> packages.</p>
-<p><b>Solution:</b> Only user-installed libraries can be exported. To share a system library, locate the files directly in the Library folder.</p>
-
-<h3>Library shows as "deleted" but files still exist</h3>
-<p><b>Cause:</b> A <b>soft delete</b> was performed. The database record is marked as deleted, but library files remain on disk.</p>
+  <li>Try a different browser. Chrome and Edge have the best WebGL support.</li>
+  <li>If using Chrome, navigate to <code>chrome://flags/#disable-webgl</code> and ensure WebGL is not disabled.</li>
+  <li>On some systems, hardware acceleration is disabled. Enable it in browser settings under <b>Advanced &rarr; System &rarr; Use hardware acceleration  <li>On some systems, hardware acceleration is disabled. Enable it in browser settings h3>Model loads but looks completely black or invisible</h3>
+<p><b>Cause:</b> The model has no materials, or all materials have black (0, 0, 0) diffuse color.</p>
 <p><b>Solution:</b></p>
 <ul>
-  <li>To complete the removal, use delete with the <code>--hard</code> flag: <code>node cli.js delete-lib --id &lt;id&gt; --hard</code></li>
-  <li>To re-import, use the <a href="CLIImportLib.html"><code>import-lib</code></a> command with the original package</li>
-  <li>Use <a href="CLIRollbackLib.html"><code>rollback-lib</code></a> if a cached version exists in the package store</li>
+  <li>Toggle <b>Wireframe</b> mode in the toolbar to confirm the geometry is present. If wireframe shows correctly, the issue is material color.</li>
+  <li>Some <code>.x</code> files export with black materials by default. This is a property of the source file and cannot be corrected by the viewer. Use a 3D modeling tool to reassign material colors before re-exporting.</li>
 </ul>
 
-<h3>Integrity verification reports "tampered" files</h3>
-<p><b>Cause:</b> The file's content or metadata footer has changed since the baseline was generated.</p>
+<h3>Model loads but appears inside-out or has missing faces</h3>
+<p><b>Cause:</b> Face winding order is inconsistent. This is common in models exported from some CAD tools.</p>
 <p><b>Solution:</b></p>
 <ul>
-  <li>For <b>user libraries</b>: This means a <code>.hsl</code>, <code>.hs_</code>, <code>.sub</code>, or <code>.dll</code> file has been modified. Consider re-importing from the original package</li>
-  <li>For <b>system libraries</b>: The Hamilton metadata footer values (<code>$$valid$$</code>/<code>$$checksum$$</code>) differ from the baseline. This may indicate the file was opened and edited in the HSL Method Editor. Consider regenerating the baseline from a known-good installation</li>
+  <li>All materials are set to <code>THREE.DoubleSide</code>, so inside-out faces should be visible. If faces are still missing, the geometry may have zero-area degenerate triangles.</li>
+  <li>Toggle <b>Wireframe</b> to inspect the mesh topology.</li>
+  <li>Re-export the model from your CAD tool with consistent face normals and winding order.</li>
 </ul>
 
-<h3>Database seems empty or out of sync</h3>
-<p><b>Cause:</b> The application may be reading from the wrong user data directory, or the database files were corrupted.</p>
+<h3>Z-fighting / flickering surfaces on a model with multiple parts</h3>
+<p><b>Cause:</b> Coplanar surfaces from two different meshes occupy the same depth in the depth buffer.</p>
 <p><b>Solution:</b></p>
 <ul>
-  <li>Check the <code>userDataPath</code> in <a href="DataModel.html">Settings</a></li>
-  <li>For CLI commands, verify the <code>--user-data</code> flag points to the correct directory</li>
-  <li>Shadow copies (<code>._groups.json</code>, <code>._links.json</code>, etc.) in the <code>db/</code> folder are diskdb backup files - do not delete them</li>
+  <li>The viewer automatically detects overlapping meshes and applies nudges and polygon offsets. In most cases this resolves the issue automatically.</li>
+  <li>If z-fighting persists, zoom in on the affected area to increase depth-buffer precision. The logarithmic depth buffer provides much greater precision than a standard depth buffer.</li>
+  <li>For severe cases (e.g. two perfectly coincident surfaces), the overlap separation algorithm may not be able to resolve the conflict without modifying the source geometry.</li>
 </ul>
 
-<h3>Package store is missing or corrupt</h3>
-<p><b>Cause:</b> The <code>LibraryPackages</code> folder was deleted, moved, or has permission issues.</p>
+<h3>Concave polygon faces render with spurious triangles crossing the interior</h3>
+<p><b>Cause:</b> This was a known issue in earlier versions caused by fan triangulation. It is fixed in the current version using ear-clipping triangulation.</p>
 <p><b>Solution:</b></p>
 <ul>
-  <li>The package store is located at: <code>C:\Program Files (x86)\HAMILTON\Library\LibraryPackages\</code></li>
-  <li>Ensure write permissions exist. Package caching is automatic during import - the next import will recreate the directory structure</li>
-  <li>If you need to disable caching for a CLI import, use <code>--no-cache</code></li>
+  <li>Ensure you are using the current version of <code>js/lib/XFileLoader.js</code>. The version date appears in the script tag in <code>index.html</code> (e.g. <code>XFileLoader.js?v=20260304a</code>).</li>
+  <li>If the issue persists on a specific model, the polygon may be degenerate (self-intersecting). The ear-clipping algorithm falls back to fan triangulation for degenerate geometry. Pre-triangulate the mesh in your modeling tool.</li>
 </ul>
 
-<h3>list-versions shows no entries</h3>
-<p><b>Cause:</b> No packages have been cached for that library name, or the library name does not exactly match (case-sensitive on the directory name).</p>
+<h3>Dropped file does not load / drag-and-drop does not work</h3>
+<p><b>Cause:</b> Some browsers restrict drag-and-drop from certain locations (e.g. the Windows desktop). Security policies may also block <code>file://</code> access.</p>
 <p><b>Solution:</b></p>
 <ul>
-  <li>Check if the <code>LibraryPackages\&lt;LibName&gt;\</code> directory exists and contains <code>.hxlibpkg</code> files</li>
-  <li>Verify the exact library name spelling</li>
-  <li>Packages imported with <code>--no-cache</code> are not stored in the package store</li>
+  <li>Use the <b>Open</b> button instead of drag-and-drop.</li>
+  <li>Serve the application over HTTP instead of opening it as a <code>file://</code> URL. Use the included <code>nocache_server.py</code>: <br>
+  <div class="code"><pre>python3 nocache_server.py</pre></div>
+  Then open <code>http://localhost:8000</code> in your browser.</li>
 </ul>
 
-<h3>CLI command not found / node not recognized</h3>
-<p><b>Cause:</b> Node.js is not installed or not in the system PATH.</p>
-<p><b>Solution:</b> Install Node.js from <a href="https://nodejs.org">nodejs.org</a> and ensure it is available in your command prompt.</p>
-
-<h3>Archive import partially fails</h3>
-<p><b>Cause:</b> One or more packages inside the <code>.hxlibarch</code> are invalid or corrupt.</p>
+<h3>OBJ file loads without colors (all grey)</h3>
+<p><b>Cause:</b> The <code>.mtl</code> material file was not included. OBJ files reference materials by name; without the MTL file, materials default to grey.</p>
 <p><b>Solution:</b></p>
 <ul>
-  <li>The valid packages in the archive are still imported - check the console output for which ones succeeded and which failed</li>
-  <li>Re-create the failing individual packages and rebuild the archive</li>
+  <li>When using the file picker, select <b>both</b> the <code>.obj</code> and <code>.mtl</code> files at once using multi-select (hold Shift or Ctrl while clicking).</li>
+  <li>Alternatively, ensure the <code>.mtl</code> file is in the same directory as the <code>.obj</code> file with the same base name.</li>
 </ul>
 
-<h3>Permission denied errors on Windows</h3>
-<p><b>Cause:</b> The default Library path (<code>C:\Program Files (x86)\HAMILTON\</code>) requires administrator privileges.</p>
+<h3>Export .x button is disabled in the Converter</h3>
+<p><b>Cause:</b> No model has been loaded yet. The export button is disabled until a valid 3D file is loaded.</p>
+<p><b>Solution:</b> Click <b>Open</b> and select a supported file (OBJ, STL, GLB, or .x) before attempting to export.</p>
+
+<h3>The Integra Generator preview appears empty after clicking Generate</h3>
+<p><b>Cause:</b> Invalid parameter values (e.g. zero rows or columns, zero well depth, non-numeric footprint dimensions).</p>
 <p><b>Solution:</b></p>
 <ul>
-  <li>Run the GUI or CLI as Administrator</li>
-  <li>Or configure the Library and Methods directories to a user-writable location via the Settings panel or <code>--lib-dir</code>/<code>--met-dir</code> CLI flags</li>
+  <li>Verify that all required fields contain valid positive numbers.</li>
+  <li>Rows and Columns must both be at least 1.</li>
+  <li>Footprint dimensions must be positive.</li>
+  <li>Click <b>Apply SBS Defaults</b> to reset to known-good values, then make your adjustments.</li>
 </ul>
 
-<h3>Package signature verification failed</h3>
-<p><b>Cause:</b> The <code>.hxlibpkg</code> file has been corrupted during transfer, modified after creation, or tampered with. The HMAC-SHA256 signature embedded in <code>signature.json</code> does not match the actual contents.</p>
+<h3>Ruler measurement does not appear / ruler tool unresponsive</h3>
+<p><b>Cause:</b> Ruler requires a generated model to be present. It measures 3D surface points so geometry must exist.</p>
 <p><b>Solution:</b></p>
 <ul>
-  <li>Re-download or re-copy the package from the original source</li>
-  <li>Use <code>node cli.js verify-package --file &lt;path&gt;</code> to check the package before importing</li>
-  <li><b>CLI:</b> Use <code>--force</code> to override the signature check when importing (use with caution)</li>
-  <li><b>GUI:</b> A confirmation dialog allows you to proceed despite the failure</li>
-  <li>If the package was created by an older version of Venus Library Manager, it may not have a signature. Unsigned packages are accepted - this error only applies to packages that <em>have</em> a signature that doesn't match</li>
+  <li>Click <b>Generate 3D Model</b> first, then activate the ruler.</li>
+  <li>If the ruler was accidentally left active while switching tools, press <b>Esc</b> to cancel it.</li>
 </ul>
 
-<h3>Package shows as "unsigned"</h3>
-<p><b>Cause:</b> The <code>.hxlibpkg</code> was created before package signing was added, or by a third-party tool that does not produce <code>signature.json</code>.</p>
+<h3>HXX file fails to load with a parsing error</h3>
+<p><b>Cause:</b> The file does not begin with the <code>Hamilton3dData</code> magic header, or the gzip-compressed data is corrupt.</p>
 <p><b>Solution:</b></p>
 <ul>
-  <li>This is not an error - unsigned packages import normally. Only packages with a <em>failed</em> signature are flagged as problems.</li>
-  <li>To add signing, re-export the library using the current version of Venus Library Manager (GUI or CLI). The new package will include a signature.</li>
+  <li>Confirm the file was exported by Hamilton VENUS or 3D File Tools. Files renamed from another format will not have the correct magic header.</li>
+  <li>Try re-exporting the file using the <b>Export as .HXX</b> option in the 3D Viewer.</li>
+  <li>Open the browser developer console (F12) to see the specific parsing error message.</li>
 </ul>
 
-<h3>Verify &amp; Repair cannot repair a library</h3>
-<p><b>Cause:</b> The library was imported with <code>--no-cache</code>, the cached package was deleted from the package store, or the cached package itself has a failed signature.</p>
+<h3>Application opens with a white screen / JavaScript error</h3>
+<p><b>Cause:</b> A required JavaScript file failed to load. This usually happens when the application is opened directly as a <code>file://</code> URL and the browser blocks local script loading.</p>
 <p><b>Solution:</b></p>
 <ul>
-  <li>Re-import the original <code>.hxlibpkg</code> using the Import workflow or <code>import-lib --force</code></li>
-  <li>If you have the original package file, you can also manually copy it to the package store at <code>LibraryPackages\&lt;LibName&gt;\</code></li>
-  <li>Ensure the package store directory has correct write permissions</li>
+  <li>Serve the application over HTTP using the included server: <div class="code"><pre>python3 nocache_server.py</pre></div> Then navigate to <code>http://localhost:8000</code>.</li>
+  <li>Open the browser developer console (F12 &rarr; Console tab) to find the specific error.</li>
 </ul>
 
-<h3>Unsigned library scan finds no libraries</h3>
-<p><b>Cause:</b> All <code>.hsl</code> and <code>.smt</code> files in the Library folder are already claimed by a system library or an installed user library.</p>
-<p><b>Solution:</b></p>
-<ul>
-  <li>This is normal if all libraries are properly managed. The scanner only finds files that are <em>not</em> tracked by any existing library record.</li>
-  <li>Verify the Library folder path is set correctly in Settings</li>
-  <li>If you recently imported libraries, their files are now "claimed" and will not appear as unsigned</li>
-</ul>
-
-<h3>Unsigned library reappears after removal</h3>
-<p><b>Cause:</b> The "Remove" action only deletes the database record. The actual files remain on disk, so the next scan rediscovers them.</p>
-<p><b>Solution:</b></p>
-<ul>
-  <li>To permanently prevent rediscovery, either delete the files from disk or import them as a proper <code>.hxlibpkg</code> package (which claims the files)</li>
-  <li>Export the unsigned library first (to preserve a packaged copy), then import the resulting <code>.hxlibpkg</code></li>
-</ul>
-
-<h3>Unsigned library auto-scan on launch not running</h3>
-<p><b>Cause:</b> The <b>Scan for new unsigned libraries each launch</b> checkbox is not checked, or the parent <b>Include existing unsigned libraries on the front page</b> checkbox is disabled.</p>
-<p><b>Solution:</b></p>
-<ul>
-  <li>Both checkboxes must be enabled: first enable <b>Include existing unsigned libraries on the front page</b>, then enable <b>Scan for new unsigned libraries each launch</b></li>
-  <li>When the parent checkbox is unchecked, the auto-scan setting is automatically reset to disabled</li>
-  <li>After enabling both settings, restart the application to verify the scan runs on launch (a spinning indicator will appear next to the Scan Now button, followed by a green checkmark when complete)</li>
-</ul>
-
-<h2>Getting Help</h2>
-<p>For additional assistance:</p>
-<ul>
-  <li>Run <code>node cli.js help</code> for full CLI usage information</li>
-  <li>Check the <a href="CLIReference.html">CLI Reference</a> for detailed command documentation</li>
-  <li>Review the <a href="DataModel.html">Data Model</a> to understand the database structure</li>
-</ul>
 </div>
 <div class="footer">
-<p>Venus Library Manager Help</p>
+<p>3D File Tools Help</p>
 </div>
 </body>
 </html>

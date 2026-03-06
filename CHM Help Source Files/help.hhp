@@ -1,52 +1,31 @@
 [OPTIONS]
 Compatibility=1.1 or later
-Compiled file=Venus Library Manager.chm
+Compiled file=3D File Tools.chm
 Contents file=help.hhc
 Default topic=index.html
 Display compile progress=No
 Full-text search=Yes
 Index file=help.hhk
 Language=0x409 English (United States)
-Title=Venus Library Manager Help
+Title=3D File Tools Help
 
 [FILES]
 index.html
 Overview.html
 GettingStarted.html
 GUIOverview.html
-SearchFeatures.html
-PackageFormats.html
-BinaryContainerFormat.html
-PackageSpecSchema.html
-HSLFileArchitecture.html
-DataModel.html
-IntegrityVerification.html
-ImportingLibraries.html
-ExportingLibraries.html
-CreatingPackages.html
-GitHubRepository.html
-DeletingLibraries.html
-VersionRollback.html
-LibraryGrouping.html
-VENUSIntegration.html
-CLIReference.html
-CLIListLibs.html
-CLIImportLib.html
-CLIImportArchive.html
-CLIExportLib.html
-CLIExportArchive.html
-CLIDeleteLib.html
-CLICreatePackage.html
-CLIListVersions.html
-CLIRollbackLib.html
-CLIGenerateSyslibHashes.html
-CLIVerifySyslibHashes.html
-CLIVerifyPackage.html
-LibraryAuditLog.html
-UnsignedLibraries.html
-VisualIdentity.html
-SplashScreen.html
-SuccessDialogs.html
+3DViewer.html
+Converter.html
+PlatePlacer.html
+LabwareGenerator.html
+Toolbar.html
+ExportOptions.html
+Screenshot.html
+FileFormats.html
+XFileFormat.html
+HXXFormat.html
+KeyboardShortcuts.html
+XFileLoader.html
 Troubleshooting.html
 
 [INFOTYPES]

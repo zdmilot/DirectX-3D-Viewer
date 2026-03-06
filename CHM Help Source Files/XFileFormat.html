@@ -1,0 +1,96 @@
+<html>
+<head>
+    <title>DirectX .x File Format</title>
+    <link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+<div class="header">DirectX .x File Format</div>
+<div class="main">
+<div class="breadcrumb"><a href="Overview.html">3D File Tools</a> &raquo; <a href="FileFormats.html">File Formats</a> &raquo; DirectX .x File Format</div>
+
+<h2>Overview</h2>
+<p>The DirectX <code>.x</code> format is an ASCII text mesh format used by DirectX 8 and earlier versions. Hamilton VENUS uses it extensively for 3D labware visualization. A <code>.x</code> file defines a hierarchy of named <b>Frames</b>, each of which can have a transformation matrix and one or more <b>Meshes</b>.</p>
+
+<h2>File Structure</h2>
+<p>A minimal <code>.x</code> file has the following structure:</p>
+<div class="code"><pre>xof 0303txt 0032
+
+Frame RootFrame {
+    FrameTransformMatrix {
+        1.000000, 0.000000, 0.000000, 0.000000,
+        0.000000, 1.000000, 0.000000, 0.000000,
+        0.000000, 0.000000, 1.000000, 0.000000,
+        0.000000, 0.000000, 0.000000, 1.000000;;
+    }
+
+    Mesh MeshName {
+        &lt;vertex count&gt;;
+        &lt;x&gt;;&lt;y&gt;;&lt;z&gt;;,
+        ...
+
+        &lt;face count&gt;;
+        &lt;vertex count per face&gt;; &lt;i0&gt;, &lt;i1&gt;, &lt;i2&gt;;,
+        ...
+
+        MeshNormals {
+            &lt;normal count&gt;;
+            &lt;nx&gt;;&lt;ny&gt;;&lt;nz&gt;;,
+            ...
+
+            &lt;face normal index count&gt;;
+            &lt;count&gt;; &lt;ni0&gt;, &lt;ni1&gt;, &lt;ni2&gt;;,
+            ...
+        }
+
+        MeshMaterialList {
+            &lt;material count&gt;;
+            &lt;face count&gt;;
+            &lt;face material index&gt;, ...;
+
+            Material {
+                &lt;r&gt;;&lt;g&gt;;&lt;b&gt;;&lt;a&gt;;;
+                &lt;power&gt;;
+                &lt;specR&gt;;&lt;specG&gt;;&lt;specB&gt;;;
+                &lt;emissR&gt;;&lt;emissG&gt;;&lt;emissB&gt;;;
+            }
+        }
+    }
+}</pre></div>
+
+<h2>Key Nodes</h2>
+<table>
+<thead><tr><th>Node</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>xof 0303txt 0032</code></td><td>Magic header. <code>0303</code> = version 3.3, <code>txt</code> = ASCII text format, <code>0032</code> = 32-bit float precision.</td></tr>
+<tr><td><code>Frame</code></td><td>Named coordinate frame. Can contain a <code>FrameTransformMatrix</code> and child <code>Frame</code> or <code>Mesh</code> nodes. Frames are nested to build a scene hierarchy.</td></tr>
+<tr><td><code>FrameTransformMatrix</code></td><td>A 4&times;4 row-major transformation matrix (16 floats) defining the local-to-parent transform for the frame. Written in row-major order: rows 0&ndash;3, columns 0&ndash;3.</td></tr>
+<tr><td><code>Mesh</code></td><td>The main geometry container. Contains a vertex list, a face index list, and child <code>MeshNormals</code> and <code>MeshMaterialList</code> sub-nodes.</td></tr>
+<tr><td><code>MeshNormals</code></td><td>Per-vertex normal vectors and per-face normal index lists. One normal entry per vertex of each face (may differ from the vertex index list).</td></tr>
+<tr><td><code>MeshMaterialList</code></td><td>Defines how many materials the mesh uses, one material index per face, and the <code>Material</code> sub-nodes.</td></tr>
+<tr><td><code>Material</code></td><td>RGBA face color (diffuse), specular power, specular RGB, and emissive RGB.</td></tr>
+</tbody>
+</table>
+
+<h2>Face Format</h2>
+<p>Faces can have any number of vertices (n-gons). The face line format is:</p>
+<div class="code"><pre>&lt;vertex count per face&gt;; &lt;v0&gt;, &lt;v1&gt;, ..., &lt;vN-1&gt;;,</pre></div>
+<p>Triangles use <code>3;</code>, quads use <code>4;</code>, and pentagons and higher use their respective count. 3D File Tools uses <b>ear-clipping triangulation</b> to correctly decompose concave n-gon faces during rendering. See <a href="XFileLoader.html">XFileLoader Rendering Pipeline</a> for details.</p>
+
+<h2>Coordinate System</h2>
+<p>DirectX <code>.x</code> files use a <b>left-handed coordinate system</b> with Y-up orientation. Three.js uses a right-handed Y-up system. The XFileLoader handles any necessary axis adjustments during parsing.</p>
+
+<h2>Character Encoding</h2>
+<p><code>.x</code> files are plain ASCII text. Numeric values use float notation with up to 6 decimal places. Block delimiters are <code>{</code> and <code>}</code>. List items are separated by commas; the last item in a list is followed by a semicolon.</p>
+
+<h2>Limitations</h2>
+<ul>
+  <li>Only the ASCII text variant (<code>txt</code>) is supported. Binary <code>.x</code> files are not supported.</li>
+  <li>Animation data (<code>AnimationSet</code>, <code>Animation</code>) is parsed but not currently played back in the viewer</li>
+  <li>Texture references in <code>TextureFilename</code> nodes are parsed but texture images are not loaded from disk</li>
+</ul>
+</div>
+<div class="footer">
+<p>3D File Tools Help</p>
+</div>
+</body>
+</html>

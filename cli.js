@@ -1,31 +1,84 @@
 #!/usr/bin/env node
 /* ================================================================
-   Hamilton .hxx / .x File CLI Tool
+   Hamilton .hxx / .x File CLI Tool  — Full-Parity Edition
    ================================================================
-   Interactive command-line interface for loading, inspecting,
-   validating, and exporting Hamilton 3D files (.hxx and .x).
+   Complete command-line interface providing 1:1 feature parity
+   with the browser GUI: load/inspect .hxx/.x files, convert 3D
+   formats to .x, export .x to OBJ/STL/GLB, and generate .x
+   labware models from XML definitions.
 
-   Usage:
-     node cli.js                    — interactive mode
-     node cli.js <file>             — load file and show info
-     node cli.js --batch <dir>      — batch-validate all .hxx/.x in dir
-     node cli.js --help             — show help
+   NON-INTERACTIVE (one-shot) USAGE
+   ─────────────────────────────────
+   node cli.js --help
+   node cli.js <file>                        view info
+   node cli.js <file> --validate             deep parse
+   node cli.js <file> --export [out.x]       export decompressed .x
 
-   Commands (interactive mode):
-     load <file>         Load a .hxx or .x file
-     info                Show info about the loaded file
-     sections            List .hxx sections (only for .hxx files)
-     tree                Show frame hierarchy tree
-     meshes              List all meshes with vertex/face counts
-     materials           List all materials
-     animations          List animations
-     export <file>       Export decompressed .x text to file
-     validate <file>     Validate a file can be parsed
-     batch <dir>         Batch-validate all .hxx/.x files in a directory
-     stats               Show aggregate stats for batch results
-     open                Open in browser (starts local server)
-     help                Show this help
-     exit / quit         Exit
+   node cli.js convert <in> <out.x> [opts]  convert OBJ/STL/GLB/X → .x
+       --rotate-x <deg>   rotate around X axis
+       --rotate-y <deg>   rotate around Y axis
+       --rotate-z <deg>   rotate around Z axis
+       --mirror-x         mirror on X axis
+       --mirror-y         mirror on Y axis
+       --mirror-z         mirror on Z axis
+
+   node cli.js export-x <in.x|hxx> <out> [--format obj|stl|glb]
+                                           export .x/.hxx → OBJ/STL/GLB
+
+   node cli.js generate <labware.xml> [out.x] [--sbs]
+                                           XML labware definition → .x
+   node cli.js generate-default [out.x] [opts]
+       --rows <n>         number of rows      (default 8)
+       --cols <n>         number of columns   (default 12)
+       --name <name>      labware name
+       --well-shape circle|rect
+       --bottom-shape flat|circle|vshape
+       --height <mm>
+       --well-depth <mm>
+       --well-size <mm>
+       --row-gap <mm>
+       --col-gap <mm>
+       --first-x <mm>
+       --first-y <mm>
+       --sbs              snap footprint/spacing to SBS/ANSI standard
+
+   node cli.js --batch <dir> [--recursive]  batch validate all files
+   node cli.js <file> --quiet               load without interactive
+
+   INTERACTIVE MODE
+   ─────────────────
+   node cli.js                  start interactive prompt
+
+   Inspection commands:
+     load <file>          load .hxx or .x
+     info                 file information
+     sections             archive sections in .hxx
+     tree                 frame hierarchy tree
+     meshes               mesh list with vertex/face counts
+     materials            material list
+     animations           animation list
+     deep                 deep parse via XFileLoader
+
+   Export/conversion commands:
+     export [out.x]            export decompressed .x text
+     export-textures [dir]     extract embedded textures from .hxx
+     export-x <out> [format]   export loaded file to OBJ/STL/GLB
+                               format: obj (default), stl, glb
+     convert <in> <out.x>      convert OBJ/STL/GLB/X → .x
+       Options (append to command):
+         --rotate-x <deg>  --rotate-y <deg>  --rotate-z <deg>
+         --mirror-x  --mirror-y  --mirror-z
+     generate <xml> [out.x]    generate .x from labware XML
+     generate-default [out.x]  generate .x with default/SBS plate
+       (interactive prompts for parameters)
+
+   Validation:
+     validate [file]      validate + deep parse
+     batch <dir>          batch-validate directory
+     stats                aggregate batch stats
+
+   Other:
+     help  clear  exit/quit
    ================================================================ */
 
 'use strict';
@@ -685,6 +738,1065 @@ function createThreeShim() {
     };
 }
 
+// ── OBJ Parser (Node.js, no THREE dependency) ──────────────────
+
+/**
+ * Parse an OBJ text file and optional MTL text.
+ * Returns an array of mesh objects: { name, vertices[], faces[], normals[], uvs[], material }
+ * where vertices = [{x,y,z}], faces = [{v:[i,i,i], vn:[i,i,i], vt:[i,i,i]}],
+ * normals = [{x,y,z}], uvs = [{u,v}], material = {name,r,g,b,a,sr,sg,sb,power}
+ */
+function parseOBJ(objText, mtlText) {
+    const positions = [];   // 1-indexed
+    const normals = [];
+    const uvs = [];
+    const materials = {};   // name → {r,g,b,a,sr,sg,sb,power}
+    const groups = [];      // [{name, materialName, faces:[{vi,ni,ti}[]]}]
+
+    // Parse MTL first
+    if (mtlText) {
+        let curMat = null;
+        for (const rawLine of mtlText.split('\n')) {
+            const line = rawLine.trim();
+            if (!line || line.startsWith('#')) continue;
+            const parts = line.split(/\s+/);
+            const tok = parts[0].toLowerCase();
+            if (tok === 'newmtl') {
+                curMat = parts.slice(1).join(' ');
+                materials[curMat] = { r: 0.7, g: 0.7, b: 0.7, a: 1.0, sr: 0, sg: 0, sb: 0, power: 1 };
+            } else if (curMat) {
+                if (tok === 'kd' && parts.length >= 4) {
+                    materials[curMat].r = parseFloat(parts[1]) || 0;
+                    materials[curMat].g = parseFloat(parts[2]) || 0;
+                    materials[curMat].b = parseFloat(parts[3]) || 0;
+                } else if (tok === 'ks' && parts.length >= 4) {
+                    materials[curMat].sr = parseFloat(parts[1]) || 0;
+                    materials[curMat].sg = parseFloat(parts[2]) || 0;
+                    materials[curMat].sb = parseFloat(parts[3]) || 0;
+                } else if (tok === 'd') {
+                    materials[curMat].a = parseFloat(parts[1]) || 1;
+                } else if (tok === 'ns') {
+                    materials[curMat].power = parseFloat(parts[1]) || 1;
+                }
+            }
+        }
+    }
+
+    let currentGroup = { name: 'default', materialName: null, faces: [] };
+    groups.push(currentGroup);
+
+    for (const rawLine of objText.split('\n')) {
+        const line = rawLine.trim();
+        if (!line || line.startsWith('#')) continue;
+        const parts = line.split(/\s+/);
+        const tok = parts[0].toLowerCase();
+
+        if (tok === 'v') {
+            positions.push({ x: parseFloat(parts[1]) || 0, y: parseFloat(parts[2]) || 0, z: parseFloat(parts[3]) || 0 });
+        } else if (tok === 'vn') {
+            normals.push({ x: parseFloat(parts[1]) || 0, y: parseFloat(parts[2]) || 0, z: parseFloat(parts[3]) || 0 });
+        } else if (tok === 'vt') {
+            uvs.push({ u: parseFloat(parts[1]) || 0, v: parseFloat(parts[2]) || 0 });
+        } else if (tok === 'g' || tok === 'o') {
+            const name = parts.slice(1).join(' ') || 'group';
+            if (currentGroup.faces.length > 0) {
+                currentGroup = { name, materialName: currentGroup.materialName, faces: [] };
+                groups.push(currentGroup);
+            } else {
+                currentGroup.name = name;
+            }
+        } else if (tok === 'usemtl') {
+            const matName = parts.slice(1).join(' ');
+            if (currentGroup.faces.length > 0) {
+                currentGroup = { name: currentGroup.name + '_' + matName, materialName: matName, faces: [] };
+                groups.push(currentGroup);
+            } else {
+                currentGroup.materialName = matName;
+            }
+        } else if (tok === 'f') {
+            // Triangulate fan
+            const verts = parts.slice(1).map(token => {
+                const sub = token.split('/');
+                return {
+                    vi: parseInt(sub[0]) || 0,
+                    vt: parseInt(sub[1]) || 0,
+                    vn: parseInt(sub[2]) || 0,
+                };
+            });
+            for (let i = 1; i < verts.length - 1; i++) {
+                currentGroup.faces.push([verts[0], verts[i], verts[i + 1]]);
+            }
+        }
+    }
+
+    // Convert groups to mesh objects with resolved, zero-indexed buffers
+    return groups.filter(g => g.faces.length > 0).map(g => {
+        const mat = g.materialName && materials[g.materialName]
+            ? { ...materials[g.materialName], name: g.materialName }
+            : { name: 'default', r: 0.7, g: 0.7, b: 0.7, a: 1.0, sr: 0, sg: 0, sb: 0, power: 1 };
+
+        const vBuf = [], nBuf = [], uvBuf = [];
+        const fBuf = []; // face index triples into vBuf
+
+        for (const tri of g.faces) {
+            const base = vBuf.length;
+            for (const v of tri) {
+                const vi = v.vi > 0 ? v.vi - 1 : (v.vi < 0 ? positions.length + v.vi : 0);
+                const ni = v.vn > 0 ? v.vn - 1 : (v.vn < 0 ? normals.length + v.vn : -1);
+                const ti = v.vt > 0 ? v.vt - 1 : (v.vt < 0 ? uvs.length + v.vt : -1);
+                vBuf.push(positions[vi] || { x: 0, y: 0, z: 0 });
+                nBuf.push(ni >= 0 ? normals[ni] : null);
+                uvBuf.push(ti >= 0 ? uvs[ti] : null);
+            }
+            fBuf.push([base, base + 1, base + 2]);
+        }
+
+        return { name: g.name, vertices: vBuf, faces: fBuf, normals: nBuf, uvs: uvBuf, material: mat };
+    });
+}
+
+// ── STL Parser (binary + ASCII, Node.js) ───────────────────────
+
+function parseSTL(buf) {
+    const header = buf.toString('ascii', 0, 80);
+    const isBinary = !header.trimStart().toLowerCase().startsWith('solid') ||
+                     buf.length > 84 && buf.readUInt32LE(80) * 50 + 84 === buf.length;
+
+    const vertices = [], normals = [], faces = [];
+
+    if (isBinary) {
+        const triCount = buf.readUInt32LE(80);
+        let off = 84;
+        for (let i = 0; i < triCount; i++) {
+            const nx = buf.readFloatLE(off);     const ny = buf.readFloatLE(off + 4);  const nz = buf.readFloatLE(off + 8);
+            const ax = buf.readFloatLE(off + 12); const ay = buf.readFloatLE(off + 16); const az = buf.readFloatLE(off + 20);
+            const bx = buf.readFloatLE(off + 24); const by = buf.readFloatLE(off + 28); const bz = buf.readFloatLE(off + 32);
+            const cx = buf.readFloatLE(off + 36); const cy = buf.readFloatLE(off + 40); const cz = buf.readFloatLE(off + 44);
+            off += 50;
+            const base = vertices.length;
+            vertices.push({ x: ax, y: ay, z: az });
+            vertices.push({ x: bx, y: by, z: bz });
+            vertices.push({ x: cx, y: cy, z: cz });
+            normals.push({ x: nx, y: ny, z: nz }, { x: nx, y: ny, z: nz }, { x: nx, y: ny, z: nz });
+            faces.push([base, base + 1, base + 2]);
+        }
+    } else {
+        // ASCII STL
+        const text = buf.toString('utf-8');
+        const facetRe = /facet\s+normal\s+([\d.eE+\-]+)\s+([\d.eE+\-]+)\s+([\d.eE+\-]+)[\s\S]*?vertex\s+([\d.eE+\-]+)\s+([\d.eE+\-]+)\s+([\d.eE+\-]+)\s*vertex\s+([\d.eE+\-]+)\s+([\d.eE+\-]+)\s+([\d.eE+\-]+)\s*vertex\s+([\d.eE+\-]+)\s+([\d.eE+\-]+)\s+([\d.eE+\-]+)/gi;
+        let m;
+        while ((m = facetRe.exec(text)) !== null) {
+            const nx = parseFloat(m[1]), ny = parseFloat(m[2]), nz = parseFloat(m[3]);
+            const base = vertices.length;
+            vertices.push({ x: parseFloat(m[4]), y: parseFloat(m[5]), z: parseFloat(m[6]) });
+            vertices.push({ x: parseFloat(m[7]), y: parseFloat(m[8]), z: parseFloat(m[9]) });
+            vertices.push({ x: parseFloat(m[10]), y: parseFloat(m[11]), z: parseFloat(m[12]) });
+            normals.push({ x: nx, y: ny, z: nz }, { x: nx, y: ny, z: nz }, { x: nx, y: ny, z: nz });
+            faces.push([base, base + 1, base + 2]);
+        }
+    }
+
+    const mat = { name: 'default', r: 0.7, g: 0.7, b: 0.7, a: 1.0, sr: 0.3, sg: 0.3, sb: 0.3, power: 30 };
+    return [{ name: 'STLMesh', vertices, faces, normals, uvs: [], material: mat }];
+}
+
+// ── GLB/GLTF Parser (Node.js, extracts geometry only) ──────────
+
+function parseGLB(buf) {
+    if (buf.readUInt32LE(0) !== 0x46546C67) throw new Error('Not a valid GLB file');
+    const jsonLen = buf.readUInt32LE(12);
+    const jsonStr = buf.toString('utf-8', 20, 20 + jsonLen);
+    const gltf = JSON.parse(jsonStr);
+    const binStart = 20 + jsonLen + 8; // skip chunk header
+    const binData = buf.slice(binStart);
+    return extractGLTFMeshes(gltf, binData);
+}
+
+function parseGLTF(jsonText, binBuf) {
+    const gltf = JSON.parse(jsonText);
+    return extractGLTFMeshes(gltf, binBuf);
+}
+
+function extractGLTFMeshes(gltf, binData) {
+    const meshes = [];
+
+    function getAccessorData(accIdx) {
+        if (accIdx === undefined || accIdx === null) return null;
+        const acc = gltf.accessors[accIdx];
+        const bv = gltf.bufferViews[acc.bufferView];
+        const byteOffset = (bv.byteOffset || 0) + (acc.byteOffset || 0);
+        const count = acc.count;
+        const itemSize = { SCALAR: 1, VEC2: 2, VEC3: 3, VEC4: 4, MAT4: 16 }[acc.type] || 1;
+        const TypedArray = {
+            5120: Int8Array, 5121: Uint8Array, 5122: Int16Array, 5123: Uint16Array,
+            5125: Uint32Array, 5126: Float32Array,
+        }[acc.componentType] || Float32Array;
+        const ab = binData.buffer.slice(
+            binData.byteOffset + byteOffset,
+            binData.byteOffset + byteOffset + count * itemSize * TypedArray.BYTES_PER_ELEMENT
+        );
+        return { array: new TypedArray(ab), count, itemSize };
+    }
+
+    const materials = gltf.materials || [];
+
+    (gltf.meshes || []).forEach((gMesh, mi) => {
+        (gMesh.primitives || []).forEach((prim, pi) => {
+            const posAcc = getAccessorData(prim.attributes && prim.attributes.POSITION);
+            const normAcc = getAccessorData(prim.attributes && prim.attributes.NORMAL);
+            const idxAcc = getAccessorData(prim.indices);
+            if (!posAcc) return;
+
+            const vertices = [];
+            for (let i = 0; i < posAcc.count; i++) {
+                vertices.push({ x: posAcc.array[i * 3], y: posAcc.array[i * 3 + 1], z: posAcc.array[i * 3 + 2] });
+            }
+
+            const normals = normAcc
+                ? Array.from({ length: normAcc.count }, (_, i) => ({
+                    x: normAcc.array[i * 3], y: normAcc.array[i * 3 + 1], z: normAcc.array[i * 3 + 2],
+                }))
+                : [];
+
+            const faces = [];
+            if (idxAcc) {
+                for (let i = 0; i < idxAcc.count; i += 3) {
+                    faces.push([idxAcc.array[i], idxAcc.array[i + 1], idxAcc.array[i + 2]]);
+                }
+            } else {
+                for (let i = 0; i < posAcc.count; i += 3) {
+                    faces.push([i, i + 1, i + 2]);
+                }
+            }
+
+            let mat = { name: 'default', r: 0.7, g: 0.7, b: 0.7, a: 1, sr: 0, sg: 0, sb: 0, power: 1 };
+            if (prim.material !== undefined && materials[prim.material]) {
+                const gm = materials[prim.material];
+                const pbr = gm.pbrMetallicRoughness || {};
+                const bc = pbr.baseColorFactor || [0.7, 0.7, 0.7, 1];
+                mat = { name: gm.name || 'mat' + prim.material, r: bc[0], g: bc[1], b: bc[2], a: bc[3], sr: 0, sg: 0, sb: 0, power: 1 };
+            }
+
+            meshes.push({ name: (gMesh.name || 'Mesh' + mi) + '_' + pi, vertices, faces, normals, uvs: [], material: mat });
+        });
+    });
+
+    return meshes;
+}
+
+// ── Mesh Transform ──────────────────────────────────────────────
+
+/**
+ * Apply rotation (degrees) and/or mirror transform to mesh list in-place.
+ * rotX/rotY/rotZ: degrees; mirrorX/mirrorY/mirrorZ: booleans
+ */
+function applyMeshTransforms(meshes, { rotX = 0, rotY = 0, rotZ = 0, mirrorX = false, mirrorY = false, mirrorZ = false } = {}) {
+    const rx = rotX * Math.PI / 180;
+    const ry = rotY * Math.PI / 180;
+    const rz = rotZ * Math.PI / 180;
+
+    function rotate(v, axis, angle) {
+        const c = Math.cos(angle), s = Math.sin(angle);
+        if (axis === 'x') return { x: v.x, y: v.y * c - v.z * s, z: v.y * s + v.z * c };
+        if (axis === 'y') return { x: v.x * c + v.z * s, y: v.y, z: -v.x * s + v.z * c };
+        return { x: v.x * c - v.y * s, y: v.x * s + v.y * c, z: v.z };
+    }
+
+    function transformVec(v) {
+        let u = v;
+        if (rx) u = rotate(u, 'x', rx);
+        if (ry) u = rotate(u, 'y', ry);
+        if (rz) u = rotate(u, 'z', rz);
+        if (mirrorX) u = { x: -u.x, y: u.y, z: u.z };
+        if (mirrorY) u = { x: u.x, y: -u.y, z: u.z };
+        if (mirrorZ) u = { x: u.x, y: u.y, z: -u.z };
+        return u;
+    }
+
+    const mirrorCount = [mirrorX, mirrorY, mirrorZ].filter(Boolean).length;
+    const flipWinding = mirrorCount % 2 !== 0;
+
+    for (const mesh of meshes) {
+        mesh.vertices = mesh.vertices.map(transformVec);
+        mesh.normals = mesh.normals.map(n => n ? transformVec(n) : n);
+        if (flipWinding) {
+            mesh.faces = mesh.faces.map(([a, b, c]) => [a, c, b]);
+        }
+    }
+}
+
+// ── X File Writer (from mesh list) ─────────────────────────────
+
+const X_TEMPLATES = `template ColorRGBA {
+  <35ff44e0-6c7c-11cf-8f52-0040333594a3>
+  FLOAT red; FLOAT green; FLOAT blue; FLOAT alpha;
+}
+
+template ColorRGB {
+  <d3e16e81-7835-11cf-8f52-0040333594a3>
+  FLOAT red; FLOAT green; FLOAT blue;
+}
+
+template Material {
+  <3d82ab4d-62da-11cf-ab39-0020af71e433>
+  ColorRGBA faceColor; FLOAT power; ColorRGB specularColor; ColorRGB emissiveColor; [...]
+}
+
+template MeshMaterialList {
+  <f6f23f42-7686-11cf-8f52-0040333594a3>
+  DWORD nMaterials; DWORD nFaceIndexes; array DWORD faceIndexes[nFaceIndexes]; [Material <3d82ab4d-62da-11cf-ab39-0020af71e433>]
+}
+
+template Vector {
+  <3d82ab5e-62da-11cf-ab39-0020af71e433>
+  FLOAT x; FLOAT y; FLOAT z;
+}
+
+template MeshFace {
+  <3d82ab5f-62da-11cf-ab39-0020af71e433>
+  DWORD nFaceVertexIndices; array DWORD faceVertexIndices[nFaceVertexIndices];
+}
+
+template Mesh {
+  <3d82ab44-62da-11cf-ab39-0020af71e433>
+  DWORD nVertices; array Vector vertices[nVertices]; DWORD nFaces; array MeshFace faces[nFaces]; [...]
+}
+
+template MeshNormals {
+  <f6f23f43-7686-11cf-8f52-0040333594a3>
+  DWORD nNormals; array Vector normals[nNormals]; DWORD nFaceNormals; array MeshFace faceNormals[nFaceNormals];
+}
+
+template Coords2d {
+  <f6f23f44-7686-11cf-8f52-0040333594a3>
+  FLOAT u; FLOAT v;
+}
+
+template MeshTextureCoords {
+  <f6f23f40-7686-11cf-8f52-0040333594a3>
+  DWORD nTextureCoords; array Coords2d textureCoords[nTextureCoords];
+}
+`;
+
+/**
+ * Generate .x file text from an array of mesh objects.
+ * Each mesh: { name, vertices:[{x,y,z}], faces:[[i,i,i]], normals:[{x,y,z}|null], uvs:[{u,v}|null], material }
+ */
+function meshesToXFile(meshes) {
+    const lines = ['xof 0303txt 0032', '', X_TEMPLATES];
+
+    meshes.forEach((mesh, mi) => {
+        const meshName = (mesh.name || 'Mesh_' + mi).replace(/[^a-zA-Z0-9_]/g, '_');
+        const verts = mesh.vertices;
+        const faces = mesh.faces;
+        const norms = mesh.normals;
+        const uvs = mesh.uvs;
+        const mat = mesh.material || { r: 0.7, g: 0.7, b: 0.7, a: 1.0, sr: 0, sg: 0, sb: 0, power: 1 };
+
+        lines.push('Mesh ' + meshName + ' {');
+        lines.push('  ' + verts.length + ';');
+        verts.forEach((v, i) => {
+            const sep = i < verts.length - 1 ? ',' : ';';
+            lines.push('  ' + v.x.toFixed(6) + ';' + v.y.toFixed(6) + ';' + v.z.toFixed(6) + ';' + sep);
+        });
+
+        lines.push('  ' + faces.length + ';');
+        faces.forEach((f, i) => {
+            const sep = i < faces.length - 1 ? ',' : ';';
+            lines.push('  3;' + f[0] + ',' + f[1] + ',' + f[2] + ';' + sep);
+        });
+
+        // Material list
+        lines.push('  MeshMaterialList {');
+        lines.push('    1;');
+        lines.push('    ' + faces.length + ';');
+        faces.forEach((_, i) => { lines.push('    0' + (i < faces.length - 1 ? ',' : ';')); });
+        lines.push('    Material Material_' + mi + ' {');
+        lines.push('      ' + mat.r.toFixed(6) + ';' + mat.g.toFixed(6) + ';' + mat.b.toFixed(6) + ';' + mat.a.toFixed(6) + ';;');
+        lines.push('      ' + (mat.power || 1).toFixed(6) + ';');
+        lines.push('      ' + (mat.sr || 0).toFixed(6) + ';' + (mat.sg || 0).toFixed(6) + ';' + (mat.sb || 0).toFixed(6) + ';;');
+        lines.push('      0.000000;0.000000;0.000000;;');
+        lines.push('    }');
+        lines.push('  }');
+
+        // Normals
+        const validNorms = norms && norms.length === verts.length && norms.some(n => n);
+        if (validNorms) {
+            lines.push('  MeshNormals {');
+            lines.push('    ' + norms.length + ';');
+            norms.forEach((n, i) => {
+                const nn = n || { x: 0, y: 1, z: 0 };
+                lines.push('    ' + nn.x.toFixed(6) + ';' + nn.y.toFixed(6) + ';' + nn.z.toFixed(6) + ';' + (i < norms.length - 1 ? ',' : ';'));
+            });
+            lines.push('    ' + faces.length + ';');
+            faces.forEach((f, i) => {
+                lines.push('    3;' + f[0] + ',' + f[1] + ',' + f[2] + ';' + (i < faces.length - 1 ? ',' : ';'));
+            });
+            lines.push('  }');
+        }
+
+        // UVs
+        const validUVs = uvs && uvs.length === verts.length && uvs.some(u => u);
+        if (validUVs) {
+            lines.push('  MeshTextureCoords {');
+            lines.push('    ' + uvs.length + ';');
+            uvs.forEach((uv, i) => {
+                const u = uv || { u: 0, v: 0 };
+                lines.push('    ' + u.u.toFixed(6) + ';' + u.v.toFixed(6) + ';' + (i < uvs.length - 1 ? ',' : ';'));
+            });
+            lines.push('  }');
+        }
+
+        lines.push('}');
+        lines.push('');
+    });
+
+    return lines.join('\n');
+}
+
+// ── 3D Format → Mesh List loader ───────────────────────────────
+
+/**
+ * Load a 3D file (OBJ/STL/GLB/GLTF/.x/.hxx) and return a mesh list.
+ * For .x/.hxx, uses the deep parser (XFileLoader shim) to get geometry.
+ */
+async function loadMeshesFromFile(filePath) {
+    const buf = fs.readFileSync(filePath);
+    const ext = path.extname(filePath).toLowerCase();
+
+    if (ext === '.stl') {
+        return parseSTL(buf);
+    }
+
+    if (ext === '.glb') {
+        return parseGLB(buf);
+    }
+
+    if (ext === '.gltf') {
+        const text = buf.toString('utf-8');
+        let binBuf = Buffer.alloc(0);
+        const gltf = JSON.parse(text);
+        // If external binary, try to load it from same dir
+        if (gltf.buffers && gltf.buffers[0] && gltf.buffers[0].uri) {
+            const binPath = path.join(path.dirname(filePath), gltf.buffers[0].uri);
+            if (fs.existsSync(binPath)) binBuf = fs.readFileSync(binPath);
+        }
+        return parseGLTF(text, binBuf);
+    }
+
+    if (ext === '.obj') {
+        const objText = buf.toString('utf-8');
+        // Try to load companion .mtl
+        const mtlMatch = objText.match(/^mtllib\s+(.+)$/m);
+        let mtlText = null;
+        if (mtlMatch) {
+            const mtlPath = path.join(path.dirname(filePath), mtlMatch[1].trim());
+            if (fs.existsSync(mtlPath)) mtlText = fs.readFileSync(mtlPath, 'utf-8');
+        }
+        return parseOBJ(objText, mtlText);
+    }
+
+    if (ext === '.x' || ext === '.hxx') {
+        // Use deep parser to get THREE-like geometry, convert to mesh list
+        let dataForParse;
+        if (ext === '.hxx') {
+            if (isRawXFile(buf)) {
+                dataForParse = buf.toString('utf-8');
+            } else if (isHXX(buf)) {
+                const hxx = parseHXX(buf);
+                dataForParse = hxx.xFileText;
+            } else {
+                throw new Error('Not a valid .hxx or .x file');
+            }
+        } else {
+            if (isCompressedXFile(buf)) {
+                const decompText = decompressXFileToText(buf);
+                dataForParse = decompText !== null ? decompText : buf;
+            } else {
+                dataForParse = buf.toString('utf-8');
+            }
+        }
+
+        const result = await deepParseXFile(dataForParse);
+        if (result.error) throw new Error(result.error);
+
+        return (result.models || []).map((m, i) => {
+            const geo = m.geometry;
+            const posAttr = geo && geo.attributes && geo.attributes.position;
+            const normAttr = geo && geo.attributes && geo.attributes.normal;
+            const uvAttr = geo && geo.attributes && geo.attributes.uv;
+            if (!posAttr) return null;
+
+            const vCount = posAttr.count;
+            const vertices = Array.from({ length: vCount }, (_, vi) => ({
+                x: posAttr.array[vi * 3], y: posAttr.array[vi * 3 + 1], z: posAttr.array[vi * 3 + 2],
+            }));
+
+            const normals = normAttr
+                ? Array.from({ length: normAttr.count }, (_, vi) => ({
+                    x: normAttr.array[vi * 3], y: normAttr.array[vi * 3 + 1], z: normAttr.array[vi * 3 + 2],
+                }))
+                : [];
+
+            const uvs = uvAttr
+                ? Array.from({ length: uvAttr.count }, (_, vi) => ({
+                    u: uvAttr.array[vi * 2], v: uvAttr.array[vi * 2 + 1],
+                }))
+                : [];
+
+            const faces = [];
+            if (geo.index) {
+                for (let f = 0; f < geo.index.array.length; f += 3) {
+                    faces.push([geo.index.array[f], geo.index.array[f + 1], geo.index.array[f + 2]]);
+                }
+            } else {
+                for (let f = 0; f < vCount; f += 3) {
+                    faces.push([f, f + 1, f + 2]);
+                }
+            }
+
+            // Extract material colour
+            let mat = { name: 'default', r: 0.7, g: 0.7, b: 0.7, a: 1, sr: 0, sg: 0, sb: 0, power: 1 };
+            if (m.material) {
+                const src = Array.isArray(m.material) ? m.material[0] : m.material;
+                if (src && src.color) {
+                    mat = { name: src.name || 'mat', r: src.color.r || 0, g: src.color.g || 0, b: src.color.b || 0,
+                            a: src.opacity !== undefined ? src.opacity : 1,
+                            sr: src.specular ? src.specular.r : 0,
+                            sg: src.specular ? src.specular.g : 0,
+                            sb: src.specular ? src.specular.b : 0,
+                            power: src.shininess || 1 };
+                }
+            }
+
+            return { name: m.name || 'Mesh_' + i, vertices, faces, normals, uvs, material: mat };
+        }).filter(Boolean);
+    }
+
+    throw new Error('Unsupported format: ' + ext);
+}
+
+// ── OBJ Exporter (from mesh list) ──────────────────────────────
+
+function meshesToOBJ(meshes, baseName) {
+    const lines = ['# Exported from Hamilton Direct3D Tools CLI', 'mtllib ' + baseName + '.mtl', ''];
+    const mtlLines = ['# Material Library', ''];
+    let vOff = 1, nOff = 1;
+
+    meshes.forEach((mesh, mi) => {
+        const matName = (mesh.material && mesh.material.name) ? mesh.material.name : 'Material_' + mi;
+        const mat = mesh.material || { r: 0.7, g: 0.7, b: 0.7, a: 1, sr: 0, sg: 0, sb: 0, power: 1 };
+
+        mtlLines.push('newmtl ' + matName);
+        mtlLines.push('Kd ' + mat.r.toFixed(6) + ' ' + mat.g.toFixed(6) + ' ' + mat.b.toFixed(6));
+        if (mat.sr || mat.sg || mat.sb) {
+            mtlLines.push('Ks ' + (mat.sr || 0).toFixed(6) + ' ' + (mat.sg || 0).toFixed(6) + ' ' + (mat.sb || 0).toFixed(6));
+        }
+        mtlLines.push('d ' + (mat.a !== undefined ? mat.a : 1).toFixed(6));
+        mtlLines.push('Ns ' + (mat.power !== undefined ? mat.power : 1).toFixed(6));
+        mtlLines.push('');
+
+        lines.push('g ' + (mesh.name || 'Mesh_' + mi));
+        lines.push('usemtl ' + matName);
+        mesh.vertices.forEach(v => { lines.push('v ' + v.x.toFixed(6) + ' ' + v.y.toFixed(6) + ' ' + v.z.toFixed(6)); });
+        const hasNormals = mesh.normals && mesh.normals.length === mesh.vertices.length && mesh.normals.some(n => n);
+        if (hasNormals) {
+            mesh.normals.forEach(n => { const nn = n || { x: 0, y: 1, z: 0 }; lines.push('vn ' + nn.x.toFixed(6) + ' ' + nn.y.toFixed(6) + ' ' + nn.z.toFixed(6)); });
+        }
+        mesh.faces.forEach(f => {
+            const i0 = f[0] + vOff, i1 = f[1] + vOff, i2 = f[2] + vOff;
+            if (hasNormals) {
+                const n0 = f[0] + nOff, n1 = f[1] + nOff, n2 = f[2] + nOff;
+                lines.push('f ' + i0 + '//' + n0 + ' ' + i1 + '//' + n1 + ' ' + i2 + '//' + n2);
+            } else {
+                lines.push('f ' + i0 + ' ' + i1 + ' ' + i2);
+            }
+        });
+        lines.push('');
+        vOff += mesh.vertices.length;
+        if (hasNormals) nOff += mesh.normals.length;
+    });
+
+    return { obj: lines.join('\n'), mtl: mtlLines.join('\n') };
+}
+
+// ── STL Exporter (binary, from mesh list) ─────────────────────
+
+function meshesToSTL(meshes) {
+    let totalTris = 0;
+    meshes.forEach(m => { totalTris += m.faces.length; });
+
+    const bufLen = 80 + 4 + totalTris * 50;
+    const buffer = Buffer.alloc(bufLen);
+    const headerStr = 'Exported from Hamilton Direct3D Tools CLI';
+    Buffer.from(headerStr).copy(buffer, 0, 0, Math.min(headerStr.length, 80));
+    buffer.writeUInt32LE(totalTris, 80);
+    let off = 84;
+
+    meshes.forEach(mesh => {
+        mesh.faces.forEach(f => {
+            const v0 = mesh.vertices[f[0]], v1 = mesh.vertices[f[1]], v2 = mesh.vertices[f[2]];
+            const n = (mesh.normals && mesh.normals[f[0]]) || { x: 0, y: 1, z: 0 };
+            buffer.writeFloatLE(n.x, off);     buffer.writeFloatLE(n.y, off + 4);  buffer.writeFloatLE(n.z, off + 8);
+            buffer.writeFloatLE(v0.x, off + 12); buffer.writeFloatLE(v0.y, off + 16); buffer.writeFloatLE(v0.z, off + 20);
+            buffer.writeFloatLE(v1.x, off + 24); buffer.writeFloatLE(v1.y, off + 28); buffer.writeFloatLE(v1.z, off + 32);
+            buffer.writeFloatLE(v2.x, off + 36); buffer.writeFloatLE(v2.y, off + 40); buffer.writeFloatLE(v2.z, off + 44);
+            off += 50;
+        });
+    });
+
+    return buffer;
+}
+
+// ── GLB Exporter (from mesh list) ─────────────────────────────
+
+function meshesToGLB(meshes) {
+    function padTo4(arrayBuffer) {
+        const rem = arrayBuffer.byteLength % 4;
+        if (rem === 0) return arrayBuffer;
+        const padded = new ArrayBuffer(arrayBuffer.byteLength + (4 - rem));
+        new Uint8Array(padded).set(new Uint8Array(arrayBuffer));
+        return padded;
+    }
+
+    const bufferParts = [];
+    let totalBufSize = 0;
+    const accessors = [], bufferViews = [], gltfMeshes = [], gltfNodes = [], materials = [];
+
+    meshes.forEach((mesh, mi) => {
+        const mat = mesh.material || { r: 0.7, g: 0.7, b: 0.7, a: 1 };
+        materials.push({
+            pbrMetallicRoughness: { baseColorFactor: [mat.r, mat.g, mat.b, mat.a], metallicFactor: 0, roughnessFactor: 0.8 },
+            name: mat.name || 'Material_' + mi,
+        });
+
+        // Indices
+        const idxArr = new Uint32Array(mesh.faces.length * 3);
+        let ii = 0;
+        mesh.faces.forEach(f => { idxArr[ii++] = f[0]; idxArr[ii++] = f[1]; idxArr[ii++] = f[2]; });
+        const idxBuf = padTo4(idxArr.buffer);
+        const idxBvIdx = bufferViews.length;
+        bufferViews.push({ buffer: 0, byteOffset: totalBufSize, byteLength: idxArr.byteLength, target: 34963 });
+        accessors.push({ bufferView: idxBvIdx, componentType: 5125, count: idxArr.length, type: 'SCALAR', max: [mesh.vertices.length - 1], min: [0] });
+        const idxAccIdx = accessors.length - 1;
+        bufferParts.push(idxBuf); totalBufSize += idxBuf.byteLength;
+
+        // Positions
+        const posArr = new Float32Array(mesh.vertices.length * 3);
+        let pMin = [1e9, 1e9, 1e9], pMax = [-1e9, -1e9, -1e9];
+        mesh.vertices.forEach((v, i) => {
+            posArr[i * 3] = v.x; posArr[i * 3 + 1] = v.y; posArr[i * 3 + 2] = v.z;
+            pMin[0] = Math.min(pMin[0], v.x); pMin[1] = Math.min(pMin[1], v.y); pMin[2] = Math.min(pMin[2], v.z);
+            pMax[0] = Math.max(pMax[0], v.x); pMax[1] = Math.max(pMax[1], v.y); pMax[2] = Math.max(pMax[2], v.z);
+        });
+        const posBuf = padTo4(posArr.buffer);
+        const posBvIdx = bufferViews.length;
+        bufferViews.push({ buffer: 0, byteOffset: totalBufSize, byteLength: posArr.byteLength, target: 34962, byteStride: 12 });
+        accessors.push({ bufferView: posBvIdx, componentType: 5126, count: mesh.vertices.length, type: 'VEC3', min: pMin, max: pMax });
+        const posAccIdx = accessors.length - 1;
+        bufferParts.push(posBuf); totalBufSize += posBuf.byteLength;
+
+        // Normals
+        let normAccIdx;
+        const hasNorms = mesh.normals && mesh.normals.length === mesh.vertices.length && mesh.normals.some(n => n);
+        if (hasNorms) {
+            const normArr = new Float32Array(mesh.normals.length * 3);
+            mesh.normals.forEach((n, i) => { const nn = n || { x: 0, y: 1, z: 0 }; normArr[i * 3] = nn.x; normArr[i * 3 + 1] = nn.y; normArr[i * 3 + 2] = nn.z; });
+            const normBuf = padTo4(normArr.buffer);
+            const normBvIdx = bufferViews.length;
+            bufferViews.push({ buffer: 0, byteOffset: totalBufSize, byteLength: normArr.byteLength, target: 34962, byteStride: 12 });
+            accessors.push({ bufferView: normBvIdx, componentType: 5126, count: mesh.normals.length, type: 'VEC3' });
+            normAccIdx = accessors.length - 1;
+            bufferParts.push(normBuf); totalBufSize += normBuf.byteLength;
+        }
+
+        const attributes = { POSITION: posAccIdx };
+        if (normAccIdx !== undefined) attributes.NORMAL = normAccIdx;
+        gltfMeshes.push({ primitives: [{ attributes, indices: idxAccIdx, material: mi }], name: mesh.name || 'Mesh_' + mi });
+        gltfNodes.push({ mesh: mi, name: 'Node_' + mi });
+    });
+
+    const gltfJson = {
+        asset: { version: '2.0', generator: 'Hamilton Direct3D Tools CLI' },
+        scene: 0,
+        scenes: [{ nodes: gltfNodes.map((_, i) => i) }],
+        nodes: gltfNodes, meshes: gltfMeshes, accessors, bufferViews,
+        buffers: [{ byteLength: totalBufSize }], materials,
+    };
+
+    const jsonBytes = Buffer.from(JSON.stringify(gltfJson));
+    const jsonPad = Buffer.alloc((jsonBytes.length + 3) & ~3, 0x20);
+    jsonBytes.copy(jsonPad);
+
+    const binBuf = Buffer.alloc(totalBufSize);
+    let off = 0;
+    bufferParts.forEach(part => { Buffer.from(part).copy(binBuf, off); off += Buffer.from(part).byteLength; });
+    const binPad = Buffer.alloc((totalBufSize + 3) & ~3);
+    binBuf.copy(binPad);
+
+    const glbLen = 12 + 8 + jsonPad.length + 8 + binPad.length;
+    const glb = Buffer.alloc(glbLen);
+    let p = 0;
+    glb.writeUInt32LE(0x46546C67, p); p += 4; // magic "glTF"
+    glb.writeUInt32LE(2, p); p += 4;           // version
+    glb.writeUInt32LE(glbLen, p); p += 4;      // total length
+    glb.writeUInt32LE(jsonPad.length, p); p += 4;
+    glb.writeUInt32LE(0x4E4F534A, p); p += 4;  // "JSON"
+    jsonPad.copy(glb, p); p += jsonPad.length;
+    glb.writeUInt32LE(binPad.length, p); p += 4;
+    glb.writeUInt32LE(0x004E4942, p); p += 4;  // "BIN\0"
+    binPad.copy(glb, p);
+    return glb;
+}
+
+// ── XML Labware Parser (Node.js port from labwareGenerator.js) ──
+
+// SBS ANSI standard dimensions (mm)
+const SBS = {
+    footprintLength: 127.76,
+    footprintWidth:  85.48,
+    wellSpacing96:   9.0,
+    wellSpacing384:  4.5,
+    wellSpacing1536: 2.25,
+    a1OffsetX:       14.38,
+    a1OffsetY:       11.24,
+    cornerRadius:    3.18,
+    wallThickness:   1.27,
+    flangeHeight:    2.41,
+};
+
+function parseLabwareXML(xmlString) {
+    // Minimal XML parser — extracts element text content by tag name
+    function getEl(src, tag) {
+        const re = new RegExp('<' + tag + '[^>]*>([\\s\\S]*?)<\\/' + tag + '>', 'i');
+        const m = re.exec(src);
+        return m ? m[1].trim() : '';
+    }
+    function getNum(src, tag, divisor) {
+        const raw = getEl(src, tag);
+        return raw === '' ? 0 : (parseFloat(raw) || 0) / (divisor || 1);
+    }
+
+    const DIV = 100;
+
+    const measMatch = xmlString.match(/<Measurements[^>]*>([\s\S]*?)<\/Measurements>/i);
+    const wellsMatch = xmlString.match(/<Wells[^>]*>([\s\S]*?)<\/Wells>/i);
+    const meas = measMatch ? measMatch[1] : '';
+    const wells = wellsMatch ? wellsMatch[1] : '';
+
+    const def = {
+        type: 'plate',
+        name: getEl(xmlString, 'Name') || 'Plate',
+        manufacturer: getEl(xmlString, 'Manufacturer') || '',
+        partNumber: getEl(xmlString, 'PartNumber') || '',
+        footprintLength: meas ? getNum(meas, 'FootprintLengthMM', DIV) || SBS.footprintLength : SBS.footprintLength,
+        footprintWidth:  meas ? getNum(meas, 'FootprintWidthMM', DIV) || SBS.footprintWidth  : SBS.footprintWidth,
+        height:          meas ? getNum(meas, 'HeightMM', DIV) || 14.35 : 14.35,
+        rowCount:    wells ? getNum(wells, 'RowCount', 1) || 8  : 8,
+        colCount:    wells ? getNum(wells, 'CollumnCount', 1) || 12 : 12,
+        rowGap:      wells ? getNum(wells, 'RowGap', DIV) || 9.0  : 9.0,
+        colGap:      wells ? getNum(wells, 'CollumnGap', DIV) || 9.0 : 9.0,
+        wellDepth:   wells ? getNum(wells, 'Depth', DIV) || 10.67 : 10.67,
+        wellShape:   wells ? getEl(wells, 'Shape') || 'Circle' : 'Circle',
+        wellSize:    wells ? getNum(wells, 'Size', DIV) || 6.86   : 6.86,
+        wellLength:  wells ? getNum(wells, 'Length', DIV) || 6.86 : 6.86,
+        sizeBottom:  wells ? getNum(wells, 'SizeBottom', DIV)     : 0,
+        bottomShape: wells ? getEl(wells, 'BottomShape') || 'Flat' : 'Flat',
+        vShapeDepth: wells ? getNum(wells, 'VShapeDepth', DIV)    : 0,
+        angle:       0,
+        nominalVolume: wells ? getNum(wells, 'NominalWellVolume', DIV) : 0,
+        firstHolePos: { x: SBS.a1OffsetX, y: SBS.a1OffsetY },
+    };
+
+    if (!def.sizeBottom) def.sizeBottom = def.wellSize;
+
+    // FirstHolePositionText: "x;y" in hundredths of mm
+    const fhpMatch = (wells || xmlString).match(/<FirstHolePositionText[^>]*>([^<]*)<\/FirstHolePositionText>/i);
+    if (fhpMatch) {
+        const parts = fhpMatch[1].trim().split(';');
+        if (parts.length >= 2) {
+            def.firstHolePos.x = parseFloat(parts[0]) / DIV;
+            def.firstHolePos.y = parseFloat(parts[1]) / DIV;
+        }
+    }
+
+    def.wellCount = def.rowCount * def.colCount;
+    return def;
+}
+
+function checkSBSCompliance(def) {
+    const tolMM = 0.5;
+    const fpOk = Math.abs(def.footprintLength - SBS.footprintLength) < tolMM &&
+                 Math.abs(def.footprintWidth - SBS.footprintWidth) < tolMM;
+    let spacingOk = true;
+    if (def.wellCount === 96)   spacingOk = Math.abs(def.rowGap - SBS.wellSpacing96) < 0.2 && Math.abs(def.colGap - SBS.wellSpacing96) < 0.2;
+    if (def.wellCount === 384)  spacingOk = Math.abs(def.rowGap - SBS.wellSpacing384) < 0.2 && Math.abs(def.colGap - SBS.wellSpacing384) < 0.2;
+    return fpOk && spacingOk;
+}
+
+// ── Labware 3D Geometry Generator (plate only, Node.js) ─────────
+// Produces a flat mesh list (exact port of labwareGenerator.js geometry,
+// minus the canvas-based etched labels which require a browser).
+
+const WELL_SEGMENTS = 16;
+
+function generatePlateGeometry(def) {
+    // All geometry described as flat triangle lists: [[{x,y,z}...], ...]
+    // Each entry is a named mesh with face list.
+    const meshes = [];
+
+    const L = def.footprintLength;
+    const W = def.footprintWidth;
+    const H = def.height;
+    const wallT = SBS.wallThickness;
+    const flangeOverhang = 0.5;
+
+    const depth = Math.min(def.wellDepth, H - wallT);
+    const wellFloorY = H - depth;
+    const flangeH = Math.min(SBS.flangeHeight, H * 0.2, wellFloorY);
+
+    // -- Helper: box → triangles (12 tris per box)
+    function boxTriangles(cx, cy, cz, sx, sy, sz) {
+        const x0 = cx - sx / 2, x1 = cx + sx / 2;
+        const y0 = cy - sy / 2, y1 = cy + sy / 2;
+        const z0 = cz - sz / 2, z1 = cz + sz / 2;
+        return [
+            // front face Z=z0
+            [x0,y0,z0],[x0,y1,z0],[x1,y1,z0], [x0,y0,z0],[x1,y1,z0],[x1,y0,z0],
+            // back face Z=z1
+            [x1,y0,z1],[x1,y1,z1],[x0,y1,z1], [x1,y0,z1],[x0,y1,z1],[x0,y0,z1],
+            // left face X=x0
+            [x0,y0,z1],[x0,y1,z1],[x0,y1,z0], [x0,y0,z1],[x0,y1,z0],[x0,y0,z0],
+            // right face X=x1
+            [x1,y0,z0],[x1,y1,z0],[x1,y1,z1], [x1,y0,z0],[x1,y1,z1],[x1,y0,z1],
+            // top face Y=y1
+            [x0,y1,z0],[x0,y1,z1],[x1,y1,z1], [x0,y1,z0],[x1,y1,z1],[x1,y1,z0],
+            // bottom face Y=y0
+            [x0,y0,z1],[x0,y0,z0],[x1,y0,z0], [x0,y0,z1],[x1,y0,z0],[x1,y0,z1],
+        ];
+    }
+
+    function addBox(name, cx, cy, cz, sx, sy, sz) {
+        const tris = boxTriangles(cx, cy, cz, sx, sy, sz);
+        const vertices = [], faces = [];
+        for (let i = 0; i < tris.length; i += 3) {
+            const base = vertices.length;
+            vertices.push({ x: tris[i][0], y: tris[i][1], z: tris[i][2] });
+            vertices.push({ x: tris[i+1][0], y: tris[i+1][1], z: tris[i+1][2] });
+            vertices.push({ x: tris[i+2][0], y: tris[i+2][1], z: tris[i+2][2] });
+            faces.push([base, base+1, base+2]);
+        }
+        // Compute flat normals
+        const normals = [];
+        faces.forEach(f => {
+            const v0 = vertices[f[0]], v1 = vertices[f[1]], v2 = vertices[f[2]];
+            const ax = v1.x-v0.x, ay = v1.y-v0.y, az = v1.z-v0.z;
+            const bx = v2.x-v0.x, by = v2.y-v0.y, bz = v2.z-v0.z;
+            const nx = ay*bz-az*by, ny = az*bx-ax*bz, nz = ax*by-ay*bx;
+            const len = Math.sqrt(nx*nx+ny*ny+nz*nz) || 1;
+            const n = { x: nx/len, y: ny/len, z: nz/len };
+            normals.push(n, n, n);
+        });
+        const mat = { name: 'LabwareMaterial', r: 0.847, g: 0.863, b: 0.886, a: 0.32, sr: 0.267, sg: 0.267, sb: 0.267, power: 90 };
+        meshes.push({ name, vertices, faces, normals, uvs: [], material: mat });
+    }
+
+    // Circular geometry builder (cylinder / cone / disk)
+    function addCylinder(name, cx, cy, cz, radiusTop, radiusBot, height, open) {
+        const segs = WELL_SEGMENTS;
+        const vertices = [], faces = [], normals = [];
+        const mat = { name: 'LabwareMaterial', r: 0.847, g: 0.863, b: 0.886, a: 0.32, sr: 0.267, sg: 0.267, sb: 0.267, power: 90 };
+
+        for (let i = 0; i < segs; i++) {
+            const a0 = (i / segs) * Math.PI * 2;
+            const a1 = ((i + 1) / segs) * Math.PI * 2;
+            const x0t = cx + Math.cos(a0) * radiusTop, z0t = cz + Math.sin(a0) * radiusTop;
+            const x1t = cx + Math.cos(a1) * radiusTop, z1t = cz + Math.sin(a1) * radiusTop;
+            const x0b = cx + Math.cos(a0) * radiusBot, z0b = cz + Math.sin(a0) * radiusBot;
+            const x1b = cx + Math.cos(a1) * radiusBot, z1b = cz + Math.sin(a1) * radiusBot;
+            const yTop = cy + height / 2, yBot = cy - height / 2;
+
+            const base = vertices.length;
+            vertices.push({ x: x0b, y: yBot, z: z0b }, { x: x1b, y: yBot, z: z1b },
+                          { x: x1t, y: yTop, z: z1t }, { x: x0t, y: yTop, z: z0t });
+
+            // Outward normal (avg between edge normals)
+            const nx = Math.cos((a0 + a1) / 2), nz = Math.sin((a0 + a1) / 2);
+            const n = { x: nx, y: 0, z: nz };
+            normals.push(n, n, n, n);
+
+            faces.push([base, base+1, base+2], [base, base+2, base+3]);
+
+            if (!open) {
+                // Top cap
+                const tc = vertices.length;
+                vertices.push({ x: cx, y: yTop, z: cz }, { x: x0t, y: yTop, z: z0t }, { x: x1t, y: yTop, z: z1t });
+                normals.push({ x: 0, y: 1, z: 0 }, { x: 0, y: 1, z: 0 }, { x: 0, y: 1, z: 0 });
+                faces.push([tc, tc+1, tc+2]);
+
+                // Bottom cap
+                const bc = vertices.length;
+                vertices.push({ x: cx, y: yBot, z: cz }, { x: x1b, y: yBot, z: z1b }, { x: x0b, y: yBot, z: z0b });
+                normals.push({ x: 0, y: -1, z: 0 }, { x: 0, y: -1, z: 0 }, { x: 0, y: -1, z: 0 });
+                faces.push([bc, bc+1, bc+2]);
+            }
+        }
+        meshes.push({ name, vertices, faces, normals, uvs: [], material: mat });
+    }
+
+    function addDisk(name, cx, cy, cz, radius) {
+        const segs = WELL_SEGMENTS;
+        const vertices = [], faces = [], normals = [];
+        const mat = { name: 'LabwareMaterial', r: 0.847, g: 0.863, b: 0.886, a: 0.32, sr: 0.267, sg: 0.267, sb: 0.267, power: 90 };
+        vertices.push({ x: cx, y: cy, z: cz });
+        normals.push({ x: 0, y: 1, z: 0 });
+        for (let i = 0; i < segs; i++) {
+            const a = (i / segs) * Math.PI * 2;
+            vertices.push({ x: cx + Math.cos(a) * radius, y: cy, z: cz + Math.sin(a) * radius });
+            normals.push({ x: 0, y: 1, z: 0 });
+        }
+        for (let i = 0; i < segs; i++) {
+            faces.push([0, i + 1, ((i + 1) % segs) + 1]);
+        }
+        meshes.push({ name, vertices, faces, normals, uvs: [], material: mat });
+    }
+
+    function addBowl(name, cx, bottomY, cz, radius) {
+        // Lathe-like bowl: quarter-circle profile revolved around Y
+        const segs = WELL_SEGMENTS, bsegs = 12;
+        const vertices = [], faces = [], normals = [];
+        const mat = { name: 'LabwareMaterial', r: 0.847, g: 0.863, b: 0.886, a: 0.32, sr: 0.267, sg: 0.267, sb: 0.267, power: 90 };
+
+        for (let i = 0; i <= segs; i++) {
+            const phi = (i / segs) * Math.PI * 2;
+            for (let j = 0; j <= bsegs; j++) {
+                const ba = (j / bsegs) * (Math.PI / 2);
+                const r = Math.sin(ba) * radius;
+                const y = (1 - Math.cos(ba)) * radius;
+                vertices.push({ x: cx + Math.cos(phi) * r, y: bottomY + y, z: cz + Math.sin(phi) * r });
+                normals.push({ x: Math.cos(phi) * Math.sin(ba), y: -Math.cos(ba), z: Math.sin(phi) * Math.sin(ba) });
+            }
+        }
+        for (let i = 0; i < segs; i++) {
+            for (let j = 0; j < bsegs; j++) {
+                const a = i * (bsegs + 1) + j;
+                const b = a + 1;
+                const c = a + (bsegs + 1);
+                const d = c + 1;
+                faces.push([a, c, b], [b, c, d]);
+            }
+        }
+        meshes.push({ name, vertices, faces, normals, uvs: [], material: mat });
+    }
+
+    // ─── Skirt / flange ────────────────────────────────────────
+    const flangeOuterL = L + flangeOverhang * 2;
+    addBox('Flange_Front', L / 2, flangeH / 2, -flangeOverhang / 2 + wallT / 2, flangeOuterL, flangeH, wallT + flangeOverhang);
+    addBox('Flange_Back',  L / 2, flangeH / 2, W + flangeOverhang / 2 - wallT / 2, flangeOuterL, flangeH, wallT + flangeOverhang);
+    const lrSpan = W - wallT * 2;
+    addBox('Flange_Left',  -flangeOverhang / 2 + wallT / 2, flangeH / 2, W / 2, wallT + flangeOverhang, flangeH, lrSpan);
+    addBox('Flange_Right', L + flangeOverhang / 2 - wallT / 2, flangeH / 2, W / 2, wallT + flangeOverhang, flangeH, lrSpan);
+
+    // ─── Base slab ─────────────────────────────────────────────
+    const slabH = wellFloorY - flangeH;
+    if (slabH > 0.01) addBox('Slab', L / 2, flangeH + slabH / 2, W / 2, L, slabH, W);
+
+    // ─── Outer walls ───────────────────────────────────────────
+    const wallH = H - wellFloorY;
+    addBox('Wall_Front', L / 2, wellFloorY + wallH / 2, wallT / 2, L, wallH, wallT);
+    addBox('Wall_Back',  L / 2, wellFloorY + wallH / 2, W - wallT / 2, L, wallH, wallT);
+    const sideInnerW = W - wallT * 2;
+    addBox('Wall_Left',  wallT / 2, wellFloorY + wallH / 2, W / 2, wallT, wallH, sideInnerW);
+    addBox('Wall_Right', L - wallT / 2, wellFloorY + wallH / 2, W / 2, wallT, wallH, sideInnerW);
+
+    // ─── Wells ─────────────────────────────────────────────────
+    const rows = def.rowCount, cols = def.colCount;
+    const wellTopR = def.wellSize / 2, wellBotR = def.sizeBottom / 2;
+    const firstX = def.firstHolePos.x, firstZ = def.firstHolePos.y;
+    const gapX = def.colGap, gapZ = def.rowGap;
+    const isCircle = (def.wellShape || '').toLowerCase() === 'circle';
+    const bsLo = (def.bottomShape || '').toLowerCase();
+    const isRound = bsLo === 'circle';
+    const isV = bsLo === 'vshape' || bsLo === 'v' || def.vShapeDepth > 0;
+
+    let btmShapeH = 0;
+    if (isRound) btmShapeH = wellBotR;
+    else if (isV) btmShapeH = def.vShapeDepth > 0 ? def.vShapeDepth : wellBotR;
+    btmShapeH = Math.min(btmShapeH, depth);
+    const straightDepth = depth - btmShapeH;
+    const straightBotY = wellFloorY + btmShapeH;
+
+    for (let row = 0; row < rows; row++) {
+        for (let col = 0; col < cols; col++) {
+            const cx = firstX + col * gapX;
+            const cz = firstZ + row * gapZ;
+            const wTag = 'W' + row + '_' + col;
+
+            if (isCircle) {
+                if (straightDepth > 0.01) {
+                    addCylinder(wTag + '_wall', cx, straightBotY + straightDepth / 2, cz, wellTopR, wellBotR, straightDepth, true);
+                }
+                if (isRound) {
+                    addBowl(wTag + '_bowl', cx, wellFloorY, cz, btmShapeH);
+                } else if (isV) {
+                    addCylinder(wTag + '_cone', cx, wellFloorY + btmShapeH / 2, cz, wellBotR, 0, btmShapeH, false);
+                } else {
+                    addDisk(wTag + '_disk', cx, wellFloorY, cz, wellBotR);
+                }
+            } else {
+                // Rectangular well — four walls as box strips
+                const wLen = def.wellLength, wSz = def.wellSize, wt = 0.3;
+                if (straightDepth > 0.01) {
+                    const wallCY = straightBotY + straightDepth / 2;
+                    addBox(wTag + '_wF', cx, wallCY, cz - wSz / 2 + wt / 2, wLen, straightDepth, wt);
+                    addBox(wTag + '_wB', cx, wallCY, cz + wSz / 2 - wt / 2, wLen, straightDepth, wt);
+                    addBox(wTag + '_wL', cx - wLen / 2 + wt / 2, wallCY, cz, wt, straightDepth, wSz - wt * 2);
+                    addBox(wTag + '_wR', cx + wLen / 2 - wt / 2, wallCY, cz, wt, straightDepth, wSz - wt * 2);
+                }
+                if (isRound) {
+                    addBowl(wTag + '_bowl', cx, wellFloorY, cz, Math.min(wLen / 2, wSz / 2, btmShapeH));
+                } else if (isV) {
+                    // 4-sided pyramid — reuse addBox bottom-cap approach via raw verts
+                    const vD = btmShapeH, hL = wLen / 2, hW = wSz / 2;
+                    const pyrVerts = [
+                        { x: cx-hL, y: wellFloorY+vD, z: cz-hW }, { x: cx, y: wellFloorY, z: cz }, { x: cx+hL, y: wellFloorY+vD, z: cz-hW },
+                        { x: cx+hL, y: wellFloorY+vD, z: cz-hW }, { x: cx, y: wellFloorY, z: cz }, { x: cx+hL, y: wellFloorY+vD, z: cz+hW },
+                        { x: cx+hL, y: wellFloorY+vD, z: cz+hW }, { x: cx, y: wellFloorY, z: cz }, { x: cx-hL, y: wellFloorY+vD, z: cz+hW },
+                        { x: cx-hL, y: wellFloorY+vD, z: cz+hW }, { x: cx, y: wellFloorY, z: cz }, { x: cx-hL, y: wellFloorY+vD, z: cz-hW },
+                    ];
+                    const pyrFaces = [[0,1,2],[3,4,5],[6,7,8],[9,10,11]];
+                    const pyrNorms = pyrVerts.map(() => ({ x: 0, y: 1, z: 0 }));
+                    const mat = { name: 'LabwareMaterial', r: 0.847, g: 0.863, b: 0.886, a: 0.32, sr: 0.267, sg: 0.267, sb: 0.267, power: 90 };
+                    meshes.push({ name: wTag + '_pyr', vertices: pyrVerts, faces: pyrFaces, normals: pyrNorms, uvs: [], material: mat });
+                } else {
+                    // Flat rect bottom
+                    const bV = [
+                        { x: cx - wLen/2, y: wellFloorY, z: cz - wSz/2 },
+                        { x: cx + wLen/2, y: wellFloorY, z: cz - wSz/2 },
+                        { x: cx + wLen/2, y: wellFloorY, z: cz + wSz/2 },
+                        { x: cx - wLen/2, y: wellFloorY, z: cz + wSz/2 },
+                    ];
+                    const bN = bV.map(() => ({ x: 0, y: 1, z: 0 }));
+                    const mat = { name: 'LabwareMaterial', r: 0.847, g: 0.863, b: 0.886, a: 0.32, sr: 0.267, sg: 0.267, sb: 0.267, power: 90 };
+                    meshes.push({ name: wTag + '_btm', vertices: bV, faces: [[0,1,2],[0,2,3]], normals: bN, uvs: [], material: mat });
+                }
+            }
+        }
+    }
+
+    // ─── Top surface (simple rectangle, no hole-punching for CLI) ─
+    // Represented as two large triangles
+    const topVerts = [
+        { x: 0, y: H, z: 0 }, { x: L, y: H, z: 0 },
+        { x: L, y: H, z: W }, { x: 0, y: H, z: W },
+    ];
+    const topNorms = topVerts.map(() => ({ x: 0, y: 1, z: 0 }));
+    const mat = { name: 'LabwareMaterial', r: 0.847, g: 0.863, b: 0.886, a: 0.32, sr: 0.267, sg: 0.267, sb: 0.267, power: 90 };
+    meshes.push({ name: 'TopSurface', vertices: topVerts, faces: [[0,1,2],[0,2,3]], normals: topNorms, uvs: [], material: mat });
+
+    return meshes;
+}
+
 // ── File Discovery ─────────────────────────────────────────────
 
 function findFiles(dir, extensions, recursive) {
@@ -1165,35 +2277,386 @@ async function cmdDeepInfo() {
     console.log('');
 }
 
+// ── Convert command: OBJ/STL/GLB/X → .x ───────────────────────
+
+async function cmdConvert(args) {
+    // Usage: convert <input> <output.x> [--rotate-x <deg>] [--rotate-y <deg>] [--rotate-z <deg>] [--mirror-x] [--mirror-y] [--mirror-z]
+    const positional = args.filter(a => !a.startsWith('--') && !isFlag(args, a));
+    const inputFile = positional[0];
+    const outputFile = positional[1];
+
+    if (!inputFile) {
+        console.log(colorize(C.red, '  Usage: convert <input> <output.x> [--rotate-x <deg>] [--rotate-y <deg>] [--rotate-z <deg>] [--mirror-x] [--mirror-y] [--mirror-z]'));
+        return;
+    }
+
+    const inResolved = path.resolve(inputFile);
+    if (!fs.existsSync(inResolved)) { console.log(colorize(C.red, '  File not found: ' + inResolved)); return; }
+
+    const rotX = parseArgValue(args, '--rotate-x') || 0;
+    const rotY = parseArgValue(args, '--rotate-y') || 0;
+    const rotZ = parseArgValue(args, '--rotate-z') || 0;
+    const mirrorX = args.includes('--mirror-x');
+    const mirrorY = args.includes('--mirror-y');
+    const mirrorZ = args.includes('--mirror-z');
+
+    const outFile = outputFile
+        ? path.resolve(outputFile)
+        : inResolved.replace(/\.[^.]+$/, '') + '.x';
+
+    console.log('  Loading ' + colorize(C.cyan, path.basename(inResolved)) + '…');
+    const startTime = Date.now();
+
+    let meshes;
+    try {
+        meshes = await loadMeshesFromFile(inResolved);
+    } catch (e) {
+        console.log(colorize(C.red, '  Load error: ' + e.message));
+        return;
+    }
+
+    if (!meshes || meshes.length === 0) {
+        console.log(colorize(C.red, '  No geometry found in file.'));
+        return;
+    }
+
+    console.log('  ' + meshes.length + ' mesh(es) loaded (' + meshes.reduce((s, m) => s + m.vertices.length, 0).toLocaleString() + ' vertices)');
+
+    if (rotX || rotY || rotZ || mirrorX || mirrorY || mirrorZ) {
+        console.log('  Applying transforms: ' +
+            (rotX ? 'rotX=' + rotX + '° ' : '') + (rotY ? 'rotY=' + rotY + '° ' : '') + (rotZ ? 'rotZ=' + rotZ + '° ' : '') +
+            (mirrorX ? 'mirrorX ' : '') + (mirrorY ? 'mirrorY ' : '') + (mirrorZ ? 'mirrorZ ' : ''));
+        applyMeshTransforms(meshes, { rotX, rotY, rotZ, mirrorX, mirrorY, mirrorZ });
+    }
+
+    console.log('  Generating .x file…');
+    const xText = meshesToXFile(meshes);
+    fs.writeFileSync(outFile, xText, 'utf-8');
+    const elapsed = Date.now() - startTime;
+
+    console.log(colorize(C.green, '  ✓ Converted') + ' → ' + outFile);
+    console.log('    ' + formatBytes(xText.length) + ' written (' + elapsed + 'ms)');
+}
+
+function isFlag(args, a) {
+    // Check if the string 'a' is the value after a flag like --rotate-x
+    const idx = args.indexOf(a);
+    if (idx <= 0) return false;
+    return args[idx - 1].startsWith('--') && !args[idx - 1].includes('mirror');
+}
+
+function parseArgValue(args, flag) {
+    const idx = args.indexOf(flag);
+    if (idx < 0 || idx >= args.length - 1) return null;
+    return parseFloat(args[idx + 1]) || 0;
+}
+
+// ── Export-X command: .x/.hxx → OBJ/STL/GLB ──────────────────
+
+async function cmdExportX(args) {
+    // Usage: export-x <output> [format]  (or pass inline as args after interactive command)
+    // Can also be called on the currently loaded file.
+    const positional = args.filter(a => !a.startsWith('--'));
+    let inputFile = null;
+    let outputFile = positional[0];
+    let format = positional[1] || 'obj';
+
+    // Detect format from output extension
+    if (outputFile) {
+        const ext = path.extname(outputFile).toLowerCase();
+        if (ext === '.obj') format = 'obj';
+        else if (ext === '.stl') format = 'stl';
+        else if (ext === '.glb') format = 'glb';
+        else if (ext === '.gltf') format = 'glb'; // write as glb
+    }
+
+    // If a file was explicitly given as the first positional and it looks like an input
+    if (outputFile && /\.(x|hxx)$/i.test(outputFile)) {
+        inputFile = outputFile;
+        outputFile = positional[1];
+        format = positional[2] || 'obj';
+        if (outputFile) {
+            const ext = path.extname(outputFile).toLowerCase();
+            if (['.obj', '.stl', '.glb'].includes(ext)) format = ext.slice(1);
+        }
+    }
+
+    // Fall back to loaded file
+    if (!inputFile) {
+        if (!state.loaded) {
+            console.log(colorize(C.red, '  No file loaded. Usage: export-x [input.x] <output> [format|obj|stl|glb]'));
+            return;
+        }
+        inputFile = state.loaded.filePath;
+    }
+
+    const inResolved = path.resolve(inputFile);
+    if (!fs.existsSync(inResolved)) { console.log(colorize(C.red, '  File not found: ' + inResolved)); return; }
+
+    const baseName = path.basename(inResolved, path.extname(inResolved));
+    const outDir   = outputFile ? path.dirname(path.resolve(outputFile)) : path.dirname(inResolved);
+
+    if (!['obj', 'stl', 'glb'].includes(format)) {
+        console.log(colorize(C.yellow, '  Unknown format: ' + format + '. Defaulting to obj.'));
+        format = 'obj';
+    }
+
+    const outExt = '.' + format;
+    const outFile = outputFile
+        ? path.resolve(outputFile.replace(/\.[^.]+$/, '') + outExt)
+        : path.join(outDir, baseName + outExt);
+
+    console.log('  Loading ' + colorize(C.cyan, path.basename(inResolved)) + '…');
+    const startTime = Date.now();
+
+    let meshes;
+    try {
+        meshes = await loadMeshesFromFile(inResolved);
+    } catch (e) {
+        console.log(colorize(C.red, '  Load error: ' + e.message));
+        return;
+    }
+    if (!meshes || meshes.length === 0) { console.log(colorize(C.red, '  No geometry found.')); return; }
+    console.log('  ' + meshes.length + ' mesh(es) loaded');
+
+    const elapsed = Date.now() - startTime;
+
+    if (format === 'obj') {
+        const { obj, mtl } = meshesToOBJ(meshes, baseName);
+        fs.writeFileSync(outFile, obj, 'utf-8');
+        const mtlFile = outFile.replace(/\.obj$/i, '.mtl');
+        fs.writeFileSync(mtlFile, mtl, 'utf-8');
+        console.log(colorize(C.green, '  ✓ Exported OBJ') + ' → ' + outFile + ' + ' + path.basename(mtlFile));
+    } else if (format === 'stl') {
+        const buf = meshesToSTL(meshes);
+        fs.writeFileSync(outFile, buf);
+        console.log(colorize(C.green, '  ✓ Exported STL') + ' → ' + outFile);
+    } else if (format === 'glb') {
+        const buf = meshesToGLB(meshes);
+        fs.writeFileSync(outFile, buf);
+        console.log(colorize(C.green, '  ✓ Exported GLB') + ' → ' + outFile);
+    }
+
+    console.log('    ' + formatBytes(fs.statSync(outFile).size) + ' written (' + elapsed + 'ms)');
+}
+
+// ── Generate command: XML labware definition → .x ─────────────
+
+function cmdGenerate(args) {
+    const positional = args.filter(a => !a.startsWith('--'));
+    const xmlFile = positional[0];
+    const outputFile = positional[1];
+    const snapSBS = args.includes('--sbs');
+
+    if (!xmlFile) {
+        console.log(colorize(C.red, '  Usage: generate <labware.xml> [output.x] [--sbs]'));
+        return;
+    }
+
+    const xmlResolved = path.resolve(xmlFile);
+    if (!fs.existsSync(xmlResolved)) { console.log(colorize(C.red, '  File not found: ' + xmlResolved)); return; }
+
+    const xmlText = fs.readFileSync(xmlResolved, 'utf-8');
+    let def;
+    try {
+        def = parseLabwareXML(xmlText);
+    } catch (e) {
+        console.log(colorize(C.red, '  XML parse error: ' + e.message));
+        return;
+    }
+
+    if (snapSBS) {
+        def.footprintLength = SBS.footprintLength;
+        def.footprintWidth  = SBS.footprintWidth;
+        def.firstHolePos.x  = SBS.a1OffsetX;
+        def.firstHolePos.y  = SBS.a1OffsetY;
+        if (def.wellCount === 96)  { def.rowGap = SBS.wellSpacing96;   def.colGap = SBS.wellSpacing96;   }
+        if (def.wellCount === 384) { def.rowGap = SBS.wellSpacing384;  def.colGap = SBS.wellSpacing384;  }
+    }
+
+    renderLabwareDef(def, outputFile, xmlResolved);
+}
+
+function cmdGenerateDefault(args) {
+    // Build a def from CLI flags, using SBS defaults
+    const rows     = parseInt(parseArgValueStr(args, '--rows'))   || 8;
+    const cols     = parseInt(parseArgValueStr(args, '--cols'))   || 12;
+    const name     = parseArgValueStr(args, '--name')       || 'Labware';
+    const wellShape  = parseArgValueStr(args, '--well-shape')   || 'Circle';
+    const bottomShape = parseArgValueStr(args, '--bottom-shape') || 'Flat';
+    const height   = parseFloat(parseArgValueStr(args, '--height'))    || 14.35;
+    const wellDepth = parseFloat(parseArgValueStr(args, '--well-depth')) || 10.67;
+    const wellSize  = parseFloat(parseArgValueStr(args, '--well-size'))  || (rows * cols >= 384 ? 3.3 : 6.86);
+    const rowGap = parseFloat(parseArgValueStr(args, '--row-gap')) || (rows * cols >= 384 ? SBS.wellSpacing384 : SBS.wellSpacing96);
+    const colGap = parseFloat(parseArgValueStr(args, '--col-gap')) || (rows * cols >= 384 ? SBS.wellSpacing384 : SBS.wellSpacing96);
+    const firstX = parseFloat(parseArgValueStr(args, '--first-x')) || SBS.a1OffsetX;
+    const firstY = parseFloat(parseArgValueStr(args, '--first-y')) || SBS.a1OffsetY;
+    const snapSBS = args.includes('--sbs');
+    const positional = args.filter(a => !a.startsWith('--'));
+    const outputFile = positional[0];
+
+    let def = {
+        type: 'plate', name, manufacturer: '', partNumber: '',
+        footprintLength: SBS.footprintLength, footprintWidth: SBS.footprintWidth,
+        height, rowCount: rows, colCount: cols, rowGap, colGap,
+        wellDepth, wellShape, wellSize, wellLength: wellSize,
+        sizeBottom: wellSize, bottomShape, vShapeDepth: 0, angle: 0, nominalVolume: 0,
+        firstHolePos: { x: firstX, y: firstY }, wellCount: rows * cols,
+    };
+
+    if (snapSBS) {
+        def.footprintLength = SBS.footprintLength;
+        def.footprintWidth  = SBS.footprintWidth;
+        def.firstHolePos.x  = SBS.a1OffsetX;
+        def.firstHolePos.y  = SBS.a1OffsetY;
+        if (def.wellCount === 96)  { def.rowGap = SBS.wellSpacing96;  def.colGap = SBS.wellSpacing96;  }
+        if (def.wellCount === 384) { def.rowGap = SBS.wellSpacing384; def.colGap = SBS.wellSpacing384; }
+    }
+
+    renderLabwareDef(def, outputFile, null);
+}
+
+function parseArgValueStr(args, flag) {
+    const idx = args.indexOf(flag);
+    if (idx < 0 || idx >= args.length - 1) return null;
+    return args[idx + 1];
+}
+
+function renderLabwareDef(def, outputFile, sourceFile) {
+    const sbsOk = checkSBSCompliance(def);
+    console.log(colorize(C.bright, '\n  Labware Definition'));
+    console.log('  ─────────────────────────────────────');
+    console.log('  Name:         ' + def.name);
+    if (def.manufacturer) console.log('  Manufacturer: ' + def.manufacturer);
+    if (def.partNumber)   console.log('  Part number:  ' + def.partNumber);
+    console.log('  Type:         ' + def.type);
+    console.log('  Footprint:    ' + def.footprintLength.toFixed(2) + ' × ' + def.footprintWidth.toFixed(2) + ' mm');
+    console.log('  Height:       ' + def.height.toFixed(2) + ' mm');
+    console.log('  Wells:        ' + def.wellCount + ' (' + def.rowCount + '×' + def.colCount + ')');
+    console.log('  Well shape:   ' + def.wellShape + ' (bottom: ' + def.bottomShape + ')');
+    console.log('  Well size:    ' + def.wellSize.toFixed(2) + ' mm (top)  ' + def.sizeBottom.toFixed(2) + ' mm (bottom)');
+    console.log('  Well depth:   ' + def.wellDepth.toFixed(2) + ' mm');
+    console.log('  Row gap:      ' + def.rowGap.toFixed(2) + ' mm');
+    console.log('  Col gap:      ' + def.colGap.toFixed(2) + ' mm');
+    console.log('  A1 offset:    X=' + def.firstHolePos.x.toFixed(2) + ' Y=' + def.firstHolePos.y.toFixed(2));
+    console.log('  SBS comply:   ' + (sbsOk ? colorize(C.green, 'YES') : colorize(C.yellow, 'NO (non-standard)')));
+    console.log('');
+    console.log('  Generating 3D geometry…');
+
+    const startTime = Date.now();
+    const meshes = generatePlateGeometry(def);
+    const xText = meshesToXFile(meshes);
+
+    const safeName = (def.name || 'labware').replace(/[^a-zA-Z0-9_ -]/g, '_');
+    const outFile = outputFile
+        ? path.resolve(outputFile)
+        : path.join(sourceFile ? path.dirname(sourceFile) : process.cwd(), safeName + '.x');
+
+    fs.writeFileSync(outFile, xText, 'utf-8');
+    const elapsed = Date.now() - startTime;
+
+    const totalVerts = meshes.reduce((s, m) => s + m.vertices.length, 0);
+    const totalFaces = meshes.reduce((s, m) => s + m.faces.length, 0);
+
+    console.log(colorize(C.green, '  ✓ Generated') + ' ' + meshes.length + ' meshes — ' +
+        totalVerts.toLocaleString() + ' vertices, ' + totalFaces.toLocaleString() + ' faces');
+    console.log('  Written → ' + outFile + ' (' + formatBytes(xText.length) + ', ' + elapsed + 'ms)');
+    console.log('');
+}
+
 function cmdHelp() {
     console.log(`
-  ${colorize(C.bright, 'Hamilton .hxx / .x File CLI')}
-  ═══════════════════════════════════════════════════
+  ${colorize(C.bright, 'Hamilton .hxx / .x File CLI  —  Full-Parity Edition')}
+  ═══════════════════════════════════════════════════════════════
 
-  ${colorize(C.cyan, 'File Operations')}
-    load <file>            Load a .hxx or .x file
-    export [file]          Export decompressed .x text to file
-    export-textures [dir]  Export textures from .hxx file
+  ${colorize(C.cyan, 'Viewer / Inspection')}
+    load <file>              Load a .hxx or .x file
+    info                     Show detailed file information
+    sections                 List .hxx archive sections
+    tree                     Show frame hierarchy tree
+    meshes                   List all meshes (vertex/face counts)
+    materials                List all materials
+    animations               List animations
+    deep                     Deep parse with full XFileLoader
 
-  ${colorize(C.cyan, 'Inspection')}
-    info                   Show detailed file information
-    sections               List .hxx archive sections
-    tree                   Show frame hierarchy tree
-    meshes                 List all meshes with vertex/face counts
-    materials              List all materials
-    animations             List animations
-    deep                   Deep parse with full XFileLoader (slow)
+  ${colorize(C.cyan, 'Export / Extraction')}
+    export [out.x]           Export decompressed .x text to file
+    export-textures [dir]    Extract embedded textures from .hxx
+    export-x [in.x] <out> [format]
+                             Export .x/.hxx → OBJ / STL / GLB
+                             format: obj (default), stl, glb
+                             (uses currently loaded file if no input given)
+
+  ${colorize(C.cyan, 'Conversion  (3D formats → .x)')}
+    convert <input> <out.x> [options]
+                             Convert OBJ / STL / GLB / GLTF / .x → .x
+                             Input formats: .obj .stl .glb .gltf .x .hxx
+      --rotate-x <deg>       Rotate around X axis
+      --rotate-y <deg>       Rotate around Y axis
+      --rotate-z <deg>       Rotate around Z axis
+      --mirror-x             Mirror on X axis
+      --mirror-y             Mirror on Y axis
+      --mirror-z             Mirror on Z axis
+
+  ${colorize(C.cyan, 'Labware Generation  (XML definition → .x)')}
+    generate <xml> [out.x] [--sbs]
+                             Parse Integra/Hamilton labware XML, generate .x
+                             --sbs  Snap footprint & spacing to SBS/ANSI standard
+    generate-default [out.x] [options]
+                             Generate .x with built-in defaults (no XML required)
+      --rows <n>             Number of rows       (default: 8)
+      --cols <n>             Number of columns    (default: 12)
+      --name <name>          Labware name
+      --height <mm>          Total plate height   (default: 14.35)
+      --well-depth <mm>      Well depth           (default: 10.67)
+      --well-size <mm>       Well diameter/size   (default: 6.86 for 96-well)
+      --well-shape circle|rect
+      --bottom-shape flat|circle|vshape
+      --row-gap <mm>         Row spacing          (default: SBS 9.0)
+      --col-gap <mm>         Column spacing       (default: SBS 9.0)
+      --first-x <mm>         A1 X offset          (default: SBS 14.38)
+      --first-y <mm>         A1 Y offset          (default: SBS 11.24)
+      --sbs                  Snap to SBS/ANSI standard footprint & spacing
 
   ${colorize(C.cyan, 'Validation')}
-    validate [file]        Validate a file can be fully parsed
-    batch <dir>            Batch-validate all .hxx/.x in directory
-    stats                  Show aggregate stats from last batch
+    validate [file]          Validate a file can be fully parsed
+    batch <dir>              Batch-validate all .hxx/.x files in directory
+    stats                    Show aggregate stats from last batch run
+
+  ${colorize(C.cyan, 'SBS / ANSI Standard Reference')}
+    sbs                      Print SBS/ANSI standard plate dimensions
 
   ${colorize(C.cyan, 'Other')}
-    help                   Show this help
-    clear                  Clear screen
-    exit / quit            Exit
+    help                     Show this help
+    clear                    Clear screen
+    exit / quit              Exit
+
+  ${colorize(C.dim, 'Non-interactive one-shot usage:')}
+    ${colorize(C.dim, 'node cli.js <file> [--validate] [--export [out.x]] [--quiet]')}
+    ${colorize(C.dim, 'node cli.js convert <in> <out.x> [--rotate-x 90] [--mirror-x]')}
+    ${colorize(C.dim, 'node cli.js export-x <in.x> <out.obj>')}
+    ${colorize(C.dim, 'node cli.js generate <xml> [out.x] [--sbs]')}
+    ${colorize(C.dim, 'node cli.js generate-default [out.x] --rows 8 --cols 12 --sbs')}
+    ${colorize(C.dim, 'node cli.js --batch <dir> [--recursive]')}
 `);
+}
+
+// ── SBS Reference ─────────────────────────────────────────────
+
+function cmdSBS() {
+    console.log(colorize(C.bright, '\n  SBS / ANSI Standard Plate Dimensions'));
+    console.log('  ─────────────────────────────────────────────────');
+    console.log('  Footprint length:      ' + SBS.footprintLength + ' mm  (ANSI/SLAS 1-2004)');
+    console.log('  Footprint width:       ' + SBS.footprintWidth + ' mm  (ANSI/SLAS 1-2004)');
+    console.log('  Well spacing 96-well:  ' + SBS.wellSpacing96 + ' mm');
+    console.log('  Well spacing 384-well: ' + SBS.wellSpacing384 + ' mm');
+    console.log('  Well spacing 1536-well:' + SBS.wellSpacing1536 + ' mm');
+    console.log('  A1 offset X:           ' + SBS.a1OffsetX + ' mm');
+    console.log('  A1 offset Y:           ' + SBS.a1OffsetY + ' mm');
+    console.log('  Corner radius:         ' + SBS.cornerRadius + ' mm');
+    console.log('  Wall thickness:        ' + SBS.wallThickness + ' mm');
+    console.log('  Flange height:         ' + SBS.flangeHeight + ' mm');
+    console.log('');
 }
 
 // ── Utilities ──────────────────────────────────────────────────
@@ -1210,12 +2673,44 @@ function formatBytes(bytes) {
 async function main() {
     const args = process.argv.slice(2);
 
-    // Non-interactive modes
+    // --help / -h
     if (args.includes('--help') || args.includes('-h')) {
         cmdHelp();
         return;
     }
 
+    // ── Non-interactive sub-commands ─────────────────────────
+    // node cli.js convert <in> <out.x> [opts]
+    if (args[0] === 'convert') {
+        await cmdConvert(args.slice(1));
+        return;
+    }
+
+    // node cli.js export-x <in.x> <out> [format]
+    if (args[0] === 'export-x') {
+        await cmdExportX(args.slice(1));
+        return;
+    }
+
+    // node cli.js generate <xml> [out.x] [--sbs]
+    if (args[0] === 'generate') {
+        cmdGenerate(args.slice(1));
+        return;
+    }
+
+    // node cli.js generate-default [out.x] [opts]
+    if (args[0] === 'generate-default') {
+        cmdGenerateDefault(args.slice(1));
+        return;
+    }
+
+    // node cli.js sbs
+    if (args[0] === 'sbs') {
+        cmdSBS();
+        return;
+    }
+
+    // node cli.js --batch <dir> [--recursive] [--no-recursive]
     if (args.includes('--batch') || args.includes('-b')) {
         const idx = args.indexOf('--batch') !== -1 ? args.indexOf('--batch') : args.indexOf('-b');
         const dir = args[idx + 1];
@@ -1225,122 +2720,140 @@ async function main() {
         return;
     }
 
-    // If a file is passed as argument, load it and show info
+    // node cli.js <file> [--validate] [--export [out.x]] [--quiet]
     if (args.length > 0 && !args[0].startsWith('-')) {
         cmdLoad(args[0]);
         if (state.loaded) cmdInfo();
 
-        // If --validate flag, also run deep parse
         if (args.includes('--validate') || args.includes('-v')) {
             await cmdValidate();
         }
 
-        // If --export flag, export the .x text
         if (args.includes('--export') || args.includes('-e')) {
             const eIdx = args.indexOf('--export') !== -1 ? args.indexOf('--export') : args.indexOf('-e');
             cmdExport(args[eIdx + 1]);
         }
 
-        // If just a file, start interactive too unless --quiet
+        if (args.includes('--export-x')) {
+            const xi = args.indexOf('--export-x');
+            const fmt = args[xi + 1] && !args[xi + 1].startsWith('--') ? args[xi + 1] : 'obj';
+            await cmdExportX([fmt]);
+        }
+
         if (args.includes('--quiet') || args.includes('-q')) return;
     }
 
-    // Interactive mode
+    // ── Interactive mode ──────────────────────────────────────
     console.log('');
-    console.log('  ' + colorize(C.bright + C.cyan, '╔═══════════════════════════════════════╗'));
-    console.log('  ' + colorize(C.bright + C.cyan, '║') + colorize(C.bright, '  Hamilton .hxx / .x File CLI Tool    ') + colorize(C.bright + C.cyan, '║'));
-    console.log('  ' + colorize(C.bright + C.cyan, '╚═══════════════════════════════════════╝'));
+    console.log('  ' + colorize(C.bright + C.cyan, '╔══════════════════════════════════════════════╗'));
+    console.log('  ' + colorize(C.bright + C.cyan, '║') + colorize(C.bright, '  Hamilton .hxx / .x CLI  — Full-Parity    ') + colorize(C.bright + C.cyan, '║'));
+    console.log('  ' + colorize(C.bright + C.cyan, '╚══════════════════════════════════════════════╝'));
     console.log('');
-    console.log('  Type ' + colorize(C.cyan, 'help') + ' for commands, ' +
+    console.log('  Type ' + colorize(C.cyan, 'help') + ' for all commands, ' +
         colorize(C.cyan, 'exit') + ' to quit.');
     if (!state.loaded) {
-        console.log('  Load a file with: ' + colorize(C.cyan, 'load <path-to-file>'));
+        console.log('  Load a file: ' + colorize(C.cyan, 'load <path>') +
+            '  |  Convert: ' + colorize(C.cyan, 'convert <in> <out.x>') +
+            '  |  Generate: ' + colorize(C.cyan, 'generate <xml>'));
     }
     console.log('');
 
     const rl = readline.createInterface({
         input: process.stdin,
         output: process.stdout,
-        prompt: colorize(C.cyan, '  hxx') + colorize(C.bright, '> '),
+        prompt: colorize(C.cyan, '  d3d') + colorize(C.bright, '> '),
         terminal: true,
     });
 
-    // Tab completion
     rl.on('line', async (line) => {
         const input = line.trim();
         if (!input) { rl.prompt(); return; }
 
-        const parts = input.split(/\s+/);
-        const cmd = parts[0].toLowerCase();
-        const arg = parts.slice(1).join(' ');
+        // Split but preserve quoted strings for file paths with spaces
+        const parts = input.match(/(?:[^\s"]+|"[^"]*")+/g) || [];
+        const unquoted = parts.map(p => p.replace(/^"|"$/g, ''));
+        const cmd = unquoted[0].toLowerCase();
+        const restArgs = unquoted.slice(1);
+        const arg = restArgs.join(' ');
 
         try {
             switch (cmd) {
-                case 'load':
-                case 'open':
-                    if (cmd === 'load') cmdLoad(arg);
+                // ── Inspection ──────────────────────────────────
+                case 'load': case 'open':
+                    cmdLoad(arg);
                     break;
-                case 'info':
-                case 'i':
+                case 'info': case 'i':
                     cmdInfo();
                     break;
-                case 'sections':
-                case 'sec':
+                case 'sections': case 'sec':
                     cmdSections();
                     break;
-                case 'tree':
-                case 't':
+                case 'tree': case 't':
                     cmdTree();
                     break;
-                case 'meshes':
-                case 'm':
+                case 'meshes': case 'm':
                     cmdMeshes();
                     break;
-                case 'materials':
-                case 'mat':
+                case 'materials': case 'mat':
                     cmdMaterials();
                     break;
-                case 'animations':
-                case 'anim':
-                case 'a':
+                case 'animations': case 'anim': case 'a':
                     cmdAnimations();
                     break;
-                case 'export':
-                case 'e':
-                    cmdExport(arg || undefined);
-                    break;
-                case 'export-textures':
-                case 'et':
-                    cmdExportTextures(arg || undefined);
-                    break;
-                case 'validate':
-                case 'v':
-                    await cmdValidate(arg || undefined);
-                    break;
-                case 'batch':
-                case 'b':
-                    await cmdBatch(arg || undefined);
-                    break;
-                case 'stats':
-                case 's':
-                    cmdStats();
-                    break;
-                case 'deep':
-                case 'd':
+                case 'deep': case 'd':
                     await cmdDeepInfo();
                     break;
-                case 'help':
-                case 'h':
-                case '?':
+
+                // ── Export / Extraction ─────────────────────────
+                case 'export': case 'e':
+                    cmdExport(arg || undefined);
+                    break;
+                case 'export-textures': case 'et':
+                    cmdExportTextures(arg || undefined);
+                    break;
+                case 'export-x': case 'ex':
+                    // export-x [input.x] <output> [format]
+                    await cmdExportX(restArgs);
+                    break;
+
+                // ── Conversion ──────────────────────────────────
+                case 'convert': case 'cv':
+                    // convert <input> <output.x> [--rotate-x <deg>] ...
+                    await cmdConvert(restArgs);
+                    break;
+
+                // ── Labware Generation ───────────────────────────
+                case 'generate': case 'gen': case 'g':
+                    cmdGenerate(restArgs);
+                    break;
+                case 'generate-default': case 'gend': case 'gd':
+                    cmdGenerateDefault(restArgs);
+                    break;
+
+                // ── Validation ──────────────────────────────────
+                case 'validate': case 'v':
+                    await cmdValidate(arg || undefined);
+                    break;
+                case 'batch': case 'b':
+                    await cmdBatch(arg || undefined);
+                    break;
+                case 'stats': case 's':
+                    cmdStats();
+                    break;
+
+                // ── Reference ───────────────────────────────────
+                case 'sbs':
+                    cmdSBS();
+                    break;
+
+                // ── Other ───────────────────────────────────────
+                case 'help': case 'h': case '?':
                     cmdHelp();
                     break;
-                case 'clear':
-                case 'cls':
+                case 'clear': case 'cls':
                     console.clear();
                     break;
-                case 'exit':
-                case 'quit':
-                case 'q':
+                case 'exit': case 'quit': case 'q':
                     console.log(colorize(C.dim, '  Bye!'));
                     rl.close();
                     process.exit(0);
@@ -1355,10 +2868,7 @@ async function main() {
         rl.prompt();
     });
 
-    rl.on('close', () => {
-        process.exit(0);
-    });
-
+    rl.on('close', () => { process.exit(0); });
     rl.prompt();
 }
 
