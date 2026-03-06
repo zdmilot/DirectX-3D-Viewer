@@ -660,9 +660,41 @@ function createThreeShim() {
     class BufferGeometry {
         constructor() { this.attributes = {}; this.index = null; this.groups = []; this.name = ''; this._morphAttributes = {}; this.morphAttributes = {}; }
         setAttribute(name, attr) { this.attributes[name] = attr; }
+        getAttribute(name) { return this.attributes[name] || null; }
         setIndex(indices) { this.index = indices; }
         addGroup(start, count, materialIndex) { this.groups.push({ start, count, materialIndex }); }
         computeVertexNormals() {}
+        applyMatrix4(m) {
+            const e = m.elements;
+            const pos = this.attributes.position;
+            if (pos) {
+                for (let i = 0; i < pos.count; i++) {
+                    const x = pos.array[i * 3], y = pos.array[i * 3 + 1], z = pos.array[i * 3 + 2];
+                    pos.array[i * 3]     = e[0]*x + e[4]*y + e[8]*z  + e[12];
+                    pos.array[i * 3 + 1] = e[1]*x + e[5]*y + e[9]*z  + e[13];
+                    pos.array[i * 3 + 2] = e[2]*x + e[6]*y + e[10]*z + e[14];
+                }
+            }
+            const norm = this.attributes.normal;
+            if (norm) {
+                // Transform normals with the inverse-transpose (ignore translation)
+                for (let i = 0; i < norm.count; i++) {
+                    const x = norm.array[i * 3], y = norm.array[i * 3 + 1], z = norm.array[i * 3 + 2];
+                    norm.array[i * 3]     = e[0]*x + e[4]*y + e[8]*z;
+                    norm.array[i * 3 + 1] = e[1]*x + e[5]*y + e[9]*z;
+                    norm.array[i * 3 + 2] = e[2]*x + e[6]*y + e[10]*z;
+                }
+            }
+            return this;
+        }
+        clone() {
+            const g = new BufferGeometry();
+            g.attributes = Object.assign({}, this.attributes);
+            g.index = this.index;
+            g.groups = this.groups.slice();
+            g.name = this.name;
+            return g;
+        }
     }
     class BufferAttribute {
         constructor(array, itemSize) { this.array = array; this.itemSize = itemSize; this.count = array ? Math.floor(array.length / itemSize) : 0; }
