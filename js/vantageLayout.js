@@ -384,11 +384,11 @@
             scene.add(mesh);
         }
 
-        // Track number labels (sprite-based text above labeled tracks)
-        for (let i = 1; i <= 9; i++) {
-            const trackNum = 1 + (i - 1) * 6;
-            const x = DECK.FIRST_TRACK_X + (trackNum - 1) * DECK.TRACK_SPACING;
-            addTrackLabel(i.toString(), x, isDark);
+        // Track number labels (sprite-based text above every track)
+        for (let i = 1; i <= DECK.TRACK_COUNT; i++) {
+            const x = DECK.FIRST_TRACK_X + (i - 1) * DECK.TRACK_SPACING;
+            const color = (i === 5) ? '#ee2222' : undefined; // track 5 in red
+            addTrackLabel(String(i), x, isDark, color);
         }
 
         // Deck frame walls (side rails)
@@ -407,14 +407,7 @@
         backMesh.name = '__rail_back__';
         scene.add(backMesh);
 
-        // Waste block area indicator (right end of deck, tracks ~50-54)
-        const wasteX = DECK.FIRST_TRACK_X + 49 * DECK.TRACK_SPACING;
-        const wasteGeo = new THREE.BoxGeometry(DECK.TRACK_SPACING * 4, 3, DECK.TRACK_DEPTH * 0.3);
-        const wasteMat = new THREE.MeshLambertMaterial({ color: isDark ? 0x3a2020 : 0xc08080, transparent: true, opacity: 0.7 });
-        const wasteMesh = new THREE.Mesh(wasteGeo, wasteMat);
-        wasteMesh.position.set(wasteX + DECK.TRACK_SPACING * 2, DECK.SURFACE_Z + 2, DECK.TRACK_Y_START + DECK.TRACK_DEPTH * 0.15);
-        wasteMesh.name = '__wastearea__';
-        scene.add(wasteMesh);
+        // (Waste block area indicator removed — no restricted tracks from 5 onward)
 
         // Grid overlay on deck surface
         const gridColor = isDark ? DARK_GRID : LIGHT_GRID;
@@ -639,13 +632,13 @@
         });
     }
 
-    function addTrackLabel(text, xPos, isDark) {
+    function addTrackLabel(text, xPos, isDark, overrideColor) {
         const size = 64;
         const cv = document.createElement('canvas');
         cv.width = size; cv.height = size;
         const ctx = cv.getContext('2d');
         ctx.clearRect(0, 0, size, size);
-        ctx.fillStyle = isDark ? '#7aafdf' : '#2a5580';
+        ctx.fillStyle = overrideColor || (isDark ? '#7aafdf' : '#2a5580');
         ctx.font = 'bold 28px sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
@@ -653,9 +646,9 @@
         const tex = new THREE.CanvasTexture(cv);
         const mat = new THREE.SpriteMaterial({ map: tex, transparent: true });
         const sprite = new THREE.Sprite(mat);
-        sprite.scale.set(18, 18, 1);
-        sprite.position.set(xPos + DECK.TRACK_WIDTH / 2, DECK.SURFACE_Z + 16, DECK.TRACK_Y_START - 22);
-        sprite.name = `__label_${text}__`;
+        sprite.scale.set(14, 14, 1);
+        sprite.position.set(xPos + DECK.TRACK_WIDTH / 2, DECK.SURFACE_Z + 16, DECK.TRACK_Y_START - 16);
+        sprite.name = `__tracklabel_${text}__`;
         vlState.scene.add(sprite);
     }
 
@@ -904,9 +897,9 @@
         const def = CARRIER_LIBRARY[carrierType];
         if (!def) return null;
 
-        // Validate track range
-        if (trackStart < 1 || trackStart + def.tWidth - 1 > DECK.TRACK_COUNT) {
-            showVLStatus('Cannot place: track out of range.', 'error');
+        // Validate track range — placement allowed from track 5 onward
+        if (trackStart < 5 || trackStart + def.tWidth - 1 > DECK.TRACK_COUNT) {
+            showVLStatus('Cannot place: track out of range (min track 5).', 'error');
             return null;
         }
 
@@ -1173,7 +1166,7 @@
 
         const { carrier } = vlState.canvasCarrierDrag;
         const trackNum    = snapToTrack(hits[0].point.x);
-        const clamped     = Math.max(1, Math.min(DECK.TRACK_COUNT - carrier.def.tWidth + 1, trackNum));
+        const clamped     = Math.max(5, Math.min(DECK.TRACK_COUNT - carrier.def.tWidth + 1, trackNum));
         const snappedX    = DECK.FIRST_TRACK_X + (clamped - 1) * DECK.TRACK_SPACING;
 
         if (vlState.ghostMesh) {
@@ -1399,7 +1392,7 @@
         const point = hits[0].point;
         const def   = vlState.paletteDrag.def;
         const trackNum    = snapToTrack(point.x);
-        const clampedTrack = Math.max(1, Math.min(DECK.TRACK_COUNT - def.tWidth + 1, trackNum));
+        const clampedTrack = Math.max(5, Math.min(DECK.TRACK_COUNT - def.tWidth + 1, trackNum));
         const snappedX     = DECK.FIRST_TRACK_X + (clampedTrack - 1) * DECK.TRACK_SPACING;
 
         if (vlState.ghostMesh) {
@@ -1472,9 +1465,10 @@
         $('#vl-pd-twidth').textContent = `${def.tWidth}T wide (${def.dx}mm)`;
         $('#vl-pd-sites').textContent = `${def.sites.length} site${def.sites.length !== 1 ? 's' : ''}`;
 
-        // Set default track (next available)
+        // Set default track (next available, min track 5)
         const track = findNextFreeTrack(def.tWidth);
         $('#vl-pd-track').value = track;
+        $('#vl-pd-track').min = '5';
         $('#vl-pd-track').max = String(DECK.TRACK_COUNT - def.tWidth + 1);
 
         dialog.dataset.carrierType = carrierType;
@@ -1482,10 +1476,10 @@
     }
 
     function findNextFreeTrack(tWidth) {
-        for (let t = 1; t <= DECK.TRACK_COUNT - tWidth + 1; t++) {
+        for (let t = 5; t <= DECK.TRACK_COUNT - tWidth + 1; t++) {
             if (!checkCarrierCollision(t, tWidth, -1)) return t;
         }
-        return 1;
+        return 5;
     }
 
     // ================================================================
