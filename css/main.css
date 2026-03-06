@@ -437,7 +437,7 @@ body {
     top: 0;
     bottom: 0;
     width: var(--sidebar-width);
-    z-index: 20;
+    z-index: 300;
     background:
         linear-gradient(180deg, rgba(var(--medium-rgb), 0.08) 0%, rgba(var(--medium-rgb), 0.03) 100%),
         var(--card-bg);
@@ -2419,6 +2419,11 @@ body {
     overflow: hidden;
     z-index: 20;
     box-shadow: var(--shadow-md);
+    transition: transform 0.25s ease;
+}
+
+.vl-left-panel.is-collapsed {
+    transform: translateX(-220px);
 }
 
 .vl-right-panel {
@@ -2434,6 +2439,57 @@ body {
     overflow: hidden;
     z-index: 20;
     box-shadow: var(--shadow-md);
+    transition: transform 0.25s ease;
+}
+
+.vl-right-panel.is-collapsed {
+    transform: translateX(200px);
+}
+
+/* Panel collapse toggle tabs */
+.vl-panel-toggle {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 18px;
+    height: 48px;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 30;
+    color: var(--text-muted);
+    font-size: 10px;
+    padding: 0;
+    box-shadow: var(--shadow-sm);
+    transition: left 0.25s ease, right 0.25s ease, background 0.15s;
+}
+
+.vl-panel-toggle:hover {
+    background: rgba(2, 117, 216, 0.1);
+    color: var(--accent);
+}
+
+.vl-left-toggle {
+    left: 220px;
+    border-left: none;
+    border-radius: 0 4px 4px 0;
+}
+
+#vl-host.vl-left-collapsed .vl-left-toggle {
+    left: 0;
+}
+
+.vl-right-toggle {
+    right: 200px;
+    border-right: none;
+    border-radius: 4px 0 0 4px;
+}
+
+#vl-host.vl-right-collapsed .vl-right-toggle {
+    right: 0;
 }
 
 .vl-panel-header {
@@ -2957,12 +3013,12 @@ body {
     font-weight: 600;
 }
 
-/* ── Controls bar — absolutely pinned to bottom, inset to clear side panels ── */
+/* ── Controls bar — spans full width, pinned to bottom ── */
 #vl-controls-bar {
     position: absolute;
     bottom: 0;
-    left: 220px;
-    right: 200px;
+    left: 0;
+    right: 0;
     z-index: 25;
 }
 
