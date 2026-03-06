@@ -766,6 +766,45 @@
         if (dom.sidebarNav) {
             dom.sidebarNav.classList.add('collapsed');
         }
+
+        // Persist last active view and update MRU order
+        try {
+            localStorage.setItem('app-last-view', viewName);
+            updateMru(viewName);
+        } catch(e) {}
+    }
+
+    // -- MRU (Most Recently Used) sidebar ordering ---------------
+    function getMru() {
+        try {
+            var stored = localStorage.getItem('app-mru-views');
+            if (stored) return JSON.parse(stored);
+        } catch(e) {}
+        return [];
+    }
+
+    function updateMru(viewName) {
+        var mru = getMru().filter(function(v) { return v !== viewName; });
+        mru.unshift(viewName);
+        try { localStorage.setItem('app-mru-views', JSON.stringify(mru)); } catch(e) {}
+        reorderSidebar(mru);
+    }
+
+    function reorderSidebar(mru) {
+        var container = document.querySelector('.sidebar-nav-inner');
+        if (!container) return;
+        var buttons = Array.from(container.querySelectorAll('.sidebar-nav-item'));
+        // Build a priority map: lower index = more recent
+        var priority = {};
+        mru.forEach(function(v, i) { priority[v] = i; });
+        var nextPriority = mru.length;
+        buttons.forEach(function(btn) {
+            if (!(btn.dataset.view in priority)) {
+                priority[btn.dataset.view] = nextPriority++;
+            }
+        });
+        buttons.sort(function(a, b) { return priority[a.dataset.view] - priority[b.dataset.view]; });
+        buttons.forEach(function(btn) { container.appendChild(btn); });
     }
 
     // ================================================================
@@ -2204,6 +2243,23 @@
             state.isDark = localStorage.getItem('dilution-dark-mode') === '1';
         } catch(e) {}
         applyTheme();
+
+        // Restore last active view and MRU sidebar order
+        (function restoreLastView() {
+            var mru = getMru();
+            if (mru.length) reorderSidebar(mru);
+            try {
+                var lastView = localStorage.getItem('app-last-view');
+                if (lastView && lastView !== 'viewer') {
+                    // Reset state so switchView doesn't bail on the guard
+                    state.activeView = '__none__';
+                    switchView(lastView);
+                } else if (lastView === 'viewer') {
+                    // Already the default — just update MRU without switching
+                    updateMru('viewer');
+                }
+            } catch(e) {}
+        })();
 
         dom.btnTheme.addEventListener('click', toggleTheme);
         dom.btnGrid.addEventListener('click', toggleGrid);

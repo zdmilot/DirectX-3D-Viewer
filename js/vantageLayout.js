@@ -1715,6 +1715,27 @@
             });
         }
 
+        // Apply offsets button – bake current debug offsets into the base position
+        const applyBtn = document.getElementById('vl-dbg-apply');
+        if (applyBtn) {
+            applyBtn.addEventListener('click', () => {
+                const model = vlState.gltfModel;
+                if (!model || !vlState._gltfBasePos) {
+                    showVLStatus('No GLTF deck model loaded yet.', 'error');
+                    return;
+                }
+                // Bake current position as new base
+                vlState._gltfBasePos = model.position.clone();
+                // Reset debug inputs to 0
+                ['x', 'y', 'z'].forEach(a => {
+                    const inp = document.getElementById(`vl-dbg-${a}`);
+                    if (inp) inp.value = 0;
+                });
+                refreshDeckDebugReadout();
+                showVLStatus('Offsets applied to base position', 'ok');
+            });
+        }
+
         // Reset button
         const resetBtn = document.getElementById('vl-dbg-reset');
         if (resetBtn) {
