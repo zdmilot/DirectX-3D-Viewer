@@ -1088,6 +1088,19 @@
         updateSitePanel(null);
     }
 
+    // Keyboard: Backspace / Delete removes the selected carrier
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Backspace' || e.key === 'Delete') {
+            // Don't intercept when typing in an input/textarea
+            const tag = e.target.tagName;
+            if (tag === 'INPUT' || tag === 'TEXTAREA' || e.target.isContentEditable) return;
+            if (vlState.selectedCarrierId != null) {
+                e.preventDefault();
+                removeCarrier(vlState.selectedCarrierId);
+            }
+        }
+    });
+
     // ================================================================
     //  UI: Carrier Palette
     // ================================================================
