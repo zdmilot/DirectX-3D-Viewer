@@ -13,6 +13,9 @@
         aboutOverlay: $('#about-overlay'),
         aboutClose: $('#about-close'),
         aboutLogo: null,   // set after DOM query
+        btnSettings: $('#btn-settings'),
+        settingsOverlay: $('#settings-overlay'),
+        settingsClose: $('#settings-close'),
         btnGrid: $('#btn-grid'),
         fileInput: $('#file-input'),
         btnSidebarToggle: $('#btn-sidebar-toggle'),
@@ -2222,6 +2225,18 @@
                 resetTeapot();
             }
         });
+
+        // Settings modal
+        if (dom.btnSettings) dom.btnSettings.addEventListener('click', () => {
+            if (dom.settingsOverlay) dom.settingsOverlay.classList.add('is-open');
+        });
+        if (dom.settingsClose) dom.settingsClose.addEventListener('click', () => {
+            if (dom.settingsOverlay) dom.settingsOverlay.classList.remove('is-open');
+        });
+        if (dom.settingsOverlay) dom.settingsOverlay.addEventListener('click', (e) => {
+            if (e.target === dom.settingsOverlay) dom.settingsOverlay.classList.remove('is-open');
+        });
+
         dom.fileInput.addEventListener('change', handleFileSelected);
 
         // Sidebar toggle – overlay style, no layout shift

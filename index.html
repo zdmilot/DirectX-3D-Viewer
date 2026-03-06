@@ -76,6 +76,9 @@
                 <button class="nav-btn nav-btn-icon" id="btn-theme" data-tooltip="Switch to night mode" aria-label="Switch to night mode">
                     <i class="fas fa-moon"></i>
                 </button>
+                <button class="nav-btn nav-btn-icon" id="btn-settings" data-tooltip="Vantage Settings" aria-label="Vantage Settings">
+                    <i class="fas fa-cog"></i>
+                </button>
                 <button class="nav-btn nav-btn-icon" id="btn-about" title="About" aria-label="About">
                     <i class="fas fa-info-circle"></i>
                 </button>
@@ -1086,6 +1089,98 @@
         </div>
     </div>
 
+    <!-- Settings Modal -->
+    <div class="settings-overlay" id="settings-overlay">
+        <div class="settings-modal">
+            <div class="settings-header">
+                <i class="fas fa-cog settings-header-icon"></i>
+                <div class="settings-title">Vantage Layout Settings</div>
+                <div class="settings-subtitle">Deck Appearance &amp; Positioning</div>
+            </div>
+            <div class="settings-body">
+
+                <!-- Deck Cover Panels -->
+                <div class="settings-section-title"><i class="fas fa-th-large"></i> Deck Cover Panels</div>
+                <p class="settings-hint">Toggle the 4 removable cover panels on the right side of the deck.</p>
+
+                <div class="settings-toggle-row">
+                    <span class="settings-toggle-label">Cover Panel 1</span>
+                    <label class="settings-switch">
+                        <input type="checkbox" id="settings-cover-0" checked>
+                        <span class="settings-switch-slider"></span>
+                    </label>
+                </div>
+                <div class="settings-toggle-row">
+                    <span class="settings-toggle-label">Cover Panel 2</span>
+                    <label class="settings-switch">
+                        <input type="checkbox" id="settings-cover-1" checked>
+                        <span class="settings-switch-slider"></span>
+                    </label>
+                </div>
+                <div class="settings-toggle-row">
+                    <span class="settings-toggle-label">Cover Panel 3</span>
+                    <label class="settings-switch">
+                        <input type="checkbox" id="settings-cover-2" checked>
+                        <span class="settings-switch-slider"></span>
+                    </label>
+                </div>
+                <div class="settings-toggle-row">
+                    <span class="settings-toggle-label">Cover Panel 4</span>
+                    <label class="settings-switch">
+                        <input type="checkbox" id="settings-cover-3" checked>
+                        <span class="settings-switch-slider"></span>
+                    </label>
+                </div>
+
+                <div class="settings-divider"></div>
+
+                <!-- Deck Repositioning -->
+                <div class="settings-section-title"><i class="fas fa-arrows-alt"></i> Deck Position</div>
+                <div class="settings-toggle-row">
+                    <span class="settings-toggle-label">Enable Repositioning</span>
+                    <label class="settings-switch">
+                        <input type="checkbox" id="settings-relocate-toggle">
+                        <span class="settings-switch-slider"></span>
+                    </label>
+                </div>
+
+                <div class="settings-relocate-panel" id="settings-relocate-panel">
+                    <div class="settings-xyz-row">
+                        <span class="settings-xyz-axis x">X</span>
+                        <button class="settings-step-btn" data-axis="x" data-delta="-10">&minus;10</button>
+                        <button class="settings-step-btn" data-axis="x" data-delta="-1">&minus;1</button>
+                        <input type="number" id="settings-deck-x" class="settings-xyz-input" value="0" step="1">
+                        <button class="settings-step-btn" data-axis="x" data-delta="1">+1</button>
+                        <button class="settings-step-btn" data-axis="x" data-delta="10">+10</button>
+                    </div>
+                    <div class="settings-xyz-row">
+                        <span class="settings-xyz-axis y">Y</span>
+                        <button class="settings-step-btn" data-axis="y" data-delta="-10">&minus;10</button>
+                        <button class="settings-step-btn" data-axis="y" data-delta="-1">&minus;1</button>
+                        <input type="number" id="settings-deck-y" class="settings-xyz-input" value="0" step="1">
+                        <button class="settings-step-btn" data-axis="y" data-delta="1">+1</button>
+                        <button class="settings-step-btn" data-axis="y" data-delta="10">+10</button>
+                    </div>
+                    <div class="settings-xyz-row">
+                        <span class="settings-xyz-axis z">Z</span>
+                        <button class="settings-step-btn" data-axis="z" data-delta="-10">&minus;10</button>
+                        <button class="settings-step-btn" data-axis="z" data-delta="-1">&minus;1</button>
+                        <input type="number" id="settings-deck-z" class="settings-xyz-input" value="0" step="1">
+                        <button class="settings-step-btn" data-axis="z" data-delta="1">+1</button>
+                        <button class="settings-step-btn" data-axis="z" data-delta="10">+10</button>
+                    </div>
+                    <div class="settings-relocate-actions">
+                        <button id="settings-deck-reset-pos" class="settings-action-btn"><i class="fas fa-undo"></i> Reset Position</button>
+                    </div>
+                </div>
+
+            </div>
+            <div class="settings-footer">
+                <button class="settings-close-btn" id="settings-close">Close</button>
+            </div>
+        </div>
+    </div>
+
     <!-- About Modal -->
     <div class="about-overlay" id="about-overlay">
         <div class="about-modal">
@@ -1139,10 +1234,10 @@
     <script src="js/lib/GLTFLoader.js"></script>
     <script src="js/lib/STLLoader.js"></script>
     <script src="js/hxxLoader.js?v=20260305a"></script>
-    <script src="js/vantageLayout.js?v=20260305d"></script>
+    <script src="js/vantageLayout.js?v=20260305f"></script>
     <script src="js/converter.js?v=20260304d"></script>
     <script src="js/platePlacer.js?v=20260304d"></script>
     <script src="js/labwareGenerator.js?v=20260305a"></script>
-    <script src="js/app.js?v=20260305v"></script>
+    <script src="js/app.js?v=20260305x"></script>
 </body>
 </html>

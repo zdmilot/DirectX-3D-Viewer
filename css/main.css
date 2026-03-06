@@ -2326,6 +2326,276 @@ body {
     background: var(--accent-hover);
 }
 
+/* ---------- Settings Modal ---------------------------------- */
+.settings-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 10000;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    animation: about-fade-in 0.2s ease;
+}
+.settings-overlay.is-open {
+    display: flex;
+}
+
+.settings-modal {
+    background: var(--card-bg);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-xl);
+    width: 460px;
+    max-width: 92vw;
+    max-height: 88vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    animation: about-slide-up 0.25s ease;
+}
+
+.settings-header {
+    text-align: center;
+    padding: 22px 24px 14px;
+    background: linear-gradient(135deg, var(--dark1), var(--dark2));
+    color: #fff;
+}
+
+.settings-header-icon {
+    font-size: 2rem;
+    margin-bottom: 8px;
+    display: block;
+    opacity: 0.9;
+}
+
+.settings-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    margin-bottom: 3px;
+}
+
+.settings-subtitle {
+    font-size: 0.72rem;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.5);
+    font-weight: 500;
+}
+
+.settings-body {
+    padding: 18px 22px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.settings-section-title {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--accent);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.settings-hint {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+    line-height: 1.45;
+}
+
+.settings-divider {
+    height: 1px;
+    background: var(--card-border);
+    margin: 16px 0;
+}
+
+/* Toggle rows */
+.settings-toggle-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--card-border);
+}
+.settings-toggle-row:last-of-type {
+    border-bottom: none;
+}
+
+.settings-toggle-label {
+    font-size: 0.88rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    user-select: none;
+}
+
+/* CSS toggle switch */
+.settings-switch {
+    position: relative;
+    display: inline-block;
+    width: 40px;
+    height: 22px;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+.settings-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+    position: absolute;
+}
+.settings-switch-slider {
+    position: absolute;
+    inset: 0;
+    background: var(--text-muted);
+    border-radius: 22px;
+    transition: background var(--t-fast);
+}
+.settings-switch-slider::before {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    left: 3px;
+    top: 3px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform var(--t-fast);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+}
+.settings-switch input:checked + .settings-switch-slider {
+    background: var(--accent);
+}
+.settings-switch input:checked + .settings-switch-slider::before {
+    transform: translateX(18px);
+}
+.settings-switch input:focus-visible + .settings-switch-slider {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+/* Relocate panel (hidden until toggle is on) */
+.settings-relocate-panel {
+    display: none;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 12px;
+    padding: 12px 14px;
+    background: rgba(2,117,216,0.06);
+    border: 1px solid rgba(2,117,216,0.18);
+    border-radius: var(--r-md);
+}
+.settings-relocate-panel.is-open {
+    display: flex;
+}
+[data-theme="dark"] .settings-relocate-panel {
+    background: rgba(2,117,216,0.08);
+    border-color: rgba(2,117,216,0.22);
+}
+
+.settings-xyz-row {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.settings-xyz-axis {
+    font-weight: 700;
+    width: 14px;
+    text-align: center;
+    font-size: 12px;
+    flex-shrink: 0;
+}
+.settings-xyz-axis.x { color: #e05555; }
+.settings-xyz-axis.y { color: #55bb55; }
+.settings-xyz-axis.z { color: #5588e0; }
+
+.settings-xyz-input {
+    flex: 1;
+    min-width: 0;
+    padding: 4px 6px;
+    border: 1px solid var(--card-border);
+    border-radius: var(--r-xs);
+    background: var(--card-bg);
+    color: var(--text-primary);
+    font-size: 0.82rem;
+    text-align: center;
+}
+.settings-xyz-input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+.settings-step-btn {
+    padding: 4px 7px;
+    border: 1px solid var(--card-border);
+    border-radius: var(--r-xs);
+    background: var(--body-bg);
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: background var(--t-fast), color var(--t-fast);
+    flex-shrink: 0;
+}
+.settings-step-btn:hover {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+}
+
+.settings-relocate-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 4px;
+}
+
+.settings-action-btn {
+    flex: 1;
+    padding: 6px 10px;
+    border: 1px solid var(--card-border);
+    border-radius: var(--r-sm);
+    background: var(--body-bg);
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    transition: background var(--t-fast), color var(--t-fast);
+}
+.settings-action-btn:hover {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+}
+
+.settings-footer {
+    padding: 12px 22px 16px;
+    text-align: center;
+    border-top: 1px solid var(--card-border);
+}
+
+.settings-close-btn {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 8px 36px;
+    border-radius: var(--r-sm);
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background var(--t-fast);
+}
+.settings-close-btn:hover {
+    background: var(--accent-hover);
+}
+
 /* ---------- Debug Panel ------------------------------------- */
 .debug-panel {
     display: none;
