@@ -201,6 +201,10 @@
         // Cache of THREE.Group models loaded from .x files, keyed by carrier key
         xModelCache: {},
 
+        // Cache of site labware 3D models, keyed by normalized Hamilton path
+        siteModelCache: {},
+        siteModelLoading: {},
+
         // Raycaster helpers
         _raycaster: null,
         _mouse: new THREE.Vector2(),
@@ -666,6 +670,202 @@
     }
 
     // ================================================================
+    //  Hamilton Path Resolver
+    // ================================================================
+    const HAMILTON_LABWARE_BASE = 'Base Hamilton Files/Labware/';
+
+    /**
+     * Convert a Hamilton-relative path (e.g. "ML_STAR\\CORE\\foo.x")
+     * to a server-relative path (e.g. "Base Hamilton Files/Labware/ML_STAR/CORE/foo.x").
+     */
+    function resolveHamiltonPath(hamiltonPath) {
+        if (!hamiltonPath) return null;
+        return HAMILTON_LABWARE_BASE + hamiltonPath.replace(/\\/g, '/');
+    }
+
+    // ================================================================
+    //  RCK Labware File Parser — extract 3D model info
+    // ================================================================
+
+    /**
+     * Parse a text-format .rck file (HxCfgFile header) and extract 3D model info.
+     */
+    function parseRCKText(text) {
+        var result = { model: null, modelRel: null, xOff: 0, yOff: 0, zOff: 0 };
+        var kvRe = /^(\S+),\s*"([^"]*)"[;,]?\s*$/gm;
+        var m;
+        while ((m = kvRe.exec(text)) !== null) {
+            switch (m[1]) {
+                case '3DModel':    result.model    = m[2]; break;
+                case '3DModelRel': result.modelRel = m[2]; break;
+                case '3DxOffset':  result.xOff     = parseFloat(m[2]) || 0; break;
+                case '3DyOffset':  result.yOff     = parseFloat(m[2]) || 0; break;
+                case '3DzOffset':  result.zOff     = parseFloat(m[2]) || 0; break;
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Parse a binary-format .rck file (no HxCfgFile header) and extract 3D model info.
+     * Binary format: length-prefixed key-value pairs where each
+     * entry is: [keyLen:1 byte][key string][valLen:1 byte][value string]
+     */
+    function parseRCKBinary(arrayBuffer) {
+        var result = { model: null, modelRel: null, xOff: 0, yOff: 0, zOff: 0 };
+        var bytes = new Uint8Array(arrayBuffer);
+        // Use strings extraction approach: find 3DModel and offset keys
+        var text = '';
+        for (var i = 0; i < bytes.length; i++) {
+            text += (bytes[i] >= 32 && bytes[i] < 127) ? String.fromCharCode(bytes[i]) : '\n';
+        }
+        // Extract key-value pairs from the cleaned text
+        var modelMatch = text.match(/3DModel\n([^\n]+)/);
+        if (modelMatch) result.model = modelMatch[1];
+        var modelRelMatch = text.match(/3DModelRel\n([^\n]+)/);
+        if (modelRelMatch) result.modelRel = modelRelMatch[1];
+        var xOffMatch = text.match(/3DxOffset\n([^\n]+)/);
+        if (xOffMatch) result.xOff = parseFloat(xOffMatch[1]) || 0;
+        var yOffMatch = text.match(/3DyOffset\n([^\n]+)/);
+        if (yOffMatch) result.yOff = parseFloat(yOffMatch[1]) || 0;
+        var zOffMatch = text.match(/3DzOffset\n([^\n]+)/);
+        if (zOffMatch) result.zOff = parseFloat(zOffMatch[1]) || 0;
+        return result;
+    }
+
+    /**
+     * Fetch and parse a .rck file (text or binary) to extract its 3D model info.
+     * Returns a Promise<{model, modelRel, xOff, yOff, zOff}>.
+     */
+    function fetchAndParseRCK(serverPath) {
+        return fetch(serverPath).then(function (resp) {
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+            return resp.arrayBuffer();
+        }).then(function (ab) {
+            // Check if text format (starts with 'HxCfgFile')
+            var header = new Uint8Array(ab, 0, Math.min(ab.byteLength, 20));
+            var headerStr = String.fromCharCode.apply(null, header);
+            if (headerStr.indexOf('HxCfgFile') >= 0) {
+                var text = new TextDecoder().decode(ab);
+                return parseRCKText(text);
+            } else {
+                return parseRCKBinary(ab);
+            }
+        });
+    }
+
+    // ================================================================
+    //  Site Labware 3D Model Loading
+    // ================================================================
+
+    /**
+     * Load 3D models for all sites that have LabwareFile references.
+     * Fetches .rck → extracts 3DModel → fetches .x/.hxx → caches in vlState.siteModelCache.
+     * carrierKey: the CARRIER_LIBRARY key
+     * sites: array of site objects (parsed from TML, with labwareFile property)
+     */
+    function loadSiteLabwareModels(carrierKey, sites) {
+        if (!sites || !sites.length) return;
+
+        sites.forEach(function (site) {
+            if (!site.labwareFile) return;
+
+            var rckPath = resolveHamiltonPath(site.labwareFile);
+            if (!rckPath) return;
+
+            var cacheKey = site.labwareFile.replace(/\\/g, '/').toLowerCase();
+            // Skip if already cached or in-flight
+            if (vlState.siteModelCache[cacheKey] || vlState.siteModelLoading[cacheKey]) return;
+            vlState.siteModelLoading[cacheKey] = true;
+
+            fetchAndParseRCK(rckPath).then(function (rckInfo) {
+                if (!rckInfo.model && !rckInfo.modelRel) {
+                    console.log('[VantageLayout] No 3D model in', rckPath);
+                    return;
+                }
+
+                var modelHamiltonPath = rckInfo.model;
+                var modelServerPath = resolveHamiltonPath(modelHamiltonPath);
+                if (!modelServerPath) return;
+
+                var isHxx = /\.hxx$/i.test(modelServerPath);
+
+                return fetch(modelServerPath).then(function (resp) {
+                    if (!resp.ok) throw new Error('HTTP ' + resp.status + ' for ' + modelServerPath);
+                    return resp.arrayBuffer();
+                }).then(function (data) {
+                    if (isHxx && typeof HXXLoader !== 'undefined') {
+                        return HXXLoader.parse(data).then(function (result) {
+                            return result.xFileBinary || result.xFileText;
+                        });
+                    }
+                    return data;
+                }).then(function (xData) {
+                    if (!xData) return;
+
+                    var blob = new Blob([xData], { type: 'application/octet-stream' });
+                    var url = URL.createObjectURL(blob);
+                    var manager = new THREE.LoadingManager();
+                    var basePath = modelServerPath.substring(0, modelServerPath.lastIndexOf('/') + 1);
+                    manager.setURLModifier(function (texUrl) {
+                        if (/\.(png|jpg|jpeg|bmp|tga)$/i.test(texUrl)) {
+                            return basePath + texUrl.split('/').pop();
+                        }
+                        return texUrl;
+                    });
+                    var loader = new THREE.XFileLoader(manager);
+
+                    loader.load(url, function (object) {
+                        URL.revokeObjectURL(url);
+                        if (!object || !object.models || object.models.length === 0) {
+                            console.warn('[VantageLayout] No geometry in site model', modelServerPath);
+                            return;
+                        }
+
+                        var group = new THREE.Group();
+                        group.name = '__site_model_' + cacheKey + '__';
+                        object.models.forEach(function (mdl, idx) {
+                            mdl.renderOrder = idx + 50;
+                            if (mdl.material) {
+                                var mats = Array.isArray(mdl.material) ? mdl.material : [mdl.material];
+                                mats.forEach(function (mat) {
+                                    if (!mat) return;
+                                    mat.polygonOffset = true;
+                                    mat.polygonOffsetFactor = -2;
+                                    mat.polygonOffsetUnits = -4;
+                                });
+                            }
+                            group.add(mdl);
+                        });
+
+                        fixXFileCoords(group);
+
+                        // Store model info with offsets from the .rck
+                        vlState.siteModelCache[cacheKey] = {
+                            group: group,
+                            xOff: rckInfo.xOff,
+                            yOff: rckInfo.yOff,
+                            zOff: rckInfo.zOff,
+                        };
+
+                        console.log('[VantageLayout] Loaded site model:', cacheKey);
+
+                        // Rebuild carriers that use this labware
+                        rebuildPlacedCarriersOfType(carrierKey);
+                    }, undefined, function (err) {
+                        URL.revokeObjectURL(url);
+                        console.warn('[VantageLayout] Failed to load site model:', modelServerPath, err);
+                    });
+                });
+            }).catch(function (err) {
+                console.warn('[VantageLayout] Could not load labware', rckPath, ':', err.message);
+            }).finally(function () {
+                vlState.siteModelLoading[cacheKey] = false;
+            });
+        });
+    }
+
+    // ================================================================
     //  TML Parser
     // ================================================================
     function parseTML(text) {
@@ -707,13 +907,29 @@
             const sz     = parseFloat(kv[`Site.${si}.Z`]  || '86.15');
             const sdx    = parseFloat(kv[`Site.${si}.Dx`] || '127');
             const sdy    = parseFloat(kv[`Site.${si}.Dy`] || '86');
-            result.sites.push({ id: siteId, x: sx, y: sy, z: sz, dx: sdx, dy: sdy });
+            const siteEntry = { id: siteId, x: sx, y: sy, z: sz, dx: sdx, dy: sdy };
+            // Extract labware file reference for this site
+            if (kv[`Site.${si}.LabwareFile`]) {
+                siteEntry.labwareFile = kv[`Site.${si}.LabwareFile`];
+            }
+            if (kv[`Site.${si}.LabwareFileRel`]) {
+                siteEntry.labwareFileRel = kv[`Site.${si}.LabwareFileRel`];
+            }
+            result.sites.push(siteEntry);
         }
 
         // Extract 3D model relative path (used to auto-load .x/.hxx companion)
         if (kv['3DModelRel']) {
             result.modelFileRel = kv['3DModelRel'].replace(/\\/g, '/').replace(/^\.\//, '');
         }
+        // Extract absolute Hamilton path for 3D model (for server auto-fetch)
+        if (kv['3DModel']) {
+            result.modelFileHamilton = kv['3DModel'];
+        }
+        // Extract 3D offsets for the carrier body model
+        if (kv['3DxOffset']) result.model3DxOff = parseFloat(kv['3DxOffset']) || 0;
+        if (kv['3DyOffset']) result.model3DyOff = parseFloat(kv['3DyOffset']) || 0;
+        if (kv['3DzOffset']) result.model3DzOff = parseFloat(kv['3DzOffset']) || 0;
 
         return result;
     }
@@ -857,6 +1073,49 @@
             siteMeshes.push(wellMesh);
         });
 
+        // Add site labware 3D models from cache
+        if (!vlState.useGenericCarriers) {
+            carrierDef.sites.forEach(function (site) {
+                if (!site.labwareFile) return;
+                var lwKey = site.labwareFile.replace(/\\/g, '/').toLowerCase();
+                var cached = vlState.siteModelCache[lwKey];
+                if (!cached || !cached.group) return;
+
+                var siteModel = cached.group.clone(true);
+                siteModel.name = '__site_labware_' + site.id + '__';
+
+                // Deep-clone materials for independent coloring
+                siteModel.traverse(function (child) {
+                    if (!child.isMesh) return;
+                    child.frustumCulled = false;
+                    if (Array.isArray(child.material)) {
+                        child.material = child.material.map(function (m) { return m ? m.clone() : m; });
+                    } else if (child.material) {
+                        child.material = child.material.clone();
+                    }
+                });
+
+                // Position at site location within carrier local space
+                // Hamilton coords: X=width, Y=depth, Z=height
+                // Three.js coords: X=width, Y=height, Z=depth
+                var box = new THREE.Box3().setFromObject(siteModel);
+                var center = box.getCenter(new THREE.Vector3());
+
+                // Center on site position, bottom at site.z
+                var xOff = cached.xOff || 0;
+                var yOff = cached.yOff || 0;
+                var zOff = cached.zOff || 0;
+
+                siteModel.position.set(
+                    site.x + site.dx / 2 - center.x + xOff,
+                    site.z - box.min.y + zOff,
+                    site.y + site.dy / 2 - center.z + yOff
+                );
+
+                group.add(siteModel);
+            });
+        }
+
         // Place group at track position
         group.position.set(x0, z0, y0);
         group.name = '__carrier__';
@@ -928,6 +1187,8 @@
         const plateMeshes = [];
         if (autoFillPlates && def.sites.length > 0) {
             def.sites.forEach(site => {
+                // Skip sites that have built-in labware (rendered as part of the carrier)
+                if (site.labwareFile) return;
                 const pm = buildPlateMesh(site, def);
                 group.add(pm);
                 plateMeshes.push({ siteId: site.id, mesh: pm, hasPending: false });
@@ -1648,6 +1909,80 @@
         }
     }
 
+    /**
+     * Auto-fetch a carrier's 3D model from the server using its Hamilton path.
+     * E.g. "ML_STAR\\CORE\\universal_waste_chute.x" → fetch from Base Hamilton Files/Labware/...
+     */
+    function autoFetchCarrierModel(carrierKey, hamiltonPath, parsed) {
+        var serverPath = resolveHamiltonPath(hamiltonPath);
+        if (!serverPath) return;
+
+        var isHxx = /\.hxx$/i.test(serverPath);
+
+        fetch(serverPath).then(function (resp) {
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+            return resp.arrayBuffer();
+        }).then(function (data) {
+            if (isHxx && typeof HXXLoader !== 'undefined') {
+                return HXXLoader.parse(data).then(function (result) {
+                    return result.xFileBinary || result.xFileText;
+                });
+            }
+            return data;
+        }).then(function (xData) {
+            if (!xData) return;
+
+            var blob = new Blob([xData], { type: 'application/octet-stream' });
+            var url = URL.createObjectURL(blob);
+            var manager = new THREE.LoadingManager();
+            var basePath = serverPath.substring(0, serverPath.lastIndexOf('/') + 1);
+            manager.setURLModifier(function (texUrl) {
+                if (/\.(png|jpg|jpeg|bmp|tga)$/i.test(texUrl)) {
+                    return basePath + texUrl.split('/').pop();
+                }
+                return texUrl;
+            });
+            var loader = new THREE.XFileLoader(manager);
+
+            loader.load(url, function (object) {
+                URL.revokeObjectURL(url);
+                if (!object || !object.models || object.models.length === 0) return;
+
+                var group = new THREE.Group();
+                group.name = '__xmodel_template_' + carrierKey + '__';
+                object.models.forEach(function (m, idx) {
+                    m.renderOrder = idx;
+                    if (m.material) {
+                        var mats = Array.isArray(m.material) ? m.material : [m.material];
+                        mats.forEach(function (mat) {
+                            if (!mat) return;
+                            mat.polygonOffset = true;
+                            mat.polygonOffsetFactor = idx === 0 ? 1 : -Math.min(idx, 10);
+                            mat.polygonOffsetUnits  = idx === 0 ? 1 : -Math.min(idx, 10) * 4;
+                        });
+                    }
+                    group.add(m);
+                });
+
+                fixXFileCoords(group);
+
+                vlState.xModelCache[carrierKey] = group;
+                rebuildPlacedCarriersOfType(carrierKey);
+                populateCarrierPalette();
+
+                var refreshCount = vlState.placedCarriers.filter(function (c) { return c.type === carrierKey; }).length;
+                if (refreshCount > 0) {
+                    showVLStatus('3D model auto-loaded for ' + carrierKey, 'ok');
+                }
+            }, undefined, function (err) {
+                URL.revokeObjectURL(url);
+                console.warn('[VantageLayout] Auto-fetch carrier model failed:', serverPath, err);
+            });
+        }).catch(function (err) {
+            console.warn('[VantageLayout] Could not auto-fetch carrier model:', serverPath, err.message);
+        });
+    }
+
     function loadTMLFile(tmlFile, xFile) {
         const reader = new FileReader();
         reader.onload = function (e) {
@@ -1667,7 +2002,13 @@
             // Load companion .x/.hxx model if provided
             if (xFile) {
                 loadXOrHxxModelForCarrierKey(key, xFile);
+            } else if (parsed.modelFileHamilton) {
+                // Auto-fetch carrier 3D model from Hamilton path
+                autoFetchCarrierModel(key, parsed.modelFileHamilton, parsed);
             }
+
+            // Load site labware 3D models (rck → 3DModel → .x/.hxx)
+            loadSiteLabwareModels(key, parsed.sites);
 
             // Auto-open place dialog
             showPlaceDialog(key);
