@@ -9,12 +9,12 @@
 <div class="breadcrumb"><a href="Overview.html">3D File Tools</a> &raquo; Export Options</div>
 
 <h2>Overview</h2>
-<p>3D File Tools can export models in several formats. Export is available from the <b>Export</b> dropdown button in the bottom controls bar of the 3D Viewer and Plate Placer, and from the <b>Export .x</b> button in the Converter. The Integra Generator has a dedicated <b>Save as .x File</b> button.</p>
+<p>3D File Tools can export models in several formats. Export is available from the <b>Export</b> dropdown button in the bottom controls bar of the 3D Viewer and Plate Placer, and from the <b>Export .x</b> button in the Converter. The Integra XML has a dedicated <b>Save as .x File</b> button.</p>
 
 <h2>Export Formats</h2>
 
-<h3>DirectX .x (3D Viewer &mdash; Save; Converter &mdash; Export .x; Integra Gen &mdash; Save as .x)</h3>
-<p>Saves the model as a DirectX ASCII text mesh (<code>.x</code>). This is the native format read by Hamilton VENUS. For the 3D Viewer, the saved file includes any rotation or mirror transforms applied via the Transform flyout. For the Converter, the cumulative rotation state at the time of export is baked in. For the Integra Generator, the parametric geometry is serialized.</p>
+<h3>DirectX .x (3D Viewer &mdash; Save; Converter &mdash; Export .x; Integra XML &mdash; Save as .x)</h3>
+<p>Saves the model as a DirectX ASCII text mesh (<code>.x</code>). This is the native format read by Hamilton VENUS. For the 3D Viewer, the saved file includes any rotation or mirror transforms applied via the Transform flyout. For the Converter, the cumulative rotation state at the time of export is baked in. For the Integra XML, the parametric geometry is serialized.</p>
 <p>See <a href="XFileFormat.html">DirectX .x File Format</a> for format details.</p>
 
 <h3>OBJ &mdash; Export as .OBJ</h3>
@@ -43,7 +43,7 @@
 
 <h2>Export Availability by Panel</h2>
 <table>
-<thead><tr><th>Format</th><th>3D Viewer</th><th>Converter</th><th>Plate Placer</th><th>Integra Gen</th></tr></thead>
+<thead><tr><th>Format</th><th>3D Viewer</th><th>Converter</th><th>Plate Placer</th><th>Integra XML</th></tr></thead>
 <tbody>
 <tr><td><code>.x</code> (DirectX)</td><td>Save button</td><td>Export .x button</td><td>&mdash;</td><td>Save as .x button</td></tr>
 <tr><td><code>.obj</code></td><td>Export dropdown</td><td>&mdash;</td><td>Export dropdown</td><td>&mdash;</td></tr>
@@ -59,7 +59,7 @@
   <li><b>3D Viewer Save (.x):</b> Uses the loaded file name (e.g. <code>mypart.x</code>)</li>
   <li><b>Converter Export (.x):</b> Uses the original input file base name (e.g. importing <code>mypart.stl</code> exports <code>mypart.x</code>)</li>
   <li><b>Viewer Export (OBJ/STL/GLB/HXX):</b> Uses the loaded file base name with the new extension</li>
-  <li><b>Integra Generator Save (.x):</b> Uses the <b>Name</b> field from the parameter form</li>
+  <li><b>Integra XML Save (.x):</b> Uses the <b>Name</b> field from the parameter form</li>
 </ul>
 </div>
 <div class="footer">

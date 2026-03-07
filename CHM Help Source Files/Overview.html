@@ -18,7 +18,7 @@
   <li><b>3D Viewer</b> - Load and inspect <code>.x</code> (DirectX ASCII mesh) and <code>.hxx</code> (Hamilton 3D binary) files with a full 3D scene. Supports wireframe mode, perspective and orthographic projection, camera orbit/pan/zoom, axis gizmo, and live camera position display.</li>
   <li><b>File Conversion</b> - Import OBJ, STL, and GLB/GLTF files and export them as DirectX <code>.x</code> files. Supports cumulative rotation in 90&deg; increments before export. Six synchronized orthographic views (Top, Front, Right, Bottom, Back, Left) update live as you rotate.</li>
   <li><b>Plate Placer</b> - Load a custom <code>.x</code> model and overlay it with a reference 96-well microplate to visually calculate X/Y/Z placement offsets. Useful for calibrating labware definitions in Hamilton VENUS.</li>
-  <li><b>Integra Generator</b> - Build SBS-format labware 3D models from parametric inputs or imported XML labware definition files. Supports plates, well geometry, A1 positioning, and exports to <code>.x</code>. Includes a built-in ruler tool for measuring distances in the 3D scene.</li>
+  <li><b>Integra XML</b> - Build SBS-format labware 3D models from parametric inputs or imported XML labware definition files. Supports plates, well geometry, A1 positioning, and exports to <code>.x</code>. Includes a built-in ruler tool for measuring distances in the 3D scene.</li>
   <li><b>Export</b> - Export any loaded model to <b>OBJ</b>, <b>STL</b>, <b>GLB</b>, or <b>HXX</b> format directly from the browser.</li>
   <li><b>Screenshot</b> - Capture the 3D viewport as PNG, JPG, or SVG with options to include or exclude the grid and background.</li>
   <li><b>Transform</b> - Rotate the loaded model &#177;90&deg; around X/Y/Z axes and mirror across any axis. Transforms are applied to the underlying <code>.x</code> file data and can be saved back to a <code>.x</code> file.</li>
@@ -42,7 +42,7 @@
 <tr><td><b>3D Viewer</b></td><td>Cube</td><td>Full-featured viewer for <code>.x</code> and <code>.hxx</code> files</td></tr>
 <tr><td><b>Convert to .x</b></td><td>Exchange arrows</td><td>Import OBJ/STL/GLB and export as <code>.x</code></td></tr>
 <tr><td><b>Plate Placer</b></td><td>Grid</td><td>Side-by-side model + plate for offset calculation</td></tr>
-<tr><td><b>Integra Gen</b></td><td>Flask</td><td>Parametric labware model builder</td></tr>
+<tr><td><b>Integra XML</b></td><td>Flask</td><td>Parametric labware model builder</td></tr>
 </tbody>
 </table>
 
@@ -55,7 +55,7 @@
 <tr><td><code>.obj</code> / <code>.mtl</code></td><td>Yes</td><td>Yes</td><td>Wavefront OBJ (converter input and export)</td></tr>
 <tr><td><code>.stl</code></td><td>Yes</td><td>Yes</td><td>STereoLithography (binary and ASCII)</td></tr>
 <tr><td><code>.glb</code> / <code>.gltf</code></td><td>Yes</td><td>Yes</td><td>GL Transmission Format</td></tr>
-<tr><td><code>.xml</code></td><td>Yes</td><td>No</td><td>Hamilton / Integra XML labware definitions (Integra Gen only)</td></tr>
+<tr><td><code>.xml</code></td><td>Yes</td><td>No</td><td>Hamilton / Integra XML labware definitions (Integra XML only)</td></tr>
 </tbody>
 </table>
 
@@ -66,7 +66,7 @@
   <li><a href="3DViewer.html">3D Viewer</a> - Full viewer feature reference</li>
   <li><a href="Converter.html">Convert to .x</a> - Converting foreign formats to DirectX .x</li>
   <li><a href="PlatePlacer.html">Plate Placer</a> - Labware placement offset calculation</li>
-  <li><a href="LabwareGenerator.html">Integra Generator</a> - Parametric labware model generation</li>
+  <li><a href="LabwareGenerator.html">Integra XML</a> - Parametric labware model generation</li>
   <li><a href="Toolbar.html">3D Toolbar Reference</a> - Floating toolbar button reference</li>
   <li><a href="ExportOptions.html">Export Options</a> - Export formats and options</li>
   <li><a href="Screenshot.html">Screenshot</a> - Viewport capture and save</li>

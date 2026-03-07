@@ -316,27 +316,27 @@
 		</OBJECT>
 
 	<LI> <OBJECT type="text/sitemap">
-		<param name="Name" value="Integra Generator">
+		<param name="Name" value="Integra XML">
 		<param name="Local" value="LabwareGenerator.html">
 		</OBJECT>
 
 	<LI> <OBJECT type="text/sitemap">
-		<param name="Name" value="Integra Generator, ruler">
+		<param name="Name" value="Integra XML, ruler">
 		<param name="Local" value="LabwareGenerator.html">
 		</OBJECT>
 
 	<LI> <OBJECT type="text/sitemap">
-		<param name="Name" value="Integra Generator, SBS constants">
+		<param name="Name" value="Integra XML, SBS constants">
 		<param name="Local" value="LabwareGenerator.html">
 		</OBJECT>
 
 	<LI> <OBJECT type="text/sitemap">
-		<param name="Name" value="Integra Generator, well geometry">
+		<param name="Name" value="Integra XML, well geometry">
 		<param name="Local" value="LabwareGenerator.html">
 		</OBJECT>
 
 	<LI> <OBJECT type="text/sitemap">
-		<param name="Name" value="Integra Generator, XML import">
+		<param name="Name" value="Integra XML, XML import">
 		<param name="Local" value="LabwareGenerator.html">
 		</OBJECT>
 

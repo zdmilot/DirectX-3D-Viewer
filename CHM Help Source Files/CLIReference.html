@@ -206,7 +206,7 @@ convert mypart.obj mypart.x --rotate-x 90 --mirror-x</pre>
 <hr>
 
 <h2 id="generate">Labware Generation Commands</h2>
-<p>These commands generate parametric SBS/ANSI microplate 3D models and export them as <code>.x</code> files. They are the CLI equivalents of the GUI&rsquo;s <b>Integra Generator</b> panel.</p>
+<p>These commands generate parametric SBS/ANSI microplate 3D models and export them as <code>.x</code> files. They are the CLI equivalents of the GUI&rsquo;s <b>Integra XML</b> panel.</p>
 
 <h3 class="cmd-anchor" id="cmd-generate">generate &lt;xml&gt; [out.x] [--sbs]</h3>
 <p><b>Aliases:</b> <code>gen</code>, <code>g</code></p>
@@ -364,8 +364,8 @@ node cli.js --batch ./models --no-recursive</pre>
 <tr><td><code>export-textures</code></td><td><code>et</code></td><td>&mdash;</td><td>Extract embedded textures from <code>.hxx</code></td></tr>
 <tr><td><code>export-x</code></td><td><code>ex</code></td><td>Export panel (OBJ/STL/GLB)</td><td>Export <code>.x</code> / <code>.hxx</code> to 3D format</td></tr>
 <tr><td><code>convert</code></td><td><code>cv</code></td><td>Convert to .x panel</td><td>Convert OBJ/STL/GLB/GLTF/<code>.x</code> &rarr; <code>.x</code></td></tr>
-<tr><td><code>generate</code></td><td><code>gen</code>, <code>g</code></td><td>Integra Generator (XML import)</td><td>XML labware definition &rarr; <code>.x</code></td></tr>
-<tr><td><code>generate-default</code></td><td><code>gend</code>, <code>gd</code></td><td>Integra Generator (manual params)</td><td>Parametric plate &rarr; <code>.x</code> (no XML)</td></tr>
+<tr><td><code>generate</code></td><td><code>gen</code>, <code>g</code></td><td>Integra XML (XML import)</td><td>XML labware definition &rarr; <code>.x</code></td></tr>
+<tr><td><code>generate-default</code></td><td><code>gend</code>, <code>gd</code></td><td>Integra XML (manual params)</td><td>Parametric plate &rarr; <code>.x</code> (no XML)</td></tr>
 <tr><td><code>sbs</code></td><td>&mdash;</td><td>&mdash;</td><td>Print SBS/ANSI reference dimensions</td></tr>
 <tr><td><code>validate</code></td><td><code>v</code></td><td>&mdash;</td><td>Validate file can be fully parsed</td></tr>
 <tr><td><code>batch</code></td><td><code>b</code></td><td>&mdash;</td><td>Batch-validate all files in a directory</td></tr>
@@ -425,9 +425,9 @@ d3d&gt; stats</pre>
 <tr><td>3D Viewer &rarr; Export GLB</td><td><code>export-x &lt;in.x&gt; &lt;out.glb&gt;</code></td></tr>
 <tr><td>Convert to .x &rarr; Open + Export .x</td><td><code>convert &lt;input&gt; &lt;out.x&gt;</code></td></tr>
 <tr><td>Convert to .x &rarr; Rotation buttons (X/Y/Z &plusmn;90&deg;)</td><td><code>--rotate-x/y/z &lt;deg&gt;</code></td></tr>
-<tr><td>Integra Generator &rarr; Import XML &rarr; Save .x</td><td><code>generate &lt;xml&gt; &lt;out.x&gt;</code></td></tr>
-<tr><td>Integra Generator &rarr; Manual params &rarr; Save .x</td><td><code>generate-default &lt;out.x&gt; [options]</code></td></tr>
-<tr><td>Integra Generator &rarr; Apply SBS Defaults</td><td><code>--sbs</code> flag on <code>generate</code> / <code>generate-default</code></td></tr>
+<tr><td>Integra XML &rarr; Import XML &rarr; Save .x</td><td><code>generate &lt;xml&gt; &lt;out.x&gt;</code></td></tr>
+<tr><td>Integra XML &rarr; Manual params &rarr; Save .x</td><td><code>generate-default &lt;out.x&gt; [options]</code></td></tr>
+<tr><td>Integra XML &rarr; Apply SBS Defaults</td><td><code>--sbs</code> flag on <code>generate</code> / <code>generate-default</code></td></tr>
 </tbody>
 </table>
 
@@ -435,7 +435,7 @@ d3d&gt; stats</pre>
 <ul>
   <li><a href="Converter.html">Convert to .x</a> &mdash; GUI equivalent of <code>convert</code></li>
   <li><a href="ExportOptions.html">Export Options</a> &mdash; GUI equivalent of <code>export-x</code></li>
-  <li><a href="LabwareGenerator.html">Integra Generator</a> &mdash; GUI equivalent of <code>generate</code> / <code>generate-default</code></li>
+  <li><a href="LabwareGenerator.html">Integra XML</a> &mdash; GUI equivalent of <code>generate</code> / <code>generate-default</code></li>
   <li><a href="FileFormats.html">Supported File Formats</a> &mdash; Details on all supported formats</li>
   <li><a href="HXXFormat.html">Hamilton .hxx Format</a> &mdash; Internal structure of the <code>.hxx</code> container</li>
   <li><a href="XFileFormat.html">DirectX .x File Format</a> &mdash; Structure of the <code>.x</code> output files</li>

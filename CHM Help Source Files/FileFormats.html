@@ -15,12 +15,12 @@
 <table>
 <thead><tr><th>Format</th><th>Extension(s)</th><th>Read</th><th>Write</th><th>Used In</th></tr></thead>
 <tbody>
-<tr><td><a href="XFileFormat.html">DirectX .x</a></td><td><code>.x</code></td><td>Yes</td><td>Yes</td><td>3D Viewer, Converter, Integra Gen</td></tr>
+<tr><td><a href="XFileFormat.html">DirectX .x</a></td><td><code>.x</code></td><td>Yes</td><td>Yes</td><td>3D Viewer, Converter, Integra XML</td></tr>
 <tr><td><a href="HXXFormat.html">Hamilton .hxx</a></td><td><code>.hxx</code></td><td>Yes</td><td>Yes</td><td>3D Viewer</td></tr>
 <tr><td>Wavefront OBJ</td><td><code>.obj</code>, <code>.mtl</code></td><td>Yes</td><td>Yes</td><td>Converter (read), 3D Viewer (write)</td></tr>
 <tr><td>STereoLithography</td><td><code>.stl</code></td><td>Yes</td><td>Yes</td><td>Converter (read), 3D Viewer (write)</td></tr>
 <tr><td>GL Transmission Format</td><td><code>.glb</code>, <code>.gltf</code></td><td>Yes</td><td>Yes</td><td>Converter (read), 3D Viewer (write)</td></tr>
-<tr><td>XML Labware Definition</td><td><code>.xml</code></td><td>Yes</td><td>No</td><td>Integra Generator (import only)</td></tr>
+<tr><td>XML Labware Definition</td><td><code>.xml</code></td><td>Yes</td><td>No</td><td>Integra XML (import only)</td></tr>
 <tr><td>PNG Image</td><td><code>.png</code></td><td>No</td><td>Yes</td><td>Screenshot</td></tr>
 <tr><td>JPEG Image</td><td><code>.jpg</code></td><td>No</td><td>Yes</td><td>Screenshot</td></tr>
 <tr><td>SVG Image</td><td><code>.svg</code></td><td>No</td><td>Yes</td><td>Screenshot</td></tr>
@@ -46,7 +46,7 @@
 <p>GLTF 2.0 is a modern format that supports PBR materials, textures, skeletal animation, and scene hierarchies. GLB is the binary-packaged variant that bundles all assets in a single file. GLTF (with separate <code>.bin</code> and texture files) is supported for reading only when all referenced files are available.</p>
 
 <h2>XML Labware Definition</h2>
-<p>The Integra Generator can import Hamilton or Integra XML labware definition files to pre-populate the parameter form. The parser extracts plate footprint dimensions, well count, well geometry, well spacing, and A1 position. The XML is not saved or exported &mdash; it is used only as an input for generating the parametric 3D model.</p>
+<p>The Integra XML can import Hamilton or Integra XML labware definition files to pre-populate the parameter form. The parser extracts plate footprint dimensions, well count, well geometry, well spacing, and A1 position. The XML is not saved or exported &mdash; it is used only as an input for generating the parametric 3D model.</p>
 
 <h2>PNG / JPEG / SVG</h2>
 <p>These image formats are used only by the Screenshot feature. See <a href="Screenshot.html">Screenshot</a>.</p>

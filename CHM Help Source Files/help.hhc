@@ -42,7 +42,7 @@
 				<param name="Local" value="PlatePlacer.html">
 				</OBJECT>
 			<LI> <OBJECT type="text/sitemap">
-				<param name="Name" value="Integra Generator">
+				<param name="Name" value="Integra XML">
 				<param name="Local" value="LabwareGenerator.html">
 				</OBJECT>
 		</UL>
