@@ -457,6 +457,9 @@
         const grid = DeckUnits.createGrid(2000, 22.5, gridColor, { name: '__vlgrid__', visible: vlState.gridVisible });
         grid.position.set(DECK.FIRST_TRACK_X + (DECK.TRACK_COUNT * DECK.TRACK_SPACING) / 2, DECK.SURFACE_Z + 4.1, 310);
         scene.add(grid);
+
+        // Orientation labels (Front / Back / Left / Right)
+        addOrientationLabels();
     }
 
     // ================================================================
@@ -710,6 +713,43 @@
         sprite.position.set(xPos + DECK.TRACK_WIDTH / 2, DECK.SURFACE_Z + 12, DECK.TRACK_Y_START + DECK.TRACK_DEPTH + 12);
         sprite.name = `__tracklabel_${text}__`;
         vlState.scene.add(sprite);
+    }
+
+    function addOrientationLabel(text, x, y, z, scaleFactor) {
+        const cvW = 256;
+        const cvH = 64;
+        const cv = document.createElement('canvas');
+        cv.width = cvW; cv.height = cvH;
+        const ctx = cv.getContext('2d');
+        ctx.clearRect(0, 0, cvW, cvH);
+        ctx.fillStyle = '#000000';
+        ctx.font = 'bold 36px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(text, cvW / 2, cvH / 2);
+        const tex = new THREE.CanvasTexture(cv);
+        tex.premultiplyAlpha = false;
+        const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, alphaTest: 0.1 });
+        const sprite = new THREE.Sprite(mat);
+        sprite.scale.set(scaleFactor * 4, scaleFactor, 1);
+        sprite.position.set(x, y, z);
+        sprite.name = `__orientlabel_${text.toLowerCase()}__`;
+        vlState.scene.add(sprite);
+    }
+
+    function addOrientationLabels() {
+        const centerX = DECK.FIRST_TRACK_X + (DECK.TRACK_COUNT * DECK.TRACK_SPACING) / 2;
+        const centerZ = DECK.TRACK_Y_START + DECK.TRACK_DEPTH / 2;
+        const labelY = DECK.SURFACE_Z + 12;
+
+        // Front – near front rail
+        addOrientationLabel('FRONT', centerX, labelY, DECK.TRACK_Y_START - 18, 14);
+        // Back – near back rail
+        addOrientationLabel('BACK', centerX, labelY, DECK.TRACK_Y_START + DECK.TRACK_DEPTH + 25, 14);
+        // Left – near track 1 side
+        addOrientationLabel('LEFT', DECK.FIRST_TRACK_X - 50, labelY, centerZ, 14);
+        // Right – near last track side
+        addOrientationLabel('RIGHT', DECK.FIRST_TRACK_X + DECK.TRACK_COUNT * DECK.TRACK_SPACING + 50, labelY, centerZ, 14);
     }
 
     // ================================================================
