@@ -1287,122 +1287,6 @@
             });
         }
 
-        // ── Import source tab switching ──────────────────────────
-        const tabIntegra = $('#lg-tab-integra');
-        const tabHamilton = $('#lg-tab-hamilton');
-        const panelIntegra = $('#lg-import-integra');
-        const panelHamilton = $('#lg-import-hamilton');
-
-        if (tabIntegra && tabHamilton) {
-            tabIntegra.addEventListener('click', () => {
-                tabIntegra.classList.add('active');
-                tabHamilton.classList.remove('active');
-                if (panelIntegra) { panelIntegra.classList.add('active'); panelIntegra.style.display = ''; }
-                if (panelHamilton) { panelHamilton.classList.remove('active'); panelHamilton.style.display = 'none'; }
-            });
-            tabHamilton.addEventListener('click', () => {
-                tabHamilton.classList.add('active');
-                tabIntegra.classList.remove('active');
-                if (panelHamilton) { panelHamilton.classList.add('active'); panelHamilton.style.display = ''; }
-                if (panelIntegra) { panelIntegra.classList.remove('active'); panelIntegra.style.display = 'none'; }
-            });
-        }
-
-        // ── Hamilton .rck / .ctr file import ─────────────────────
-        // Store loaded file contents
-        const hamState = { rckText: null, ctrText: null, rckName: '', ctrName: '' };
-
-        function updateHamImportBtn() {
-            const btn = $('#lg-ham-import-btn');
-            if (btn) btn.disabled = !(hamState.rckText && hamState.ctrText);
-        }
-
-        // Read a file as text, trying UTF-8 first, then UTF-16LE for binary-looking Hamilton files
-        function readHamFile(file, callback) {
-            const reader = new FileReader();
-            reader.onload = function (ev) {
-                let text = ev.target.result;
-                // Detect if it starts with a BOM or looks like UTF-16
-                if (text.charCodeAt(0) === 0xFFFE || text.charCodeAt(0) === 0xFEFF ||
-                    (text.length > 4 && text.charCodeAt(1) === 0)) {
-                    // Re-read as UTF-16LE
-                    const reader2 = new FileReader();
-                    reader2.onload = function (ev2) {
-                        callback(ev2.target.result);
-                    };
-                    reader2.readAsText(file, 'utf-16le');
-                } else {
-                    callback(text);
-                }
-            };
-            reader.readAsText(file, 'utf-8');
-        }
-
-        // Rack file input
-        const rckInput = $('#lg-ham-rck-input');
-        const rckBtn = $('#lg-ham-rck-btn');
-        if (rckBtn && rckInput) {
-            rckBtn.addEventListener('click', () => rckInput.click());
-            rckInput.addEventListener('change', (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-                readHamFile(file, function (text) {
-                    hamState.rckText = text;
-                    hamState.rckName = file.name;
-                    const label = $('#lg-ham-rck-label');
-                    if (label) {
-                        label.textContent = '✓ ' + file.name;
-                        label.className = 'lg-ham-file-label loaded';
-                    }
-                    updateHamImportBtn();
-                });
-                rckInput.value = '';
-            });
-        }
-
-        // Container file input
-        const ctrInput = $('#lg-ham-ctr-input');
-        const ctrBtn = $('#lg-ham-ctr-btn');
-        if (ctrBtn && ctrInput) {
-            ctrBtn.addEventListener('click', () => ctrInput.click());
-            ctrInput.addEventListener('change', (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-                readHamFile(file, function (text) {
-                    hamState.ctrText = text;
-                    hamState.ctrName = file.name;
-                    const label = $('#lg-ham-ctr-label');
-                    if (label) {
-                        label.textContent = '✓ ' + file.name;
-                        label.className = 'lg-ham-file-label loaded';
-                    }
-                    updateHamImportBtn();
-                });
-                ctrInput.value = '';
-            });
-        }
-
-        // Import button — parse both files and generate model
-        const hamImportBtn = $('#lg-ham-import-btn');
-        if (hamImportBtn) {
-            hamImportBtn.addEventListener('click', () => {
-                if (!hamState.rckText || !hamState.ctrText) return;
-                try {
-                    const rck = parseRckFile(hamState.rckText);
-                    parseRckSegments(hamState.rckText, rck);
-                    const ctr = parseCtrFile(hamState.ctrText);
-                    const def = hamiltonToDefinition(rck, ctr, hamState.rckName, hamState.ctrName);
-                    populateForm(def);
-                    regeneratePreview();
-                    $('#lg-status').textContent = 'Imported Hamilton: ' + hamState.rckName + ' + ' + hamState.ctrName;
-                    $('#lg-status').className = 'lg-status lg-status-ok';
-                } catch (err) {
-                    $('#lg-status').textContent = 'Hamilton import error: ' + err.message;
-                    $('#lg-status').className = 'lg-status lg-status-err';
-                }
-            });
-        }
-
         // Generate / Refresh button
         const genBtn = $('#lg-generate-btn');
         if (genBtn) {
@@ -1493,83 +1377,28 @@
                 e.preventDefault();
                 dragCounter = 0;
                 if (dropzone) dropzone.classList.add('viewer-hidden');
-                const files = e.dataTransfer.files;
-                if (!files.length) return;
-
-                // Collect dropped files by extension
-                const xmlFiles = [];
-                const rckFiles = [];
-                const ctrFiles = [];
-                for (let i = 0; i < files.length; i++) {
-                    const name = files[i].name.toLowerCase();
-                    if (name.endsWith('.xml')) xmlFiles.push(files[i]);
-                    else if (name.endsWith('.rck')) rckFiles.push(files[i]);
-                    else if (name.endsWith('.ctr')) ctrFiles.push(files[i]);
-                }
-
-                if (xmlFiles.length > 0) {
-                    // Integra XML import
-                    const reader = new FileReader();
-                    reader.onload = function (ev) {
-                        try {
-                            const def = parseLabwareXML(ev.target.result);
-                            populateForm(def);
-                            regeneratePreview();
-                            $('#lg-status').textContent = 'Loaded: ' + xmlFiles[0].name;
-                            $('#lg-status').className = 'lg-status lg-status-ok';
-                        } catch (err) {
-                            $('#lg-status').textContent = 'Error: ' + err.message;
-                            $('#lg-status').className = 'lg-status lg-status-err';
-                        }
-                    };
-                    reader.readAsText(xmlFiles[0]);
-                } else if (rckFiles.length > 0 || ctrFiles.length > 0) {
-                    // Hamilton file(s) dropped — switch to Hamilton tab
-                    if (tabHamilton) tabHamilton.click();
-
-                    // Load dropped .rck file
-                    if (rckFiles.length > 0) {
-                        readHamFile(rckFiles[0], function (text) {
-                            hamState.rckText = text;
-                            hamState.rckName = rckFiles[0].name;
-                            var label = $('#lg-ham-rck-label');
-                            if (label) { label.textContent = '✓ ' + rckFiles[0].name; label.className = 'lg-ham-file-label loaded'; }
-                            updateHamImportBtn();
-                            // Auto-import if both files are now available
-                            if (hamState.rckText && hamState.ctrText) {
-                                var btn = $('#lg-ham-import-btn');
-                                if (btn) btn.click();
-                            }
-                        });
-                    }
-
-                    // Load dropped .ctr file
-                    if (ctrFiles.length > 0) {
-                        readHamFile(ctrFiles[0], function (text) {
-                            hamState.ctrText = text;
-                            hamState.ctrName = ctrFiles[0].name;
-                            var label = $('#lg-ham-ctr-label');
-                            if (label) { label.textContent = '✓ ' + ctrFiles[0].name; label.className = 'lg-ham-file-label loaded'; }
-                            updateHamImportBtn();
-                            // Auto-import if both files are now available
-                            if (hamState.rckText && hamState.ctrText) {
-                                var btn = $('#lg-ham-import-btn');
-                                if (btn) btn.click();
-                            }
-                        });
-                    }
-
-                    if (rckFiles.length === 0 && ctrFiles.length > 0) {
-                        $('#lg-status').textContent = 'Container loaded — also drop or open the matching .rck rack file';
-                        $('#lg-status').className = 'lg-status lg-status-ok';
-                    } else if (ctrFiles.length === 0 && rckFiles.length > 0) {
-                        $('#lg-status').textContent = 'Rack loaded — also drop or open the matching .ctr container file';
-                        $('#lg-status').className = 'lg-status lg-status-ok';
-                    }
-                } else {
-                    $('#lg-status').textContent = 'Unsupported file type. Drop .xml, .rck, or .ctr files.';
+                const file = e.dataTransfer.files[0];
+                if (!file) return;
+                if (!file.name.toLowerCase().endsWith('.xml')) {
+                    $('#lg-status').textContent = 'Please drop an XML labware definition file.';
                     $('#lg-status').className = 'lg-status lg-status-err';
+                    return;
                 }
+                const reader = new FileReader();
+                reader.onload = function (ev) {
+                    try {
+                        const def = parseLabwareXML(ev.target.result);
+                        populateForm(def);
+                        regeneratePreview();
+                        $('#lg-status').textContent = 'Loaded: ' + file.name;
+                        $('#lg-status').className = 'lg-status lg-status-ok';
+                    } catch (err) {
+                        $('#lg-status').textContent = 'Error: ' + err.message;
+                        $('#lg-status').className = 'lg-status lg-status-err';
+                    }
+                };
+                reader.readAsText(file);
+            });
             });
         }
 
@@ -2014,6 +1843,11 @@
     window.LabwareGenModule = {
         init: initLabwareGenerator,
         updateTheme: updateLgTheme,
+        // Shared geometry/export functions used by Hamilton import module
+        generatePlateModel: generatePlateModel,
+        exportToXFile: exportToXFile,
+        checkSBSCompliance: checkSBSCompliance,
+        SBS: SBS,
     };
 
 })();
