@@ -716,21 +716,28 @@
     }
 
     function addOrientationLabel(text, x, y, z, scaleFactor) {
-        const cvW = 256;
-        const cvH = 64;
+        const cvW = 512;
+        const cvH = 128;
         const cv = document.createElement('canvas');
         cv.width = cvW; cv.height = cvH;
         const ctx = cv.getContext('2d');
         ctx.clearRect(0, 0, cvW, cvH);
         ctx.fillStyle = '#000000';
-        ctx.font = 'bold 36px sans-serif';
+        ctx.font = 'bold 72px sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(text, cvW / 2, cvH / 2);
         const tex = new THREE.CanvasTexture(cv);
         tex.premultiplyAlpha = false;
-        const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, alphaTest: 0.1 });
+        const mat = new THREE.SpriteMaterial({
+            map: tex,
+            transparent: true,
+            alphaTest: 0.1,
+            depthTest: false,
+            depthWrite: false
+        });
         const sprite = new THREE.Sprite(mat);
+        sprite.renderOrder = 9999;
         sprite.scale.set(scaleFactor * 4, scaleFactor, 1);
         sprite.position.set(x, y, z);
         sprite.name = `__orientlabel_${text.toLowerCase()}__`;
@@ -738,18 +745,19 @@
     }
 
     function addOrientationLabels() {
-        const centerX = DECK.FIRST_TRACK_X + (DECK.TRACK_COUNT * DECK.TRACK_SPACING) / 2;
+        const centerX = DECK.FIRST_TRACK_X + (DECK.PHYSICAL_TRACKS * DECK.TRACK_SPACING) / 2;
         const centerZ = DECK.TRACK_Y_START + DECK.TRACK_DEPTH / 2;
-        const labelY = DECK.SURFACE_Z + 12;
+        const labelY = DECK.SURFACE_Z + 20;
+        const scale = 18;
 
-        // Front – near front rail
-        addOrientationLabel('FRONT', centerX, labelY, DECK.TRACK_Y_START - 18, 14);
-        // Back – near back rail
-        addOrientationLabel('BACK', centerX, labelY, DECK.TRACK_Y_START + DECK.TRACK_DEPTH + 25, 14);
-        // Left – near track 1 side
-        addOrientationLabel('LEFT', DECK.FIRST_TRACK_X - 50, labelY, centerZ, 14);
-        // Right – near last track side
-        addOrientationLabel('RIGHT', DECK.FIRST_TRACK_X + DECK.TRACK_COUNT * DECK.TRACK_SPACING + 50, labelY, centerZ, 14);
+        // Front – below front rail
+        addOrientationLabel('FRONT', centerX, labelY, DECK.TRACK_Y_START - 40, scale);
+        // Back – above back rail
+        addOrientationLabel('BACK', centerX, labelY, DECK.TRACK_Y_START + DECK.TRACK_DEPTH + 45, scale);
+        // Left – left of track 1
+        addOrientationLabel('LEFT', DECK.FIRST_TRACK_X - 80, labelY, centerZ, scale);
+        // Right – right of last track
+        addOrientationLabel('RIGHT', DECK.FIRST_TRACK_X + DECK.PHYSICAL_TRACKS * DECK.TRACK_SPACING + 80, labelY, centerZ, scale);
     }
 
     // ================================================================
