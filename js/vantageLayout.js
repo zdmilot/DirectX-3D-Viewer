@@ -239,10 +239,7 @@
         drawerMesh: null,
         drawerModelCacheKey: '__ENTRY_EXIT_DRAWER__',
 
-        // Back panel node references (individual panels, sorted left-to-right)
-        backPanelNodes: [],
-        backPanelVisibility: [],
-        // Legacy single-node reference (parent container)
+        // Back panel node reference
         backPanelNode: null,
         backPanelVisible: true,
 
@@ -1383,213 +1380,11 @@
     //  Back panel visibility
     // ================================================================
 
-    /**
-     * Split a single mesh into connected components (separate sub-meshes)
-     * based on disconnected triangle groups.  Returns an array of THREE.Mesh.
-     */
-    function splitMeshIntoComponents(mesh) {
-        var geo = mesh.geometry;
-        if (!geo) return [mesh];
-        var posAttr = geo.getAttribute('position');
-        if (!posAttr) return [mesh];
-        var index = geo.index;
-        var vertCount = posAttr.count;
-        var triCount = index ? index.count / 3 : vertCount / 3;
-        if (triCount === 0) return [mesh];
-
-        // Union-Find for vertices
-        var parent = new Int32Array(vertCount);
-        for (var i = 0; i < vertCount; i++) parent[i] = i;
-        function find(a) {
-            while (parent[a] !== a) { parent[a] = parent[parent[a]]; a = parent[a]; }
-            return a;
-        }
-        function union(a, b) {
-            a = find(a); b = find(b);
-            if (a !== b) parent[a] = b;
-        }
-
-        // Union vertices that share a triangle
-        for (var t = 0; t < triCount; t++) {
-            var i0, i1, i2;
-            if (index) {
-                i0 = index.getX(t * 3);
-                i1 = index.getX(t * 3 + 1);
-                i2 = index.getX(t * 3 + 2);
-            } else {
-                i0 = t * 3; i1 = t * 3 + 1; i2 = t * 3 + 2;
-            }
-            union(i0, i1);
-            union(i1, i2);
-        }
-
-        // Group triangles by component root
-        var compTriMap = {};
-        for (var t = 0; t < triCount; t++) {
-            var vi;
-            if (index) {
-                vi = index.getX(t * 3);
-            } else {
-                vi = t * 3;
-            }
-            var root = find(vi);
-            if (!compTriMap[root]) compTriMap[root] = [];
-            compTriMap[root].push(t);
-        }
-
-        var roots = Object.keys(compTriMap);
-        if (roots.length <= 1) return [mesh];
-
-        // Get normal attribute if available
-        var normAttr = geo.getAttribute('normal');
-        var uvAttr = geo.getAttribute('uv');
-
-        var components = [];
-        roots.forEach(function (root) {
-            var tris = compTriMap[root];
-            // Re-index vertices for this component
-            var vertexMap = {};
-            var newVerts = [];
-            var newNorms = [];
-            var newUvs = [];
-            var newIndices = [];
-            var nextIdx = 0;
-
-            tris.forEach(function (t) {
-                for (var k = 0; k < 3; k++) {
-                    var oi;
-                    if (index) {
-                        oi = index.getX(t * 3 + k);
-                    } else {
-                        oi = t * 3 + k;
-                    }
-                    if (vertexMap[oi] === undefined) {
-                        vertexMap[oi] = nextIdx++;
-                        newVerts.push(
-                            posAttr.getX(oi),
-                            posAttr.getY(oi),
-                            posAttr.getZ(oi)
-                        );
-                        if (normAttr) {
-                            newNorms.push(
-                                normAttr.getX(oi),
-                                normAttr.getY(oi),
-                                normAttr.getZ(oi)
-                            );
-                        }
-                        if (uvAttr) {
-                            newUvs.push(
-                                uvAttr.getX(oi),
-                                uvAttr.getY(oi)
-                            );
-                        }
-                    }
-                    newIndices.push(vertexMap[oi]);
-                }
-            });
-
-            var newGeo = new THREE.BufferGeometry();
-            newGeo.setAttribute('position', new THREE.Float32BufferAttribute(newVerts, 3));
-            if (newNorms.length) {
-                newGeo.setAttribute('normal', new THREE.Float32BufferAttribute(newNorms, 3));
-            }
-            if (newUvs.length) {
-                newGeo.setAttribute('uv', new THREE.Float32BufferAttribute(newUvs, 2));
-            }
-            newGeo.setIndex(newIndices);
-            newGeo.computeBoundingBox();
-
-            var mat = mesh.material;
-            if (mat && mat.clone) mat = mat.clone();
-            var subMesh = new THREE.Mesh(newGeo, mat);
-            subMesh.name = mesh.name + '_bp_' + components.length;
-            components.push(subMesh);
-        });
-
-        // Sort components left-to-right by bounding box center X
-        components.sort(function (a, b) {
-            var ca = a.geometry.boundingBox.getCenter(new THREE.Vector3());
-            var cb = b.geometry.boundingBox.getCenter(new THREE.Vector3());
-            return ca.x - cb.x;
-        });
-
-        return components;
-    }
-
-    /** Toggle visibility of ALL back panels at once. */
     function setBackPanelVisible(visible) {
         vlState.backPanelVisible = visible;
-        if (vlState.backPanelNodes.length > 0) {
-            vlState.backPanelNodes.forEach(function (node, i) {
-                node.visible = visible;
-                vlState.backPanelVisibility[i] = visible;
-            });
-            updateBackPanelCheckboxes();
-        } else if (vlState.backPanelNode) {
+        if (vlState.backPanelNode) {
             vlState.backPanelNode.visible = visible;
         }
-    }
-
-    /** Toggle visibility of a single back panel by index. */
-    function setBackPanelIndexVisible(idx, visible) {
-        if (idx < 0 || idx >= vlState.backPanelNodes.length) return;
-        vlState.backPanelVisibility[idx] = visible;
-        vlState.backPanelNodes[idx].visible = visible;
-        // Update master toggle state: true only if all panels visible
-        vlState.backPanelVisible = vlState.backPanelVisibility.every(function (v) { return v; });
-        var masterCb = document.getElementById('settings-back-panel-toggle');
-        if (masterCb) masterCb.checked = vlState.backPanelVisible;
-    }
-
-    /** Sync all individual back panel checkboxes with current state. */
-    function updateBackPanelCheckboxes() {
-        vlState.backPanelVisibility.forEach(function (vis, i) {
-            var cb = document.getElementById('settings-back-panel-' + i);
-            if (cb) cb.checked = vis;
-        });
-    }
-
-    /**
-     * Dynamically build individual back-panel toggle rows in the settings UI.
-     * Inserts them right after the master "Back Panel" toggle row.
-     */
-    function buildBackPanelUI() {
-        var container = document.getElementById('back-panel-individual-container');
-        if (!container) return;
-        container.innerHTML = '';
-        if (vlState.backPanelNodes.length <= 1) return;
-
-        vlState.backPanelNodes.forEach(function (node, idx) {
-            var row = document.createElement('div');
-            row.className = 'settings-toggle-row';
-            row.style.paddingLeft = '18px'; // indent under master toggle
-
-            var label = document.createElement('span');
-            label.className = 'settings-toggle-label';
-            label.textContent = 'Back Panel ' + (idx + 1);
-
-            var switchLabel = document.createElement('label');
-            switchLabel.className = 'settings-switch';
-
-            var cb = document.createElement('input');
-            cb.type = 'checkbox';
-            cb.id = 'settings-back-panel-' + idx;
-            cb.checked = vlState.backPanelVisibility[idx];
-
-            var slider = document.createElement('span');
-            slider.className = 'settings-switch-slider';
-
-            switchLabel.appendChild(cb);
-            switchLabel.appendChild(slider);
-
-            row.appendChild(label);
-            row.appendChild(switchLabel);
-            container.appendChild(row);
-
-            cb.addEventListener('change', function () {
-                setBackPanelIndexVisible(idx, cb.checked);
-            });
-        });
     }
 
     /** Rebuild the waste 3D mesh (called when models finish loading). */
@@ -3155,34 +2950,6 @@
         covers.sort(function (a, b) { return a.name.localeCompare(b.name); });
         vlState.deckCoverNodes = covers;
 
-        // Split back panel into individually-toggleable components
-        if (vlState.backPanelNode) {
-            var bpMesh = null;
-            vlState.backPanelNode.traverse(function (child) {
-                if (child.isMesh && !bpMesh) bpMesh = child;
-            });
-            if (bpMesh) {
-                var parts = splitMeshIntoComponents(bpMesh);
-                if (parts.length > 1) {
-                    // Remove original mesh, add sub-meshes as children
-                    var parentNode = bpMesh.parent;
-                    parentNode.remove(bpMesh);
-                    bpMesh.geometry.dispose();
-                    parts.forEach(function (p) { parentNode.add(p); });
-                    vlState.backPanelNodes = parts;
-                    vlState.backPanelVisibility = parts.map(function () { return true; });
-                    console.log('[VantageLayout] back panel split into ' + parts.length + ' components');
-                } else {
-                    // Single component — wrap it so the toggle still works
-                    vlState.backPanelNodes = [bpMesh];
-                    vlState.backPanelVisibility = [true];
-                    console.log('[VantageLayout] back panel is a single component');
-                }
-                // Build the individual-panel UI dynamically
-                buildBackPanelUI();
-            }
-        }
-
         // Dynamically compute cutout track positions from cover panel world bounding boxes.
         // This accounts for the GLTF model.position offset applied during loading.
         vlState.gltfModel.updateMatrixWorld(true);
@@ -3199,7 +2966,7 @@
         });
 
         console.log('[VantageLayout] deck cover nodes:', covers.map(function (n) { return n.name; }));
-        if (vlState.backPanelNode) console.log('[VantageLayout] back panel node found: 6606544-01 (' + vlState.backPanelNodes.length + ' sub-panels)');
+        if (vlState.backPanelNode) console.log('[VantageLayout] back panel node found: 6606544-01');
     }
 
     function applyCutoutVisibility() {
@@ -3431,7 +3198,7 @@
             });
         }
 
-        // ── Back Panel master toggle ─────────────────────────────────
+        // ── Back Panel toggle ────────────────────────────────────────
         var backPanelToggle = document.getElementById('settings-back-panel-toggle');
         if (backPanelToggle) {
             backPanelToggle.checked = vlState.backPanelVisible;
@@ -3439,16 +3206,6 @@
                 setBackPanelVisible(backPanelToggle.checked);
             });
         }
-
-        // ── Individual back panel toggles (dynamically created) ──────
-        vlState.backPanelNodes.forEach(function (node, idx) {
-            var cb = document.getElementById('settings-back-panel-' + idx);
-            if (!cb) return;
-            cb.checked = vlState.backPanelVisibility[idx];
-            cb.addEventListener('change', function () {
-                setBackPanelIndexVisible(idx, cb.checked);
-            });
-        });
 
         // ── Grid toggle ──────────────────────────────────────────────
         const gridToggle = document.getElementById('settings-grid-toggle');
