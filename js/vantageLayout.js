@@ -243,6 +243,15 @@
         backPanelNode: null,
         backPanelVisible: true,
 
+        // Fixture position debug state
+        fixtureDebugMode: false,
+        fixtureDebugTarget: 'body',   // 'body' | 'accessories' | 'group'
+        fixtureDebugOffsets: {
+            body: { x: 0, y: 0, z: 0 },
+            accessories: { x: 0, y: 0, z: 0 },
+            group: { x: 0, y: 0, z: 0 }
+        },
+
         // Settings: use generic (procedural) carrier rendering instead of .x models
         useGenericCarriers: false,
 
@@ -1053,7 +1062,7 @@
             group.add(fbMesh);
         }
 
-        // Site labware — identical to buildCarrierMesh (no Y mirroring needed)
+        // Site labware — mirror Y (front-to-back) like Hamilton coordinate system
         if (!vlState.useGenericCarriers && def.sites) {
             def.sites.forEach(function (site) {
                 if (!site.labwareFile) return;
@@ -1073,12 +1082,13 @@
                     }
                 });
 
+                var mirroredY = (def.dy || 471.5) - site.y - site.dy;
                 var sBox = new THREE.Box3().setFromObject(siteModel);
                 var sCenter = sBox.getCenter(new THREE.Vector3());
                 siteModel.position.set(
                     site.x + site.dx / 2 - sCenter.x + (cachedLw.xOff || 0),
                     site.z - sBox.min.y + (cachedLw.zOff || 0),
-                    site.y + site.dy / 2 - sCenter.z + (cachedLw.yOff || 0)
+                    mirroredY + site.dy / 2 - sCenter.z + (cachedLw.yOff || 0)
                 );
                 group.add(siteModel);
             });
@@ -1134,6 +1144,8 @@
         if (mesh) {
             vlState.wasteMesh = mesh;
             vlState.scene.add(mesh);
+            snapshotFixtureBasePositions(mesh);
+            if (vlState.fixtureDebugMode) refreshFixtureDebugReadout();
         }
 
         // Load site labware models if waste def available
@@ -1230,6 +1242,8 @@
         if (mesh) {
             vlState.drawerMesh = mesh;
             vlState.scene.add(mesh);
+            snapshotFixtureBasePositions(mesh);
+            if (vlState.fixtureDebugMode) refreshFixtureDebugReadout();
         }
 
         if (vlState.drawerTmlDef) {
@@ -1280,6 +1294,8 @@
         if (mesh) {
             vlState.drawerMesh = mesh;
             vlState.scene.add(mesh);
+            snapshotFixtureBasePositions(mesh);
+            if (vlState.fixtureDebugMode) refreshFixtureDebugReadout();
         }
     }
 
@@ -1340,6 +1356,8 @@
         if (mesh) {
             vlState.wasteMesh = mesh;
             vlState.scene.add(mesh);
+            snapshotFixtureBasePositions(mesh);
+            if (vlState.fixtureDebugMode) refreshFixtureDebugReadout();
         }
     }
 
@@ -2739,6 +2757,7 @@
         if (resetCamBtn) resetCamBtn.addEventListener('click', resetVLCamera);
 
         wireDeckDebugPanel();
+        wireFixtureDebugPanel();
         wireVLSettingsPanel();
     }
 
@@ -2912,6 +2931,169 @@
         showVLStatus('Cover panel ' + (vlState.deckCutouts.map(function (v, i) { return v ? null : 'Panel ' + (i + 1); }).filter(Boolean).join(', ') || 'none') + ' hidden', '');
     }
 
+    // ================================================================
+    //  Fixture Position Debug (body vs accessories independent movement)
+    // ================================================================
+
+    /**
+     * Get the currently-active fixture mesh (waste or drawer, whichever is installed).
+     * Returns { mesh, name } or null.
+     */
+    function getActiveFixtureMesh() {
+        if (vlState.wasteMesh) return { mesh: vlState.wasteMesh, name: 'Waste Chute' };
+        if (vlState.drawerMesh) return { mesh: vlState.drawerMesh, name: 'Entry/Exit Drawer' };
+        return null;
+    }
+
+    /**
+     * Apply the current fixture debug offsets to the fixture mesh children.
+     * Body children have '_body_x__' in their name.
+     * Labware/accessories children have '_labware_' in their name.
+     */
+    function applyFixtureDebugOffsets() {
+        var fix = getActiveFixtureMesh();
+        if (!fix) return;
+        var mesh = fix.mesh;
+        var off = vlState.fixtureDebugOffsets;
+
+        // Apply group-level offset to the mesh itself
+        if (mesh.userData._fixBasePos) {
+            mesh.position.set(
+                mesh.userData._fixBasePos.x + off.group.x,
+                mesh.userData._fixBasePos.y + off.group.y,
+                mesh.userData._fixBasePos.z + off.group.z
+            );
+        }
+
+        mesh.children.forEach(function (child) {
+            if (!child.userData._fixBasePos) return;
+            var base = child.userData._fixBasePos;
+            if (child.name.indexOf('_body_x__') !== -1 || child.name.indexOf('_body__') !== -1) {
+                child.position.set(
+                    base.x + off.body.x,
+                    base.y + off.body.y,
+                    base.z + off.body.z
+                );
+            } else if (child.name.indexOf('_labware_') !== -1) {
+                child.position.set(
+                    base.x + off.accessories.x,
+                    base.y + off.accessories.y,
+                    base.z + off.accessories.z
+                );
+            }
+        });
+    }
+
+    /**
+     * Store the original positions of all fixture children so offsets can be applied
+     * non-destructively.  Called whenever a fixture mesh is built/rebuilt.
+     */
+    function snapshotFixtureBasePositions(mesh) {
+        if (!mesh) return;
+        mesh.userData._fixBasePos = mesh.position.clone();
+        mesh.children.forEach(function (child) {
+            child.userData._fixBasePos = child.position.clone();
+        });
+    }
+
+    /** Refresh the readout text in the fixture debug panel. */
+    function refreshFixtureDebugReadout() {
+        var el = document.getElementById('vl-fix-readout');
+        if (!el) return;
+        var fix = getActiveFixtureMesh();
+        if (!fix) { el.textContent = 'No fixture installed'; return; }
+        var off = vlState.fixtureDebugOffsets;
+        var fmt = function (o) { return 'X:' + o.x.toFixed(1) + ' Y:' + o.y.toFixed(1) + ' Z:' + o.z.toFixed(1); };
+        el.textContent = fix.name + '\n'
+            + 'Body:  ' + fmt(off.body) + '\n'
+            + 'Acces: ' + fmt(off.accessories) + '\n'
+            + 'Group: ' + fmt(off.group);
+    }
+
+    /** Update the input values to match the currently selected target. */
+    function syncFixtureDebugInputs() {
+        var target = vlState.fixtureDebugTarget;
+        var off = vlState.fixtureDebugOffsets[target];
+        var xi = document.getElementById('vl-fix-x');
+        var yi = document.getElementById('vl-fix-y');
+        var zi = document.getElementById('vl-fix-z');
+        if (xi) xi.value = off.x;
+        if (yi) yi.value = off.y;
+        if (zi) zi.value = off.z;
+    }
+
+    /** Wire up the fixture debug panel controls. */
+    function wireFixtureDebugPanel() {
+        // Target buttons
+        ['body', 'accessories', 'group'].forEach(function (t) {
+            var btn = document.getElementById('vl-fix-target-' + (t === 'accessories' ? 'acc' : t));
+            if (!btn) return;
+            btn.addEventListener('click', function () {
+                vlState.fixtureDebugTarget = t;
+                document.querySelectorAll('.vl-fix-target-btn').forEach(function (b) {
+                    b.classList.toggle('is-active', b.dataset.target === t);
+                });
+                syncFixtureDebugInputs();
+            });
+        });
+
+        // Step buttons
+        document.querySelectorAll('.fix-step').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var axis = btn.dataset.axis;
+                var delta = parseFloat(btn.dataset.delta);
+                var target = vlState.fixtureDebugTarget;
+                vlState.fixtureDebugOffsets[target][axis] += delta;
+                syncFixtureDebugInputs();
+                applyFixtureDebugOffsets();
+                refreshFixtureDebugReadout();
+            });
+        });
+
+        // Direct input
+        ['x', 'y', 'z'].forEach(function (axis) {
+            var input = document.getElementById('vl-fix-' + axis);
+            if (!input) return;
+            input.addEventListener('input', function () {
+                var target = vlState.fixtureDebugTarget;
+                vlState.fixtureDebugOffsets[target][axis] = parseFloat(input.value) || 0;
+                applyFixtureDebugOffsets();
+                refreshFixtureDebugReadout();
+            });
+        });
+
+        // Reset
+        var resetBtn = document.getElementById('vl-fix-reset');
+        if (resetBtn) {
+            resetBtn.addEventListener('click', function () {
+                vlState.fixtureDebugOffsets = {
+                    body: { x: 0, y: 0, z: 0 },
+                    accessories: { x: 0, y: 0, z: 0 },
+                    group: { x: 0, y: 0, z: 0 }
+                };
+                syncFixtureDebugInputs();
+                applyFixtureDebugOffsets();
+                refreshFixtureDebugReadout();
+            });
+        }
+
+        // Copy offsets
+        var copyBtn = document.getElementById('vl-fix-copy');
+        if (copyBtn) {
+            copyBtn.addEventListener('click', function () {
+                var off = vlState.fixtureDebugOffsets;
+                var fmt = function (o) { return '{ x: ' + o.x.toFixed(1) + ', y: ' + o.y.toFixed(1) + ', z: ' + o.z.toFixed(1) + ' }'; };
+                var text = 'Fixture Debug Offsets:\n'
+                    + '  body:        ' + fmt(off.body) + '\n'
+                    + '  accessories: ' + fmt(off.accessories) + '\n'
+                    + '  group:       ' + fmt(off.group);
+                navigator.clipboard.writeText(text).then(function () {
+                    showVLStatus('Fixture offsets copied to clipboard', '');
+                });
+            });
+        }
+    }
+
     function wireVLSettingsPanel() {
         // ── Cutout toggles ───────────────────────────────────────────
         for (let i = 0; i < 4; i++) {
@@ -3006,6 +3188,24 @@
                 const panel = document.getElementById('vl-deck-debug-panel');
                 if (panel) panel.classList.toggle('is-open', vlState.debugDeckMode);
                 if (vlState.debugDeckMode) refreshDeckDebugReadout();
+            });
+        }
+
+        // ── Fixture Position Debug toggle ────────────────────────────
+        const fixtureDebugToggle = document.getElementById('settings-fixture-debug-toggle');
+        if (fixtureDebugToggle) {
+            fixtureDebugToggle.checked = vlState.fixtureDebugMode;
+            fixtureDebugToggle.addEventListener('change', function () {
+                vlState.fixtureDebugMode = fixtureDebugToggle.checked;
+                const panel = document.getElementById('vl-fixture-debug-panel');
+                if (panel) panel.classList.toggle('is-open', vlState.fixtureDebugMode);
+                if (vlState.fixtureDebugMode) {
+                    // Snapshot positions so debug offsets work from current state
+                    var fix = getActiveFixtureMesh();
+                    if (fix) snapshotFixtureBasePositions(fix.mesh);
+                    syncFixtureDebugInputs();
+                    refreshFixtureDebugReadout();
+                }
             });
         }
 
