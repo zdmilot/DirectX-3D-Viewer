@@ -1198,14 +1198,16 @@
             var cutoutWidth = slot.trackSpan * DECK.TRACK_SPACING;
             group.position.x = slotX + cutoutWidth;
 
-            // Temp adjustments: accessories 7 tracks left, body 3 tracks left
-            var accessoryShift = -7 * DECK.TRACK_SPACING;   // -157.5mm
+            // Temp adjustments: accessories 8 tracks left, body 3 tracks left
+            var accessoryShift = -8 * DECK.TRACK_SPACING;   // -180mm
             var bodyShift      = -3 * DECK.TRACK_SPACING;   // -67.5mm
             group.position.x += accessoryShift;
-            // Body needs 4 tracks right relative to group (7-3=4) to net 3 left
+            // Body needs 5 tracks right relative to group (8-3=5) to net 3 left
             group.traverse(function (child) {
                 if (child.name && child.name.indexOf('_body_x__') !== -1) {
-                    child.position.x += (accessoryShift - bodyShift) * -1; // +4 tracks
+                    child.position.x += (accessoryShift - bodyShift) * -1; // +5 tracks
+                    // Shift body forward (neg Z) to align with deck cutout hole
+                    child.position.z -= DECK.TRACK_Y_START;
                 }
             });
         }
