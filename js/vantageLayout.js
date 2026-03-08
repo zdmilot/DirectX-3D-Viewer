@@ -1002,11 +1002,13 @@
         var group = new THREE.Group();
         group.name = '__waste_chute__';
 
-        // World position: left edge of the cutout slot, front edge, at deck surface
+        // Group origin at the left edge of the cutout, front edge, deck surface.
+        // Same convention as buildCarrierMesh.
+        var cutoutWidth = slot.trackSpan * DECK.TRACK_SPACING;
         var slotX = DECK.FIRST_TRACK_X + (slot.trackStart - 1) * DECK.TRACK_SPACING;
-        var x0 = slotX;
-        var y0 = DECK.SURFACE_Z;
-        var z0 = DECK.TRACK_Y_START;
+        // Shift the group origin so that the TML footprint center aligns
+        // with the physical cutout center.
+        var groupX = slotX + cutoutWidth / 2 - (def.dx || 20) / 2;
 
         // Try to use cached .x model
         var cached = vlState.xModelCache[vlState.wasteModelCacheKey];
@@ -1025,23 +1027,17 @@
                 }
             });
 
-            // Apply TML 3D offsets — these position the model relative to the
-            // carrier origin.  Hamilton coords: X=width, Y=depth, Z=height.
-            // Three.js coords: X=width, Y=height, Z=depth.
-            // Like buildCarrierMesh: center model over TML footprint, base at y=0,
-            // then add the 3D offsets (the large negative zOff drops the model
-            // through the deck opening).
-            var xOff = def.model3DxOff || 0;
-            var yOff = def.model3DyOff || 0;
-            var zOff = def.model3DzOff || 0;  // Hamilton Z = height → Three.js Y
+            // Center the body model over the TML footprint (like
+            // buildCarrierMesh), and drop it below the deck using 3DzOffset.
+            var zOff = def.model3DzOff || 0;  // Hamilton Z (height) → Three.js Y
 
             var box = new THREE.Box3().setFromObject(xModel);
             var center = box.getCenter(new THREE.Vector3());
 
             xModel.position.set(
-                (def.dx || 0) / 2 - center.x + xOff,
+                (def.dx || 20) / 2 - center.x,
                 -box.min.y + zOff,
-                (def.dy || 0) / 2 - center.z + yOff
+                (def.dy || 471.5) / 2 - center.z
             );
             group.add(xModel);
         } else {
@@ -1084,16 +1080,22 @@
 
                 var sBox = new THREE.Box3().setFromObject(siteModel);
                 var sCenter = sBox.getCenter(new THREE.Vector3());
+                // Mirror site Y (depth) to fix front-to-back placement.
+                // fixXFileCoords negates Z in the body model, so the body's
+                // depth runs in the opposite direction from Hamilton's Y axis.
+                // We mirror site.y relative to the carrier depth (def.dy) to
+                // match the body's flipped depth coordinate.
+                var mirroredY = (def.dy || 471.5) - site.y - site.dy;
                 siteModel.position.set(
                     site.x + site.dx / 2 - sCenter.x + (cachedLw.xOff || 0),
                     site.z - sBox.min.y + (cachedLw.zOff || 0),
-                    site.y + site.dy / 2 - sCenter.z + (cachedLw.yOff || 0)
+                    mirroredY + site.dy / 2 - sCenter.z + (cachedLw.yOff || 0)
                 );
                 group.add(siteModel);
             });
         }
 
-        group.position.set(x0, y0, z0);
+        group.position.set(groupX, DECK.SURFACE_Z, DECK.TRACK_Y_START);
         return group;
     }
 
