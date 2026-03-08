@@ -8,20 +8,9 @@
     const $ = s => document.querySelector(s);
 
     // ================================================================
-    //  SBS / ANSI Standard Dimensions (mm)
+    //  SBS / ANSI Standard Dimensions (mm) — from shared DeckUnits
     // ================================================================
-    const SBS = {
-        footprintLength: 127.76,  // ANSI/SLAS 1-2004
-        footprintWidth:  85.48,   // ANSI/SLAS 1-2004
-        wellSpacing96:   9.0,     // 96-well 8×12
-        wellSpacing384:  4.5,     // 384-well 16×24
-        wellSpacing1536: 2.25,    // 1536-well 32×48
-        a1OffsetX:       14.38,   // X offset from plate corner to A1 center
-        a1OffsetY:       11.24,   // Y offset from plate corner to A1 center
-        cornerRadius:    3.18,    // standard corner rounding
-        wallThickness:   1.27,    // typical plate wall thickness
-        flangeHeight:    2.41,    // skirt / flange at the bottom (sits on deck)
-    };
+    const SBS = DeckUnits.SBS;
 
     // ================================================================
     //  State
@@ -112,13 +101,11 @@
         d2.position.set(-50, -20, -50);
         lgState.scene.add(d2);
 
-        // -- Grid --
+        // -- Grid (mm-based via DeckUnits) --
         const gc = lgState.isDark ? DARK_GRID : LIGHT_GRID;
-        const grid = new THREE.GridHelper(400, 40, gc, gc);
-        grid.name = '__lggrid__';
+        const grid = DeckUnits.createGrid(400, 10, gc, { name: '__lggrid__', visible: lgState.gridVisible });
         grid.renderOrder = -1;
         grid.material.depthWrite = false;
-        grid.visible = lgState.gridVisible;
         lgState.scene.add(grid);
 
         // -- Resize observer --

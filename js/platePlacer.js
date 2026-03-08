@@ -101,11 +101,9 @@
         d2.position.set(-50, -20, -50);
         ppState.scene.add(d2);
 
-        // -- Grid --
+        // -- Grid (mm-based via DeckUnits) --
         const gc = ppState.isDark ? DARK_GRID : LIGHT_GRID;
-        const grid = new THREE.GridHelper(400, 40, gc, gc);
-        grid.name = '__ppgrid__';
-        grid.visible = ppState.gridVisible;
+        const grid = DeckUnits.createGrid(400, 10, gc, { name: '__ppgrid__', visible: ppState.gridVisible });
         ppState.scene.add(grid);
 
         // -- Create the microwell plate (load from .x file) --
@@ -307,26 +305,14 @@
                 group.position.z += ppState.modelPos.z;
 
                 // Fit camera — match the main viewer exactly
-                const fitDist = maxDim * 1.8;
-                ppState.camera.position.set(fitDist * 0.6, fitDist * 0.4, fitDist);
-                ppState.camera.near = maxDim * 0.05;
-                ppState.camera.far  = maxDim * 20;
-                ppState.camera.updateProjectionMatrix();
+                // Fit camera (mm units)
+                DeckUnits.fitCamera(ppState.camera, ppState.controls, maxDim, { fitMultiplier: 1.8 });
 
-                ppState.controls.target.set(0, 0, 0);
-                ppState.controls.minDistance = maxDim * 0.1;
-                ppState.controls.maxDistance = maxDim * 10;
-                ppState.controls.update();
-
-                // Resize grid — same formula as main viewer
+                // Resize grid — mm-based
                 const oldGrid = ppState.scene.getObjectByName('__ppgrid__');
                 if (oldGrid) ppState.scene.remove(oldGrid);
-                const gridSize = maxDim * 3;
-                const gridDiv  = 20;
                 const gColor = ppState.isDark ? DARK_GRID : LIGHT_GRID;
-                const newGrid = new THREE.GridHelper(gridSize, gridDiv, gColor, gColor);
-                newGrid.name = '__ppgrid__';
-                newGrid.visible = ppState.gridVisible;
+                const newGrid = DeckUnits.createModelGrid(maxDim, gColor, { name: '__ppgrid__', visible: ppState.gridVisible });
                 newGrid.position.y = -size.y / 2 - maxDim * 0.002;
                 ppState.scene.add(newGrid);
             }
@@ -446,9 +432,9 @@
         const dxEl = $('#pp-delta-x');
         const dyEl = $('#pp-delta-y');
         const dzEl = $('#pp-delta-z');
-        if (dxEl) dxEl.textContent = dx.toFixed(1);
-        if (dyEl) dyEl.textContent = dy.toFixed(1);
-        if (dzEl) dzEl.textContent = dz.toFixed(1);
+        if (dxEl) dxEl.textContent = dx.toFixed(1) + ' mm';
+        if (dyEl) dyEl.textContent = dy.toFixed(1) + ' mm';
+        if (dzEl) dzEl.textContent = dz.toFixed(1) + ' mm';
 
         // Move model in scene
         if (ppState.model) {
@@ -854,9 +840,9 @@
         const yaw = THREE.MathUtils.radToDeg(Math.atan2(dir.x, dir.z));
         const roll = THREE.MathUtils.radToDeg(ppState.camera.rotation.z);
         el.textContent =
-            'X: ' + p.x.toFixed(1) +
-            '  Y: ' + p.y.toFixed(1) +
-            '  Z: ' + p.z.toFixed(1) +
+            'X: ' + p.x.toFixed(1) + ' mm' +
+            '  Y: ' + p.y.toFixed(1) + ' mm' +
+            '  Z: ' + p.z.toFixed(1) + ' mm' +
             '  |  Pitch: ' + pitch.toFixed(1) + '\u00b0' +
             '  Yaw: ' + yaw.toFixed(1) + '\u00b0' +
             '  Roll: ' + roll.toFixed(1) + '\u00b0';

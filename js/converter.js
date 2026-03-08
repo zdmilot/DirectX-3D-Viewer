@@ -95,9 +95,7 @@
 
         // -- Grid --
         const gc = cvState.isDark ? DARK_GRID : LIGHT_GRID;
-        const grid = new THREE.GridHelper(10, 20, gc, gc);
-        grid.name = '__cvgrid__';
-        grid.visible = cvState.gridVisible;
+        const grid = DeckUnits.createGrid(200, 10, gc, { name: '__cvgrid__', visible: cvState.gridVisible });
         cvState.scene.add(grid);
 
         // -- Resize observer --
@@ -378,24 +376,14 @@
         // Center model at origin
         group.position.sub(center);
 
-        // Fit main camera
-        const fitDist = cvState.modelMaxDim * 2.2;
-        cvState.mainCamera.position.set(fitDist * 0.6, fitDist * 0.4, fitDist);
-        cvState.mainCamera.near = cvState.modelMaxDim * 0.001;
-        cvState.mainCamera.far  = cvState.modelMaxDim * 50;
-        cvState.mainCamera.updateProjectionMatrix();
+        // Fit main camera (mm units)
+        DeckUnits.fitCamera(cvState.mainCamera, cvState.mainControls, cvState.modelMaxDim, { fitMultiplier: 2.2 });
 
-        cvState.mainControls.target.set(0, 0, 0);
-        cvState.mainControls.minDistance = cvState.modelMaxDim * 0.05;
-        cvState.mainControls.maxDistance = cvState.modelMaxDim * 15;
-        cvState.mainControls.update();
-
-        // Resize grid
+        // Resize grid (mm-based)
         const oldGrid = cvState.scene.getObjectByName('__cvgrid__');
         if (oldGrid) cvState.scene.remove(oldGrid);
         const gc = cvState.isDark ? DARK_GRID : LIGHT_GRID;
-        const newGrid = new THREE.GridHelper(cvState.modelMaxDim * 3, 20, gc, gc);
-        newGrid.name = '__cvgrid__';
+        const newGrid = DeckUnits.createModelGrid(cvState.modelMaxDim, gc, { name: '__cvgrid__' });
         newGrid.position.y = -size.y / 2 - cvState.modelMaxDim * 0.002;
         cvState.scene.add(newGrid);
 

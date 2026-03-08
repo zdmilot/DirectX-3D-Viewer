@@ -56,9 +56,7 @@
 
         // Grid
         const gridColor = exState.isDark ? DARK_GRID : LIGHT_GRID;
-        const grid = new THREE.GridHelper(200, 20, gridColor, gridColor);
-        grid.name = '__exgrid__';
-        grid.visible = exState.gridVisible;
+        const grid = DeckUnits.createGrid(200, 10, gridColor, { name: '__exgrid__', visible: exState.gridVisible });
         scene.add(grid);
 
         // Camera
@@ -175,24 +173,14 @@
 
         group.position.sub(center);
 
-        const fitDist = exState.modelMaxDim * 2.2;
-        exState.mainCamera.position.set(fitDist * 0.6, fitDist * 0.4, fitDist);
-        exState.mainCamera.near = exState.modelMaxDim * 0.001;
-        exState.mainCamera.far  = exState.modelMaxDim * 50;
-        exState.mainCamera.updateProjectionMatrix();
+        // Fit camera (mm units)
+        DeckUnits.fitCamera(exState.mainCamera, exState.mainControls, exState.modelMaxDim, { fitMultiplier: 2.2 });
 
-        exState.mainControls.target.set(0, 0, 0);
-        exState.mainControls.minDistance = exState.modelMaxDim * 0.05;
-        exState.mainControls.maxDistance = exState.modelMaxDim * 15;
-        exState.mainControls.update();
-
-        // Resize grid
+        // Resize grid (mm-based)
         const oldGrid = exState.scene.getObjectByName('__exgrid__');
         if (oldGrid) exState.scene.remove(oldGrid);
         const gc = exState.isDark ? DARK_GRID : LIGHT_GRID;
-        const newGrid = new THREE.GridHelper(exState.modelMaxDim * 3, 20, gc, gc);
-        newGrid.name = '__exgrid__';
-        newGrid.visible = exState.gridVisible;
+        const newGrid = DeckUnits.createModelGrid(exState.modelMaxDim, gc, { name: '__exgrid__', visible: exState.gridVisible });
         newGrid.position.y = -size.y / 2 - exState.modelMaxDim * 0.002;
         exState.scene.add(newGrid);
 

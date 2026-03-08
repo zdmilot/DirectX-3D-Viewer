@@ -459,11 +459,9 @@
         dir2.position.set(-50, -20, -50);
         scene.add(dir2);
 
-        // ── Grid helper ──────────────────────────────────────
+        // ── Grid helper (mm-based via DeckUnits) ─────────────
         const gridColor = state.isDark ? DARK_GRID : LIGHT_GRID;
-        const grid = new THREE.GridHelper(200, 20, gridColor, gridColor);
-        grid.name = '__grid__';
-        grid.visible = state.gridVisible;
+        const grid = DeckUnits.createGrid(200, 10, gridColor, { name: '__grid__', visible: state.gridVisible });
         scene.add(grid);
 
         // ── Resize handler ───────────────────────────────────
@@ -641,27 +639,14 @@
                 // Center the group
                 group.position.sub(center);
 
-                // Position camera to see the whole model
-                const fitDist = maxDim * 1.8;
-                camera.position.set(fitDist * 0.6, fitDist * 0.4, fitDist);
-                camera.near = maxDim * 0.001;
-                camera.far  = maxDim * 100;
-                camera.updateProjectionMatrix();
+                // Position camera to see the whole model (mm units)
+                DeckUnits.fitCamera(camera, controls, maxDim, { fitMultiplier: 1.8 });
 
-                controls.target.set(0, 0, 0);
-                controls.minDistance = maxDim * 0.01;
-                controls.maxDistance = maxDim * 50;
-                controls.update();
-
-                // Resize grid to match model scale
+                // Resize grid to match model scale (mm-based)
                 const oldGrid = scene.getObjectByName('__grid__');
                 if (oldGrid) scene.remove(oldGrid);
-                const gridSize = maxDim * 3;
-                const gridDiv = 20;
                 const gColor = state.isDark ? DARK_GRID : LIGHT_GRID;
-                const newGrid = new THREE.GridHelper(gridSize, gridDiv, gColor, gColor);
-                newGrid.name = '__grid__';
-                newGrid.visible = state.gridVisible;
+                const newGrid = DeckUnits.createModelGrid(maxDim, gColor, { name: '__grid__', visible: state.gridVisible });
                 // Position grid slightly below model bottom to avoid z-fighting
                 newGrid.position.y = -size.y / 2 - maxDim * 0.002;
                 scene.add(newGrid);
@@ -828,15 +813,7 @@
             const box = new THREE.Box3().setFromObject(model);
             const size = box.getSize(new THREE.Vector3());
             const maxDim = Math.max(size.x, size.y, size.z);
-            const fitDist = maxDim * 1.8;
-            camera.position.set(fitDist * 0.6, fitDist * 0.4, fitDist);
-            camera.near = maxDim * 0.001;
-            camera.far  = maxDim * 100;
-            camera.updateProjectionMatrix();
-            controls.target.set(0, 0, 0);
-            controls.minDistance = maxDim * 0.01;
-            controls.maxDistance = maxDim * 50;
-            controls.update();
+            DeckUnits.fitCamera(camera, controls, maxDim, { fitMultiplier: 1.8 });
         } else {
             camera.position.set(0, 50, 150);
             camera.near = 0.01;
@@ -852,7 +829,6 @@
         const model = scene.getObjectByName('__xmodel__');
         if (!model) return;
         const box = new THREE.Box3().setFromObject(model);
-        const center = box.getCenter(new THREE.Vector3());
         const size = box.getSize(new THREE.Vector3());
         const maxDim = Math.max(size.x, size.y, size.z);
         if (maxDim <= 0) return;
@@ -860,13 +836,7 @@
         // Animate-like quick snap
         const dir = camera.position.clone().sub(controls.target).normalize();
         camera.position.copy(dir.multiplyScalar(fitDist));
-        controls.target.set(0, 0, 0);
-        camera.near = maxDim * 0.001;
-        camera.far  = maxDim * 100;
-        camera.updateProjectionMatrix();
-        controls.minDistance = maxDim * 0.01;
-        controls.maxDistance = maxDim * 50;
-        controls.update();
+        DeckUnits.fitCamera(camera, controls, maxDim, { fitMultiplier: 1.5 });
     }
 
     function toggleWireframe() {

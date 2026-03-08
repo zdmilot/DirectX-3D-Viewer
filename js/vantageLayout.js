@@ -10,21 +10,9 @@
     const $ = s => document.querySelector(s);
 
     // ================================================================
-    //  Hamilton Deck Constants  (from DeckLayoutManager docs)
+    //  Hamilton Deck Constants  (from shared DeckUnits module, all mm)
     // ================================================================
-    const DECK = {
-        TRACK_SPACING:  22.5,   // mm center-to-center
-        TRACK_WIDTH:    22.0,   // mm physical slot width
-        TRACK_DEPTH:   497.0,   // mm front-to-back
-        TRACK_Y_START:  63.0,   // mm Y of first track
-        FIRST_TRACK_X: 100.25,  // mm X of track 1
-        TRACK_COUNT:    80,     // total placeable tracks (extended)
-        PHYSICAL_TRACKS: 54,    // tracks covered by the physical GLTF deck model
-        SURFACE_Z:     100.0,   // mm deck surface height
-        CANVAS_W:      2200,
-        CANVAS_D:       520,
-        LABELED_TRACKS: new Set([1,7,13,19,25,31,37,43,49,55,61,67,73,79]),
-    };
+    const DECK = DeckUnits.DECK;
 
     // ================================================================
     //  Waste Cutout Positions  (4 removable deck panels)
@@ -169,8 +157,8 @@
         },
     };
 
-    // SBS plate dimensions (ANSI/SBS standard)
-    const SBS_PLATE = { dx: 127.76, dy: 85.48, dz: 14.35 };
+    // SBS plate dimensions (mm, from shared DeckUnits)
+    const SBS_PLATE = { dx: DeckUnits.SBS.footprintLength, dy: DeckUnits.SBS.footprintWidth, dz: 14.35 };
 
     // ================================================================
     //  Module State
@@ -443,11 +431,9 @@
 
         // (Waste block area indicator removed — no restricted tracks from 5 onward)
 
-        // Grid overlay on deck surface
+        // Grid overlay on deck surface (mm-based via DeckUnits)
         const gridColor = isDark ? DARK_GRID : LIGHT_GRID;
-        const grid = new THREE.GridHelper(2000, 80, gridColor, gridColor);
-        grid.name = '__vlgrid__';
-        grid.visible = vlState.gridVisible;
+        const grid = DeckUnits.createGrid(2000, 22.5, gridColor, { name: '__vlgrid__', visible: vlState.gridVisible });
         grid.position.set(DECK.FIRST_TRACK_X + (DECK.TRACK_COUNT * DECK.TRACK_SPACING) / 2, DECK.SURFACE_Z + 4.1, 310);
         scene.add(grid);
     }
@@ -1095,7 +1081,7 @@
             });
         }
 
-        group.position.set(groupX, DECK.SURFACE_Z, DECK.TRACK_Y_START);
+        group.position.set(slotX, DECK.SURFACE_Z, DECK.TRACK_Y_START);
         return group;
     }
 

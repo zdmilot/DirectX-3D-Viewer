@@ -232,3 +232,76 @@ These fixes solve the core rendering problems for **any** `.x` file, not just th
 - **Polygon offset** scales with mesh count, working for models with any number of sub-meshes
 
 No geometry is deleted or modified — all original faces, edges, and surfaces from the `.x` file are preserved and rendered correctly.
+
+---
+
+## Coordinate System & Units  (`js/deckUnits.js`)
+
+### 1 Three.js unit = 1 mm
+
+Hamilton VENUS `.x`, `.hxx`, `.gltf`, and `.tml` files all use a **1:1 millimeter** coordinate system.  Every Three.js scene in this application therefore operates in millimeters — one scene unit equals one real-world millimetre.
+
+The shared module **`js/deckUnits.js`** (`window.DeckUnits`) centralises this relationship and provides constants, grid helpers, camera helpers, and formatting utilities so every applet uses identical, documented mm-based scaling.
+
+### Key Constants (all values in mm)
+
+#### Hamilton Deck (`DeckUnits.DECK`)
+
+| Constant | Value | Description |
+|----------|-------|-------------|
+| `TRACK_SPACING` | 22.5 mm | Centre-to-centre distance between adjacent tracks |
+| `TRACK_WIDTH` | 22.0 mm | Physical groove width |
+| `TRACK_GAP` | 0.5 mm | Gap between adjacent tracks (22.5 − 22.0) |
+| `TRACK_DEPTH` | 497.0 mm | Front-to-back rail length |
+| `TRACK_Y_START` | 63.0 mm | Y of front edge of track area |
+| `FIRST_TRACK_X` | 100.25 mm | X centre of Track 1 |
+| `TRACK_COUNT` | 80 | Total placeable tracks (extended deck) |
+| `PHYSICAL_TRACKS` | 54 | Tracks on the GLTF physical deck model |
+| `SURFACE_Z` | 100.0 mm | Height of deck surface |
+| `CANVAS_W` | 2200 mm | Full canvas width |
+| `CANVAS_D` | 520 mm | Full canvas depth |
+| `CARRIER_WIDTH_6T` | 135.0 mm | Standard 6-track carrier width (6 × 22.5) |
+| `USABLE_TRACK_WIDTH` | 1215.0 mm | Total usable track area (54 × 22.5) |
+
+Track position formula: **`X = 100.25 + (track − 1) × 22.5`**
+
+#### SBS Plate (`DeckUnits.SBS`)
+
+| Constant | Value | Description |
+|----------|-------|-------------|
+| `footprintLength` | 127.76 mm | ANSI/SLAS 1-2004 plate length |
+| `footprintWidth` | 85.48 mm | ANSI/SLAS 1-2004 plate width |
+| `wellSpacing96` | 9.0 mm | 96-well (8×12) well pitch |
+| `wellSpacing384` | 4.5 mm | 384-well (16×24) well pitch |
+| `wellSpacing1536` | 2.25 mm | 1536-well (32×48) well pitch |
+| `a1OffsetX` | 14.38 mm | X from plate corner to A1 centre |
+| `a1OffsetY` | 11.24 mm | Y from plate corner to A1 centre |
+| `cornerRadius` | 3.18 mm | Standard corner rounding |
+| `wallThickness` | 1.27 mm | Typical plate wall |
+| `flangeHeight` | 2.41 mm | Skirt height |
+
+### Shared Helpers
+
+| Function | Purpose |
+|----------|---------|
+| `DeckUnits.trackX(n)` | Returns X centre (mm) for 1-based track number |
+| `DeckUnits.carrierLeftX(n)` | Returns left edge X (mm) for carrier at track n |
+| `DeckUnits.createGrid(sizeMm, stepMm, color, opts)` | Creates a `THREE.GridHelper` with mm-based sizing and nice round divisions |
+| `DeckUnits.createModelGrid(maxDim, color, opts)` | Auto-sized grid for a loaded model (extent = maxDim × 3, step = nice mm value) |
+| `DeckUnits.fitCamera(camera, controls, maxDim, opts)` | Configures camera position, near/far planes, and orbit limits in mm space |
+| `DeckUnits.fmtMm(val, dp)` | Formats a value with " mm" suffix |
+| `DeckUnits.fmtPos(x, y, z, dp)` | Formats an XYZ position with mm labels |
+| `DeckUnits.fmtSize(sx, sy, sz, dp)` | Formats bounding-box size with mm labels |
+
+### Applet Integration
+
+Every applet now references `DeckUnits` instead of defining its own grid sizes and camera parameters:
+
+| Applet | What uses DeckUnits |
+|--------|---------------------|
+| **app.js** (3D Viewer) | Initial grid, model-load grid & camera, reset camera, zoom-to-fit |
+| **converter.js** | Initial grid, model-load grid & camera |
+| **exporter.js** | Initial grid, model-load grid & camera |
+| **platePlacer.js** | Initial grid, model-load grid & camera, position/delta display with mm labels |
+| **labwareGenerator.js** | SBS constants, initial grid (ruler already displays mm) |
+| **vantageLayout.js** | DECK constants, SBS plate dimensions, deck grid (spaced at track pitch) |
