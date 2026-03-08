@@ -1187,8 +1187,18 @@
     }
 
     function buildWasteMesh(cutoutIdx) {
-        return buildDeckFixtureMesh(cutoutIdx, vlState.wasteTmlDef,
+        var group = buildDeckFixtureMesh(cutoutIdx, vlState.wasteTmlDef,
             vlState.wasteModelCacheKey, '__waste_chute__');
+        if (group) {
+            // Reposition: align TML origin with the right edge of the cutout
+            // so the body model (negative 3DxOffset) extends left INTO the
+            // cutout opening, and accessories sit on the deck surface to the right.
+            var slot = DECK_CUTOUTS[cutoutIdx];
+            var slotX = DECK.FIRST_TRACK_X + (slot.trackStart - 1) * DECK.TRACK_SPACING;
+            var cutoutWidth = slot.trackSpan * DECK.TRACK_SPACING;
+            group.position.x = slotX + cutoutWidth;
+        }
+        return group;
     }
 
     /**
