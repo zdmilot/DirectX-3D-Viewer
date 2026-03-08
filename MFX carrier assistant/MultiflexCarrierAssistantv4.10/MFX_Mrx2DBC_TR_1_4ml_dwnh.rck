@@ -1,0 +1,60 @@
+HxCfgFile,3;
+
+ConfigIsValid,Y;
+
+DataDef,RECTRACK,3,default,
+{
+BackgrndClr, "32768",
+Barcode.Unique, "0",
+Barcode.Value, "",
+BndryX, "14",
+BndryY, "11.5",
+Category.0.Id, "1006",
+Category.1.Id, "1003",
+CategoryCnt, "2",
+Clearance, "58",
+Cntr.1.base, "3",
+Cntr.1.file, "ML_STAR\\MultiFlexCarrier\\MFX_Mrx2DBC_TR_1_4ml_dwnh.ctr",
+Cntr.1.fileRel, ".\\MFX_Mrx2DBC_TR_1_4ml_dwnh.ctr",
+Cntr.1.offsetx, "0",
+Cntr.1.offsety, "0",
+Columns, "12",
+ConnectedCtr, "0",
+DataType, "1",
+Description, "Multiflex module for a 96 2D barcoded Matrix storage tubes rack with 1.4ml tubes in downholder module SN 188313",
+Dim.Dx, "127",
+Dim.Dy, "86",
+Dim.Dz, "58",
+Dx, "9",
+Dy, "9",
+GrpCnt, "0",
+Hole.Shape, "0",
+Hole.X, "8.7",
+Hole.Y, "8.7",
+Hole.Z, "8.7",
+IX.First, "1",
+IX.Inc, "0",
+IX.Index, "1",
+IX.Start, "0",
+Image3D, "ML_STAR\\MultiFlexCarrier\\MFX_Mrx2DBC_TR_1_4ml_dwnh.png",
+ImageRel, ".\\MFX_Mrx2DBC_TR_1_4ml_dwnh.png",
+Options, "0",
+ReadOnly, "1",
+Rows, "8",
+SegmentCount_x, "0",
+SegmentCount_y, "0",
+Shape, "1",
+SingleCntr, "1",
+StackHt, "58",
+Stagger, "0",
+UseBndry, "1",
+ViewName, "MFX_Mrx2DBC_TR_1_4ml_dwnh",
+Visible, "1"
+};
+
+DataDef,HxPars,3,AuditTrailData,
+[
+")"
+];
+
+* $$author=rthiel$$valid=1$$time=2011-08-31 11:15$$checksum=62120e9e$$length=082$$
