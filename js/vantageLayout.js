@@ -29,13 +29,14 @@
     // ================================================================
     //  Waste Cutout Positions  (4 removable deck panels)
     // ================================================================
-    // Each cutout occupies 10 tracks (225mm).  The waste chute model sits
-    // through the deck in one of these openings.
+    // Each cutout spans ~9 tracks (≈201mm) matching the physical GLTF
+    // VANTAGE_DECK_COVER panels.  The waste chute model sits through
+    // the deck in one of these openings.
     const DECK_CUTOUTS = [
-        { id: 0, label: 'Panel 1', trackStart: 25, trackSpan: 10 },
-        { id: 1, label: 'Panel 2', trackStart: 35, trackSpan: 10 },
-        { id: 2, label: 'Panel 3', trackStart: 45, trackSpan: 10 },
-        { id: 3, label: 'Panel 4', trackStart: 55, trackSpan: 10 },
+        { id: 0, label: 'Panel 1', trackStart: 20, trackSpan: 9 },
+        { id: 1, label: 'Panel 2', trackStart: 36, trackSpan: 9 },
+        { id: 2, label: 'Panel 3', trackStart: 46, trackSpan: 9 },
+        { id: 3, label: 'Panel 4', trackStart: 56, trackSpan: 9 },
     ];
 
     // Server path to the VStarWasteBlock TML (auto-loaded on init)
@@ -1027,17 +1028,20 @@
             // Apply TML 3D offsets — these position the model relative to the
             // carrier origin.  Hamilton coords: X=width, Y=depth, Z=height.
             // Three.js coords: X=width, Y=height, Z=depth.
+            // Like buildCarrierMesh: center model over TML footprint, base at y=0,
+            // then add the 3D offsets (the large negative zOff drops the model
+            // through the deck opening).
             var xOff = def.model3DxOff || 0;
             var yOff = def.model3DyOff || 0;
-            var zOff = def.model3DzOff || 0;
+            var zOff = def.model3DzOff || 0;  // Hamilton Z = height → Three.js Y
 
             var box = new THREE.Box3().setFromObject(xModel);
             var center = box.getCenter(new THREE.Vector3());
 
             xModel.position.set(
-                -center.x + xOff,
-                -center.y + zOff,
-                -center.z + yOff
+                (def.dx || 0) / 2 - center.x + xOff,
+                -box.min.y + zOff,
+                (def.dy || 0) / 2 - center.z + yOff
             );
             group.add(xModel);
         } else {
@@ -1206,16 +1210,21 @@
             vlState.wasteTmlDef = parsed;
 
             console.log('[VantageLayout] Loaded waste TML:', parsed.viewName,
-                parsed.sites.length, 'sites');
+                parsed.sites.length, 'sites',
+                'modelFileHamilton:', parsed.modelFileHamilton || 'NONE');
 
             // Fetch the carrier body 3D model
             if (parsed.modelFileHamilton) {
                 var serverPath = resolveHamiltonPath(parsed.modelFileHamilton);
+                console.log('[VantageLayout] Fetching waste 3D model:', serverPath);
                 if (serverPath) {
                     fetchAndCacheXModel(vlState.wasteModelCacheKey, serverPath, function () {
+                        console.log('[VantageLayout] Waste 3D model cached, rebuilding mesh');
                         rebuildWasteMesh();
                     });
                 }
+            } else {
+                console.warn('[VantageLayout] No modelFileHamilton found in waste TML');
             }
 
             // If waste is already installed, load site labware
@@ -1233,6 +1242,7 @@
      */
     function fetchAndCacheXModel(cacheKey, serverPath, onDone) {
         var isHxx = /\.hxx$/i.test(serverPath);
+        console.log('[VantageLayout] fetchAndCacheXModel:', cacheKey, serverPath, 'isHxx:', isHxx);
 
         fetch(serverPath).then(function (resp) {
             if (!resp.ok) throw new Error('HTTP ' + resp.status);
