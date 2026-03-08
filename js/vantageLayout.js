@@ -1206,8 +1206,8 @@
             group.traverse(function (child) {
                 if (child.name && child.name.indexOf('_body_x__') !== -1) {
                     child.position.x += (accessoryShift - bodyShift) * -1; // +5 tracks
-                    // Shift body forward (neg Z) to align with deck cutout hole
-                    child.position.z -= DECK.TRACK_Y_START;
+                    // Shift body backward (pos Z) to align with deck cutout hole
+                    child.position.z += DECK.TRACK_Y_START;
                 }
             });
         }
