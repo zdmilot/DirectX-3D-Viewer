@@ -4,6 +4,12 @@
 
 The Hamilton VENUS Layout Editor (within the Method Editor) uses a **1:1 millimeter** coordinate system. All positions in `.dck`, `.tpl`, `.tml`, and `.rck` files are in millimeters and correspond directly to the physical instrument.
 
+> **Implementation note:** These constants are codified in the shared module
+> `js/deckUnits.js` (`window.DeckUnits`). All applets in this application
+> reference `DeckUnits.DECK` and `DeckUnits.SBS` instead of defining ad-hoc
+> constants. See [Documentation.md — Coordinate System & Units](../Documentation.md)
+> for the full API.
+
 ### Deck Bounding Box (ML_STAR)
 
 | Property | Value | Description |

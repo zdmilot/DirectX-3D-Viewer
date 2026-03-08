@@ -1,5 +1,28 @@
 # Recapitulating Hamilton Track Logic — Implementation Guide
 
+## Coordinate System
+
+**All coordinates in this project are in millimeters (mm).** Hamilton VENUS uses a 1:1 mm
+coordinate system in `.x`, `.hxx`, `.gltf`, `.tml`, `.dck`, and `.lay` files. The shared
+module `js/deckUnits.js` (`window.DeckUnits`) centralises all deck constants, SBS plate
+dimensions, and helper functions so every applet uses the same mm-based values.
+
+See [Documentation.md — Coordinate System & Units](../Documentation.md) for the full
+constant reference and API.
+
+### Quick Reference
+
+| Constant | Access | Value |
+|----------|--------|-------|
+| Track spacing | `DeckUnits.DECK.TRACK_SPACING` | 22.5 mm |
+| Track width | `DeckUnits.DECK.TRACK_WIDTH` | 22.0 mm |
+| Track depth | `DeckUnits.DECK.TRACK_DEPTH` | 497.0 mm |
+| First track X | `DeckUnits.DECK.FIRST_TRACK_X` | 100.25 mm |
+| Deck surface Z | `DeckUnits.DECK.SURFACE_Z` | 100.0 mm |
+| Track X helper | `DeckUnits.trackX(n)` | `100.25 + (n-1) × 22.5` |
+| SBS plate length | `DeckUnits.SBS.footprintLength` | 127.76 mm |
+| SBS plate width | `DeckUnits.SBS.footprintWidth` | 85.48 mm |
+
 ## Goal
 
 Rebuild the Hamilton VENUS deck layout track logic in a new 3D application, faithfully reproducing the carrier placement, snap grid, and spatial relationships from the original Layout Editor.

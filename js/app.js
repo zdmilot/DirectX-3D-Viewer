@@ -832,10 +832,6 @@
         const size = box.getSize(new THREE.Vector3());
         const maxDim = Math.max(size.x, size.y, size.z);
         if (maxDim <= 0) return;
-        const fitDist = maxDim * 1.5;
-        // Animate-like quick snap
-        const dir = camera.position.clone().sub(controls.target).normalize();
-        camera.position.copy(dir.multiplyScalar(fitDist));
         DeckUnits.fitCamera(camera, controls, maxDim, { fitMultiplier: 1.5 });
     }
 

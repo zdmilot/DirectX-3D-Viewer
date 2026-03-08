@@ -910,13 +910,7 @@
             resetCam.addEventListener('click', () => {
                 if (!cvState.mainCamera || !cvState.mainControls) return;
                 if (cvState.model) {
-                    const box = new THREE.Box3().setFromObject(cvState.model);
-                    const size = box.getSize(new THREE.Vector3());
-                    const maxDim = Math.max(size.x, size.y, size.z);
-                    const fitDist = maxDim * 1.8;
-                    cvState.mainCamera.position.set(fitDist * 0.6, fitDist * 0.4, fitDist);
-                    cvState.mainControls.target.set(0, 0, 0);
-                    cvState.mainControls.update();
+                    DeckUnits.fitCamera(cvState.mainCamera, cvState.mainControls, cvState.modelMaxDim, { fitMultiplier: 1.8 });
                 } else {
                     cvState.mainCamera.position.set(3, 2, 5);
                     cvState.mainControls.target.set(0, 0, 0);
@@ -932,12 +926,7 @@
                 const size = box.getSize(new THREE.Vector3());
                 const maxDim = Math.max(size.x, size.y, size.z);
                 if (maxDim <= 0) return;
-                const fitDist = maxDim * 1.5;
-                const dir = cvState.mainCamera.position.clone().sub(cvState.mainControls.target).normalize();
-                cvState.mainCamera.position.copy(dir.multiplyScalar(fitDist));
-                cvState.mainControls.target.set(0, 0, 0);
-                cvState.mainCamera.updateProjectionMatrix();
-                cvState.mainControls.update();
+                DeckUnits.fitCamera(cvState.mainCamera, cvState.mainControls, maxDim, { fitMultiplier: 1.5 });
             });
         }
 

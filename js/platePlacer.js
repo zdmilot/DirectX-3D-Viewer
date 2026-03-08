@@ -625,10 +625,7 @@
         if (resetCam) {
             resetCam.addEventListener('click', () => {
                 if (!ppState.camera || !ppState.controls) return;
-                const fitDist = 200;
-                ppState.camera.position.set(fitDist * 0.6, fitDist * 0.4, fitDist);
-                ppState.controls.target.set(0, 0, 0);
-                ppState.controls.update();
+                DeckUnits.fitCamera(ppState.camera, ppState.controls, 200, { fitMultiplier: 1.0 });
             });
         }
 
@@ -643,12 +640,7 @@
                 const size = box.getSize(new THREE.Vector3());
                 const maxDim = Math.max(size.x, size.y, size.z);
                 if (maxDim <= 0) return;
-                const fitDist = maxDim * 1.5;
-                const dir = ppState.camera.position.clone().sub(ppState.controls.target).normalize();
-                ppState.camera.position.copy(dir.multiplyScalar(fitDist));
-                ppState.controls.target.set(0, 0, 0);
-                ppState.camera.updateProjectionMatrix();
-                ppState.controls.update();
+                DeckUnits.fitCamera(ppState.camera, ppState.controls, maxDim, { fitMultiplier: 1.5 });
             });
         }
 

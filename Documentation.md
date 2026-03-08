@@ -7,11 +7,35 @@ This document describes the rendering pipeline and all fixes implemented to corr
 ## Architecture Overview
 
 ```
-index.html          → Entry point, splash screen, theme toggle, canvas
-js/app.js           → Viewer initialization, model loading, z-fighting fixes
-js/lib/XFileLoader.js → .x file parser and geometry builder
-js/lib/three.min.js → Three.js runtime
+index.html              → Entry point, splash screen, theme toggle, canvas
+js/deckUnits.js         → Shared mm-based coordinate system & constants (loaded first)
+js/app.js               → 3D Viewer — model loading, z-fighting fixes
+js/converter.js         → 3D File Converter (OBJ/STL/GLB → .x)
+js/exporter.js          → 3D Exporter (.x → OBJ/STL/GLB)
+js/platePlacer.js       → Plate Placer — microwell plate offset calculator
+js/labwareGenerator.js  → Labware Generator — XML labware → 3D .x model
+js/vantageLayout.js     → Vantage Deck Layout — carrier placement & track snap
+js/hxxLoader.js         → Hamilton .hxx compressed model loader
+js/lib/XFileLoader.js   → .x file parser and geometry builder
+js/lib/three.min.js     → Three.js runtime
 js/lib/OrbitControls.js → Camera orbit/pan/zoom controls
+js/lib/GLTFLoader.js    → glTF/GLB loader
+js/lib/STLLoader.js     → STL loader
+js/lib/OBJLoader.js     → OBJ loader
+js/lib/MTLLoader.js     → MTL material loader
+js/lib/pako.min.js      → Zlib decompression (for .hxx)
+```
+
+### Script Load Order
+
+`deckUnits.js` is loaded **before** all applet scripts so `window.DeckUnits` is
+available when each applet's IIFE executes:
+
+```
+pako.min.js → three.min.js → OrbitControls.js → XFileLoader.js →
+OBJLoader.js → MTLLoader.js → GLTFLoader.js → STLLoader.js →
+hxxLoader.js → deckUnits.js → vantageLayout.js → converter.js →
+platePlacer.js → labwareGenerator.js → app.js
 ```
 
 ### Loading Flow
@@ -206,7 +230,19 @@ newGrid.position.y = -size.y / 2 - maxDim * 0.002;
 | `loadXFile()` | Loads .x file, applies post-processing, auto-fits camera |
 | Polygon offset block | Per-mesh depth bias + strict depth test for contained meshes |
 | `updateViewerTheme()` | Switches scene colors for light/dark theme |
+### js/deckUnits.js — Shared Coordinate Module
 
+| Export | Purpose |
+|--------|---------||
+| `MM_PER_UNIT` / `UNIT_LABEL` | Identity: 1 unit = 1 mm |
+| `DECK` | Hamilton deck constants (track spacing, surface Z, widths) |
+| `SBS` | ANSI/SLAS microplate constants |
+| `trackX(n)` | Track centre X for 1-based track number |
+| `carrierLeftX(n)` | Left edge X for carrier at track n |
+| `createGrid()` | mm-spaced grid helper |
+| `createModelGrid()` | Auto-sized grid with nice mm step |
+| `fitCamera()` | Camera + controls fitting in mm space |
+| `fmtMm()` / `fmtPos()` / `fmtSize()` | Display formatters with mm labels |
 ---
 
 ## Configuration Constants

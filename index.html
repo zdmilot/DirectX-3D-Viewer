@@ -106,6 +106,10 @@
                         <i class="fas fa-flask"></i>
                         <span>Integra XML</span>
                     </button>
+                    <button class="sidebar-nav-item" data-view="hamilton">
+                        <i class="fas fa-vials"></i>
+                        <span>Hamilton</span>
+                    </button>
                     <button class="sidebar-nav-item" data-view="vantage">
                         <i class="fas fa-layer-group"></i>
                         <span>Vantage Layout</span>
@@ -598,49 +602,17 @@
                     <div class="lg-params-col">
                         <div class="lg-params-scroll">
                             <div class="lg-params-header">
-                                <i class="fas fa-flask"></i> Labware Generator
+                                <i class="fas fa-flask"></i> Integra XML
                             </div>
 
-                            <!-- Import Source Tabs -->
+                            <!-- File Input -->
                             <div class="lg-section">
                                 <div class="lg-section-title">Import Definition</div>
-                                <div class="lg-import-tabs">
-                                    <button class="lg-import-tab active" data-import="integra" id="lg-tab-integra">
-                                        <i class="fas fa-file-code"></i> Integra XML
-                                    </button>
-                                    <button class="lg-import-tab" data-import="hamilton" id="lg-tab-hamilton">
-                                        <i class="fas fa-vials"></i> Hamilton
-                                    </button>
-                                </div>
-
-                                <!-- Integra XML Import -->
-                                <div class="lg-import-panel active" id="lg-import-integra">
-                                    <input type="file" id="lg-file-input" accept=".xml" style="display:none">
-                                    <button class="cv-ctrl-btn lg-full-btn" id="lg-open-btn">
-                                        <i class="fas fa-folder-open"></i> Open XML File
-                                    </button>
-                                </div>
-
-                                <!-- Hamilton .rck + .ctr Import -->
-                                <div class="lg-import-panel" id="lg-import-hamilton" style="display:none">
-                                    <input type="file" id="lg-ham-rck-input" accept=".rck" style="display:none">
-                                    <button class="cv-ctrl-btn lg-full-btn" id="lg-ham-rck-btn">
-                                        <i class="fas fa-th"></i> Open Rack File (.rck)
-                                    </button>
-                                    <div class="lg-ham-file-label" id="lg-ham-rck-label">No rack file loaded</div>
-
-                                    <input type="file" id="lg-ham-ctr-input" accept=".ctr" style="display:none">
-                                    <button class="cv-ctrl-btn lg-full-btn" id="lg-ham-ctr-btn" style="margin-top:6px">
-                                        <i class="fas fa-flask"></i> Open Container File (.ctr)
-                                    </button>
-                                    <div class="lg-ham-file-label" id="lg-ham-ctr-label">No container file loaded</div>
-
-                                    <button class="cv-ctrl-btn cv-ctrl-btn-accent lg-full-btn" id="lg-ham-import-btn" style="margin-top:8px" disabled>
-                                        <i class="fas fa-file-import"></i> Import Hamilton Labware
-                                    </button>
-                                </div>
-
-                                <div class="lg-status" id="lg-status">No file loaded — edit values manually or import</div>
+                                <input type="file" id="lg-file-input" accept=".xml" style="display:none">
+                                <button class="cv-ctrl-btn lg-full-btn" id="lg-open-btn">
+                                    <i class="fas fa-folder-open"></i> Open XML File
+                                </button>
+                                <div class="lg-status" id="lg-status">No file loaded — edit values manually or import XML</div>
                             </div>
 
                             <div class="lg-divider"></div>
@@ -857,7 +829,7 @@
                             <div class="viewer-dropzone viewer-hidden" id="lg-dropzone">
                                 <div class="dropzone-content">
                                     <i class="fas fa-file-import"></i>
-                                    <span>Drop XML, .rck, or .ctr labware file here</span>
+                                    <span>Drop XML labware file here</span>
                                 </div>
                             </div>
                         </div>
@@ -869,6 +841,261 @@
                                 ⌘/Ctrl+drag to orbit · X Y Z to lock axis · Esc to cancel
                             </span>
                             <span class="viewer-cam-display" id="lg-cam-display">X: 0.0  Y: 0.0  Z: 0.0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ====== HAMILTON IMPORT VIEW ====== -->
+            <div class="view-panel" data-view-panel="hamilton" id="hamilton-host">
+                <div class="lg-layout">
+                    <!-- Left: Parameter Panel -->
+                    <div class="lg-params-col">
+                        <div class="lg-params-scroll">
+                            <div class="lg-params-header">
+                                <i class="fas fa-vials"></i> Hamilton Import
+                            </div>
+
+                            <!-- File Input -->
+                            <div class="lg-section">
+                                <div class="lg-section-title">Import Files</div>
+
+                                <input type="file" id="ham-rck-input" accept=".rck" style="display:none">
+                                <button class="cv-ctrl-btn lg-full-btn" id="ham-rck-btn">
+                                    <i class="fas fa-th"></i> Open Rack File (.rck)
+                                </button>
+                                <div class="lg-ham-file-label" id="ham-rck-label">No rack file loaded</div>
+
+                                <input type="file" id="ham-ctr-input" accept=".ctr" style="display:none" multiple>
+                                <button class="cv-ctrl-btn lg-full-btn" id="ham-ctr-btn" style="margin-top:6px">
+                                    <i class="fas fa-flask"></i> Open Container File (.ctr)
+                                </button>
+                                <div class="lg-ham-file-label" id="ham-ctr-label">No container file loaded</div>
+
+                                <button class="cv-ctrl-btn cv-ctrl-btn-accent lg-full-btn" id="ham-import-btn" style="margin-top:8px" disabled>
+                                    <i class="fas fa-file-import"></i> Import Hamilton Labware
+                                </button>
+
+                                <div class="lg-status" id="ham-status">Load a .rck rack file and matching .ctr container file</div>
+                            </div>
+
+                            <div class="lg-divider"></div>
+
+                            <!-- General Info -->
+                            <form id="ham-param-form" autocomplete="off">
+                                <div class="lg-section">
+                                    <div class="lg-section-title">General</div>
+                                    <div class="lg-field">
+                                        <label>Name</label>
+                                        <input type="text" id="ham-name" value="">
+                                    </div>
+                                    <div class="lg-field">
+                                        <label>Manufacturer</label>
+                                        <input type="text" id="ham-manufacturer" value="Hamilton">
+                                    </div>
+                                    <div class="lg-field">
+                                        <label>Description</label>
+                                        <input type="text" id="ham-description" value="" readonly>
+                                    </div>
+                                </div>
+
+                                <div class="lg-divider"></div>
+
+                                <div id="ham-plate-fields">
+                                    <!-- Footprint -->
+                                    <div class="lg-section">
+                                        <div class="lg-section-title">
+                                            Footprint
+                                            <span class="lg-sbs-badge sbs-ok" id="ham-sbs-badge">SBS Compliant</span>
+                                        </div>
+                                        <div class="lg-field-row">
+                                            <div class="lg-field">
+                                                <label>Length (mm)</label>
+                                                <input type="number" id="ham-fp-length" value="127.00" step="0.01">
+                                            </div>
+                                            <div class="lg-field">
+                                                <label>Width (mm)</label>
+                                                <input type="number" id="ham-fp-width" value="86.00" step="0.01">
+                                            </div>
+                                        </div>
+                                        <div class="lg-field">
+                                            <label>Total Height (mm)</label>
+                                            <input type="number" id="ham-height" value="14.00" step="0.01">
+                                        </div>
+                                    </div>
+
+                                    <div class="lg-divider"></div>
+
+                                    <!-- Wells -->
+                                    <div class="lg-section">
+                                        <div class="lg-section-title">Wells</div>
+                                        <div class="lg-well-count" id="ham-well-count">96 wells (8×12)</div>
+                                        <div class="lg-field-row">
+                                            <div class="lg-field">
+                                                <label>Rows</label>
+                                                <input type="number" id="ham-rows" value="8" min="1" max="48">
+                                            </div>
+                                            <div class="lg-field">
+                                                <label>Columns</label>
+                                                <input type="number" id="ham-cols" value="12" min="1" max="48">
+                                            </div>
+                                        </div>
+                                        <div class="lg-field-row">
+                                            <div class="lg-field">
+                                                <label>Row Spacing (mm)</label>
+                                                <input type="number" id="ham-row-gap" value="9.00" step="0.01">
+                                            </div>
+                                            <div class="lg-field">
+                                                <label>Col Spacing (mm)</label>
+                                                <input type="number" id="ham-col-gap" value="9.00" step="0.01">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="lg-divider"></div>
+
+                                    <!-- Well Geometry -->
+                                    <div class="lg-section">
+                                        <div class="lg-section-title">Well Geometry</div>
+                                        <div class="lg-field">
+                                            <label>Well Shape</label>
+                                            <select id="ham-well-shape">
+                                                <option value="Circle" selected>Circle</option>
+                                                <option value="Square">Square</option>
+                                            </select>
+                                        </div>
+                                        <div class="lg-field-row">
+                                            <div class="lg-field">
+                                                <label>Top Ø (mm)</label>
+                                                <input type="number" id="ham-well-size" value="7.00" step="0.01">
+                                            </div>
+                                            <div class="lg-field">
+                                                <label>Bottom Ø (mm)</label>
+                                                <input type="number" id="ham-well-size-bottom" value="6.50" step="0.01">
+                                            </div>
+                                        </div>
+                                        <div class="lg-field">
+                                            <label>Depth (mm)</label>
+                                            <input type="number" id="ham-well-depth" value="10.00" step="0.01">
+                                        </div>
+                                        <div class="lg-field">
+                                            <label>Bottom Shape</label>
+                                            <select id="ham-bottom-shape">
+                                                <option value="Flat">Flat</option>
+                                                <option value="Circle">Round (U-Bottom)</option>
+                                                <option value="VShape">V-Bottom</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div class="lg-divider"></div>
+
+                                    <!-- A1 Position -->
+                                    <div class="lg-section">
+                                        <div class="lg-section-title">A1 Well Position</div>
+                                        <div class="lg-field-row">
+                                            <div class="lg-field">
+                                                <label>X offset (mm)</label>
+                                                <input type="number" id="ham-first-x" value="14.00" step="0.01">
+                                            </div>
+                                            <div class="lg-field">
+                                                <label>Y offset (mm)</label>
+                                                <input type="number" id="ham-first-y" value="11.50" step="0.01">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+
+                            <div class="lg-divider"></div>
+
+                            <!-- Action Buttons -->
+                            <div class="lg-section lg-actions">
+                                <button class="cv-ctrl-btn cv-ctrl-btn-accent lg-full-btn" id="ham-generate-btn">
+                                    <i class="fas fa-sync-alt"></i> Generate 3D Model
+                                </button>
+                                <button class="cv-ctrl-btn cv-ctrl-btn-accent lg-full-btn" id="ham-save-btn">
+                                    <i class="fas fa-download"></i> Save as .x File
+                                </button>
+                                <button class="cv-ctrl-btn lg-full-btn" id="ham-load-viewer-btn">
+                                    <i class="fas fa-eye"></i> Load into Viewer
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: 3D Preview -->
+                    <div class="lg-preview-col">
+                        <div class="lg-preview-viewport">
+                            <canvas id="ham-canvas"></canvas>
+
+                            <!-- Floating 3D Toolbar -->
+                            <div class="viewer-toolbar" id="ham-toolbar">
+                                <div class="vt-body" id="ham-vt-body">
+                                    <button class="vt-toggle" id="ham-vt-toggle" title="Toggle toolbar">
+                                        <i class="fas fa-chevron-right"></i>
+                                    </button>
+                                    <div class="vt-collapsible">
+                                        <div class="vt-gizmo pp-gizmo-sm" id="ham-vt-gizmo">
+                                            <canvas id="ham-gizmo-canvas" width="28" height="28"></canvas>
+                                        </div>
+                                        <div class="vt-separator"></div>
+                                        <button class="vt-btn" id="ham-vt-reset-cam" title="Reset camera">
+                                            <i class="fas fa-video"></i>
+                                        </button>
+                                        <button class="vt-btn" id="ham-vt-zoom-fit" title="Zoom to fit">
+                                            <i class="fas fa-expand"></i>
+                                        </button>
+                                        <button class="vt-btn" id="ham-vt-wireframe" title="Toggle wireframe">
+                                            <i class="fas fa-draw-polygon"></i>
+                                        </button>
+                                        <button class="vt-btn" id="ham-vt-perspective" title="Toggle perspective/orthographic">
+                                            <i class="fas fa-cube"></i>
+                                        </button>
+                                        <button class="vt-btn grid-toggle" id="ham-btn-grid" title="Toggle gridlines">
+                                            <i class="fas fa-border-all"></i>
+                                            <span class="grid-slash" aria-hidden="true"></span>
+                                        </button>
+                                        <div class="vt-separator"></div>
+                                        <button class="vt-btn vt-btn-round" id="ham-vt-zoom-in" title="Zoom in">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                        <button class="vt-btn vt-btn-round" id="ham-vt-zoom-out" title="Zoom out">
+                                            <i class="fas fa-minus"></i>
+                                        </button>
+                                        <button class="vt-btn vt-btn-round" id="ham-vt-pan" title="Pan mode">
+                                            <i class="fas fa-hand-paper"></i>
+                                        </button>
+                                        <div class="vt-separator"></div>
+                                        <button class="vt-btn" id="ham-vt-ruler" title="Ruler — click two points to measure">
+                                            <i class="fas fa-ruler"></i>
+                                        </button>
+                                        <div class="vt-separator"></div>
+                                        <div class="vt-grab-handle" id="ham-vt-grab-handle" title="Drag to move toolbar">
+                                            <i class="fas fa-grip-horizontal"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Ruler measurement readout -->
+                            <div id="ham-ruler-readout" style="display:none;position:absolute;bottom:12px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.75);color:#fff;padding:6px 16px;border-radius:6px;font:bold 14px/1.4 monospace;z-index:60;pointer-events:none;white-space:nowrap;"></div>
+
+                            <div class="viewer-dropzone viewer-hidden" id="ham-dropzone">
+                                <div class="dropzone-content">
+                                    <i class="fas fa-file-import"></i>
+                                    <span>Drop .rck and/or .ctr files here</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Bottom status bar -->
+                        <div class="viewer-controls-bar" id="ham-controls-bar">
+                            <span id="ham-ruler-help" style="display:none;color:#888;font-size:11px;line-height:1.3;margin-bottom:2px;">
+                                Click to place start point · Move for live distance · Click to finalize<br>
+                                ⌘/Ctrl+drag to orbit · X Y Z to lock axis · Esc to cancel
+                            </span>
+                            <span class="viewer-cam-display" id="ham-cam-display">X: 0.0  Y: 0.0  Z: 0.0</span>
                         </div>
                     </div>
                 </div>
