@@ -171,6 +171,7 @@
         controls: null,
         isDark: false,
         gridVisible: false,
+        labelsVisible: true,
         isPerspective: true,
         isPanning: false,
         toolbarCollapsed: false,
@@ -539,6 +540,9 @@
                     if (o) o.visible = false;
                 }
 
+                // Reposition orientation labels to sit outside the actual GLTF bounds
+                repositionOrientationLabels(model);
+
                 showVLStatus('Vantage deck model loaded', 'ok');
             },
             undefined,
@@ -750,18 +754,50 @@
         const labelY = DECK.SURFACE_Z + 20;
         const scale = 18;
 
-        // Symmetric padding so labels sit equally outside the model
-        const padFB = 160;   // front/back padding from track edges
-        const padLR = 160;   // left/right padding from model edges
+        // Place labels well outside the track area as initial fallback;
+        // repositionOrientationLabels() will update them once the GLTF loads.
+        const padFB = 300;
+        const padLR = 300;
 
-        // Front – high Z (operator side in Hamilton coords)
         addOrientationLabel('FRONT', centerX, labelY, DECK.TRACK_Y_START + DECK.TRACK_DEPTH + padFB, scale);
-        // Back – low Z (service side in Hamilton coords)
         addOrientationLabel('BACK', centerX, labelY, DECK.TRACK_Y_START - padFB, scale);
-        // Left – left of track 1
         addOrientationLabel('LEFT', DECK.FIRST_TRACK_X - padLR, labelY, centerZ, scale);
-        // Right – right of last physical track
         addOrientationLabel('RIGHT', DECK.FIRST_TRACK_X + DECK.PHYSICAL_TRACKS * DECK.TRACK_SPACING + padLR, labelY, centerZ, scale);
+    }
+
+    function toggleOrientationLabels() {
+        vlState.labelsVisible = !vlState.labelsVisible;
+        const names = ['__orientlabel_front__', '__orientlabel_back__', '__orientlabel_left__', '__orientlabel_right__'];
+        names.forEach(function (n) {
+            const obj = vlState.scene.getObjectByName(n);
+            if (obj) obj.visible = vlState.labelsVisible;
+        });
+        const btn = vlState.host.querySelector('#vl-vt-labels');
+        if (btn) btn.classList.toggle('vt-active', vlState.labelsVisible);
+    }
+
+    /**
+     * Reposition orientation labels so they sit outside the actual GLTF
+     * bounding box with equal symmetric padding on each axis pair.
+     */
+    function repositionOrientationLabels(gltfModel) {
+        // Compute world-space bounding box of the placed GLTF model
+        const box = new THREE.Box3().setFromObject(gltfModel);
+        const pad = 80;  // mm clearance outside the model on every side
+        const labelY = DECK.SURFACE_Z + 20;
+        const centerX = (box.min.x + box.max.x) / 2;
+        const centerZ = (box.min.z + box.max.z) / 2;
+
+        const names = {
+            front: vlState.scene.getObjectByName('__orientlabel_front__'),
+            back:  vlState.scene.getObjectByName('__orientlabel_back__'),
+            left:  vlState.scene.getObjectByName('__orientlabel_left__'),
+            right: vlState.scene.getObjectByName('__orientlabel_right__'),
+        };
+        if (names.front) names.front.position.set(centerX, labelY, box.max.z + pad);
+        if (names.back)  names.back.position.set(centerX, labelY, box.min.z - pad);
+        if (names.left)  names.left.position.set(box.min.x - pad, labelY, centerZ);
+        if (names.right)  names.right.position.set(box.max.x + pad, labelY, centerZ);
     }
 
     // ================================================================
@@ -3381,6 +3417,9 @@
                 if (icon) icon.className = vlState.toolbarCollapsed ? 'fas fa-chevron-left' : 'fas fa-chevron-right';
             });
         }
+
+        // Labels toggle
+        wireBtn('#vl-vt-labels', toggleOrientationLabels);
 
         // Reset camera
         wireBtn('#vl-vt-reset-cam', resetVLCamera);
