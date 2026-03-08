@@ -750,14 +750,14 @@
         const labelY = DECK.SURFACE_Z + 20;
         const scale = 18;
 
-        // Front – below front rail
-        addOrientationLabel('FRONT', centerX, labelY, DECK.TRACK_Y_START - 40, scale);
-        // Back – above back rail
-        addOrientationLabel('BACK', centerX, labelY, DECK.TRACK_Y_START + DECK.TRACK_DEPTH + 45, scale);
+        // Front – high Z (operator side in Hamilton coords)
+        addOrientationLabel('FRONT', centerX, labelY, DECK.TRACK_Y_START + DECK.TRACK_DEPTH + 45, scale);
+        // Back – low Z (service side in Hamilton coords)
+        addOrientationLabel('BACK', centerX, labelY, DECK.TRACK_Y_START - 40, scale);
         // Left – left of track 1
         addOrientationLabel('LEFT', DECK.FIRST_TRACK_X - 80, labelY, centerZ, scale);
         // Right – right of last track
-        addOrientationLabel('RIGHT', DECK.FIRST_TRACK_X + DECK.PHYSICAL_TRACKS * DECK.TRACK_SPACING + 80, labelY, centerZ, scale);
+        addOrientationLabel('RIGHT', DECK.FIRST_TRACK_X + DECK.TRACK_COUNT * DECK.TRACK_SPACING + 80, labelY, centerZ, scale);
     }
 
     // ================================================================
