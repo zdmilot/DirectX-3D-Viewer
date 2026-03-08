@@ -704,6 +704,8 @@
         if (window.PlacerModule) window.PlacerModule.updateTheme();
         // Also update labware generator theme
         if (window.LabwareGenModule) window.LabwareGenModule.updateTheme();
+        // Also update hamilton import theme
+        if (window.HamiltonImportModule) window.HamiltonImportModule.updateTheme();
         // Also update vantage layout theme
         if (window.VantageLayoutModule) window.VantageLayoutModule.updateTheme();
 
@@ -745,6 +747,11 @@
         // Initialize labware generator on first switch
         if (viewName === 'labware' && window.LabwareGenModule) {
             setTimeout(() => window.LabwareGenModule.init(), 50);
+        }
+
+        // Initialize hamilton import on first switch
+        if (viewName === 'hamilton' && window.HamiltonImportModule) {
+            setTimeout(() => window.HamiltonImportModule.init(), 50);
         }
 
         // Initialize vantage layout on first switch
