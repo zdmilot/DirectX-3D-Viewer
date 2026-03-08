@@ -598,17 +598,49 @@
                     <div class="lg-params-col">
                         <div class="lg-params-scroll">
                             <div class="lg-params-header">
-                                <i class="fas fa-flask"></i> Integra XML
+                                <i class="fas fa-flask"></i> Labware Generator
                             </div>
 
-                            <!-- File Input -->
+                            <!-- Import Source Tabs -->
                             <div class="lg-section">
                                 <div class="lg-section-title">Import Definition</div>
-                                <input type="file" id="lg-file-input" accept=".xml" style="display:none">
-                                <button class="cv-ctrl-btn lg-full-btn" id="lg-open-btn">
-                                    <i class="fas fa-folder-open"></i> Open XML File
-                                </button>
-                                <div class="lg-status" id="lg-status">No file loaded — edit values manually or import XML</div>
+                                <div class="lg-import-tabs">
+                                    <button class="lg-import-tab active" data-import="integra" id="lg-tab-integra">
+                                        <i class="fas fa-file-code"></i> Integra XML
+                                    </button>
+                                    <button class="lg-import-tab" data-import="hamilton" id="lg-tab-hamilton">
+                                        <i class="fas fa-vials"></i> Hamilton
+                                    </button>
+                                </div>
+
+                                <!-- Integra XML Import -->
+                                <div class="lg-import-panel active" id="lg-import-integra">
+                                    <input type="file" id="lg-file-input" accept=".xml" style="display:none">
+                                    <button class="cv-ctrl-btn lg-full-btn" id="lg-open-btn">
+                                        <i class="fas fa-folder-open"></i> Open XML File
+                                    </button>
+                                </div>
+
+                                <!-- Hamilton .rck + .ctr Import -->
+                                <div class="lg-import-panel" id="lg-import-hamilton" style="display:none">
+                                    <input type="file" id="lg-ham-rck-input" accept=".rck" style="display:none">
+                                    <button class="cv-ctrl-btn lg-full-btn" id="lg-ham-rck-btn">
+                                        <i class="fas fa-th"></i> Open Rack File (.rck)
+                                    </button>
+                                    <div class="lg-ham-file-label" id="lg-ham-rck-label">No rack file loaded</div>
+
+                                    <input type="file" id="lg-ham-ctr-input" accept=".ctr" style="display:none">
+                                    <button class="cv-ctrl-btn lg-full-btn" id="lg-ham-ctr-btn" style="margin-top:6px">
+                                        <i class="fas fa-flask"></i> Open Container File (.ctr)
+                                    </button>
+                                    <div class="lg-ham-file-label" id="lg-ham-ctr-label">No container file loaded</div>
+
+                                    <button class="cv-ctrl-btn cv-ctrl-btn-accent lg-full-btn" id="lg-ham-import-btn" style="margin-top:8px" disabled>
+                                        <i class="fas fa-file-import"></i> Import Hamilton Labware
+                                    </button>
+                                </div>
+
+                                <div class="lg-status" id="lg-status">No file loaded — edit values manually or import</div>
                             </div>
 
                             <div class="lg-divider"></div>
@@ -825,7 +857,7 @@
                             <div class="viewer-dropzone viewer-hidden" id="lg-dropzone">
                                 <div class="dropzone-content">
                                     <i class="fas fa-file-import"></i>
-                                    <span>Drop XML labware file here</span>
+                                    <span>Drop XML, .rck, or .ctr labware file here</span>
                                 </div>
                             </div>
                         </div>
@@ -1123,6 +1155,23 @@
 
                 <div class="settings-divider"></div>
 
+                <!-- Waste Chute -->
+                <div class="settings-section-title"><i class="fas fa-trash-alt"></i> Waste Chute</div>
+                <p class="settings-hint">Install the universal waste chute at a deck cutout position. The waste extends through and below the deck, blocking those tracks from carrier placement.</p>
+
+                <div class="settings-toggle-row">
+                    <span class="settings-toggle-label">Waste Position</span>
+                    <select id="settings-waste-position" class="settings-select" style="width:auto;padding:4px 8px;border-radius:4px;border:1px solid var(--border-color,#555);background:var(--input-bg,#333);color:inherit;font-size:13px;">
+                        <option value="-1">None (no waste)</option>
+                        <option value="0">Panel 1 (tracks 25–34)</option>
+                        <option value="1">Panel 2 (tracks 35–44)</option>
+                        <option value="2">Panel 3 (tracks 45–54)</option>
+                        <option value="3">Panel 4 (tracks 55–64)</option>
+                    </select>
+                </div>
+
+                <div class="settings-divider"></div>
+
                 <!-- Display Options -->
                 <div class="settings-section-title"><i class="fas fa-eye"></i> Display Options</div>
                 <div class="settings-toggle-row">
@@ -1215,10 +1264,10 @@
     <script src="js/lib/GLTFLoader.js"></script>
     <script src="js/lib/STLLoader.js"></script>
     <script src="js/hxxLoader.js?v=20260305a"></script>
-    <script src="js/vantageLayout.js?v=20260614a"></script>
+    <script src="js/vantageLayout.js?v=20260308a"></script>
     <script src="js/converter.js?v=20260304d"></script>
     <script src="js/platePlacer.js?v=20260304d"></script>
-    <script src="js/labwareGenerator.js?v=20260305a"></script>
+    <script src="js/labwareGenerator.js?v=20260308a"></script>
     <script src="js/app.js?v=20260305x"></script>
 </body>
 </html>

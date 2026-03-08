@@ -258,6 +258,221 @@
 
 
     // ================================================================
+    //  Hamilton .rck / .ctr File Parser
+    //
+    //  Hamilton labware uses two paired files:
+    //    .rck (rack)      — plate footprint, grid layout, well spacing,
+    //                       A1 offset, outer profile segments
+    //    .ctr (container) — individual well geometry: shape, depth,
+    //                       diameter segments, bottom type
+    //
+    //  Both use the same HxCfgFile key-value text format.
+    // ================================================================
+
+    /**
+     * Parse a Hamilton HxCfgFile config block into a flat key→value map.
+     * Handles the `DataDef,TYPE,version,name, { ... };` structure.
+     */
+    function parseHxCfg(text) {
+        const map = {};
+        // Find content inside first { ... }
+        const openIdx = text.indexOf('{');
+        const closeIdx = text.lastIndexOf('}');
+        if (openIdx < 0 || closeIdx < 0) return map;
+
+        const body = text.substring(openIdx + 1, closeIdx);
+        // Each line is:  Key, "Value",  or  Key, "Value"
+        const lineRe = /^\s*([A-Za-z0-9_.]+)\s*,\s*"([^"]*)"/gm;
+        let m;
+        while ((m = lineRe.exec(body)) !== null) {
+            map[m[1]] = m[2];
+        }
+        return map;
+    }
+
+    /**
+     * Parse a Hamilton .rck (rack) file text → rack definition object.
+     */
+    function parseRckFile(text) {
+        const cfg = parseHxCfg(text);
+        return {
+            dimDx:     parseFloat(cfg['Dim.Dx']) || 127,
+            dimDy:     parseFloat(cfg['Dim.Dy']) || 86,
+            dimDz:     parseFloat(cfg['Dim.Dz']) || 14,
+            rows:      parseInt(cfg['Rows']) || 8,
+            columns:   parseInt(cfg['Columns']) || 12,
+            dx:        parseFloat(cfg['Dx']) || 9,
+            dy:        parseFloat(cfg['Dy']) || 9,
+            bndryX:    parseFloat(cfg['BndryX']) || 14,
+            bndryY:    parseFloat(cfg['BndryY']) || 11.5,
+            ctrBase:   parseFloat(cfg['Cntr.1.base']) || 0,
+            ctrFile:   cfg['Cntr.1.file'] || '',
+            holeShape: parseInt(cfg['Hole.Shape']) || 0,  // 0=circle, 1=square
+            holeX:     parseFloat(cfg['Hole.X']) || 0,
+            holeY:     parseFloat(cfg['Hole.Y']) || 0,
+            holeZ:     parseFloat(cfg['Hole.Z']) || 0,
+            shape:     parseInt(cfg['Shape']) || 0,       // 0=round plate, 1=rectangular
+            stackHt:   parseFloat(cfg['StackHt']) || 0,
+            description: cfg['Description'] || cfg['ViewName'] || '',
+            // Outer profile segments (trapezoidal cross-section from bottom up)
+            segCountX: parseInt(cfg['SegmentCount_x']) || 0,
+            segCountY: parseInt(cfg['SegmentCount_y']) || 0,
+            segX: [],  // populated below
+            segY: [],
+        };
+    }
+
+    /**
+     * Parse outer profile segments from a rack config.
+     * Segments define the trapezoidal cross-section of the plate body
+     * from bottom to top (segment 0 = bottom, segment N = top/flange).
+     */
+    function parseRckSegments(text, rck) {
+        const cfg = parseHxCfg(text);
+        for (let i = 0; i < rck.segCountX; i++) {
+            rck.segX.push({
+                lowerWidth:    parseFloat(cfg['Seg_x.' + i + '.LowerWidth']) || rck.dimDx,
+                upperWidth:    parseFloat(cfg['Seg_x.' + i + '.UpperWidth']) || rck.dimDx,
+                segmentHeight: parseFloat(cfg['Seg_x.' + i + '.SegmentHeight']) || 0,
+            });
+        }
+        for (let i = 0; i < rck.segCountY; i++) {
+            rck.segY.push({
+                lowerWidth:    parseFloat(cfg['Seg_y.' + i + '.LowerWidth']) || rck.dimDy,
+                upperWidth:    parseFloat(cfg['Seg_y.' + i + '.UpperWidth']) || rck.dimDy,
+                segmentHeight: parseFloat(cfg['Seg_y.' + i + '.SegmentHeight']) || 0,
+            });
+        }
+    }
+
+    /**
+     * Parse a Hamilton .ctr (container) file text → container definition object.
+     */
+    function parseCtrFile(text) {
+        const cfg = parseHxCfg(text);
+        const numSegments = parseInt(cfg['Segments']) || 1;
+        const segments = [];
+        for (let i = 1; i <= numSegments; i++) {
+            segments.push({
+                dx:    parseFloat(cfg[i + '.DX']) || 0,
+                dy:    parseFloat(cfg[i + '.DY']) || 0,
+                dz:    parseFloat(cfg[i + '.DZ']) || 0,
+                max:   parseFloat(cfg[i + '.Max']) || 0,
+                min:   parseFloat(cfg[i + '.Min']) || 0,
+                shape: parseInt(cfg[i + '.Shape']) || 0,
+                // Shape codes: 0=cylinder, 1=square, 3=tapered rect,
+                //              4=hemisphere/round bottom, 5=V-bottom/cone
+            });
+        }
+        return {
+            shape:    parseInt(cfg['Shape']) || 0,       // 0=cylindrical, 1=square
+            depth:    parseFloat(cfg['Depth']) || 10,
+            dimDx:    parseFloat(cfg['Dim.Dx']) || 7,
+            dimDy:    parseFloat(cfg['Dim.Dy']) || 7,
+            segments: segments,
+            numSegments: numSegments,
+        };
+    }
+
+    /**
+     * Convert parsed Hamilton .rck + .ctr → unified plate definition
+     * (same format as the Integra XML parser output, so generatePlateModel works)
+     */
+    function hamiltonToDefinition(rck, ctr, rckName, ctrName) {
+        // Determine well shape
+        const isSquare = ctr.shape === 1 || rck.holeShape === 1;
+        const wellShape = isSquare ? 'Square' : 'Circle';
+
+        // Top-most segment gives the well opening diameter,
+        // bottom-most gives bottom diameter for tapered wells
+        const topSeg = ctr.segments[0]; // segment 1 in file = top portion
+        const botSeg = ctr.segments[ctr.segments.length - 1]; // last = bottom
+
+        // Well top diameter: prefer segment DZ (inscribed circle), fall back to Dim.Dx
+        let wellTopDia;
+        if (isSquare) {
+            wellTopDia = topSeg.dx || ctr.dimDx;
+        } else {
+            // For circular wells, DZ in the segment is the diameter
+            wellTopDia = topSeg.dz || ctr.dimDx;
+        }
+
+        // Well bottom diameter
+        let wellBotDia = wellTopDia; // default: straight walls
+        // Detect bottom shape from last segment's shape code
+        let bottomShape = 'Flat';
+        let vShapeDepth = 0;
+
+        if (botSeg.shape === 4) {
+            // Hemisphere / round bottom
+            bottomShape = 'Circle';
+            wellBotDia = botSeg.dz || botSeg.dx || wellTopDia;
+        } else if (botSeg.shape === 5) {
+            // V-bottom / cone
+            bottomShape = 'VShape';
+            wellBotDia = botSeg.dz || botSeg.dx || wellTopDia;
+            vShapeDepth = botSeg.max || wellBotDia / 2;
+        } else if (botSeg.shape === 3) {
+            // Tapered
+            wellBotDia = botSeg.dx || botSeg.dz || wellTopDia;
+        }
+
+        // Also check for multi-segment tapered: if top segment has different dx than container dimDx
+        if (ctr.numSegments > 1 && topSeg.dx > 0 && botSeg.dx > 0 && topSeg.dx !== botSeg.dx) {
+            // The top is wider than bottom — tapered walls
+            wellBotDia = Math.min(topSeg.dx, botSeg.dx);
+            wellTopDia = Math.max(topSeg.dx, botSeg.dx);
+        }
+
+        // Use rack hole dimensions if container dims are zero
+        if (wellTopDia === 0 && rck.holeX > 0) {
+            wellTopDia = rck.holeX;
+        }
+        if (wellBotDia === 0) {
+            wellBotDia = wellTopDia;
+        }
+
+        // A1 position: BndryX/BndryY define the offset from plate corner to center of A1
+        const firstX = rck.bndryX;
+        const firstY = rck.bndryY;
+
+        // Plate height: use Dim.Dz from rack
+        const height = rck.dimDz || (rck.ctrBase + ctr.depth);
+
+        // Clean up the name from filename
+        const rawName = (rckName || ctrName || 'Hamilton Plate')
+            .replace(/\.(rck|ctr)$/i, '')
+            .replace(/[_-]/g, ' ');
+
+        const def = {
+            type: 'plate',
+            name: rawName,
+            manufacturer: 'Hamilton',
+            partNumber: '',
+            footprintLength: rck.dimDx,
+            footprintWidth:  rck.dimDy,
+            height:          height,
+            rowCount:        rck.rows,
+            colCount:        rck.columns,
+            rowGap:          rck.dy,
+            colGap:          rck.dx,
+            wellDepth:       ctr.depth,
+            wellShape:       wellShape,
+            wellSize:        wellTopDia,
+            wellLength:      isSquare ? (topSeg.dx || ctr.dimDx) : wellTopDia,
+            sizeBottom:      wellBotDia,
+            bottomShape:     bottomShape,
+            vShapeDepth:     vShapeDepth,
+            angle:           0,
+            nominalVolume:   0,
+            firstHolePos:    { x: firstX, y: firstY },
+            wellCount:       rck.rows * rck.columns,
+        };
+
+        return def;
+    }
+
+    // ================================================================
     //  3D Geometry Generation — SBS Plate
     //
     //  Real-world SBS plate anatomy (bottom → top):
@@ -1085,6 +1300,122 @@
             });
         }
 
+        // ── Import source tab switching ──────────────────────────
+        const tabIntegra = $('#lg-tab-integra');
+        const tabHamilton = $('#lg-tab-hamilton');
+        const panelIntegra = $('#lg-import-integra');
+        const panelHamilton = $('#lg-import-hamilton');
+
+        if (tabIntegra && tabHamilton) {
+            tabIntegra.addEventListener('click', () => {
+                tabIntegra.classList.add('active');
+                tabHamilton.classList.remove('active');
+                if (panelIntegra) { panelIntegra.classList.add('active'); panelIntegra.style.display = ''; }
+                if (panelHamilton) { panelHamilton.classList.remove('active'); panelHamilton.style.display = 'none'; }
+            });
+            tabHamilton.addEventListener('click', () => {
+                tabHamilton.classList.add('active');
+                tabIntegra.classList.remove('active');
+                if (panelHamilton) { panelHamilton.classList.add('active'); panelHamilton.style.display = ''; }
+                if (panelIntegra) { panelIntegra.classList.remove('active'); panelIntegra.style.display = 'none'; }
+            });
+        }
+
+        // ── Hamilton .rck / .ctr file import ─────────────────────
+        // Store loaded file contents
+        const hamState = { rckText: null, ctrText: null, rckName: '', ctrName: '' };
+
+        function updateHamImportBtn() {
+            const btn = $('#lg-ham-import-btn');
+            if (btn) btn.disabled = !(hamState.rckText && hamState.ctrText);
+        }
+
+        // Read a file as text, trying UTF-8 first, then UTF-16LE for binary-looking Hamilton files
+        function readHamFile(file, callback) {
+            const reader = new FileReader();
+            reader.onload = function (ev) {
+                let text = ev.target.result;
+                // Detect if it starts with a BOM or looks like UTF-16
+                if (text.charCodeAt(0) === 0xFFFE || text.charCodeAt(0) === 0xFEFF ||
+                    (text.length > 4 && text.charCodeAt(1) === 0)) {
+                    // Re-read as UTF-16LE
+                    const reader2 = new FileReader();
+                    reader2.onload = function (ev2) {
+                        callback(ev2.target.result);
+                    };
+                    reader2.readAsText(file, 'utf-16le');
+                } else {
+                    callback(text);
+                }
+            };
+            reader.readAsText(file, 'utf-8');
+        }
+
+        // Rack file input
+        const rckInput = $('#lg-ham-rck-input');
+        const rckBtn = $('#lg-ham-rck-btn');
+        if (rckBtn && rckInput) {
+            rckBtn.addEventListener('click', () => rckInput.click());
+            rckInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                readHamFile(file, function (text) {
+                    hamState.rckText = text;
+                    hamState.rckName = file.name;
+                    const label = $('#lg-ham-rck-label');
+                    if (label) {
+                        label.textContent = '✓ ' + file.name;
+                        label.className = 'lg-ham-file-label loaded';
+                    }
+                    updateHamImportBtn();
+                });
+                rckInput.value = '';
+            });
+        }
+
+        // Container file input
+        const ctrInput = $('#lg-ham-ctr-input');
+        const ctrBtn = $('#lg-ham-ctr-btn');
+        if (ctrBtn && ctrInput) {
+            ctrBtn.addEventListener('click', () => ctrInput.click());
+            ctrInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                readHamFile(file, function (text) {
+                    hamState.ctrText = text;
+                    hamState.ctrName = file.name;
+                    const label = $('#lg-ham-ctr-label');
+                    if (label) {
+                        label.textContent = '✓ ' + file.name;
+                        label.className = 'lg-ham-file-label loaded';
+                    }
+                    updateHamImportBtn();
+                });
+                ctrInput.value = '';
+            });
+        }
+
+        // Import button — parse both files and generate model
+        const hamImportBtn = $('#lg-ham-import-btn');
+        if (hamImportBtn) {
+            hamImportBtn.addEventListener('click', () => {
+                if (!hamState.rckText || !hamState.ctrText) return;
+                try {
+                    const rck = parseRckFile(hamState.rckText);
+                    parseRckSegments(hamState.rckText, rck);
+                    const ctr = parseCtrFile(hamState.ctrText);
+                    const def = hamiltonToDefinition(rck, ctr, hamState.rckName, hamState.ctrName);
+                    populateForm(def);
+                    regeneratePreview();
+                    $('#lg-status').textContent = 'Imported Hamilton: ' + hamState.rckName + ' + ' + hamState.ctrName;
+                    $('#lg-status').className = 'lg-status lg-status-ok';
+                } catch (err) {
+                    $('#lg-status').textContent = 'Hamilton import error: ' + err.message;
+                    $('#lg-status').className = 'lg-status lg-status-err';
+                }
+            });
+        }
+
         // Generate / Refresh button
         const genBtn = $('#lg-generate-btn');
         if (genBtn) {
@@ -1175,26 +1506,83 @@
                 e.preventDefault();
                 dragCounter = 0;
                 if (dropzone) dropzone.classList.add('viewer-hidden');
-                const file = e.dataTransfer.files[0];
-                if (!file) return;
-                if (!file.name.toLowerCase().endsWith('.xml')) {
-                    alert('Please drop an XML labware definition file.');
-                    return;
+                const files = e.dataTransfer.files;
+                if (!files.length) return;
+
+                // Collect dropped files by extension
+                const xmlFiles = [];
+                const rckFiles = [];
+                const ctrFiles = [];
+                for (let i = 0; i < files.length; i++) {
+                    const name = files[i].name.toLowerCase();
+                    if (name.endsWith('.xml')) xmlFiles.push(files[i]);
+                    else if (name.endsWith('.rck')) rckFiles.push(files[i]);
+                    else if (name.endsWith('.ctr')) ctrFiles.push(files[i]);
                 }
-                const reader = new FileReader();
-                reader.onload = function (ev) {
-                    try {
-                        const def = parseLabwareXML(ev.target.result);
-                        populateForm(def);
-                        regeneratePreview();
-                        $('#lg-status').textContent = 'Loaded: ' + file.name;
-                        $('#lg-status').className = 'lg-status lg-status-ok';
-                    } catch (err) {
-                        $('#lg-status').textContent = 'Error: ' + err.message;
-                        $('#lg-status').className = 'lg-status lg-status-err';
+
+                if (xmlFiles.length > 0) {
+                    // Integra XML import
+                    const reader = new FileReader();
+                    reader.onload = function (ev) {
+                        try {
+                            const def = parseLabwareXML(ev.target.result);
+                            populateForm(def);
+                            regeneratePreview();
+                            $('#lg-status').textContent = 'Loaded: ' + xmlFiles[0].name;
+                            $('#lg-status').className = 'lg-status lg-status-ok';
+                        } catch (err) {
+                            $('#lg-status').textContent = 'Error: ' + err.message;
+                            $('#lg-status').className = 'lg-status lg-status-err';
+                        }
+                    };
+                    reader.readAsText(xmlFiles[0]);
+                } else if (rckFiles.length > 0 || ctrFiles.length > 0) {
+                    // Hamilton file(s) dropped — switch to Hamilton tab
+                    if (tabHamilton) tabHamilton.click();
+
+                    // Load dropped .rck file
+                    if (rckFiles.length > 0) {
+                        readHamFile(rckFiles[0], function (text) {
+                            hamState.rckText = text;
+                            hamState.rckName = rckFiles[0].name;
+                            var label = $('#lg-ham-rck-label');
+                            if (label) { label.textContent = '✓ ' + rckFiles[0].name; label.className = 'lg-ham-file-label loaded'; }
+                            updateHamImportBtn();
+                            // Auto-import if both files are now available
+                            if (hamState.rckText && hamState.ctrText) {
+                                var btn = $('#lg-ham-import-btn');
+                                if (btn) btn.click();
+                            }
+                        });
                     }
-                };
-                reader.readAsText(file);
+
+                    // Load dropped .ctr file
+                    if (ctrFiles.length > 0) {
+                        readHamFile(ctrFiles[0], function (text) {
+                            hamState.ctrText = text;
+                            hamState.ctrName = ctrFiles[0].name;
+                            var label = $('#lg-ham-ctr-label');
+                            if (label) { label.textContent = '✓ ' + ctrFiles[0].name; label.className = 'lg-ham-file-label loaded'; }
+                            updateHamImportBtn();
+                            // Auto-import if both files are now available
+                            if (hamState.rckText && hamState.ctrText) {
+                                var btn = $('#lg-ham-import-btn');
+                                if (btn) btn.click();
+                            }
+                        });
+                    }
+
+                    if (rckFiles.length === 0 && ctrFiles.length > 0) {
+                        $('#lg-status').textContent = 'Container loaded — also drop or open the matching .rck rack file';
+                        $('#lg-status').className = 'lg-status lg-status-ok';
+                    } else if (ctrFiles.length === 0 && rckFiles.length > 0) {
+                        $('#lg-status').textContent = 'Rack loaded — also drop or open the matching .ctr container file';
+                        $('#lg-status').className = 'lg-status lg-status-ok';
+                    }
+                } else {
+                    $('#lg-status').textContent = 'Unsupported file type. Drop .xml, .rck, or .ctr files.';
+                    $('#lg-status').className = 'lg-status lg-status-err';
+                }
             });
         }
 

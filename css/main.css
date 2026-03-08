@@ -1715,6 +1715,72 @@ body {
     padding: 12px 16px 16px;
 }
 
+/* Import source tabs */
+.lg-import-tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 10px;
+    border: 1px solid var(--card-border);
+    border-radius: var(--r-xs);
+    overflow: hidden;
+}
+
+.lg-import-tab {
+    flex: 1;
+    padding: 6px 8px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    border: none;
+    background: var(--body-bg);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: background var(--t-fast), color var(--t-fast);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+}
+
+.lg-import-tab:not(:last-child) {
+    border-right: 1px solid var(--card-border);
+}
+
+.lg-import-tab:hover {
+    background: rgba(2, 117, 216, 0.06);
+}
+
+.lg-import-tab.active {
+    background: rgba(2, 117, 216, 0.12);
+    color: var(--accent);
+}
+
+[data-theme="dark"] .lg-import-tab.active {
+    background: rgba(2, 117, 216, 0.2);
+}
+
+.lg-import-panel {
+    display: none;
+}
+
+.lg-import-panel.active {
+    display: block;
+}
+
+/* Hamilton file labels */
+.lg-ham-file-label {
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    padding: 3px 8px;
+    margin-top: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.lg-ham-file-label.loaded {
+    color: #27ae60;
+}
+
 /* -- Preview column (right) -- */
 .lg-preview-col {
     flex: 1;

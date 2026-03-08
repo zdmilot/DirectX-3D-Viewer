@@ -1,27 +1,60 @@
 <html>
 <head>
-    <title>Integra XML</title>
+    <title>Labware Generator</title>
     <link rel="stylesheet" type="text/css" href="help.css">
 </head>
 <body>
-<div class="header">Integra XML</div>
+<div class="header">Labware Generator</div>
 <div class="main">
-<div class="breadcrumb"><a href="Overview.html">3D File Tools</a> &raquo; Integra XML</div>
+<div class="breadcrumb"><a href="Overview.html">3D File Tools</a> &raquo; Labware Generator</div>
 
 <h2>Overview</h2>
-<p>The <b>Integra XML</b> (also called the Labware Generator) creates 3D <code>.x</code> model files for SBS/ANSI-format microplates from parametric inputs. You can configure every aspect of the plate geometry manually, or import an existing XML labware definition file to pre-populate the parameters.</p>
-<div class="image-placeholder">PLACE IMAGE OF INTEGRA GENERATOR PANEL WITH A GENERATED PLATE HERE</div>
+<p>The <b>Labware Generator</b> creates 3D <code>.x</code> model files for SBS/ANSI-format microplates from parametric inputs. You can configure every aspect of the plate geometry manually, or import an existing labware definition file to pre-populate the parameters. Two import formats are supported:</p>
+<ul>
+  <li><b>Integra XML</b> &mdash; Single <code>.xml</code> file with plate and well definitions</li>
+  <li><b>Hamilton</b> &mdash; Paired <code>.rck</code> (rack) and <code>.ctr</code> (container) files from Hamilton VENUS software</li>
+</ul>
+<div class="image-placeholder">PLACE IMAGE OF LABWARE GENERATOR PANEL WITH A GENERATED PLATE HERE</div>
 
 <h2>Panel Layout</h2>
 <p>The panel uses a two-column layout:</p>
 <ul>
-  <li><b>Left column (parameter panel)</b> &mdash; Import button, parameter form, and action buttons</li>
+  <li><b>Left column (parameter panel)</b> &mdash; Import tabs (Integra XML / Hamilton), parameter form, and action buttons</li>
   <li><b>Right column (3D preview)</b> &mdash; Live 3D viewport with floating toolbar; updates when you generate a model</li>
 </ul>
 
-<h2>Importing an XML Labware Definition</h2>
-<p>Click <b>Open XML File</b> (or drag and drop an <code>.xml</code> file onto the viewport) to import a Hamilton or Integra XML labware definition. The parser extracts plate dimensions, well count and geometry, and A1 position, then populates all parameter fields automatically.</p>
-<p>After import, review the populated values and make any corrections before generating. The status display below the button shows the loaded file name or &ldquo;No file loaded &mdash; edit values manually or import XML&rdquo;.</p>
+<h2>Importing Labware Definitions</h2>
+
+<h3>Integra XML Import</h3>
+<p>Click <b>Open XML File</b> (or drag and drop an <code>.xml</code> file onto the viewport) to import an Integra XML labware definition. The parser extracts plate dimensions, well count and geometry, and A1 position, then populates all parameter fields automatically.</p>
+<p>After import, review the populated values and make any corrections before generating. The status display below the button shows the loaded file name or &ldquo;No file loaded &mdash; edit values manually or import&rdquo;.</p>
+
+<h3>Hamilton Import (.rck + .ctr)</h3>
+<p>Hamilton labware definitions use two paired files:</p>
+<ul>
+  <li><b>.rck (rack file)</b> &mdash; Defines the plate footprint, grid layout (rows, columns), well spacing, A1 offset (BndryX/BndryY), outer profile segments, and references the container file</li>
+  <li><b>.ctr (container file)</b> &mdash; Defines the individual well geometry: shape (cylindrical or square), depth, diameter segments from top to bottom, and bottom shape (flat, hemisphere, V-bottom, tapered)</li>
+</ul>
+<p>To import Hamilton labware:</p>
+<ol>
+  <li>Click the <b>Hamilton</b> tab in the Import Definition section</li>
+  <li>Click <b>Open Rack File (.rck)</b> and select the rack definition</li>
+  <li>Click <b>Open Container File (.ctr)</b> and select the matching container definition</li>
+  <li>Click <b>Import Hamilton Labware</b> to parse both files, populate the form fields, and generate the 3D model</li>
+</ol>
+<p>You can also drag and drop both <code>.rck</code> and <code>.ctr</code> files simultaneously onto the viewport &mdash; if both are present, the model is generated automatically.</p>
+
+<h4>Hamilton Container Shape Codes</h4>
+<table>
+<thead><tr><th>Code</th><th>Shape</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td>0</td><td>Cylinder</td><td>Circular cross-section well</td></tr>
+<tr><td>1</td><td>Square</td><td>Rectangular/square cross-section well</td></tr>
+<tr><td>3</td><td>Tapered</td><td>Wells with different top and bottom diameters</td></tr>
+<tr><td>4</td><td>Hemisphere</td><td>Round (U-shaped) bottom</td></tr>
+<tr><td>5</td><td>V-bottom</td><td>Conical/V-shaped bottom</td></tr>
+</tbody>
+</table>
 
 <h2>Parameter Reference</h2>
 

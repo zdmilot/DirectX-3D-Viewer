@@ -26,6 +26,21 @@
         LABELED_TRACKS: new Set([1,7,13,19,25,31,37,43,49,55,61,67,73,79]),
     };
 
+    // ================================================================
+    //  Waste Cutout Positions  (4 removable deck panels)
+    // ================================================================
+    // Each cutout occupies 10 tracks (225mm).  The waste chute model sits
+    // through the deck in one of these openings.
+    const DECK_CUTOUTS = [
+        { id: 0, label: 'Panel 1', trackStart: 25, trackSpan: 10 },
+        { id: 1, label: 'Panel 2', trackStart: 35, trackSpan: 10 },
+        { id: 2, label: 'Panel 3', trackStart: 45, trackSpan: 10 },
+        { id: 3, label: 'Panel 4', trackStart: 55, trackSpan: 10 },
+    ];
+
+    // Server path to the VStarWasteBlock TML (auto-loaded on init)
+    const WASTE_TML_PATH = 'Base Hamilton Files/Labware/ML_STAR/CORE/VStarWasteBlock_Config.tml';
+
     // Carrier library — populated from parsed .tml files + built-ins
     const CARRIER_LIBRARY = {
         PLT_CAR_L5AC: {
@@ -219,6 +234,15 @@
         // Cached Three.js object references for the 4 cover panels (populated after GLTF loads)
         deckCoverNodes: null,
 
+        // Waste chute state: which cutout has waste installed (-1 = none, 0-3 = cutout index)
+        wasteCutoutIdx: -1,
+        // Parsed waste TML data (loaded from server on init)
+        wasteTmlDef: null,
+        // Three.js group for the installed waste chute (removed/rebuilt on change)
+        wasteMesh: null,
+        // Waste carrier 3D model cache key
+        wasteModelCacheKey: '__WASTE_CHUTE__',
+
         // Settings: use generic (procedural) carrier rendering instead of .x models
         useGenericCarriers: false,
 
@@ -322,6 +346,9 @@
 
         // -- Preload .x/.hxx 3D models for built-in carriers --
         preloadBuiltinCarrierModels();
+
+        // -- Preload waste chute TML and 3D model from server --
+        loadWasteTmlFromServer();
 
         // -- Resize observer --
         const ro = new ResizeObserver(() => {
@@ -601,6 +628,12 @@
      * Rebuild all placed carriers of a given type (after model load or setting change).
      */
     function rebuildPlacedCarriersOfType(carrierKey) {
+        // If this is a waste model update, rebuild the waste mesh instead
+        if (carrierKey === vlState.wasteModelCacheKey) {
+            rebuildWasteMesh();
+            return;
+        }
+
         var toRefresh = vlState.placedCarriers.filter(function (c) { return c.type === carrierKey; });
         toRefresh.forEach(function (carrier) {
             var trackStart = carrier.trackStart;
@@ -646,6 +679,8 @@
         Object.keys(types).forEach(function (key) {
             rebuildPlacedCarriersOfType(key);
         });
+        // Also rebuild waste mesh if installed
+        rebuildWasteMesh();
     }
 
     function addTrackLabel(text, xPos, isDark, overrideColor) {
@@ -932,6 +967,329 @@
         if (kv['3DzOffset']) result.model3DzOff = parseFloat(kv['3DzOffset']) || 0;
 
         return result;
+    }
+
+    // ================================================================
+    //  Waste Chute — install / remove / build mesh
+    // ================================================================
+
+    /**
+     * Return the Set of tracks occupied by the installed waste chute.
+     * Returns an empty Set when no waste is installed.
+     */
+    function getWasteOccupiedTracks() {
+        var result = new Set();
+        if (vlState.wasteCutoutIdx < 0 || vlState.wasteCutoutIdx >= DECK_CUTOUTS.length) return result;
+        var slot = DECK_CUTOUTS[vlState.wasteCutoutIdx];
+        for (var t = slot.trackStart; t < slot.trackStart + slot.trackSpan; t++) {
+            result.add(t);
+        }
+        return result;
+    }
+
+    /**
+     * Build the waste chute 3D mesh.  Unlike normal carriers it:
+     *   - Uses the TML 3DxyzOffset to position the model
+     *   - Extends BELOW the deck surface (3DzOffset = -189.3)
+     *   - Is anchored to a cutout position, not a carrier track
+     */
+    function buildWasteMesh(cutoutIdx) {
+        var slot = DECK_CUTOUTS[cutoutIdx];
+        var def = vlState.wasteTmlDef;
+        if (!def) return null;
+
+        var group = new THREE.Group();
+        group.name = '__waste_chute__';
+
+        // World position: left edge of the cutout slot, front edge, at deck surface
+        var slotX = DECK.FIRST_TRACK_X + (slot.trackStart - 1) * DECK.TRACK_SPACING;
+        var x0 = slotX;
+        var y0 = DECK.SURFACE_Z;
+        var z0 = DECK.TRACK_Y_START;
+
+        // Try to use cached .x model
+        var cached = vlState.xModelCache[vlState.wasteModelCacheKey];
+        if (cached && !vlState.useGenericCarriers) {
+            var xModel = cached.clone(true);
+            xModel.name = '__waste_body_x__';
+
+            // Deep-clone materials
+            xModel.traverse(function (child) {
+                if (!child.isMesh) return;
+                child.frustumCulled = false;
+                if (Array.isArray(child.material)) {
+                    child.material = child.material.map(function (m) { return m ? m.clone() : m; });
+                } else if (child.material) {
+                    child.material = child.material.clone();
+                }
+            });
+
+            // Apply TML 3D offsets — these position the model relative to the
+            // carrier origin.  Hamilton coords: X=width, Y=depth, Z=height.
+            // Three.js coords: X=width, Y=height, Z=depth.
+            var xOff = def.model3DxOff || 0;
+            var yOff = def.model3DyOff || 0;
+            var zOff = def.model3DzOff || 0;
+
+            var box = new THREE.Box3().setFromObject(xModel);
+            var center = box.getCenter(new THREE.Vector3());
+
+            xModel.position.set(
+                -center.x + xOff,
+                -center.y + zOff,
+                -center.z + yOff
+            );
+            group.add(xModel);
+        } else {
+            // Procedural fallback: chute shape extending below deck
+            var chuteGeo = new THREE.BoxGeometry(def.dx || 160, 200, def.dy || 471.5);
+            var chuteMat = new THREE.MeshLambertMaterial({
+                color: 0x404040,
+                transparent: true,
+                opacity: 0.7,
+            });
+            var chuteMesh = new THREE.Mesh(chuteGeo, chuteMat);
+            chuteMesh.position.set(
+                (def.dx || 160) / 2,
+                -100,
+                (def.dy || 471.5) / 2
+            );
+            chuteMesh.name = '__waste_body__';
+            group.add(chuteMesh);
+        }
+
+        // Add site labware 3D models from cache
+        if (!vlState.useGenericCarriers && def.sites) {
+            def.sites.forEach(function (site) {
+                if (!site.labwareFile) return;
+                var lwKey = site.labwareFile.replace(/\\/g, '/').toLowerCase();
+                var cachedLw = vlState.siteModelCache[lwKey];
+                if (!cachedLw || !cachedLw.group) return;
+
+                var siteModel = cachedLw.group.clone(true);
+                siteModel.name = '__waste_labware_' + site.id + '__';
+                siteModel.traverse(function (child) {
+                    if (!child.isMesh) return;
+                    child.frustumCulled = false;
+                    if (Array.isArray(child.material)) {
+                        child.material = child.material.map(function (m) { return m ? m.clone() : m; });
+                    } else if (child.material) {
+                        child.material = child.material.clone();
+                    }
+                });
+
+                var sBox = new THREE.Box3().setFromObject(siteModel);
+                var sCenter = sBox.getCenter(new THREE.Vector3());
+                siteModel.position.set(
+                    site.x + site.dx / 2 - sCenter.x + (cachedLw.xOff || 0),
+                    site.z - sBox.min.y + (cachedLw.zOff || 0),
+                    site.y + site.dy / 2 - sCenter.z + (cachedLw.yOff || 0)
+                );
+                group.add(siteModel);
+            });
+        }
+
+        group.position.set(x0, y0, z0);
+        return group;
+    }
+
+    /**
+     * Install the waste chute at the given cutout index (0-3).
+     * Removes any existing waste installation first.
+     * Hides the cover panel and evicts overlapping carriers.
+     */
+    function installWasteAtCutout(cutoutIdx) {
+        if (cutoutIdx < 0 || cutoutIdx >= DECK_CUTOUTS.length) return;
+
+        removeWaste();
+        vlState.wasteCutoutIdx = cutoutIdx;
+
+        // Hide the cover panel for this cutout
+        vlState.deckCutouts[cutoutIdx] = false;
+        applyCutoutVisibility();
+
+        // Evict any carriers that overlap the waste tracks
+        var wasteTracks = getWasteOccupiedTracks();
+        var toRemove = [];
+        vlState.placedCarriers.forEach(function (carrier) {
+            for (var t = carrier.trackStart; t < carrier.trackStart + carrier.def.tWidth; t++) {
+                if (wasteTracks.has(t)) {
+                    toRemove.push(carrier.id);
+                    break;
+                }
+            }
+        });
+        toRemove.forEach(function (id) { removeCarrier(id); });
+
+        // Build and add the waste mesh
+        var mesh = buildWasteMesh(cutoutIdx);
+        if (mesh) {
+            vlState.wasteMesh = mesh;
+            vlState.scene.add(mesh);
+        }
+
+        // Load site labware models if waste def available
+        if (vlState.wasteTmlDef) {
+            loadSiteLabwareModels(vlState.wasteModelCacheKey, vlState.wasteTmlDef.sites);
+        }
+
+        // Sync UI
+        updateCoverPanelCheckbox(cutoutIdx, false);
+        showVLStatus('Waste chute installed at ' + DECK_CUTOUTS[cutoutIdx].label +
+            ' (tracks ' + DECK_CUTOUTS[cutoutIdx].trackStart + '\u2013' +
+            (DECK_CUTOUTS[cutoutIdx].trackStart + DECK_CUTOUTS[cutoutIdx].trackSpan - 1) + ')', 'ok');
+    }
+
+    /** Remove the installed waste chute (if any). */
+    function removeWaste() {
+        if (vlState.wasteCutoutIdx < 0) return;
+
+        if (vlState.wasteMesh) {
+            vlState.wasteMesh.traverse(function (child) {
+                if (child.geometry) child.geometry.dispose();
+                if (child.material) {
+                    (Array.isArray(child.material) ? child.material : [child.material])
+                        .forEach(function (m) { if (m) m.dispose(); });
+                }
+            });
+            vlState.scene.remove(vlState.wasteMesh);
+            vlState.wasteMesh = null;
+        }
+
+        var oldIdx = vlState.wasteCutoutIdx;
+        vlState.deckCutouts[oldIdx] = true;
+        applyCutoutVisibility();
+        updateCoverPanelCheckbox(oldIdx, true);
+
+        vlState.wasteCutoutIdx = -1;
+        showVLStatus('Waste chute removed.', '');
+    }
+
+    /** Rebuild the waste 3D mesh (called when models finish loading). */
+    function rebuildWasteMesh() {
+        if (vlState.wasteCutoutIdx < 0) return;
+        if (vlState.wasteMesh) {
+            vlState.wasteMesh.traverse(function (child) {
+                if (child.geometry) child.geometry.dispose();
+                if (child.material) {
+                    (Array.isArray(child.material) ? child.material : [child.material])
+                        .forEach(function (m) { if (m) m.dispose(); });
+                }
+            });
+            vlState.scene.remove(vlState.wasteMesh);
+        }
+        var mesh = buildWasteMesh(vlState.wasteCutoutIdx);
+        if (mesh) {
+            vlState.wasteMesh = mesh;
+            vlState.scene.add(mesh);
+        }
+    }
+
+    /** Helper to sync a cover-panel checkbox in the settings UI. */
+    function updateCoverPanelCheckbox(idx, checked) {
+        var cb = document.getElementById('settings-cover-' + idx);
+        if (cb) cb.checked = checked;
+    }
+
+    /**
+     * Auto-fetch and parse the waste TML from the server.
+     * Caches the parsed def in vlState.wasteTmlDef, then
+     * fetches the carrier 3D model and site labware models.
+     */
+    function loadWasteTmlFromServer() {
+        fetch(WASTE_TML_PATH).then(function (resp) {
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+            return resp.text();
+        }).then(function (text) {
+            var parsed = parseTML(text);
+            if (!parsed.viewName) parsed.viewName = 'Universal Waste';
+            vlState.wasteTmlDef = parsed;
+
+            console.log('[VantageLayout] Loaded waste TML:', parsed.viewName,
+                parsed.sites.length, 'sites');
+
+            // Fetch the carrier body 3D model
+            if (parsed.modelFileHamilton) {
+                var serverPath = resolveHamiltonPath(parsed.modelFileHamilton);
+                if (serverPath) {
+                    fetchAndCacheXModel(vlState.wasteModelCacheKey, serverPath, function () {
+                        rebuildWasteMesh();
+                    });
+                }
+            }
+
+            // If waste is already installed, load site labware
+            if (vlState.wasteCutoutIdx >= 0) {
+                loadSiteLabwareModels(vlState.wasteModelCacheKey, parsed.sites);
+            }
+        }).catch(function (err) {
+            console.warn('[VantageLayout] Could not load waste TML:', err.message);
+        });
+    }
+
+    /**
+     * Generic helper: fetch a .x or .hxx file from serverPath, parse it,
+     * store in vlState.xModelCache[cacheKey], then call onDone().
+     */
+    function fetchAndCacheXModel(cacheKey, serverPath, onDone) {
+        var isHxx = /\.hxx$/i.test(serverPath);
+
+        fetch(serverPath).then(function (resp) {
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+            return resp.arrayBuffer();
+        }).then(function (data) {
+            if (isHxx && typeof HXXLoader !== 'undefined') {
+                return HXXLoader.parse(data).then(function (result) {
+                    return result.xFileBinary || result.xFileText;
+                });
+            }
+            return data;
+        }).then(function (xData) {
+            if (!xData) return;
+
+            var blob = new Blob([xData], { type: 'application/octet-stream' });
+            var url = URL.createObjectURL(blob);
+            var manager = new THREE.LoadingManager();
+            var basePath = serverPath.substring(0, serverPath.lastIndexOf('/') + 1);
+            manager.setURLModifier(function (texUrl) {
+                if (/\.(png|jpg|jpeg|bmp|tga)$/i.test(texUrl)) {
+                    return basePath + texUrl.split('/').pop();
+                }
+                return texUrl;
+            });
+            var loader = new THREE.XFileLoader(manager);
+
+            loader.load(url, function (object) {
+                URL.revokeObjectURL(url);
+                if (!object || !object.models || object.models.length === 0) return;
+
+                var group = new THREE.Group();
+                group.name = '__xmodel_template_' + cacheKey + '__';
+                object.models.forEach(function (m, idx) {
+                    m.renderOrder = idx;
+                    if (m.material) {
+                        var mats = Array.isArray(m.material) ? m.material : [m.material];
+                        mats.forEach(function (mat) {
+                            if (!mat) return;
+                            mat.polygonOffset = true;
+                            mat.polygonOffsetFactor = idx === 0 ? 1 : -Math.min(idx, 10);
+                            mat.polygonOffsetUnits  = idx === 0 ? 1 : -Math.min(idx, 10) * 4;
+                        });
+                    }
+                    group.add(m);
+                });
+
+                fixXFileCoords(group);
+                vlState.xModelCache[cacheKey] = group;
+                console.log('[VantageLayout] Cached model:', cacheKey);
+                if (onDone) onDone();
+            }, undefined, function (err) {
+                URL.revokeObjectURL(url);
+                console.warn('[VantageLayout] Failed to load model:', serverPath, err);
+            });
+        }).catch(function (err) {
+            console.warn('[VantageLayout] Could not fetch model:', serverPath, err.message);
+        });
     }
 
     // ================================================================
@@ -1262,6 +1620,12 @@
     function checkCarrierCollision(trackStart, tWidth, excludeId) {
         const newRange = new Set();
         for (let t = trackStart; t < trackStart + tWidth; t++) newRange.add(t);
+
+        // Check waste-occupied tracks
+        var wasteTracks = getWasteOccupiedTracks();
+        for (let t of newRange) {
+            if (wasteTracks.has(t)) return true;
+        }
 
         for (const carrier of vlState.placedCarriers) {
             if (carrier.id === excludeId) continue;
@@ -2365,10 +2729,32 @@
                 if (!cb) return;
                 cb.checked = !!vlState.deckCutouts[idx];
                 cb.addEventListener('change', function () {
+                    // Prevent re-enabling cover if waste is installed at this cutout
+                    if (cb.checked && vlState.wasteCutoutIdx === idx) {
+                        cb.checked = false;
+                        showVLStatus('Cannot restore cover — waste chute is installed here.', 'error');
+                        return;
+                    }
                     vlState.deckCutouts[idx] = cb.checked;
                     applyCutoutVisibility();
                 });
             })(i);
+        }
+
+        // ── Waste chute position dropdown ────────────────────────────
+        var wasteSelect = document.getElementById('settings-waste-position');
+        if (wasteSelect) {
+            wasteSelect.value = String(vlState.wasteCutoutIdx);
+            wasteSelect.addEventListener('change', function () {
+                var val = parseInt(wasteSelect.value, 10);
+                if (val < 0) {
+                    removeWaste();
+                } else {
+                    installWasteAtCutout(val);
+                }
+                // Sync the waste dropdown value (installWaste may change state)
+                wasteSelect.value = String(vlState.wasteCutoutIdx);
+            });
         }
 
         // ── Grid toggle ──────────────────────────────────────────────
