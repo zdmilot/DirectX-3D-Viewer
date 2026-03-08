@@ -2492,6 +2492,22 @@ body {
     border-bottom: none;
 }
 
+.settings-select {
+    width: auto;
+    padding: 4px 8px;
+    font-size: 0.8rem;
+    border: 1px solid var(--card-border);
+    border-radius: var(--r-xs);
+    background: var(--body-bg);
+    color: var(--text-primary);
+    outline: none;
+    cursor: pointer;
+    transition: border-color var(--t-fast);
+}
+.settings-select:focus {
+    border-color: var(--accent);
+}
+
 .settings-toggle-label {
     font-size: 0.88rem;
     font-weight: 500;
