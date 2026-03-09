@@ -1162,78 +1162,6 @@
             row.className = 'mfx-slot-row' + (isSelected ? ' is-selected' : '') + (moduleKey ? ' is-occupied' : '');
             row.dataset.slotId = slot.id;
 
-            // Drag handle for reorder mode
-            if (mfxState.isReorderMode && moduleKey) {
-                row.setAttribute('draggable', 'true');
-                row.classList.add('mfx-reorderable');
-
-                var dragHandle = document.createElement('div');
-                dragHandle.className = 'mfx-slot-drag-handle';
-                dragHandle.innerHTML = '<i class="fas fa-grip-vertical"></i>';
-                dragHandle.title = 'Drag to reorder';
-                row.appendChild(dragHandle);
-
-                row.addEventListener('dragstart', function (e) {
-                    mfxState._reorderDragSlotId = slot.id;
-                    e.dataTransfer.setData('application/mfx-reorder', String(slot.id));
-                    e.dataTransfer.effectAllowed = 'move';
-                    row.classList.add('mfx-slot-dragging');
-                });
-                row.addEventListener('dragend', function () {
-                    mfxState._reorderDragSlotId = null;
-                    row.classList.remove('mfx-slot-dragging');
-                    // Remove all drop targets
-                    container.querySelectorAll('.mfx-slot-drop-target').forEach(function (r) {
-                        r.classList.remove('mfx-slot-drop-target');
-                    });
-                });
-                row.addEventListener('dragover', function (e) {
-                    // Only accept reorder drags (not catalog drags)
-                    if (mfxState._reorderDragSlotId === null) return;
-                    if (mfxState._reorderDragSlotId === slot.id) return;
-                    e.preventDefault();
-                    e.dataTransfer.dropEffect = 'move';
-                    // Highlight drop target
-                    container.querySelectorAll('.mfx-slot-drop-target').forEach(function (r) {
-                        r.classList.remove('mfx-slot-drop-target');
-                    });
-                    row.classList.add('mfx-slot-drop-target');
-                });
-                row.addEventListener('dragleave', function () {
-                    row.classList.remove('mfx-slot-drop-target');
-                });
-                row.addEventListener('drop', function (e) {
-                    e.preventDefault();
-                    row.classList.remove('mfx-slot-drop-target');
-                    var sourceSlotId = mfxState._reorderDragSlotId;
-                    if (sourceSlotId === null || sourceSlotId === slot.id) return;
-                    swapModulesBetweenSlots(sourceSlotId, slot.id);
-                    mfxState._reorderDragSlotId = null;
-                });
-            } else if (mfxState.isReorderMode) {
-                // Empty slots can be drop targets in reorder mode
-                row.addEventListener('dragover', function (e) {
-                    if (mfxState._reorderDragSlotId === null) return;
-                    e.preventDefault();
-                    e.dataTransfer.dropEffect = 'move';
-                    container.querySelectorAll('.mfx-slot-drop-target').forEach(function (r) {
-                        r.classList.remove('mfx-slot-drop-target');
-                    });
-                    row.classList.add('mfx-slot-drop-target');
-                });
-                row.addEventListener('dragleave', function () {
-                    row.classList.remove('mfx-slot-drop-target');
-                });
-                row.addEventListener('drop', function (e) {
-                    e.preventDefault();
-                    row.classList.remove('mfx-slot-drop-target');
-                    var sourceSlotId = mfxState._reorderDragSlotId;
-                    if (sourceSlotId === null || sourceSlotId === slot.id) return;
-                    swapModulesBetweenSlots(sourceSlotId, slot.id);
-                    mfxState._reorderDragSlotId = null;
-                });
-            }
-
             var slotLabel = document.createElement('div');
             slotLabel.className = 'mfx-slot-label';
             slotLabel.textContent = slot.label;
@@ -1243,7 +1171,7 @@
             if (moduleDef) {
                 moduleInfo.textContent = moduleDef.label;
             } else {
-                moduleInfo.innerHTML = '<span class="mfx-slot-empty">\u2014 empty \u2014</span>';
+                moduleInfo.innerHTML = '<span class="mfx-slot-empty">— empty —</span>';
             }
 
             var actions = document.createElement('div');
@@ -1288,46 +1216,6 @@
 
             container.appendChild(row);
         });
-    }
-
-    // ================================================================
-    //  Swap modules between two slots (reorder)
-    // ================================================================
-    function swapModulesBetweenSlots(slotIdA, slotIdB) {
-        var entryA = mfxState.slotState[slotIdA];
-        var entryB = mfxState.slotState[slotIdB];
-        if (!entryA || !entryB) return;
-
-        var keyA = entryA.moduleKey;
-        var keyB = entryB.moduleKey;
-
-        // Remove both module meshes from the scene
-        if (entryA.moduleMesh && mfxState.carrierGroup) {
-            mfxState.carrierGroup.remove(entryA.moduleMesh);
-            disposeGroup(entryA.moduleMesh);
-        }
-        if (entryB.moduleMesh && mfxState.carrierGroup) {
-            mfxState.carrierGroup.remove(entryB.moduleMesh);
-            disposeGroup(entryB.moduleMesh);
-        }
-        entryA.moduleMesh = null;
-        entryA.moduleKey = null;
-        entryB.moduleMesh = null;
-        entryB.moduleKey = null;
-
-        // Re-place swapped modules
-        if (keyA) placeModuleInSlot(slotIdB, keyA);
-        if (keyB) placeModuleInSlot(slotIdA, keyB);
-
-        // Update highlights
-        setSlotHighlight(slotIdA, mfxState.selectedSlotId === slotIdA);
-        setSlotHighlight(slotIdB, mfxState.selectedSlotId === slotIdB);
-
-        updateSlotList();
-
-        var labelA = entryA.slot.label;
-        var labelB = entryB.slot.label;
-        setMFXStatus('Swapped modules: ' + labelA + ' \u2194 ' + labelB);
     }
 
     // ================================================================

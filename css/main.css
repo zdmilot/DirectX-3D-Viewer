@@ -4269,3 +4269,41 @@ body {
 .mfx-module-card[draggable="true"]:active {
     cursor: grabbing;
 }
+
+/* Incompatible module cards (not placeable on selected slot) */
+.mfx-module-card.is-incompatible {
+    opacity: 0.35;
+    pointer-events: auto;
+    cursor: not-allowed;
+    border-color: transparent;
+}
+.mfx-module-card.is-incompatible:hover {
+    background: rgba(200, 60, 60, 0.08);
+}
+
+/* Blocked slot row (oversized neighbour) */
+.mfx-slot-row.is-blocked {
+    border-color: rgba(180, 80, 40, 0.35);
+}
+.mfx-slot-blocked {
+    font-style: italic;
+    font-size: 10.5px;
+    color: rgba(200, 100, 50, 0.75);
+}
+[data-theme="dark"] .mfx-slot-blocked {
+    color: rgba(220, 140, 80, 0.85);
+}
+
+/* Slot type hint */
+.mfx-slot-type-hint {
+    font-size: 9px;
+    color: rgba(128, 128, 128, 0.5);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 90px;
+    flex-shrink: 0;
+}
+[data-theme="dark"] .mfx-slot-type-hint {
+    color: rgba(160, 180, 200, 0.4);
+}
