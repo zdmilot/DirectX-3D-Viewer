@@ -573,7 +573,7 @@
         Object.keys(mfxState.slotState).forEach(function (id) {
             var entry = mfxState.slotState[id];
             if (entry.slotMesh) {
-                entry.slotMesh.position.y = ny + 1.5;
+                entry.slotMesh.position.y = ny + 0.3;
             }
             if (entry.moduleMesh) {
                 positionModuleInSlot(entry.moduleMesh, entry.slot);
@@ -585,31 +585,33 @@
     //  Slot placeholder mesh
     // ----------------------------------------------------------------
     function buildSlotMesh(slot, isSelected) {
-        var h = 2;
-        var geo = new THREE.BoxGeometry(slot.dx, h, slot.dy);
+        // Flat plane — no side faces means no z-fighting from any angle
+        var geo = new THREE.PlaneGeometry(slot.dx, slot.dy);
         var color = isSelected ? 0x2288ff : 0x1a2a3a;
-        var mat = new THREE.MeshLambertMaterial({
+        var mat = new THREE.MeshBasicMaterial({
             color: color,
             transparent: true,
-            opacity: isSelected ? 0.75 : 0.55,
+            opacity: isSelected ? 0.7 : 0.45,
+            side: THREE.DoubleSide,
             polygonOffset: true,
-            polygonOffsetFactor: -1,
-            polygonOffsetUnits: -4,
+            polygonOffsetFactor: -2,
+            polygonOffsetUnits: -8,
             depthWrite: false,
         });
         var mesh = new THREE.Mesh(geo, mat);
         mesh.renderOrder = 10;
-        // Three.js coords: X=width, Y=height(z), Z=depth(y)
-        // Place slot mesh just above the carrier nesting surface
+        // Rotate plane to face up (PlaneGeometry faces +Z by default)
+        mesh.rotation.x = -Math.PI / 2;
+        // Place flat on the carrier nesting surface (tiny offset above)
         mesh.position.set(
             slot.x + slot.dx / 2,
-            getNestingY() + h / 2 + 0.5,
+            getNestingY() + 0.3,
             slot.y + slot.dy / 2
         );
         mesh.name = '__slot_' + slot.id + '__';
         mesh.userData.slotId = slot.id;
         mesh.userData.isSlot = true;
-        // Wireframe outline
+        // Wireframe outline (rectangle border)
         var edgesGeo = new THREE.EdgesGeometry(geo);
         var edgesMat = new THREE.LineBasicMaterial({ color: isSelected ? 0x66aaff : 0x4488aa, linewidth: 1, depthWrite: false });
         var edges = new THREE.LineSegments(edgesGeo, edgesMat);
