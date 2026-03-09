@@ -1070,6 +1070,66 @@
     }
 
     // ================================================================
+    //  Screenshot
+    // ================================================================
+    function cvSaveScreenshot(format, opts) {
+        if (!cvState.mainRenderer || !cvState.scene || !cvState.mainCamera) return;
+        const showGrid = opts ? opts.showGrid : true;
+        const showBg   = opts ? opts.showBg   : true;
+
+        const grid = cvState.scene.getObjectByName('__cvgrid__');
+        const origGridVis = grid ? grid.visible : false;
+        if (grid) grid.visible = showGrid && cvState.gridVisible;
+
+        const origBg = cvState.scene.background;
+        if (!showBg) {
+            cvState.scene.background = null;
+            cvState.mainRenderer.setClearColor(0x000000, 0);
+        }
+
+        cvState.mainRenderer.render(cvState.scene, cvState.mainCamera);
+        const canvas = cvState.mainRenderer.domElement;
+        const fileName = (cvState.originalFileName || 'converter_screenshot').replace(/\.[^.]+$/, '');
+
+        if (format === 'jpg') {
+            canvas.toBlob(function(blob) { if (blob && window.downloadBlob) window.downloadBlob(blob, fileName + '.jpg'); }, 'image/jpeg', 0.92);
+        } else {
+            canvas.toBlob(function(blob) { if (blob && window.downloadBlob) window.downloadBlob(blob, fileName + '.png'); }, 'image/png');
+        }
+
+        if (grid) grid.visible = origGridVis;
+        cvState.scene.background = origBg;
+        if (!showBg) cvState.mainRenderer.setClearColor(cvState.isDark ? DARK_BG : LIGHT_BG, 1);
+        cvState.mainRenderer.render(cvState.scene, cvState.mainCamera);
+    }
+
+    function cvScreenshotPreviewDataURL(opts) {
+        if (!cvState.mainRenderer || !cvState.scene || !cvState.mainCamera) return '';
+        const showGrid = opts ? opts.showGrid : true;
+        const showBg   = opts ? opts.showBg   : true;
+
+        const grid = cvState.scene.getObjectByName('__cvgrid__');
+        const origGridVis = grid ? grid.visible : false;
+        if (grid) grid.visible = showGrid && cvState.gridVisible;
+
+        const origBg = cvState.scene.background;
+        if (!showBg) {
+            cvState.scene.background = null;
+            cvState.mainRenderer.setClearColor(0x000000, 0);
+        }
+
+        cvState.mainRenderer.render(cvState.scene, cvState.mainCamera);
+        const dataURL = cvState.mainRenderer.domElement.toDataURL('image/png');
+
+        if (grid) grid.visible = origGridVis;
+        cvState.scene.background = origBg;
+        if (!showBg) cvState.mainRenderer.setClearColor(cvState.isDark ? DARK_BG : LIGHT_BG, 1);
+        cvState.mainRenderer.render(cvState.scene, cvState.mainCamera);
+
+        return dataURL;
+    }
+
+    // ================================================================
     //  Public API  (attaches to window for app.js to call)
     // ================================================================
     function setConverterGridVisible(visible) {
@@ -1085,6 +1145,8 @@
         updateTheme: updateConverterTheme,
         setGridVisible: setConverterGridVisible,
         generateXFileText: generateXFileText,
+        saveScreenshot: cvSaveScreenshot,
+        screenshotPreviewDataURL: cvScreenshotPreviewDataURL,
     };
 
 })();

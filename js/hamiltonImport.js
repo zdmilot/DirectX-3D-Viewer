@@ -1051,11 +1051,73 @@
     }
 
     // ================================================================
+    //  Screenshot
+    // ================================================================
+    function hamSaveScreenshot(format, opts) {
+        if (!hamSt.renderer || !hamSt.scene || !hamSt.camera) return;
+        const showGrid = opts ? opts.showGrid : true;
+        const showBg   = opts ? opts.showBg   : true;
+
+        const grid = hamSt.scene.getObjectByName('__hamgrid__');
+        const origGridVis = grid ? grid.visible : false;
+        if (grid) grid.visible = showGrid && hamSt.gridVisible;
+
+        const origBg = hamSt.scene.background;
+        if (!showBg) {
+            hamSt.scene.background = null;
+            hamSt.renderer.setClearColor(0x000000, 0);
+        }
+
+        hamSt.renderer.render(hamSt.scene, hamSt.camera);
+        const canvas = hamSt.renderer.domElement;
+        const fileName = ($('#ham-name') ? $('#ham-name').value : 'hamilton_screenshot').replace(/\.[^.]+$/, '') || 'hamilton_screenshot';
+
+        if (format === 'jpg') {
+            canvas.toBlob(function(blob) { if (blob && window.downloadBlob) window.downloadBlob(blob, fileName + '.jpg'); }, 'image/jpeg', 0.92);
+        } else {
+            canvas.toBlob(function(blob) { if (blob && window.downloadBlob) window.downloadBlob(blob, fileName + '.png'); }, 'image/png');
+        }
+
+        if (grid) grid.visible = origGridVis;
+        hamSt.scene.background = origBg;
+        if (!showBg) hamSt.renderer.setClearColor(hamSt.isDark ? DARK_BG : LIGHT_BG, 1);
+        hamSt.renderer.render(hamSt.scene, hamSt.camera);
+    }
+
+    function hamScreenshotPreviewDataURL(opts) {
+        if (!hamSt.renderer || !hamSt.scene || !hamSt.camera) return '';
+        const showGrid = opts ? opts.showGrid : true;
+        const showBg   = opts ? opts.showBg   : true;
+
+        const grid = hamSt.scene.getObjectByName('__hamgrid__');
+        const origGridVis = grid ? grid.visible : false;
+        if (grid) grid.visible = showGrid && hamSt.gridVisible;
+
+        const origBg = hamSt.scene.background;
+        if (!showBg) {
+            hamSt.scene.background = null;
+            hamSt.renderer.setClearColor(0x000000, 0);
+        }
+
+        hamSt.renderer.render(hamSt.scene, hamSt.camera);
+        const dataURL = hamSt.renderer.domElement.toDataURL('image/png');
+
+        if (grid) grid.visible = origGridVis;
+        hamSt.scene.background = origBg;
+        if (!showBg) hamSt.renderer.setClearColor(hamSt.isDark ? DARK_BG : LIGHT_BG, 1);
+        hamSt.renderer.render(hamSt.scene, hamSt.camera);
+
+        return dataURL;
+    }
+
+    // ================================================================
     //  Public API
     // ================================================================
     window.HamiltonImportModule = {
         init: initHamiltonImport,
         updateTheme: updateHamTheme,
+        saveScreenshot: hamSaveScreenshot,
+        screenshotPreviewDataURL: hamScreenshotPreviewDataURL,
     };
 
 })();

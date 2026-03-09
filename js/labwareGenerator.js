@@ -1837,6 +1837,66 @@
     }
 
     // ================================================================
+    //  Screenshot
+    // ================================================================
+    function lgSaveScreenshot(format, opts) {
+        if (!lgState.renderer || !lgState.scene || !lgState.camera) return;
+        const showGrid = opts ? opts.showGrid : true;
+        const showBg   = opts ? opts.showBg   : true;
+
+        const grid = lgState.scene.getObjectByName('__lggrid__');
+        const origGridVis = grid ? grid.visible : false;
+        if (grid) grid.visible = showGrid && lgState.gridVisible;
+
+        const origBg = lgState.scene.background;
+        if (!showBg) {
+            lgState.scene.background = null;
+            lgState.renderer.setClearColor(0x000000, 0);
+        }
+
+        lgState.renderer.render(lgState.scene, lgState.camera);
+        const canvas = lgState.renderer.domElement;
+        const fileName = ($('#lg-name') ? $('#lg-name').value : 'labware_screenshot').replace(/\.[^.]+$/, '') || 'labware_screenshot';
+
+        if (format === 'jpg') {
+            canvas.toBlob(function(blob) { if (blob && window.downloadBlob) window.downloadBlob(blob, fileName + '.jpg'); }, 'image/jpeg', 0.92);
+        } else {
+            canvas.toBlob(function(blob) { if (blob && window.downloadBlob) window.downloadBlob(blob, fileName + '.png'); }, 'image/png');
+        }
+
+        if (grid) grid.visible = origGridVis;
+        lgState.scene.background = origBg;
+        if (!showBg) lgState.renderer.setClearColor(lgState.isDark ? DARK_BG : LIGHT_BG, 1);
+        lgState.renderer.render(lgState.scene, lgState.camera);
+    }
+
+    function lgScreenshotPreviewDataURL(opts) {
+        if (!lgState.renderer || !lgState.scene || !lgState.camera) return '';
+        const showGrid = opts ? opts.showGrid : true;
+        const showBg   = opts ? opts.showBg   : true;
+
+        const grid = lgState.scene.getObjectByName('__lggrid__');
+        const origGridVis = grid ? grid.visible : false;
+        if (grid) grid.visible = showGrid && lgState.gridVisible;
+
+        const origBg = lgState.scene.background;
+        if (!showBg) {
+            lgState.scene.background = null;
+            lgState.renderer.setClearColor(0x000000, 0);
+        }
+
+        lgState.renderer.render(lgState.scene, lgState.camera);
+        const dataURL = lgState.renderer.domElement.toDataURL('image/png');
+
+        if (grid) grid.visible = origGridVis;
+        lgState.scene.background = origBg;
+        if (!showBg) lgState.renderer.setClearColor(lgState.isDark ? DARK_BG : LIGHT_BG, 1);
+        lgState.renderer.render(lgState.scene, lgState.camera);
+
+        return dataURL;
+    }
+
+    // ================================================================
     //  Public API
     // ================================================================
     window.LabwareGenModule = {
@@ -1847,6 +1907,8 @@
         exportToXFile: exportToXFile,
         checkSBSCompliance: checkSBSCompliance,
         SBS: SBS,
+        saveScreenshot: lgSaveScreenshot,
+        screenshotPreviewDataURL: lgScreenshotPreviewDataURL,
     };
 
 })();

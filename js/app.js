@@ -708,8 +708,6 @@
         if (window.HamiltonImportModule) window.HamiltonImportModule.updateTheme();
         // Also update vantage layout theme
         if (window.VantageLayoutModule) window.VantageLayoutModule.updateTheme();
-        // Also update MFX carrier theme
-        if (window.MFXCarrierModule) window.MFXCarrierModule.updateTheme();
 
     }
 
@@ -759,11 +757,6 @@
         // Initialize vantage layout on first switch
         if (viewName === 'vantage' && window.VantageLayoutModule) {
             setTimeout(() => window.VantageLayoutModule.init(), 50);
-        }
-
-        // Initialize MFX Carrier Creator on first switch
-        if (viewName === 'mfx' && window.MFXCarrierModule) {
-            setTimeout(() => window.MFXCarrierModule.init(), 50);
         }
 
         // Auto-collapse sidebar after navigation
@@ -1522,6 +1515,16 @@
 
         if (ssModalSource === 'placer' && window.PlacerModule && window.PlacerModule.screenshotPreviewDataURL) {
             img.src = window.PlacerModule.screenshotPreviewDataURL(opts);
+        } else if (ssModalSource === 'converter' && window.ConverterModule && window.ConverterModule.screenshotPreviewDataURL) {
+            img.src = window.ConverterModule.screenshotPreviewDataURL(opts);
+        } else if (ssModalSource === 'labware' && window.LabwareGenModule && window.LabwareGenModule.screenshotPreviewDataURL) {
+            img.src = window.LabwareGenModule.screenshotPreviewDataURL(opts);
+        } else if (ssModalSource === 'hamilton' && window.HamiltonImportModule && window.HamiltonImportModule.screenshotPreviewDataURL) {
+            img.src = window.HamiltonImportModule.screenshotPreviewDataURL(opts);
+        } else if (ssModalSource === 'vantage' && window.VantageLayoutModule && window.VantageLayoutModule.screenshotPreviewDataURL) {
+            img.src = window.VantageLayoutModule.screenshotPreviewDataURL(opts);
+        } else if (ssModalSource === 'mfx' && window.MFXCarrierModule && window.MFXCarrierModule.screenshotPreviewDataURL) {
+            img.src = window.MFXCarrierModule.screenshotPreviewDataURL(opts);
         } else {
             img.src = screenshotPreviewDataURL(opts);
         }
@@ -1537,6 +1540,16 @@
 
         if (ssModalSource === 'placer' && window.PlacerModule && window.PlacerModule.saveScreenshot) {
             window.PlacerModule.saveScreenshot(format, opts);
+        } else if (ssModalSource === 'converter' && window.ConverterModule && window.ConverterModule.saveScreenshot) {
+            window.ConverterModule.saveScreenshot(format, opts);
+        } else if (ssModalSource === 'labware' && window.LabwareGenModule && window.LabwareGenModule.saveScreenshot) {
+            window.LabwareGenModule.saveScreenshot(format, opts);
+        } else if (ssModalSource === 'hamilton' && window.HamiltonImportModule && window.HamiltonImportModule.saveScreenshot) {
+            window.HamiltonImportModule.saveScreenshot(format, opts);
+        } else if (ssModalSource === 'vantage' && window.VantageLayoutModule && window.VantageLayoutModule.saveScreenshot) {
+            window.VantageLayoutModule.saveScreenshot(format, opts);
+        } else if (ssModalSource === 'mfx' && window.MFXCarrierModule && window.MFXCarrierModule.saveScreenshot) {
+            window.MFXCarrierModule.saveScreenshot(format, opts);
         } else {
             saveScreenshot(format, opts);
         }
@@ -1567,6 +1580,7 @@
 
     // Expose openScreenshotModal so platePlacer can call it
     window.openScreenshotModal = openScreenshotModal;
+    window.downloadBlob = downloadBlob;
 
     function downloadBlob(blob, filename) {
         const url = URL.createObjectURL(blob);
@@ -2334,6 +2348,46 @@
         if (ssBtn) {
             ssBtn.addEventListener('click', () => {
                 openScreenshotModal('viewer');
+            });
+        }
+
+        // Converter screenshot button
+        const cvSsBtn = $('#cv-screenshot');
+        if (cvSsBtn) {
+            cvSsBtn.addEventListener('click', () => {
+                openScreenshotModal('converter');
+            });
+        }
+
+        // Labware generator screenshot button
+        const lgSsBtn = $('#lg-screenshot');
+        if (lgSsBtn) {
+            lgSsBtn.addEventListener('click', () => {
+                openScreenshotModal('labware');
+            });
+        }
+
+        // Hamilton import screenshot button
+        const hamSsBtn = $('#ham-screenshot');
+        if (hamSsBtn) {
+            hamSsBtn.addEventListener('click', () => {
+                openScreenshotModal('hamilton');
+            });
+        }
+
+        // Vantage layout screenshot button
+        const vlSsBtn = $('#vl-screenshot');
+        if (vlSsBtn) {
+            vlSsBtn.addEventListener('click', () => {
+                openScreenshotModal('vantage');
+            });
+        }
+
+        // MFX carrier screenshot button
+        const mfxSsBtn = $('#mfx-screenshot');
+        if (mfxSsBtn) {
+            mfxSsBtn.addEventListener('click', () => {
+                openScreenshotModal('mfx');
             });
         }
 

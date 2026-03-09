@@ -4199,3 +4199,34 @@ body {
     background: rgba(128,128,128,0.25);
     border-radius: 2px;
 }
+
+/* MFX drag ghost cursor */
+#mfx-drag-cursor-ghost {
+    position: fixed;
+    pointer-events: none;
+    z-index: 9999;
+    background: rgba(30, 90, 160, 0.88);
+    color: #fff;
+    border-radius: 7px;
+    padding: 5px 12px 5px 9px;
+    font-size: 11px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.45);
+    white-space: nowrap;
+}
+#mfx-drag-cursor-ghost i {
+    font-size: 13px;
+    opacity: 0.85;
+}
+
+/* Draggable module cards */
+.mfx-module-card[draggable="true"] {
+    cursor: grab;
+    user-select: none;
+}
+.mfx-module-card[draggable="true"]:active {
+    cursor: grabbing;
+}

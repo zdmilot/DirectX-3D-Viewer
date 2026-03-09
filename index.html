@@ -6,7 +6,7 @@
     <title>3D File Tools</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1F9EA;</text></svg>">
     <link rel="stylesheet" href="css/fontawesome.min.css">
-    <link rel="stylesheet" href="css/main.css?v=20260309a">
+    <link rel="stylesheet" href="css/main.css?v=20260310a">
 </head>
 <body>
 
@@ -376,6 +376,11 @@
                             </button>
                             <span class="cv-rotation-display" id="cv-rotation-display">X: 0°  Y: 0°  Z: 0°</span>
                             <div class="cv-ctrl-spacer"></div>
+                            <div class="screenshot-group" id="cv-screenshot-group">
+                                <button class="cv-ctrl-btn cv-ctrl-btn-accent" id="cv-screenshot" title="Save screenshot">
+                                    <i class="fas fa-camera"></i> Screenshot
+                                </button>
+                            </div>
                             <button class="cv-ctrl-btn cv-ctrl-btn-accent" id="cv-export-btn" disabled title="Export as .x file">
                                 <i class="fas fa-download"></i> Export .x
                             </button>
@@ -845,6 +850,12 @@
                                 ⌘/Ctrl+drag to orbit · X Y Z to lock axis · Esc to cancel
                             </span>
                             <span class="viewer-cam-display" id="lg-cam-display">X: 0.0  Y: 0.0  Z: 0.0</span>
+                            <div class="cv-ctrl-spacer"></div>
+                            <div class="screenshot-group" id="lg-screenshot-group">
+                                <button class="cv-ctrl-btn cv-ctrl-btn-accent" id="lg-screenshot" title="Save screenshot">
+                                    <i class="fas fa-camera"></i> Screenshot
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1100,6 +1111,12 @@
                                 ⌘/Ctrl+drag to orbit · X Y Z to lock axis · Esc to cancel
                             </span>
                             <span class="viewer-cam-display" id="ham-cam-display">X: 0.0  Y: 0.0  Z: 0.0</span>
+                            <div class="cv-ctrl-spacer"></div>
+                            <div class="screenshot-group" id="ham-screenshot-group">
+                                <button class="cv-ctrl-btn cv-ctrl-btn-accent" id="ham-screenshot" title="Save screenshot">
+                                    <i class="fas fa-camera"></i> Screenshot
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1424,9 +1441,11 @@
                 <div class="viewer-controls-bar" id="vl-controls-bar">
                     <span class="vl-status-msg" id="vl-status">Ready</span>
                     <div class="cv-ctrl-spacer"></div>
-                    <button class="cv-ctrl-btn" id="vl-reset-cam-btn" title="Reset camera">
-                        <i class="fas fa-video"></i> Reset View
-                    </button>
+                    <div class="screenshot-group" id="vl-screenshot-group">
+                        <button class="cv-ctrl-btn cv-ctrl-btn-accent" id="vl-screenshot" title="Save screenshot">
+                            <i class="fas fa-camera"></i> Screenshot
+                        </button>
+                    </div>
                     <div class="cv-ctrl-divider"></div>
                     <button class="cv-ctrl-btn cv-ctrl-btn-accent" id="vl-export-btn" title="Export layout as JSON">
                         <i class="fas fa-download"></i> Export Layout
@@ -1439,6 +1458,47 @@
                  ====================================================== -->
             <div class="view-panel" data-view-panel="mfx" id="mfx-host">
                 <canvas id="mfx-canvas"></canvas>
+
+                <!-- Floating 3D Toolbar -->
+                <div class="viewer-toolbar" id="mfx-toolbar">
+                    <div class="vt-body" id="mfx-vt-body">
+                        <button class="vt-toggle" id="mfx-vt-toggle" title="Toggle toolbar">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                        <div class="vt-collapsible">
+                            <div class="vt-gizmo pp-gizmo-sm" id="mfx-vt-gizmo">
+                                <canvas id="mfx-gizmo-canvas" width="28" height="28"></canvas>
+                            </div>
+                            <div class="vt-separator"></div>
+                            <button class="vt-btn" id="mfx-vt-reset-cam" title="Reset camera">
+                                <i class="fas fa-video"></i>
+                            </button>
+                            <button class="vt-btn" id="mfx-vt-zoom-fit" title="Zoom to fit carrier">
+                                <i class="fas fa-expand"></i>
+                            </button>
+                            <button class="vt-btn" id="mfx-vt-topdown" title="Top-down view">
+                                <i class="fas fa-arrow-down"></i>
+                            </button>
+                            <button class="vt-btn" id="mfx-vt-perspective" title="Toggle perspective / orthographic">
+                                <i class="fas fa-cube"></i>
+                            </button>
+                            <div class="vt-separator"></div>
+                            <button class="vt-btn vt-btn-round" id="mfx-vt-zoom-in" title="Zoom in">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                            <button class="vt-btn vt-btn-round" id="mfx-vt-zoom-out" title="Zoom out">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                            <button class="vt-btn vt-btn-round" id="mfx-vt-pan" title="Pan mode">
+                                <i class="fas fa-hand-paper"></i>
+                            </button>
+                            <div class="vt-separator"></div>
+                            <div class="vt-grab-handle" id="mfx-vt-grab-handle" title="Drag to move toolbar">
+                                <i class="fas fa-grip-horizontal"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
                 <!-- Left Panel: Carrier selector + Module catalog -->
                 <div class="vl-left-panel" id="mfx-left-panel">
@@ -1505,9 +1565,11 @@
                 <div class="viewer-controls-bar" id="mfx-controls-bar">
                     <span class="vl-status-msg" id="mfx-status">Select a carrier type, then click a module to place it.</span>
                     <div class="cv-ctrl-spacer"></div>
-                    <button class="cv-ctrl-btn" id="mfx-reset-cam" title="Reset camera view">
-                        <i class="fas fa-video"></i> Reset View
-                    </button>
+                    <div class="screenshot-group" id="mfx-screenshot-group">
+                        <button class="cv-ctrl-btn cv-ctrl-btn-accent" id="mfx-screenshot" title="Save screenshot">
+                            <i class="fas fa-camera"></i> Screenshot
+                        </button>
+                    </div>
                     <div class="cv-ctrl-divider"></div>
                     <button class="cv-ctrl-btn cv-ctrl-btn-accent" id="mfx-export-btn" title="Export configuration">
                         <i class="fas fa-download"></i> Export Config
@@ -1758,6 +1820,12 @@
         <span id="vl-drag-ghost-label"></span>
     </div>
 
+    <!-- MFX module drag-to-place cursor ghost -->
+    <div id="mfx-drag-cursor-ghost" style="display:none">
+        <i class="fas fa-puzzle-piece"></i>
+        <span id="mfx-drag-ghost-label"></span>
+    </div>
+
     <script src="js/lib/pako.min.js"></script>
     <script src="js/lib/three.min.js"></script>
     <script src="js/lib/OrbitControls.js"></script>
@@ -1773,7 +1841,7 @@
     <script src="js/platePlacer.js?v=20260304d"></script>
     <script src="js/labwareGenerator.js?v=20260308a"></script>
     <script src="js/hamiltonImport.js?v=20260309a"></script>
-    <script src="js/mfxCarrier.js?v=20260309a"></script>
-    <script src="js/app.js?v=20260305x"></script>
+    <script src="js/mfxCarrier.js?v=20260310a"></script>
+    <script src="js/app.js?v=20260310a"></script>
 </body>
 </html>

@@ -204,10 +204,64 @@
         // Raycaster
         _raycaster: null,
         _mouse: new THREE.Vector2(),
+
+        // Toolbar state
+        toolbarCollapsed: false,
+        isPerspective: true,
+        isPanning: false,
+        _dragHoveredSlot: null,
     };
 
     const LIGHT_BG = 0xf0f0f0;
     const DARK_BG  = 0x1b2838;
+
+    // ================================================================
+    //  Screenshot
+    // ================================================================
+    function mfxSaveScreenshot(format, opts) {
+        if (!mfxState.renderer || !mfxState.scene || !mfxState.camera) return;
+        const showBg = opts ? opts.showBg : true;
+
+        const origBg = mfxState.scene.background;
+        if (!showBg) {
+            mfxState.scene.background = null;
+            mfxState.renderer.setClearColor(0x000000, 0);
+        }
+
+        mfxState.renderer.render(mfxState.scene, mfxState.camera);
+        const canvas = mfxState.renderer.domElement;
+        const fileName = 'mfx_carrier';
+
+        if (format === 'jpg') {
+            canvas.toBlob(function(blob) { if (blob && window.downloadBlob) window.downloadBlob(blob, fileName + '.jpg'); }, 'image/jpeg', 0.92);
+        } else {
+            canvas.toBlob(function(blob) { if (blob && window.downloadBlob) window.downloadBlob(blob, fileName + '.png'); }, 'image/png');
+        }
+
+        mfxState.scene.background = origBg;
+        if (!showBg) mfxState.renderer.setClearColor(mfxState.isDark ? DARK_BG : LIGHT_BG, 1);
+        mfxState.renderer.render(mfxState.scene, mfxState.camera);
+    }
+
+    function mfxScreenshotPreviewDataURL(opts) {
+        if (!mfxState.renderer || !mfxState.scene || !mfxState.camera) return '';
+        const showBg = opts ? opts.showBg : true;
+
+        const origBg = mfxState.scene.background;
+        if (!showBg) {
+            mfxState.scene.background = null;
+            mfxState.renderer.setClearColor(0x000000, 0);
+        }
+
+        mfxState.renderer.render(mfxState.scene, mfxState.camera);
+        const dataURL = mfxState.renderer.domElement.toDataURL('image/png');
+
+        mfxState.scene.background = origBg;
+        if (!showBg) mfxState.renderer.setClearColor(mfxState.isDark ? DARK_BG : LIGHT_BG, 1);
+        mfxState.renderer.render(mfxState.scene, mfxState.camera);
+
+        return dataURL;
+    }
 
     // ================================================================
     //  Public API
@@ -215,6 +269,8 @@
     window.MFXCarrierModule = {
         init: initMFXCarrier,
         updateTheme: updateMFXTheme,
+        saveScreenshot: mfxSaveScreenshot,
+        screenshotPreviewDataURL: mfxScreenshotPreviewDataURL,
     };
 
     // ================================================================
@@ -293,6 +349,7 @@
             mfxState.animId = requestAnimationFrame(tick);
             mfxState.controls.update();
             mfxState.renderer.render(mfxState.scene, mfxState.camera);
+            drawMFXGizmo();
         }());
 
         // Build initial scene
@@ -302,8 +359,11 @@
         // Wire UI
         wireMFXControls();
         wireMFXCanvas();
+        wireMFXToolbar();
+        wireMFXDragDrop();
         populateCarrierSelector();
         populateModuleCatalog();
+        makeModuleCardsDraggable();
         updateSlotList();
         console.log('[MFXCarrier] init complete');
     }
@@ -434,6 +494,15 @@
     }
 
     // ----------------------------------------------------------------
+    //  Compute baseplate surface Y for the current carrier
+    // ----------------------------------------------------------------
+    function getBaseplateY() {
+        var def = MFX_CARRIER_DEFS[mfxState.carrierKey];
+        if (!def) return 23;
+        return def.dz * 0.18;
+    }
+
+    // ----------------------------------------------------------------
     //  Slot placeholder mesh
     // ----------------------------------------------------------------
     function buildSlotMesh(slot, isSelected) {
@@ -447,9 +516,11 @@
         });
         var mesh = new THREE.Mesh(geo, mat);
         // Three.js coords: X=width, Y=height(z), Z=depth(y)
+        // Place slot mesh on the baseplate surface, not at max carrier height
+        var baseY = getBaseplateY();
         mesh.position.set(
             slot.x + slot.dx / 2,
-            slot.z,
+            baseY,
             slot.y + slot.dy / 2
         );
         mesh.name = '__slot_' + slot.id + '__';
@@ -507,9 +578,10 @@
     function positionModuleInSlot(xModel, slot) {
         var box = new THREE.Box3().setFromObject(xModel);
         var center = box.getCenter(new THREE.Vector3());
+        var baseY = getBaseplateY();
         xModel.position.set(
             slot.x + slot.dx / 2 - center.x,
-            slot.z - box.min.y,
+            baseY - box.min.y,
             slot.y + slot.dy / 2 - center.z
         );
     }
@@ -527,9 +599,10 @@
         var wfMat = new THREE.MeshBasicMaterial({ color: 0x88bbdd, wireframe: true });
         var wfMesh = new THREE.Mesh(wfGeo, wfMat);
         mesh.add(wfMesh);
+        var baseY = getBaseplateY();
         mesh.position.set(
             slot.x + slot.dx / 2,
-            slot.z + h / 2,
+            baseY + h / 2,
             slot.y + slot.dy / 2
         );
         mesh.name = '__placeholder__';
@@ -945,6 +1018,8 @@
 
             container.appendChild(card);
         });
+
+        makeModuleCardsDraggable();
     }
 
     function onModuleCardClick(moduleKey) {
@@ -1115,6 +1190,295 @@
     function setMFXStatus(msg) {
         var el = $('#mfx-status');
         if (el) el.textContent = msg;
+    }
+
+    // ================================================================
+    //  Gizmo (orientation indicator) — same pattern as vantageLayout
+    // ================================================================
+    function drawMFXGizmo() {
+        var canvas = $('#mfx-gizmo-canvas');
+        if (!canvas || !mfxState.camera) return;
+        var size = canvas.width;
+        var ctx  = canvas.getContext('2d');
+        ctx.clearRect(0, 0, size, size);
+
+        var axes = [
+            { dir: new THREE.Vector3(1,0,0), color: '#e05555', label: 'X' },
+            { dir: new THREE.Vector3(0,1,0), color: '#55bb55', label: 'Y' },
+            { dir: new THREE.Vector3(0,0,1), color: '#5588e0', label: 'Z' },
+        ];
+
+        var cx = size / 2, cy = size / 2, r = size * 0.38;
+
+        axes.forEach(function (axis) {
+            var v = axis.dir.clone().applyQuaternion(mfxState.camera.quaternion);
+            var ex = cx + v.x * r;
+            var ey = cy - v.y * r;
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.lineTo(ex, ey);
+            ctx.strokeStyle = axis.color;
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+            ctx.fillStyle = axis.color;
+            ctx.font = 'bold 9px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(axis.label, ex + (ex - cx) * 0.18, ey + (ey - cy) * 0.18);
+        });
+
+        ctx.beginPath();
+        ctx.arc(cx, cy, 3.5, 0, Math.PI * 2);
+        ctx.fillStyle = '#999';
+        ctx.fill();
+    }
+
+    // ================================================================
+    //  Toolbar wiring
+    // ================================================================
+    function wireMFXToolbar() {
+        // Toggle collapse
+        var toggle = $('#mfx-vt-toggle');
+        var body   = $('#mfx-vt-body');
+        if (toggle && body) {
+            toggle.addEventListener('click', function () {
+                mfxState.toolbarCollapsed = !mfxState.toolbarCollapsed;
+                body.classList.toggle('collapsed', mfxState.toolbarCollapsed);
+                var icon = toggle.querySelector('i');
+                if (icon) icon.className = mfxState.toolbarCollapsed ? 'fas fa-chevron-left' : 'fas fa-chevron-right';
+            });
+        }
+
+        // Reset camera
+        wireBtn('#mfx-vt-reset-cam', resetMFXCamera);
+
+        // Zoom to fit
+        wireBtn('#mfx-vt-zoom-fit', zoomMFXToFit);
+
+        // Top-down view
+        wireBtn('#mfx-vt-topdown', setMFXTopDown);
+
+        // Perspective toggle
+        wireBtn('#mfx-vt-perspective', toggleMFXPerspective);
+
+        // Zoom in/out
+        wireBtn('#mfx-vt-zoom-in',  function () { doMFXZoom(0.8); });
+        wireBtn('#mfx-vt-zoom-out', function () { doMFXZoom(1.25); });
+
+        // Pan mode
+        wireBtn('#mfx-vt-pan', toggleMFXPan);
+
+        // Drag-to-move toolbar
+        wireMFXDragHandle('#mfx-vt-grab-handle', '#mfx-toolbar');
+    }
+
+    function wireBtn(sel, fn) {
+        var el = $(sel);
+        if (el) el.addEventListener('click', fn);
+    }
+
+    // ================================================================
+    //  Camera helpers
+    // ================================================================
+    function zoomMFXToFit() {
+        resetMFXCamera();
+    }
+
+    function setMFXTopDown() {
+        var def = MFX_CARRIER_DEFS[mfxState.carrierKey] || MFX_CARRIER_DEFS.MFX_CAR_L5;
+        var cx = def.dx / 2;
+        var cy = def.dy / 2;
+        var dist = Math.max(def.dx, def.dy) * 1.8;
+        mfxState.camera.position.set(cx, dist, cy);
+        mfxState.camera.up.set(0, 0, -1);
+        if (mfxState.controls) {
+            mfxState.controls.target.set(cx, 0, cy);
+            mfxState.controls.update();
+        }
+    }
+
+    function doMFXZoom(factor) {
+        if (!mfxState.camera || !mfxState.controls) return;
+        var dir = mfxState.camera.position.clone().sub(mfxState.controls.target);
+        dir.multiplyScalar(factor);
+        mfxState.camera.position.copy(mfxState.controls.target.clone().add(dir));
+        mfxState.controls.update();
+    }
+
+    function toggleMFXPerspective() {
+        var host = mfxState.host;
+        if (!host || !mfxState.camera) return;
+        var w = host.clientWidth || 800;
+        var h = host.clientHeight || 600;
+
+        mfxState.isPerspective = !mfxState.isPerspective;
+        var pos    = mfxState.camera.position.clone();
+        var target = mfxState.controls.target.clone();
+
+        if (mfxState.isPerspective) {
+            mfxState.camera = new THREE.PerspectiveCamera(45, w / h, 0.1, 50000);
+        } else {
+            var dist = pos.distanceTo(target);
+            var fs = dist * Math.tan(THREE.MathUtils.degToRad(22.5));
+            mfxState.camera = new THREE.OrthographicCamera(
+                -fs * (w/h), fs * (w/h), fs, -fs, 0.1, 50000
+            );
+        }
+        mfxState.camera.position.copy(pos);
+        mfxState.camera.up.set(0, 1, 0);
+        mfxState.camera.lookAt(target);
+
+        mfxState.controls.dispose();
+        mfxState.controls = new THREE.OrbitControls(mfxState.camera, mfxState.renderer.domElement);
+        mfxState.controls.enableDamping = true;
+        mfxState.controls.dampingFactor = 0.12;
+        mfxState.controls.target.copy(target);
+        mfxState.controls.update();
+
+        var btn = $('#mfx-vt-perspective');
+        if (btn) btn.classList.toggle('is-active', !mfxState.isPerspective);
+    }
+
+    function toggleMFXPan() {
+        mfxState.isPanning = !mfxState.isPanning;
+        if (mfxState.controls) {
+            mfxState.controls.mouseButtons.LEFT = mfxState.isPanning
+                ? THREE.MOUSE.PAN
+                : THREE.MOUSE.ROTATE;
+        }
+        var btn = $('#mfx-vt-pan');
+        if (btn) btn.classList.toggle('is-active', mfxState.isPanning);
+    }
+
+    // ================================================================
+    //  Toolbar drag-to-reposition
+    // ================================================================
+    function wireMFXDragHandle(handleSel, toolbarSel) {
+        var handle = $(handleSel);
+        var toolbar = $(toolbarSel);
+        if (!handle || !toolbar) return;
+        var dragging = false, ox = 0, oy = 0, tx = 0, ty = 0;
+
+        handle.addEventListener('mousedown', function (e) {
+            dragging = true;
+            var rect = toolbar.getBoundingClientRect();
+            tx = rect.left; ty = rect.top;
+            ox = e.clientX - tx; oy = e.clientY - ty;
+            toolbar.style.position = 'fixed';
+            toolbar.style.right = 'unset';
+            toolbar.style.top = ty + 'px';
+            toolbar.style.left = tx + 'px';
+            e.preventDefault();
+        });
+        document.addEventListener('mousemove', function (e) {
+            if (!dragging) return;
+            toolbar.style.left = (e.clientX - ox) + 'px';
+            toolbar.style.top  = (e.clientY - oy) + 'px';
+        });
+        document.addEventListener('mouseup', function () { dragging = false; });
+    }
+
+    // ================================================================
+    //  Drag-and-drop: module catalog → carrier slots
+    // ================================================================
+    function wireMFXDragDrop() {
+        var canvas = mfxState.canvas;
+        if (!canvas) return;
+
+        var ghost = document.getElementById('mfx-drag-cursor-ghost');
+
+        // Make module cards draggable
+        document.addEventListener('dragstart', function (e) {
+            var card = e.target.closest && e.target.closest('.mfx-module-card');
+            if (!card) return;
+            var key = card.dataset.moduleKey;
+            if (!key) return;
+            e.dataTransfer.setData('text/plain', key);
+            e.dataTransfer.effectAllowed = 'copy';
+            if (ghost) {
+                var mod = _moduleByKey[key];
+                var label = ghost.querySelector('#mfx-drag-ghost-label');
+                if (label) label.textContent = mod ? mod.label : key;
+                ghost.style.display = '';
+                e.dataTransfer.setDragImage(ghost, 16, 16);
+                setTimeout(function () { ghost.style.display = 'none'; }, 0);
+            }
+        });
+
+        // Allow drop on canvas
+        canvas.addEventListener('dragover', function (e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'copy';
+            // Highlight hovered slot
+            highlightSlotUnderMouse(e);
+        });
+
+        canvas.addEventListener('dragleave', function () {
+            clearDragHighlights();
+        });
+
+        canvas.addEventListener('drop', function (e) {
+            e.preventDefault();
+            var moduleKey = e.dataTransfer.getData('text/plain');
+            if (!moduleKey || !_moduleByKey[moduleKey]) return;
+
+            var slotId = getSlotIdUnderMouse(e);
+            if (slotId !== null) {
+                placeModuleInSlot(slotId, moduleKey);
+                setMFXStatus('Dropped ' + (_moduleByKey[moduleKey] || {}).label + ' at slot ' + slotId);
+            }
+            clearDragHighlights();
+        });
+    }
+
+    function getSlotIdUnderMouse(e) {
+        var rect = mfxState.canvas.getBoundingClientRect();
+        mfxState._mouse.x =  ((e.clientX - rect.left) / rect.width)  * 2 - 1;
+        mfxState._mouse.y = -((e.clientY - rect.top)  / rect.height) * 2 + 1;
+        mfxState._raycaster.setFromCamera(mfxState._mouse, mfxState.camera);
+
+        var slotMeshes = [];
+        Object.keys(mfxState.slotState).forEach(function (id) {
+            var e2 = mfxState.slotState[id];
+            if (e2.slotMesh) slotMeshes.push(e2.slotMesh);
+        });
+        var hits = mfxState._raycaster.intersectObjects(slotMeshes, false);
+        if (hits.length > 0) {
+            var sid = hits[0].object.userData.slotId;
+            if (sid !== undefined) return parseInt(sid, 10);
+        }
+        return null;
+    }
+
+    function highlightSlotUnderMouse(e) {
+        clearDragHighlights();
+        var slotId = getSlotIdUnderMouse(e);
+        if (slotId !== null) {
+            mfxState._dragHoveredSlot = slotId;
+            var entry = mfxState.slotState[slotId];
+            if (entry && entry.slotMesh) {
+                entry.slotMesh.material.color.setHex(0x44cc44);
+                entry.slotMesh.material.opacity = 0.8;
+            }
+        }
+    }
+
+    function clearDragHighlights() {
+        if (mfxState._dragHoveredSlot !== null && mfxState._dragHoveredSlot !== undefined) {
+            var prev = mfxState._dragHoveredSlot;
+            mfxState._dragHoveredSlot = null;
+            var isSelected = mfxState.selectedSlotId === prev;
+            setSlotHighlight(prev, isSelected);
+        }
+    }
+
+    // ================================================================
+    //  Make module cards draggable (called after populateModuleCatalog)
+    // ================================================================
+    function makeModuleCardsDraggable() {
+        document.querySelectorAll('.mfx-module-card').forEach(function (card) {
+            card.setAttribute('draggable', 'true');
+        });
     }
 
 }());
