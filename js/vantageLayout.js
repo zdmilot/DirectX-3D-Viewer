@@ -3424,8 +3424,14 @@
         if (rightClose) {
             rightClose.addEventListener('click', () => setSitesPanelOpen(false));
         }
-        // Default: right panel collapsed
+        // Default: both panels collapsed on launch
         setSitesPanelOpen(false);
+        if (leftPanel && host) {
+            leftPanel.classList.add('is-collapsed');
+            host.classList.add('vl-left-collapsed');
+            const icon = $('#vl-left-toggle-icon');
+            if (icon) icon.className = 'fas fa-chevron-right';
+        }
     }
 
     function wireVLToolbar() {
