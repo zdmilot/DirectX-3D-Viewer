@@ -251,10 +251,6 @@
         eeDebugMode: false,
         _eeBasePos: null,
 
-        // Back panel node reference
-        backPanelNode: null,
-        backPanelVisible: true,
-
         // Fixture position debug state
         fixtureDebugMode: false,
         fixtureDebugTarget: 'body',   // 'body' | 'accessories' | 'group' | 'component'
@@ -2068,11 +2064,6 @@
         vlState.deckCutouts[cutoutIdx] = false;
         applyCutoutVisibility();
 
-        // Auto-hide back panel (drawer extends through back of deck)
-        setBackPanelVisible(false);
-        var bpCb = document.getElementById('settings-back-panel-toggle');
-        if (bpCb) bpCb.checked = false;
-
         var drawerTracks = getDrawerOccupiedTracks();
         var toRemove = [];
         vlState.placedCarriers.forEach(function (carrier) {
@@ -2187,17 +2178,6 @@
         }).catch(function (err) {
             console.warn('[VantageLayout] Could not load drawer TML:', err.message);
         });
-    }
-
-    // ================================================================
-    //  Back panel visibility
-    // ================================================================
-
-    function setBackPanelVisible(visible) {
-        vlState.backPanelVisible = visible;
-        if (vlState.backPanelNode) {
-            vlState.backPanelNode.visible = visible;
-        }
     }
 
     /** Rebuild the waste 3D mesh (called when models finish loading). */
@@ -3821,10 +3801,7 @@
             if (/^VANTAGE_DECK_COVER/i.test(obj.name)) {
                 covers.push(obj);
             }
-            // Collect back panel node (6606544-01)
-            if (obj.name === '6606544-01') {
-                vlState.backPanelNode = obj;
-            }
+
         });
         covers.sort(function (a, b) { return a.name.localeCompare(b.name); });
         vlState.deckCoverNodes = covers;
@@ -3845,7 +3822,6 @@
         });
 
         console.log('[VantageLayout] deck cover nodes:', covers.map(function (n) { return n.name; }));
-        if (vlState.backPanelNode) console.log('[VantageLayout] back panel node found: 6606544-01');
     }
 
     function applyCutoutVisibility() {
@@ -4316,15 +4292,6 @@
                     installDrawerAtCutout(val);
                 }
                 drawerSelect.value = String(vlState.drawerCutoutIdx);
-            });
-        }
-
-        // ── Back Panel toggle ────────────────────────────────────────
-        var backPanelToggle = document.getElementById('settings-back-panel-toggle');
-        if (backPanelToggle) {
-            backPanelToggle.checked = vlState.backPanelVisible;
-            backPanelToggle.addEventListener('change', function () {
-                setBackPanelVisible(backPanelToggle.checked);
             });
         }
 
