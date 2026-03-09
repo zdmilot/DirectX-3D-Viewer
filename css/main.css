@@ -4140,6 +4140,45 @@ body {
     flex-direction: column;
     overflow: hidden;
 }
+
+/* ── Slot reorder drag-and-drop styles ────────────────────────── */
+.mfx-slot-drag-handle {
+    flex-shrink: 0;
+    color: rgba(128,128,128,0.45);
+    cursor: grab;
+    font-size: 11px;
+    padding: 0 2px;
+    margin-right: 2px;
+    transition: color 0.15s;
+}
+.mfx-slot-drag-handle:hover {
+    color: rgba(128,128,128,0.8);
+}
+.mfx-reorderable {
+    cursor: grab;
+}
+.mfx-reorderable:active {
+    cursor: grabbing;
+}
+.mfx-slot-dragging {
+    opacity: 0.4;
+    background: rgba(34, 136, 255, 0.06);
+}
+.mfx-slot-drop-target {
+    border-color: rgba(68, 204, 68, 0.6) !important;
+    background: rgba(68, 204, 68, 0.10) !important;
+    box-shadow: inset 0 0 0 1px rgba(68, 204, 68, 0.25);
+}
+[data-theme="dark"] .mfx-slot-drag-handle {
+    color: rgba(180,180,180,0.35);
+}
+[data-theme="dark"] .mfx-slot-drag-handle:hover {
+    color: rgba(180,180,180,0.7);
+}
+[data-theme="dark"] .mfx-slot-drop-target {
+    border-color: rgba(68, 204, 68, 0.55) !important;
+    background: rgba(68, 204, 68, 0.12) !important;
+}
 #mfx-right-panel .vl-panel-header {
     flex-shrink: 0;
 }
