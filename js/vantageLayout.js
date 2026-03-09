@@ -189,6 +189,7 @@
         // Palette drag-to-place state
         dragToPlaceEnabled: true,
         paletteDrag: null,    // { type, def } while dragging from palette
+        rackDrag: null,       // { rackKey, rackDef } while dragging rack onto sites
 
         // Canvas carrier drag state (moving a placed carrier)
         canvasCarrierDrag: null,  // { carrier } while dragging placed carrier
@@ -250,6 +251,10 @@
         // EE drawer debug state
         eeDebugMode: false,
         _eeBasePos: null,
+
+        // Back shield nodes (4 light-gray panels on the back side)
+        backShieldNodes: [],          // [Object3D, ...] sorted by X (left→right)
+        backShieldVisible: [true, true, true, true],
 
         // Fixture position debug state
         fixtureDebugMode: false,
@@ -1562,8 +1567,143 @@
                 showVLStatus('Removed rack: ' + key);
             });
 
+            // Drag rack onto carrier sites
+            item.addEventListener('mousedown', function (e) {
+                if (e.button !== 0) return;
+                e.preventDefault();
+                startRackDrag(e, key);
+            });
+
             list.appendChild(item);
         });
+    }
+
+    // ================================================================
+    //  Rack Drag-to-Place (drag rack from palette onto carrier sites)
+    // ================================================================
+
+    /**
+     * Hit-test carrier site wells. Returns { carrier, site, siteMesh } or null.
+     */
+    function hitTestSites(e) {
+        if (!vlState.scene || !vlState.camera || !vlState.canvas) return null;
+        var rect = vlState.canvas.getBoundingClientRect();
+        vlState._mouse.x =  ((e.clientX - rect.left) / rect.width)  * 2 - 1;
+        vlState._mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+        vlState._raycaster.setFromCamera(vlState._mouse, vlState.camera);
+
+        // Collect all site well meshes from placed carriers
+        var siteObjects = [];
+        vlState.placedCarriers.forEach(function (c) {
+            if (c.siteMeshes) {
+                c.siteMeshes.forEach(function (sm) { siteObjects.push(sm); });
+            }
+        });
+        if (siteObjects.length === 0) return null;
+
+        var hits = vlState._raycaster.intersectObjects(siteObjects, false);
+        if (!hits.length) return null;
+
+        var hitMesh = hits[0].object;
+        for (var i = 0; i < vlState.placedCarriers.length; i++) {
+            var carrier = vlState.placedCarriers[i];
+            if (!carrier.siteMeshes) continue;
+            for (var j = 0; j < carrier.siteMeshes.length; j++) {
+                if (carrier.siteMeshes[j] === hitMesh) {
+                    var siteId = hitMesh.userData.siteId;
+                    var site = carrier.def.sites.find(function (s) { return s.id === siteId; });
+                    return { carrier: carrier, site: site, siteMesh: hitMesh };
+                }
+            }
+        }
+        return null;
+    }
+
+    var _rackDragHighlighted = null; // currently highlighted site mesh
+
+    function clearRackDragHighlight() {
+        if (_rackDragHighlighted) {
+            _rackDragHighlighted.material.emissive.set(0x000000);
+            _rackDragHighlighted = null;
+        }
+    }
+
+    function startRackDrag(e, rackKey) {
+        var rackDef = vlState.rackLibrary[rackKey];
+        if (!rackDef) return;
+
+        // Disable orbit controls during drag
+        if (vlState.controls) vlState.controls.enabled = false;
+
+        vlState.rackDrag = { rackKey: rackKey, rackDef: rackDef };
+
+        // Show cursor ghost div
+        var ghostDiv = document.getElementById('vl-drag-cursor-ghost');
+        var ghostLabel = document.getElementById('vl-drag-ghost-label');
+        if (ghostDiv && ghostLabel) {
+            ghostLabel.textContent = (rackDef.name || rackKey);
+            ghostDiv.style.display = 'flex';
+            ghostDiv.style.left = (e.clientX + 14) + 'px';
+            ghostDiv.style.top  = (e.clientY + 8)  + 'px';
+        }
+
+        document.addEventListener('mousemove', onRackDragMove);
+        document.addEventListener('mouseup',   onRackDragEnd);
+    }
+
+    function onRackDragMove(e) {
+        if (!vlState.rackDrag) return;
+
+        // Move cursor ghost
+        var ghostDiv = document.getElementById('vl-drag-cursor-ghost');
+        if (ghostDiv) {
+            ghostDiv.style.left = (e.clientX + 14) + 'px';
+            ghostDiv.style.top  = (e.clientY + 8)  + 'px';
+        }
+
+        // Check if we're over the canvas
+        var canvas = vlState.canvas;
+        if (!canvas) { clearRackDragHighlight(); return; }
+        var rect = canvas.getBoundingClientRect();
+        var overCanvas = e.clientX >= rect.left && e.clientX <= rect.right &&
+                         e.clientY >= rect.top  && e.clientY <= rect.bottom;
+        if (!overCanvas) { clearRackDragHighlight(); return; }
+
+        // Hit-test carrier sites
+        var hit = hitTestSites(e);
+        if (hit) {
+            if (_rackDragHighlighted !== hit.siteMesh) {
+                clearRackDragHighlight();
+                hit.siteMesh.material.emissive.set(0x226644);
+                _rackDragHighlighted = hit.siteMesh;
+            }
+        } else {
+            clearRackDragHighlight();
+        }
+    }
+
+    function onRackDragEnd(e) {
+        document.removeEventListener('mousemove', onRackDragMove);
+        document.removeEventListener('mouseup',   onRackDragEnd);
+
+        // Re-enable orbit controls
+        if (vlState.controls) vlState.controls.enabled = true;
+
+        // Hide cursor ghost
+        var ghostDiv = document.getElementById('vl-drag-cursor-ghost');
+        if (ghostDiv) ghostDiv.style.display = 'none';
+
+        clearRackDragHighlight();
+
+        if (!vlState.rackDrag) return;
+        var rackKey = vlState.rackDrag.rackKey;
+        vlState.rackDrag = null;
+
+        // Check if dropped over a carrier site
+        var hit = hitTestSites(e);
+        if (hit && hit.carrier && hit.site) {
+            assignRackToSite(hit.carrier.id, hit.site.id, rackKey);
+        }
     }
 
     /**
@@ -2887,6 +3027,22 @@
                         pm.mesh = newPm;
                     }
                 });
+                // Re-add any assigned containers/racks
+                if (carrier.siteContainers) {
+                    carrier.containerMeshes = [];
+                    Object.keys(carrier.siteContainers).forEach(siteIdStr => {
+                        const rackKey = carrier.siteContainers[siteIdStr];
+                        const rackDef = vlState.rackLibrary[rackKey];
+                        const site = carrier.def.sites.find(s => s.id === parseInt(siteIdStr, 10));
+                        if (rackDef && site) {
+                            const cm = buildContainerMesh(rackKey, rackDef, site, carrier.def);
+                            if (cm) {
+                                group.add(cm);
+                                carrier.containerMeshes.push({ siteId: parseInt(siteIdStr, 10), rackKey: rackKey, mesh: cm });
+                            }
+                        }
+                    });
+                }
                 vlState.scene.add(group);
                 carrier.mesh = group;
                 carrier.siteMeshes = siteMeshes;
@@ -3822,6 +3978,39 @@
         });
 
         console.log('[VantageLayout] deck cover nodes:', covers.map(function (n) { return n.name; }));
+
+        // Collect the 4 back shield meshes ("Color #959595ff" panels
+        // whose world X-range aligns with each deck cover).
+        var coverBBs = covers.map(function (c) {
+            return new THREE.Box3().setFromObject(c);
+        });
+        var shieldCandidates = [];
+        vlState.gltfModel.traverse(function (obj) {
+            if (!obj.isMesh) return;
+            if (obj.name !== 'Color #959595ff') return;
+            var bb = new THREE.Box3().setFromObject(obj);
+            // Match shield to a cover by overlapping X range
+            for (var ci = 0; ci < coverBBs.length; ci++) {
+                if (bb.min.x < coverBBs[ci].max.x && bb.max.x > coverBBs[ci].min.x) {
+                    shieldCandidates.push({ idx: ci, node: obj, xMin: bb.min.x });
+                    break;
+                }
+            }
+        });
+        // Sort by cover index so shields[0] = cover 1, etc.
+        shieldCandidates.sort(function (a, b) { return a.idx - b.idx; });
+        vlState.backShieldNodes = shieldCandidates.map(function (s) { return s.node; });
+        console.log('[VantageLayout] back shield nodes:', vlState.backShieldNodes.length);
+    }
+
+    // ================================================================
+    //  Back shield visibility (4 light panels on the back side)
+    // ================================================================
+
+    function setBackShieldVisible(idx, visible) {
+        if (idx < 0 || idx >= vlState.backShieldNodes.length) return;
+        vlState.backShieldVisible[idx] = visible;
+        vlState.backShieldNodes[idx].visible = visible;
     }
 
     function applyCutoutVisibility() {
@@ -4293,6 +4482,19 @@
                 }
                 drawerSelect.value = String(vlState.drawerCutoutIdx);
             });
+        }
+
+        // ── Back Shield toggles ──────────────────────────────────────
+        for (var si = 0; si < 4; si++) {
+            (function (idx) {
+                var cb = document.getElementById('settings-back-shield-' + idx);
+                if (cb) {
+                    cb.checked = vlState.backShieldVisible[idx];
+                    cb.addEventListener('change', function () {
+                        setBackShieldVisible(idx, cb.checked);
+                    });
+                }
+            })(si);
         }
 
         // ── Grid toggle ──────────────────────────────────────────────
