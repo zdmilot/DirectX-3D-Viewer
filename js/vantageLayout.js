@@ -233,6 +233,8 @@
         wasteMesh: null,
         // Waste carrier 3D model cache key
         wasteModelCacheKey: '__WASTE_CHUTE__',
+        // Waste accessory visibility: keyed by site id → boolean (true = visible)
+        wasteAccessoryVisible: {},
 
         // Entry Exit Drawer state
         drawerCutoutIdx: -1,
@@ -1283,6 +1285,86 @@
         showVLStatus('Waste chute installed at ' + DECK_CUTOUTS[cutoutIdx].label +
             ' (tracks ' + DECK_CUTOUTS[cutoutIdx].trackStart + '\u2013' +
             (DECK_CUTOUTS[cutoutIdx].trackStart + DECK_CUTOUTS[cutoutIdx].trackSpan - 1) + ')', 'ok');
+
+        // Populate and show waste accessory toggles
+        buildWasteAccessoryToggles();
+    }
+
+    /**
+     * Build the waste accessory toggle checkboxes from the installed waste mesh.
+     * Only labware children (site accessories) get toggles.
+     */
+    function buildWasteAccessoryToggles() {
+        var section = document.getElementById('waste-accessories-section');
+        var list = document.getElementById('waste-accessories-list');
+        if (!section || !list) return;
+
+        list.innerHTML = '';
+
+        if (!vlState.wasteMesh) {
+            section.style.display = 'none';
+            return;
+        }
+
+        var hasItems = false;
+        vlState.wasteMesh.children.forEach(function (child) {
+            if (!child.name || child.name.indexOf('_labware_') === -1) return;
+            hasItems = true;
+
+            // Extract site id from name — pattern: groupName_labware_<id>__
+            var m = child.name.match(/_labware_(.+)__$/);
+            var siteId = m ? m[1] : child.name;
+
+            // Friendly label from the waste TML site data
+            var label = siteId;
+            if (vlState.wasteTmlDef && vlState.wasteTmlDef.sites) {
+                vlState.wasteTmlDef.sites.forEach(function (s) {
+                    if (String(s.id) === String(siteId) && s.labwareFile) {
+                        // Use the filename minus extension as label
+                        var parts = s.labwareFile.replace(/\\\\/g, '/').split('/');
+                        label = parts[parts.length - 1].replace(/\\.rck$/i, '');
+                    }
+                });
+            }
+
+            // Default to visible if no state stored yet
+            if (vlState.wasteAccessoryVisible[siteId] === undefined) {
+                vlState.wasteAccessoryVisible[siteId] = true;
+            }
+
+            var row = document.createElement('div');
+            row.className = 'settings-toggle-row';
+            row.innerHTML =
+                '<span class=\"settings-toggle-label\" style=\"font-size:11px;\">' + label + '</span>' +
+                '<label class=\"settings-switch\">' +
+                '<input type=\"checkbox\" data-waste-acc-id=\"' + siteId + '\"' +
+                (vlState.wasteAccessoryVisible[siteId] ? ' checked' : '') + '>' +
+                '<span class=\"settings-switch-slider\"></span>' +
+                '</label>';
+            list.appendChild(row);
+
+            var cb = row.querySelector('input[type=\"checkbox\"]');
+            cb.addEventListener('change', function () {
+                vlState.wasteAccessoryVisible[siteId] = cb.checked;
+                applyWasteAccessoryVisibility();
+            });
+        });
+
+        section.style.display = hasItems ? '' : 'none';
+        applyWasteAccessoryVisibility();
+    }
+
+    /** Apply the wasteAccessoryVisible state to the waste mesh children. */
+    function applyWasteAccessoryVisibility() {
+        if (!vlState.wasteMesh) return;
+        vlState.wasteMesh.children.forEach(function (child) {
+            if (!child.name || child.name.indexOf('_labware_') === -1) return;
+            var m = child.name.match(/_labware_(.+)__$/);
+            var siteId = m ? m[1] : child.name;
+            if (vlState.wasteAccessoryVisible[siteId] !== undefined) {
+                child.visible = vlState.wasteAccessoryVisible[siteId];
+            }
+        });
     }
 
     /** Remove the installed waste chute (if any). */
@@ -1308,6 +1390,10 @@
 
         vlState.wasteCutoutIdx = -1;
         showVLStatus('Waste chute removed.', '');
+
+        // Hide accessory toggles
+        var section = document.getElementById('waste-accessories-section');
+        if (section) section.style.display = 'none';
     }
 
     // ================================================================
@@ -1484,6 +1570,8 @@
             snapshotFixtureBasePositions(mesh);
             if (vlState.fixtureDebugMode) refreshFixtureDebugReadout();
         }
+        // Refresh accessory toggles (new children may have appeared after model load)
+        buildWasteAccessoryToggles();
     }
 
     /** Helper to sync a cover-panel checkbox in the settings UI. */
