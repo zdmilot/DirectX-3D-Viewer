@@ -1455,7 +1455,14 @@
                 var serverPath = resolveHamiltonPath(parsed.modelFileHamilton);
                 if (serverPath) {
                     fetchAndCacheXModel(vlState.drawerModelCacheKey, serverPath, function () {
-                        rebuildDrawerMesh();
+                        // Default to Position 4 (cutout index 3) if no drawer placed yet
+                        if (vlState.drawerCutoutIdx < 0) {
+                            installDrawerAtCutout(3);
+                            var ds = document.getElementById('settings-drawer-position');
+                            if (ds) ds.value = '3';
+                        } else {
+                            rebuildDrawerMesh();
+                        }
                     });
                 }
             }
