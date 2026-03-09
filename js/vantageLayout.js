@@ -255,10 +255,6 @@
         backPanelNode: null,
         backPanelVisible: true,
 
-        // Back panel sections (split at runtime for selective removal)
-        backPanelSections: [],       // [{index, mesh, label}]
-        backPanelSectionVisible: [], // boolean per section
-
         // Fixture position debug state
         fixtureDebugMode: false,
         fixtureDebugTarget: 'body',   // 'body' | 'accessories' | 'group' | 'component'
@@ -401,6 +397,7 @@
         wireVLControls();
         wireVLToolbar();
         wireTMLImport();
+        wireRackImport();
         wireCarrierPalette();
         wireCanvasEvents();
 
@@ -408,6 +405,7 @@
         setDragToPlace(true);
         wireVLPanelToggles();
         populateCarrierPalette();
+        populateRackPalette();
         resetVLCamera();
     }
 
@@ -699,6 +697,23 @@
             carrier.mesh = result.group;
             carrier.siteMeshes = result.siteMeshes;
             carrier.plateMeshes = plateMeshes;
+
+            // Re-attach any assigned containers
+            if (carrier.siteContainers) {
+                carrier.containerMeshes = [];
+                Object.keys(carrier.siteContainers).forEach(function (siteIdStr) {
+                    var rackKey = carrier.siteContainers[siteIdStr];
+                    var rackDef = vlState.rackLibrary[rackKey];
+                    var site = def.sites.find(function (s) { return s.id === parseInt(siteIdStr, 10); });
+                    if (rackDef && site) {
+                        var cm = buildContainerMesh(rackKey, rackDef, site, def);
+                        if (cm) {
+                            result.group.add(cm);
+                            carrier.containerMeshes.push({ siteId: parseInt(siteIdStr, 10), rackKey: rackKey, mesh: cm });
+                        }
+                    }
+                });
+            }
         });
     }
 
@@ -2180,27 +2195,9 @@
 
     function setBackPanelVisible(visible) {
         vlState.backPanelVisible = visible;
-        if (vlState.backPanelSections.length > 0) {
-            // Toggle only the shield sections — frame is always visible
-            vlState.backPanelSections.forEach(function (sec, i) {
-                sec.mesh.visible = visible;
-                vlState.backPanelSectionVisible[i] = visible;
-                var cb = document.getElementById('settings-back-section-' + i);
-                if (cb) cb.checked = visible;
-            });
+        if (vlState.backPanelNode) {
+            vlState.backPanelNode.visible = visible;
         }
-        // NOTE: never hide backPanelNode directly — the frame must stay visible
-    }
-
-    function setBackPanelSectionVisible(idx, visible) {
-        if (idx < 0 || idx >= vlState.backPanelSections.length) return;
-        vlState.backPanelSectionVisible[idx] = visible;
-        vlState.backPanelSections[idx].mesh.visible = visible;
-        // Update master toggle: checked only if all sections are visible
-        var allVisible = vlState.backPanelSectionVisible.every(function (v) { return v; });
-        vlState.backPanelVisible = allVisible;
-        var masterCb = document.getElementById('settings-back-panel-toggle');
-        if (masterCb) masterCb.checked = allVisible;
     }
 
     /** Rebuild the waste 3D mesh (called when models finish loading). */
@@ -3245,18 +3242,52 @@
 
         sorted.forEach(site => {
             const hasPlate = carrier.plateMeshes.some(p => p.siteId === site.id);
+            const assignedRack = carrier.siteContainers ? carrier.siteContainers[site.id] : null;
+            const rackDef = assignedRack ? vlState.rackLibrary[assignedRack] : null;
+
             const row = document.createElement('div');
-            row.className = `vl-site-row${hasPlate ? ' has-plate' : ''}`;
-            row.innerHTML = `
-                <span class="vl-site-label">Site ${site.id}</span>
-                <span class="vl-site-pos">Y: ${site.y.toFixed(1)}mm</span>
-                <button class="vl-site-btn${hasPlate ? ' plate-on' : ''}" data-carrier="${carrier.id}" data-site="${site.id}">
-                    <i class="fas ${hasPlate ? 'fa-minus-circle' : 'fa-plus-circle'}"></i>
-                    ${hasPlate ? 'Remove' : 'Place'} Plate
-                </button>`;
-            row.querySelector('.vl-site-btn').addEventListener('click', () => {
-                togglePlateOnSite(carrier.id, site.id);
-            });
+            row.className = 'vl-site-row' + (hasPlate ? ' has-plate' : '') + (assignedRack ? ' has-container' : '');
+
+            // Build row content
+            var rowHTML = '<span class="vl-site-label">Site ' + site.id + '</span>' +
+                '<span class="vl-site-pos">Y: ' + site.y.toFixed(1) + 'mm</span>';
+
+            if (assignedRack && rackDef) {
+                // Show assigned container with remove button
+                rowHTML += '<span class="vl-site-container-name"><i class="fas fa-box"></i> ' +
+                    (rackDef.name || assignedRack) + '</span>' +
+                    '<button class="vl-site-btn vl-site-btn-remove" data-carrier="' + carrier.id + '" data-site="' + site.id + '">' +
+                    '<i class="fas fa-times-circle"></i> Remove</button>';
+            } else {
+                // Show plate toggle + container assign button
+                rowHTML += '<button class="vl-site-btn' + (hasPlate ? ' plate-on' : '') + '" data-carrier="' + carrier.id + '" data-site="' + site.id + '">' +
+                    '<i class="fas ' + (hasPlate ? 'fa-minus-circle' : 'fa-plus-circle') + '"></i> ' +
+                    (hasPlate ? 'Remove' : 'Place') + ' Plate</button>' +
+                    '<button class="vl-site-btn vl-site-btn-rack" data-carrier="' + carrier.id + '" data-site="' + site.id + '" title="Assign rack / container">' +
+                    '<i class="fas fa-box"></i></button>';
+            }
+
+            row.innerHTML = rowHTML;
+
+            // Wire events
+            if (assignedRack) {
+                row.querySelector('.vl-site-btn-remove').addEventListener('click', function () {
+                    removeContainerFromSite(carrier, site.id);
+                    showVLStatus('Removed container from site ' + site.id + '.');
+                    updateSitePanel(carrier);
+                });
+            } else {
+                row.querySelector('.vl-site-btn:not(.vl-site-btn-rack)').addEventListener('click', function () {
+                    togglePlateOnSite(carrier.id, site.id);
+                });
+                var rackBtn = row.querySelector('.vl-site-btn-rack');
+                if (rackBtn) {
+                    rackBtn.addEventListener('click', function () {
+                        showContainerPicker(carrier.id, site.id);
+                    });
+                }
+            }
+
             panel.appendChild(row);
         });
     }
@@ -3565,6 +3596,33 @@
                 [...carrier.plateMeshes].forEach(p => togglePlateOnSite(carrier.id, p.siteId));
             });
         }
+
+        // Container picker dialog cancel
+        const cdCancel = document.getElementById('vl-cd-cancel');
+        const cdDialog = document.getElementById('vl-container-dialog');
+        if (cdCancel && cdDialog) {
+            cdCancel.addEventListener('click', function () {
+                cdDialog.classList.remove('is-visible');
+            });
+        }
+
+        // Container dialog: import .rck inline
+        const cdImportBtn = document.getElementById('vl-cd-import-btn');
+        const cdImportInput = document.getElementById('vl-cd-import-input');
+        if (cdImportBtn && cdImportInput) {
+            cdImportBtn.addEventListener('click', function () { cdImportInput.click(); });
+            cdImportInput.addEventListener('change', function (e) {
+                var files = Array.from(e.target.files);
+                if (files.length > 0) {
+                    processRackDrop(files);
+                    // Refresh the dialog
+                    var cId = parseInt(cdDialog.dataset.carrierId, 10);
+                    var sId = parseInt(cdDialog.dataset.siteId, 10);
+                    setTimeout(function () { showContainerPicker(cId, sId); }, 300);
+                }
+                cdImportInput.value = '';
+            });
+        }
     }
 
     // ================================================================
@@ -3586,6 +3644,9 @@
                 sites: c.def.sites.map(s => ({
                     siteId: s.id,
                     hasPlate: c.plateMeshes.some(p => p.siteId === s.id),
+                    container: (c.siteContainers && c.siteContainers[s.id])
+                        ? { rackKey: c.siteContainers[s.id], name: (vlState.rackLibrary[c.siteContainers[s.id]] || {}).name || '' }
+                        : null,
                     absoluteX: (DECK.FIRST_TRACK_X + (c.trackStart - 1) * DECK.TRACK_SPACING) + s.x,
                     absoluteY: DECK.TRACK_Y_START + s.y,
                     absoluteZ: DECK.SURFACE_Z + s.z,
@@ -3784,186 +3845,7 @@
         });
 
         console.log('[VantageLayout] deck cover nodes:', covers.map(function (n) { return n.name; }));
-        if (vlState.backPanelNode) {
-            console.log('[VantageLayout] back panel node found: 6606544-01');
-            splitBackPanelIntoSections(covers);
-        }
-    }
-
-    // ================================================================
-    //  Back Panel Section Splitting
-    // ================================================================
-    // Splits the single back-panel mesh into 4 shield sections (aligned
-    // with the 4 deck cover X-ranges) plus a permanent structural frame.
-    // Only the 4 shield sections can be individually shown/hidden.
-    // The structural frame is NEVER removable.
-
-    function splitBackPanelIntoSections(covers) {
-        if (!vlState.backPanelNode) return;
-
-        // Find the actual child mesh inside the back-panel group node
-        var originalMesh = null;
-        vlState.backPanelNode.traverse(function (obj) {
-            if (obj.isMesh && !originalMesh) originalMesh = obj;
-        });
-        if (!originalMesh) return;
-
-        vlState.gltfModel.updateMatrixWorld(true);
-        var worldMat = originalMesh.matrixWorld;
-
-        // Compute each cover's world-space X range
-        var coverRanges = [];
-        covers.forEach(function (coverNode, i) {
-            var bb = new THREE.Box3().setFromObject(coverNode);
-            coverRanges.push({ idx: i, xMin: bb.min.x, xMax: bb.max.x });
-        });
-
-        // Access geometry data
-        var geo = originalMesh.geometry;
-        var posAttr = geo.attributes.position;
-        var normalAttr = geo.attributes.normal;
-        var uvAttr = geo.attributes.uv;
-        var index = geo.index;
-
-        // Bin: 0..3 = cover-aligned shields, -1 = permanent frame
-        // Classify each triangle by centroid world-X position
-        var shieldTris = [[], [], [], []]; // 4 covers
-        var frameTris = [];
-
-        var triCount = index ? index.count / 3 : posAttr.count / 3;
-        var v = new THREE.Vector3();
-
-        for (var t = 0; t < triCount; t++) {
-            var i0, i1, i2;
-            if (index) {
-                i0 = index.getX(t * 3);
-                i1 = index.getX(t * 3 + 1);
-                i2 = index.getX(t * 3 + 2);
-            } else {
-                i0 = t * 3; i1 = t * 3 + 1; i2 = t * 3 + 2;
-            }
-
-            // Centroid X in world space
-            var cx = 0;
-            v.set(posAttr.getX(i0), posAttr.getY(i0), posAttr.getZ(i0)).applyMatrix4(worldMat); cx += v.x;
-            v.set(posAttr.getX(i1), posAttr.getY(i1), posAttr.getZ(i1)).applyMatrix4(worldMat); cx += v.x;
-            v.set(posAttr.getX(i2), posAttr.getY(i2), posAttr.getZ(i2)).applyMatrix4(worldMat); cx += v.x;
-            cx /= 3;
-
-            // Check if centroid falls inside any cover's X range
-            var assigned = false;
-            for (var ci = 0; ci < coverRanges.length; ci++) {
-                if (cx >= coverRanges[ci].xMin && cx <= coverRanges[ci].xMax) {
-                    shieldTris[ci].push([i0, i1, i2]);
-                    assigned = true;
-                    break;
-                }
-            }
-            if (!assigned) {
-                frameTris.push([i0, i1, i2]);
-            }
-        }
-
-        // Helper: build a mesh from a triangle list
-        function buildMesh(tris, name) {
-            if (tris.length === 0) return null;
-            var vertMap = {};
-            var newPos = [], newNrm = [], newUv = [], newIdx = [];
-            var nextV = 0;
-
-            tris.forEach(function (tri) {
-                tri.forEach(function (oldI) {
-                    if (!(oldI in vertMap)) {
-                        vertMap[oldI] = nextV++;
-                        newPos.push(posAttr.getX(oldI), posAttr.getY(oldI), posAttr.getZ(oldI));
-                        if (normalAttr) newNrm.push(normalAttr.getX(oldI), normalAttr.getY(oldI), normalAttr.getZ(oldI));
-                        if (uvAttr) newUv.push(uvAttr.getX(oldI), uvAttr.getY(oldI));
-                    }
-                    newIdx.push(vertMap[oldI]);
-                });
-            });
-
-            var newGeo = new THREE.BufferGeometry();
-            newGeo.setAttribute('position', new THREE.Float32BufferAttribute(newPos, 3));
-            if (newNrm.length) newGeo.setAttribute('normal', new THREE.Float32BufferAttribute(newNrm, 3));
-            if (newUv.length) newGeo.setAttribute('uv', new THREE.Float32BufferAttribute(newUv, 2));
-            newGeo.setIndex(newIdx);
-
-            var mat = originalMesh.material.clone();
-            var m = new THREE.Mesh(newGeo, mat);
-            m.name = name;
-            m.matrix.copy(originalMesh.matrix);
-            m.matrixAutoUpdate = false;
-            return m;
-        }
-
-        var sectionGroup = new THREE.Group();
-        sectionGroup.name = '__back_panel_sections__';
-
-        // Build the permanent frame mesh (always visible, never toggled)
-        var frameMesh = buildMesh(frameTris, '__back_frame__');
-        if (frameMesh) sectionGroup.add(frameMesh);
-
-        // Build 4 shield meshes (toggleable)
-        var sections = [];
-        var shieldLabels = ['Back Shield 1', 'Back Shield 2', 'Back Shield 3', 'Back Shield 4'];
-        for (var s = 0; s < 4; s++) {
-            var mesh = buildMesh(shieldTris[s], '__back_shield_' + s + '__');
-            if (mesh) {
-                sectionGroup.add(mesh);
-                sections.push({ index: s, mesh: mesh, label: shieldLabels[s] });
-            }
-        }
-
-        // Hide original mesh, add sections as children
-        originalMesh.visible = false;
-        vlState.backPanelNode.add(sectionGroup);
-
-        vlState.backPanelSections = sections;
-        vlState.backPanelSectionVisible = sections.map(function () { return true; });
-
-        console.log('[VantageLayout] back panel split: ' + sections.length + ' shields + frame (' + frameTris.length + ' frame tris)');
-
-        // Build dynamic UI toggles for each shield section
-        buildBackPanelSectionToggles();
-    }
-
-    function buildBackPanelSectionToggles() {
-        var container = document.getElementById('back-panel-section-toggles');
-        if (!container) return;
-        container.innerHTML = '';
-
-        vlState.backPanelSections.forEach(function (sec, i) {
-            var row = document.createElement('div');
-            row.className = 'settings-toggle-row';
-            row.style.paddingLeft = '12px';
-
-            var label = document.createElement('span');
-            label.className = 'settings-toggle-label';
-            label.textContent = sec.label;
-            label.style.fontSize = '12px';
-
-            var switchLabel = document.createElement('label');
-            switchLabel.className = 'settings-switch';
-
-            var cb = document.createElement('input');
-            cb.type = 'checkbox';
-            cb.id = 'settings-back-section-' + i;
-            cb.checked = true;
-
-            var slider = document.createElement('span');
-            slider.className = 'settings-switch-slider';
-
-            switchLabel.appendChild(cb);
-            switchLabel.appendChild(slider);
-            row.appendChild(label);
-            row.appendChild(switchLabel);
-            container.appendChild(row);
-
-            cb.addEventListener('change', function () {
-                setBackPanelSectionVisible(i, cb.checked);
-            });
-        });
+        if (vlState.backPanelNode) console.log('[VantageLayout] back panel node found: 6606544-01');
     }
 
     function applyCutoutVisibility() {

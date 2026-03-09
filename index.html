@@ -1172,6 +1172,21 @@
                         </div>
                     </div>
                     <div class="vl-panel-divider"></div>
+                    <div class="vl-panel-section">
+                        <div class="vl-panel-header">
+                            <i class="fas fa-box"></i> Rack / Container Library
+                        </div>
+                        <input type="file" id="vl-rack-input" accept=".rck,.x,.hxx" multiple style="display:none">
+                        <div class="vl-tml-drop" id="vl-rack-drop">
+                            <i class="fas fa-file-upload"></i>
+                            <span>Drop .rck (+ .x model) here or</span>
+                            <button class="vl-tml-browse" id="vl-rack-open">Browse</button>
+                        </div>
+                        <div class="vl-rack-list" id="vl-rack-list">
+                            <div class="vl-empty-hint">No racks imported yet.</div>
+                        </div>
+                    </div>
+                    <div class="vl-panel-divider"></div>
                     <div class="vl-panel-section vl-placed-section">
                         <div class="vl-panel-header">
                             <i class="fas fa-list"></i> Placed Carriers
@@ -1367,6 +1382,32 @@
                     </div>
                 </div>
 
+                <!-- Container Picker Dialog -->
+                <div class="vl-dialog-overlay" id="vl-container-dialog">
+                    <div class="vl-dialog vl-dialog-wide">
+                        <div class="vl-dialog-header">
+                            <i class="fas fa-box"></i> <span id="vl-cd-title">Assign Container</span>
+                        </div>
+                        <div class="vl-dialog-body vl-cd-body">
+                            <div class="vl-cd-actions">
+                                <input type="file" id="vl-cd-import-input" accept=".rck,.x,.hxx" multiple style="display:none">
+                                <button class="vl-cd-action-btn" id="vl-cd-import-btn">
+                                    <i class="fas fa-file-import"></i> Import .rck
+                                </button>
+                                <button class="vl-cd-action-btn" id="vl-cd-browse-server">
+                                    <i class="fas fa-server"></i> Browse Server
+                                </button>
+                            </div>
+                            <div class="vl-cd-list-wrap" id="vl-cd-list">
+                                <div class="vl-empty-hint">No racks loaded yet.</div>
+                            </div>
+                        </div>
+                        <div class="vl-dialog-footer">
+                            <button class="vl-dialog-cancel" id="vl-cd-cancel">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Panel collapse toggle tabs -->
                 <button class="vl-panel-toggle vl-left-toggle" id="vl-left-toggle" title="Show / hide left panel">
                     <i class="fas fa-chevron-left" id="vl-left-toggle-icon"></i>
@@ -1506,13 +1547,12 @@
                 <div class="settings-section-title"><i class="fas fa-layer-group"></i> Deck Panels</div>
 
                 <div class="settings-toggle-row">
-                    <span class="settings-toggle-label">Back Panel (All)</span>
+                    <span class="settings-toggle-label">Back Panel</span>
                     <label class="settings-switch">
                         <input type="checkbox" id="settings-back-panel-toggle" checked>
                         <span class="settings-switch-slider"></span>
                     </label>
                 </div>
-                <div id="back-panel-section-toggles"></div>
 
                 <div class="settings-divider"></div>
 
