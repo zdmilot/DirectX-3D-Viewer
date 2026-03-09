@@ -1399,7 +1399,6 @@
                 };
                 reader.readAsText(file);
             });
-            });
         }
 
         // Auto-regen when form fields change
