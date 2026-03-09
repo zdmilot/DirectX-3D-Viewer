@@ -204,6 +204,13 @@
         // Currently selected carrier
         selectedCarrierId: null,
 
+        // Rack / Container library:  keyed by user-chosen name
+        // Each entry: { name, description, dx, dy, dz, model, modelRel,
+        //               xOff, yOff, zOff, fileName, source:'file'|'server' }
+        rackLibrary: {},
+        rackModelCache: {},    // keyed same as rackLibrary → THREE.Group
+        rackModelLoading: {},
+
         // Cache of THREE.Group models loaded from .x files, keyed by carrier key
         xModelCache: {},
 
@@ -1073,6 +1080,698 @@
         if (kv['3DzOffset']) result.model3DzOff = parseFloat(kv['3DzOffset']) || 0;
 
         return result;
+    }
+
+    // ================================================================
+    //  Rack / Container Library — parse .rck & load 3D model
+    // ================================================================
+
+    /**
+     * Parse a text-format .rck and extract full rack metadata
+     * (dimensions, description, 3D model, container references, etc.).
+     */
+    function parseRCKFull(text) {
+        var result = {
+            name: '', description: '',
+            dx: 0, dy: 0, dz: 0,
+            model: null, modelRel: null,
+            xOff: 0, yOff: 0, zOff: 0,
+            viewName: '', rows: 0, columns: 0,
+        };
+        var kvRe = /^(\S+),\s*"([^"]*)"[;,]?\s*$/gm;
+        var m;
+        while ((m = kvRe.exec(text)) !== null) {
+            switch (m[1]) {
+                case '3DModel':     result.model      = m[2]; break;
+                case '3DModelRel':  result.modelRel   = m[2]; break;
+                case '3DxOffset':   result.xOff       = parseFloat(m[2]) || 0; break;
+                case '3DyOffset':   result.yOff       = parseFloat(m[2]) || 0; break;
+                case '3DzOffset':   result.zOff       = parseFloat(m[2]) || 0; break;
+                case 'Description': result.description = m[2]; break;
+                case 'ViewName':    result.viewName   = m[2]; break;
+                case 'Dim.Dx':      result.dx         = parseFloat(m[2]) || 0; break;
+                case 'Dim.Dy':      result.dy         = parseFloat(m[2]) || 0; break;
+                case 'Dim.Dz':      result.dz         = parseFloat(m[2]) || 0; break;
+                case 'Rows':        result.rows       = parseInt(m[2], 10) || 0; break;
+                case 'Columns':     result.columns    = parseInt(m[2], 10) || 0; break;
+            }
+        }
+        if (!result.name) result.name = result.viewName || 'Unnamed Rack';
+        return result;
+    }
+
+    /**
+     * Parse a binary .rck into full rack metadata (same fields as parseRCKFull).
+     */
+    function parseRCKFullBinary(arrayBuffer) {
+        var bytes = new Uint8Array(arrayBuffer);
+        var text = '';
+        for (var i = 0; i < bytes.length; i++) {
+            text += (bytes[i] >= 32 && bytes[i] < 127) ? String.fromCharCode(bytes[i]) : '\n';
+        }
+        var result = {
+            name: '', description: '',
+            dx: 0, dy: 0, dz: 0,
+            model: null, modelRel: null,
+            xOff: 0, yOff: 0, zOff: 0,
+            viewName: '', rows: 0, columns: 0,
+        };
+        var match;
+        match = text.match(/3DModel\n([^\n]+)/);     if (match) result.model = match[1];
+        match = text.match(/3DModelRel\n([^\n]+)/);  if (match) result.modelRel = match[1];
+        match = text.match(/3DxOffset\n([^\n]+)/);   if (match) result.xOff = parseFloat(match[1]) || 0;
+        match = text.match(/3DyOffset\n([^\n]+)/);   if (match) result.yOff = parseFloat(match[1]) || 0;
+        match = text.match(/3DzOffset\n([^\n]+)/);   if (match) result.zOff = parseFloat(match[1]) || 0;
+        match = text.match(/Description\n([^\n]+)/); if (match) result.description = match[1];
+        match = text.match(/ViewName\n([^\n]+)/);    if (match) result.viewName = match[1];
+        match = text.match(/Dim\.Dx\n([^\n]+)/);     if (match) result.dx = parseFloat(match[1]) || 0;
+        match = text.match(/Dim\.Dy\n([^\n]+)/);     if (match) result.dy = parseFloat(match[1]) || 0;
+        match = text.match(/Dim\.Dz\n([^\n]+)/);     if (match) result.dz = parseFloat(match[1]) || 0;
+        match = text.match(/Rows\n([^\n]+)/);        if (match) result.rows = parseInt(match[1], 10) || 0;
+        match = text.match(/Columns\n([^\n]+)/);     if (match) result.columns = parseInt(match[1], 10) || 0;
+        if (!result.name) result.name = result.viewName || 'Unnamed Rack';
+        return result;
+    }
+
+    /**
+     * Import a .rck file (from File object) into the rack library.
+     * Optionally also receives a companion .x/.hxx file.
+     */
+    function importRackFile(rckFile, companionXFile) {
+        var reader = new FileReader();
+        reader.onload = function () {
+            var ab = reader.result;
+            var header = new Uint8Array(ab, 0, Math.min(ab.byteLength, 20));
+            var headerStr = String.fromCharCode.apply(null, header);
+            var rackInfo;
+            if (headerStr.indexOf('HxCfgFile') >= 0) {
+                rackInfo = parseRCKFull(new TextDecoder().decode(ab));
+            } else {
+                rackInfo = parseRCKFullBinary(ab);
+            }
+
+            var rackKey = rckFile.name.replace(/\.rck$/i, '');
+            rackInfo.name = rackInfo.viewName || rackKey;
+            rackInfo.fileName = rckFile.name;
+            rackInfo.source = 'file';
+
+            vlState.rackLibrary[rackKey] = rackInfo;
+            showVLStatus('Imported rack: ' + rackInfo.name, 'ok');
+            populateRackPalette();
+
+            // If companion .x/.hxx is provided, load it immediately
+            if (companionXFile) {
+                loadXModelForRack(rackKey, companionXFile);
+            } else if (rackInfo.model) {
+                // Try auto-fetch from Hamilton server path
+                autoFetchRackModel(rackKey, rackInfo.model);
+            }
+        };
+        reader.readAsArrayBuffer(rckFile);
+    }
+
+    /**
+     * Load a .x/.hxx model file for a rack definition and cache it.
+     */
+    function loadXModelForRack(rackKey, file) {
+        if (!vlState.rackLibrary[rackKey]) return;
+        var reader = new FileReader();
+        reader.onload = function () {
+            var ab = reader.result;
+            var isHxx = /\.hxx$/i.test(file.name);
+
+            var dataPromise;
+            if (isHxx && typeof HXXLoader !== 'undefined') {
+                dataPromise = HXXLoader.parse(ab).then(function (result) {
+                    return result.xFileBinary || result.xFileText;
+                });
+            } else {
+                dataPromise = Promise.resolve(ab);
+            }
+
+            dataPromise.then(function (xData) {
+                if (!xData) return;
+                var blob = new Blob([xData], { type: 'application/octet-stream' });
+                var url = URL.createObjectURL(blob);
+                var loader = new THREE.XFileLoader(new THREE.LoadingManager());
+                loader.load(url, function (object) {
+                    URL.revokeObjectURL(url);
+                    if (!object || !object.models || object.models.length === 0) return;
+                    var group = new THREE.Group();
+                    group.name = '__rack_model_' + rackKey + '__';
+                    object.models.forEach(function (mdl, idx) {
+                        mdl.renderOrder = idx + 50;
+                        group.add(mdl);
+                    });
+                    fixXFileCoords(group);
+                    vlState.rackModelCache[rackKey] = group;
+                    showVLStatus('Loaded 3D model for rack: ' + rackKey, 'ok');
+                    populateRackPalette();
+                    // Rebuild any carriers that have this rack assigned
+                    rebuildCarriersWithRack(rackKey);
+                }, undefined, function () {
+                    URL.revokeObjectURL(url);
+                });
+            });
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    /**
+     * Auto-fetch rack 3D model from server using its Hamilton path.
+     */
+    function autoFetchRackModel(rackKey, hamiltonPath) {
+        var serverPath = resolveHamiltonPath(hamiltonPath);
+        if (!serverPath) return;
+        if (vlState.rackModelLoading[rackKey]) return;
+        vlState.rackModelLoading[rackKey] = true;
+
+        var isHxx = /\.hxx$/i.test(serverPath);
+        fetch(serverPath).then(function (resp) {
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+            return resp.arrayBuffer();
+        }).then(function (data) {
+            if (isHxx && typeof HXXLoader !== 'undefined') {
+                return HXXLoader.parse(data).then(function (result) {
+                    return result.xFileBinary || result.xFileText;
+                });
+            }
+            return data;
+        }).then(function (xData) {
+            if (!xData) return;
+            var blob = new Blob([xData], { type: 'application/octet-stream' });
+            var url = URL.createObjectURL(blob);
+            var basePath = serverPath.substring(0, serverPath.lastIndexOf('/') + 1);
+            var manager = new THREE.LoadingManager();
+            manager.setURLModifier(function (texUrl) {
+                if (/\.(png|jpg|jpeg|bmp|tga)$/i.test(texUrl)) {
+                    return basePath + texUrl.split('/').pop();
+                }
+                return texUrl;
+            });
+            var loader = new THREE.XFileLoader(manager);
+            loader.load(url, function (object) {
+                URL.revokeObjectURL(url);
+                if (!object || !object.models || object.models.length === 0) return;
+                var group = new THREE.Group();
+                group.name = '__rack_model_' + rackKey + '__';
+                object.models.forEach(function (mdl, idx) {
+                    mdl.renderOrder = idx + 50;
+                    if (mdl.material) {
+                        var mats = Array.isArray(mdl.material) ? mdl.material : [mdl.material];
+                        mats.forEach(function (mat) {
+                            if (!mat) return;
+                            mat.polygonOffset = true;
+                            mat.polygonOffsetFactor = -2;
+                            mat.polygonOffsetUnits = -4;
+                        });
+                    }
+                    group.add(mdl);
+                });
+                fixXFileCoords(group);
+                vlState.rackModelCache[rackKey] = group;
+                populateRackPalette();
+                rebuildCarriersWithRack(rackKey);
+            }, undefined, function () {
+                URL.revokeObjectURL(url);
+            });
+        }).catch(function (err) {
+            console.warn('[VantageLayout] Could not fetch rack model:', serverPath, err.message);
+        }).finally(function () {
+            vlState.rackModelLoading[rackKey] = false;
+        });
+    }
+
+    /**
+     * Import a .rck from a server Hamilton path (e.g. browsing available racks).
+     */
+    function importRackFromServer(hamiltonPath) {
+        var serverPath = resolveHamiltonPath(hamiltonPath);
+        if (!serverPath) return Promise.reject(new Error('Invalid path'));
+
+        return fetch(serverPath).then(function (resp) {
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+            return resp.arrayBuffer();
+        }).then(function (ab) {
+            var header = new Uint8Array(ab, 0, Math.min(ab.byteLength, 20));
+            var headerStr = String.fromCharCode.apply(null, header);
+            var rackInfo;
+            if (headerStr.indexOf('HxCfgFile') >= 0) {
+                rackInfo = parseRCKFull(new TextDecoder().decode(ab));
+            } else {
+                rackInfo = parseRCKFullBinary(ab);
+            }
+
+            var fileName = hamiltonPath.replace(/\\/g, '/').split('/').pop();
+            var rackKey = fileName.replace(/\.rck$/i, '');
+            rackInfo.name = rackInfo.viewName || rackKey;
+            rackInfo.fileName = fileName;
+            rackInfo.source = 'server';
+            rackInfo.hamiltonPath = hamiltonPath;
+
+            vlState.rackLibrary[rackKey] = rackInfo;
+            populateRackPalette();
+
+            // Auto-load 3D model if referenced
+            if (rackInfo.model) {
+                autoFetchRackModel(rackKey, rackInfo.model);
+            }
+
+            return rackKey;
+        });
+    }
+
+    /**
+     * Assign a rack from the rack library to a carrier site.
+     */
+    function assignRackToSite(carrierId, siteId, rackKey) {
+        var carrier = vlState.placedCarriers.find(function (c) { return c.id === carrierId; });
+        if (!carrier) return;
+        var site = carrier.def.sites.find(function (s) { return s.id === siteId; });
+        if (!site) return;
+        var rackDef = vlState.rackLibrary[rackKey];
+        if (!rackDef) return;
+
+        // Remove existing plate mesh on this site if any
+        var existingPlate = carrier.plateMeshes.find(function (p) { return p.siteId === siteId; });
+        if (existingPlate) {
+            carrier.mesh.remove(existingPlate.mesh);
+            existingPlate.mesh.traverse(function (child) {
+                if (child.geometry) child.geometry.dispose();
+                if (child.material) {
+                    (Array.isArray(child.material) ? child.material : [child.material]).forEach(function (m) { if (m) m.dispose(); });
+                }
+            });
+            carrier.plateMeshes = carrier.plateMeshes.filter(function (p) { return p.siteId !== siteId; });
+        }
+
+        // Remove existing container model on this site if any
+        removeContainerFromSite(carrier, siteId);
+
+        // Store assignment on the carrier entry
+        if (!carrier.siteContainers) carrier.siteContainers = {};
+        carrier.siteContainers[siteId] = rackKey;
+
+        // Build container mesh at site
+        var containerMesh = buildContainerMesh(rackKey, rackDef, site, carrier.def);
+        if (containerMesh) {
+            carrier.mesh.add(containerMesh);
+            if (!carrier.containerMeshes) carrier.containerMeshes = [];
+            carrier.containerMeshes.push({ siteId: siteId, rackKey: rackKey, mesh: containerMesh });
+        }
+
+        showVLStatus('Placed ' + rackDef.name + ' on site ' + siteId + '.', 'ok');
+        updateSitePanel(carrier);
+    }
+
+    /**
+     * Remove a container/rack from a carrier site.
+     */
+    function removeContainerFromSite(carrier, siteId) {
+        if (!carrier.containerMeshes) return;
+        var existing = carrier.containerMeshes.find(function (c) { return c.siteId === siteId; });
+        if (!existing) return;
+        carrier.mesh.remove(existing.mesh);
+        existing.mesh.traverse(function (child) {
+            if (child.geometry) child.geometry.dispose();
+            if (child.material) {
+                (Array.isArray(child.material) ? child.material : [child.material]).forEach(function (m) { if (m) m.dispose(); });
+            }
+        });
+        carrier.containerMeshes = carrier.containerMeshes.filter(function (c) { return c.siteId !== siteId; });
+        if (carrier.siteContainers) delete carrier.siteContainers[siteId];
+    }
+
+    /**
+     * Build a 3D mesh for a container/rack placed on a carrier site.
+     */
+    function buildContainerMesh(rackKey, rackDef, site, carrierDef) {
+        var cachedModel = vlState.rackModelCache[rackKey];
+        var mesh;
+
+        if (cachedModel) {
+            // Clone cached 3D model
+            mesh = cachedModel.clone(true);
+            mesh.name = '__container_site' + site.id + '_' + rackKey + '__';
+
+            // Deep-clone materials
+            mesh.traverse(function (child) {
+                if (!child.isMesh) return;
+                child.frustumCulled = false;
+                if (Array.isArray(child.material)) {
+                    child.material = child.material.map(function (m) { return m ? m.clone() : m; });
+                } else if (child.material) {
+                    child.material = child.material.clone();
+                }
+            });
+
+            // Position at site: center on site, bottom at site.z
+            var box = new THREE.Box3().setFromObject(mesh);
+            var center = box.getCenter(new THREE.Vector3());
+            var xOff = rackDef.xOff || 0;
+            var yOff = rackDef.yOff || 0;
+            var zOff = rackDef.zOff || 0;
+
+            mesh.position.set(
+                site.x + site.dx / 2 - center.x + xOff,
+                site.z - box.min.y + zOff,
+                site.y + site.dy / 2 - center.z + yOff
+            );
+        } else {
+            // Procedural fallback: box matching rack dimensions
+            var rdx = rackDef.dx || site.dx;
+            var rdy = rackDef.dy || site.dy;
+            var rdz = rackDef.dz || 14;
+
+            var geo = new THREE.BoxGeometry(rdx, rdz, rdy);
+            var mat = new THREE.MeshLambertMaterial({
+                color: 0xc8b080,
+                transparent: true,
+                opacity: 0.85,
+                depthWrite: true,
+                polygonOffset: true,
+                polygonOffsetFactor: -2,
+                polygonOffsetUnits: -2,
+            });
+            mesh = new THREE.Mesh(geo, mat);
+            mesh.renderOrder = 100;
+            mesh.name = '__container_site' + site.id + '_' + rackKey + '__';
+            mesh.position.set(
+                site.x + site.dx / 2,
+                site.z + rdz / 2,
+                site.y + site.dy / 2
+            );
+
+            // Add label sprite on top
+            var labelCv = document.createElement('canvas');
+            labelCv.width = 256; labelCv.height = 64;
+            var ctx = labelCv.getContext('2d');
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 20px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(rackDef.name.substring(0, 20), 128, 32);
+            var tex = new THREE.CanvasTexture(labelCv);
+            var spriteMat = new THREE.SpriteMaterial({ map: tex, transparent: true });
+            var sprite = new THREE.Sprite(spriteMat);
+            sprite.scale.set(Math.min(rdx, 60), 15, 1);
+            sprite.position.y = rdz / 2 + 8;
+            mesh.add(sprite);
+        }
+
+        return mesh;
+    }
+
+    /**
+     * Rebuild all placed carriers that have a specific rack assigned.
+     */
+    function rebuildCarriersWithRack(rackKey) {
+        vlState.placedCarriers.forEach(function (carrier) {
+            if (!carrier.siteContainers) return;
+            var needsRebuild = false;
+            Object.keys(carrier.siteContainers).forEach(function (siteIdStr) {
+                if (carrier.siteContainers[siteIdStr] === rackKey) needsRebuild = true;
+            });
+            if (needsRebuild) {
+                // Re-assign to trigger mesh rebuild
+                Object.keys(carrier.siteContainers).forEach(function (siteIdStr) {
+                    if (carrier.siteContainers[siteIdStr] === rackKey) {
+                        assignRackToSite(carrier.id, parseInt(siteIdStr, 10), rackKey);
+                    }
+                });
+            }
+        });
+    }
+
+    // ================================================================
+    //  Rack Palette UI
+    // ================================================================
+
+    function populateRackPalette() {
+        var list = document.getElementById('vl-rack-list');
+        if (!list) return;
+        list.innerHTML = '';
+
+        var keys = Object.keys(vlState.rackLibrary);
+        if (keys.length === 0) {
+            list.innerHTML = '<div class="vl-empty-hint">No racks imported yet.</div>';
+            return;
+        }
+
+        keys.forEach(function (key) {
+            var def = vlState.rackLibrary[key];
+            var has3D = !!(vlState.rackModelCache[key] || def.model);
+            var item = document.createElement('div');
+            item.className = 'vl-rack-item';
+            item.dataset.rackKey = key;
+            item.innerHTML =
+                '<span class="vl-rack-icon"><i class="fas fa-box"></i></span>' +
+                '<span class="vl-rack-name">' + (def.name || key) +
+                    (has3D ? ' <i class="fas fa-cube" title="3D model available"></i>' : '') +
+                '</span>' +
+                '<span class="vl-rack-desc">' + (def.description || (def.dx + '×' + def.dy + '×' + def.dz + 'mm')) + '</span>' +
+                '<button class="vl-rack-del" data-rack="' + key + '" title="Remove rack"><i class="fas fa-times"></i></button>';
+
+            // Allow dropping .x file onto a rack item to attach a model
+            item.addEventListener('dragover', function (e) { e.preventDefault(); item.classList.add('drag-over'); });
+            item.addEventListener('dragleave', function () { item.classList.remove('drag-over'); });
+            item.addEventListener('drop', function (e) {
+                e.preventDefault();
+                item.classList.remove('drag-over');
+                var files = Array.from(e.dataTransfer.files).filter(function (f) { return /\.(x|hxx)$/i.test(f.name); });
+                if (files.length > 0) loadXModelForRack(key, files[0]);
+            });
+
+            // Delete button
+            item.querySelector('.vl-rack-del').addEventListener('click', function (e) {
+                e.stopPropagation();
+                delete vlState.rackLibrary[key];
+                delete vlState.rackModelCache[key];
+                populateRackPalette();
+                showVLStatus('Removed rack: ' + key);
+            });
+
+            list.appendChild(item);
+        });
+    }
+
+    /**
+     * Wire the rack import drop zone and browse button.
+     */
+    function wireRackImport() {
+        var fileInput = document.getElementById('vl-rack-input');
+        var openBtn   = document.getElementById('vl-rack-open');
+        var dropZone  = document.getElementById('vl-rack-drop');
+
+        if (openBtn && fileInput) {
+            openBtn.addEventListener('click', function () { fileInput.click(); });
+            fileInput.addEventListener('change', function (e) {
+                var files = Array.from(e.target.files);
+                if (files.length > 0) processRackDrop(files);
+                fileInput.value = '';
+            });
+        }
+
+        if (dropZone) {
+            dropZone.addEventListener('dragover', function (e) { e.preventDefault(); dropZone.classList.add('drag-over'); });
+            dropZone.addEventListener('dragleave', function () { dropZone.classList.remove('drag-over'); });
+            dropZone.addEventListener('drop', function (e) {
+                e.preventDefault();
+                dropZone.classList.remove('drag-over');
+                var files = Array.from(e.dataTransfer.files);
+                if (files.length > 0) processRackDrop(files);
+            });
+        }
+    }
+
+    function processRackDrop(files) {
+        var rckFiles = files.filter(function (f) { return /\.rck$/i.test(f.name); });
+        var xFiles   = files.filter(function (f) { return /\.(x|hxx)$/i.test(f.name); });
+
+        if (rckFiles.length === 0 && xFiles.length === 0) {
+            showVLStatus('Please drop .rck file(s) (optionally with .x/.hxx model).', 'error');
+            return;
+        }
+
+        rckFiles.forEach(function (rckFile) {
+            var baseName = rckFile.name.replace(/\.rck$/i, '').toLowerCase();
+            var companionX = xFiles.find(function (f) {
+                return f.name.replace(/\.(x|hxx)$/i, '').toLowerCase() === baseName;
+            });
+            if (!companionX && rckFiles.length === 1 && xFiles.length === 1) {
+                companionX = xFiles[0];
+            }
+            importRackFile(rckFile, companionX || null);
+        });
+
+        // Standalone .x files: attach to most recently added rack
+        if (rckFiles.length === 0 && xFiles.length > 0) {
+            var lastKey = Object.keys(vlState.rackLibrary).pop();
+            if (lastKey) {
+                xFiles.forEach(function (f) { loadXModelForRack(lastKey, f); });
+            } else {
+                showVLStatus('Drop a .rck alongside the .x/.hxx to create a rack definition.', 'error');
+            }
+        }
+    }
+
+    /**
+     * Show the container picker dialog for assigning a rack to a site.
+     */
+    function showContainerPicker(carrierId, siteId) {
+        var dialog = document.getElementById('vl-container-dialog');
+        if (!dialog) return;
+
+        dialog.dataset.carrierId = carrierId;
+        dialog.dataset.siteId = siteId;
+
+        var carrier = vlState.placedCarriers.find(function (c) { return c.id === carrierId; });
+        var siteName = carrier ? carrier.def.viewName + ' — Site ' + siteId : 'Site ' + siteId;
+        var titleEl = document.getElementById('vl-cd-title');
+        if (titleEl) titleEl.textContent = 'Assign Container to ' + siteName;
+
+        // Populate container list
+        var listEl = document.getElementById('vl-cd-list');
+        if (!listEl) return;
+        listEl.innerHTML = '';
+
+        var keys = Object.keys(vlState.rackLibrary);
+        if (keys.length === 0) {
+            listEl.innerHTML = '<div class="vl-empty-hint">No racks loaded yet.<br>Import a .rck file first.</div>';
+        } else {
+            keys.forEach(function (key) {
+                var def = vlState.rackLibrary[key];
+                var has3D = !!(vlState.rackModelCache[key] || def.model);
+                var btn = document.createElement('button');
+                btn.className = 'vl-cd-item';
+                btn.innerHTML =
+                    '<i class="fas fa-box"></i> ' +
+                    '<span class="vl-cd-item-name">' + (def.name || key) + '</span>' +
+                    (has3D ? ' <i class="fas fa-cube" style="color:var(--accent);font-size:9px"></i>' : '') +
+                    '<span class="vl-cd-item-dim">' + def.dx + '×' + def.dy + '×' + def.dz + '</span>';
+                btn.addEventListener('click', function () {
+                    assignRackToSite(carrierId, siteId, key);
+                    dialog.classList.remove('is-visible');
+                });
+                listEl.appendChild(btn);
+            });
+        }
+
+        // Also allow browsing server racks
+        var serverBrowse = document.getElementById('vl-cd-browse-server');
+        if (serverBrowse) {
+            serverBrowse.onclick = function () {
+                showServerRackBrowser(carrierId, siteId);
+            };
+        }
+
+        dialog.classList.add('is-visible');
+    }
+
+    /**
+     * Browse available .rck files from the Hamilton server path.
+     */
+    function showServerRackBrowser(carrierId, siteId) {
+        var dialog = document.getElementById('vl-container-dialog');
+        var listEl = document.getElementById('vl-cd-list');
+        if (!listEl) return;
+
+        listEl.innerHTML = '<div class="vl-empty-hint"><i class="fas fa-spinner fa-spin"></i> Scanning server for .rck files…</div>';
+
+        // Fetch a directory listing from the server
+        var basePaths = [
+            'Base Hamilton Files/Labware/ML_STAR/',
+            'Base Hamilton Files/Labware/GREINER/',
+            'Base Hamilton Files/Labware/KAYCO_DALLAS/',
+        ];
+
+        var allFiles = [];
+        var pending = basePaths.length;
+
+        basePaths.forEach(function (basePath) {
+            fetch(basePath).then(function (resp) {
+                if (!resp.ok) throw new Error('HTTP ' + resp.status);
+                return resp.text();
+            }).then(function (html) {
+                // Parse directory listing for .rck links
+                var re = /href="([^"]*\.rck)"/gi;
+                var m;
+                while ((m = re.exec(html)) !== null) {
+                    var fileName = decodeURIComponent(m[1]);
+                    if (fileName.startsWith('/')) fileName = fileName.substring(1);
+                    if (!fileName.startsWith('Base Hamilton')) fileName = basePath + fileName;
+                    allFiles.push(fileName);
+                }
+            }).catch(function () {
+                // Directory not browseable, try scanning known files
+            }).finally(function () {
+                pending--;
+                if (pending <= 0) displayServerRacks(allFiles, carrierId, siteId);
+            });
+        });
+    }
+
+    function displayServerRacks(files, carrierId, siteId) {
+        var dialog = document.getElementById('vl-container-dialog');
+        var listEl = document.getElementById('vl-cd-list');
+        if (!listEl) return;
+
+        if (files.length === 0) {
+            listEl.innerHTML = '<div class="vl-empty-hint">No .rck files found on server.<br>Import from file instead.</div>';
+            return;
+        }
+
+        listEl.innerHTML = '';
+
+        // Sort files alphabetically
+        files.sort();
+
+        // Add a search filter
+        var filterInput = document.createElement('input');
+        filterInput.type = 'text';
+        filterInput.className = 'vl-cd-filter';
+        filterInput.placeholder = 'Filter racks…';
+        listEl.appendChild(filterInput);
+
+        var itemContainer = document.createElement('div');
+        itemContainer.className = 'vl-cd-items-scroll';
+        listEl.appendChild(itemContainer);
+
+        function renderItems(filter) {
+            itemContainer.innerHTML = '';
+            var filtered = filter
+                ? files.filter(function (f) { return f.toLowerCase().indexOf(filter.toLowerCase()) >= 0; })
+                : files;
+
+            filtered.slice(0, 100).forEach(function (filePath) {
+                var fileName = filePath.split('/').pop();
+                var btn = document.createElement('button');
+                btn.className = 'vl-cd-item';
+                btn.innerHTML = '<i class="fas fa-file"></i> <span class="vl-cd-item-name">' + fileName + '</span>';
+                btn.title = filePath;
+                btn.addEventListener('click', function () {
+                    // Derive Hamilton path from server path
+                    var hamiltonPath = filePath.replace('Base Hamilton Files/Labware/', '').replace(/\//g, '\\');
+                    importRackFromServer(hamiltonPath).then(function (rackKey) {
+                        assignRackToSite(carrierId, siteId, rackKey);
+                        dialog.classList.remove('is-visible');
+                    }).catch(function (err) {
+                        showVLStatus('Failed to load rack: ' + err.message, 'error');
+                    });
+                });
+                itemContainer.appendChild(btn);
+            });
+
+            if (filtered.length > 100) {
+                var more = document.createElement('div');
+                more.className = 'vl-empty-hint';
+                more.textContent = (filtered.length - 100) + ' more — use filter to narrow results';
+                itemContainer.appendChild(more);
+            }
+        }
+
+        renderItems('');
+        filterInput.addEventListener('input', function () { renderItems(filterInput.value); });
     }
 
     // ================================================================
