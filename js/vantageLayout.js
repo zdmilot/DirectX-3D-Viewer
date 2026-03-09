@@ -233,14 +233,16 @@
         wasteMesh: null,
         // Waste carrier 3D model cache key
         wasteModelCacheKey: '__WASTE_CHUTE__',
-        // Waste accessory visibility: keyed by site id → boolean (true = visible)
-        wasteAccessoryVisible: {},
 
         // Entry Exit Drawer state
         drawerCutoutIdx: -1,
         drawerTmlDef: null,
         drawerMesh: null,
         drawerModelCacheKey: '__ENTRY_EXIT_DRAWER__',
+
+        // EE drawer debug state
+        eeDebugMode: false,
+        _eeBasePos: null,
 
         // Back panel node reference
         backPanelNode: null,
@@ -1285,86 +1287,6 @@
         showVLStatus('Waste chute installed at ' + DECK_CUTOUTS[cutoutIdx].label +
             ' (tracks ' + DECK_CUTOUTS[cutoutIdx].trackStart + '\u2013' +
             (DECK_CUTOUTS[cutoutIdx].trackStart + DECK_CUTOUTS[cutoutIdx].trackSpan - 1) + ')', 'ok');
-
-        // Populate and show waste accessory toggles
-        buildWasteAccessoryToggles();
-    }
-
-    /**
-     * Build the waste accessory toggle checkboxes from the installed waste mesh.
-     * Only labware children (site accessories) get toggles.
-     */
-    function buildWasteAccessoryToggles() {
-        var section = document.getElementById('waste-accessories-section');
-        var list = document.getElementById('waste-accessories-list');
-        if (!section || !list) return;
-
-        list.innerHTML = '';
-
-        if (!vlState.wasteMesh) {
-            section.style.display = 'none';
-            return;
-        }
-
-        var hasItems = false;
-        vlState.wasteMesh.children.forEach(function (child) {
-            if (!child.name || child.name.indexOf('_labware_') === -1) return;
-            hasItems = true;
-
-            // Extract site id from name — pattern: groupName_labware_<id>__
-            var m = child.name.match(/_labware_(.+)__$/);
-            var siteId = m ? m[1] : child.name;
-
-            // Friendly label from the waste TML site data
-            var label = siteId;
-            if (vlState.wasteTmlDef && vlState.wasteTmlDef.sites) {
-                vlState.wasteTmlDef.sites.forEach(function (s) {
-                    if (String(s.id) === String(siteId) && s.labwareFile) {
-                        // Use the filename minus extension as label
-                        var parts = s.labwareFile.replace(/\\\\/g, '/').split('/');
-                        label = parts[parts.length - 1].replace(/\\.rck$/i, '');
-                    }
-                });
-            }
-
-            // Default to visible if no state stored yet
-            if (vlState.wasteAccessoryVisible[siteId] === undefined) {
-                vlState.wasteAccessoryVisible[siteId] = true;
-            }
-
-            var row = document.createElement('div');
-            row.className = 'settings-toggle-row';
-            row.innerHTML =
-                '<span class=\"settings-toggle-label\" style=\"font-size:11px;\">' + label + '</span>' +
-                '<label class=\"settings-switch\">' +
-                '<input type=\"checkbox\" data-waste-acc-id=\"' + siteId + '\"' +
-                (vlState.wasteAccessoryVisible[siteId] ? ' checked' : '') + '>' +
-                '<span class=\"settings-switch-slider\"></span>' +
-                '</label>';
-            list.appendChild(row);
-
-            var cb = row.querySelector('input[type=\"checkbox\"]');
-            cb.addEventListener('change', function () {
-                vlState.wasteAccessoryVisible[siteId] = cb.checked;
-                applyWasteAccessoryVisibility();
-            });
-        });
-
-        section.style.display = hasItems ? '' : 'none';
-        applyWasteAccessoryVisibility();
-    }
-
-    /** Apply the wasteAccessoryVisible state to the waste mesh children. */
-    function applyWasteAccessoryVisibility() {
-        if (!vlState.wasteMesh) return;
-        vlState.wasteMesh.children.forEach(function (child) {
-            if (!child.name || child.name.indexOf('_labware_') === -1) return;
-            var m = child.name.match(/_labware_(.+)__$/);
-            var siteId = m ? m[1] : child.name;
-            if (vlState.wasteAccessoryVisible[siteId] !== undefined) {
-                child.visible = vlState.wasteAccessoryVisible[siteId];
-            }
-        });
     }
 
     /** Remove the installed waste chute (if any). */
@@ -1390,10 +1312,6 @@
 
         vlState.wasteCutoutIdx = -1;
         showVLStatus('Waste chute removed.', '');
-
-        // Hide accessory toggles
-        var section = document.getElementById('waste-accessories-section');
-        if (section) section.style.display = 'none';
     }
 
     // ================================================================
@@ -1454,7 +1372,10 @@
             vlState.drawerMesh = mesh;
             vlState.scene.add(mesh);
             snapshotFixtureBasePositions(mesh);
+            snapshotEEBasePos();
+            restoreEEDebugOffsets();
             if (vlState.fixtureDebugMode) refreshFixtureDebugReadout();
+            if (vlState.eeDebugMode) refreshEEDebugReadout();
         }
 
         if (vlState.drawerTmlDef) {
@@ -1478,6 +1399,7 @@
             });
             vlState.scene.remove(vlState.drawerMesh);
             vlState.drawerMesh = null;
+            vlState._eeBasePos = null;
         }
 
         var oldIdx = vlState.drawerCutoutIdx;
@@ -1506,7 +1428,10 @@
             vlState.drawerMesh = mesh;
             vlState.scene.add(mesh);
             snapshotFixtureBasePositions(mesh);
+            snapshotEEBasePos();
+            restoreEEDebugOffsets();
             if (vlState.fixtureDebugMode) refreshFixtureDebugReadout();
+            if (vlState.eeDebugMode) refreshEEDebugReadout();
         }
     }
 
@@ -1570,8 +1495,6 @@
             snapshotFixtureBasePositions(mesh);
             if (vlState.fixtureDebugMode) refreshFixtureDebugReadout();
         }
-        // Refresh accessory toggles (new children may have appeared after model load)
-        buildWasteAccessoryToggles();
     }
 
     /** Helper to sync a cover-panel checkbox in the settings UI. */
@@ -2972,6 +2895,7 @@
 
         wireDeckDebugPanel();
         wireFixtureDebugPanel();
+        wireEEDebugPanel();
         wireVLSettingsPanel();
     }
 
@@ -3413,6 +3337,143 @@
         }
     }
 
+    // ================================================================
+    //  EE Drawer Debug / Alignment Panel
+    // ================================================================
+    function wireEEDebugPanel() {
+        const panel = document.getElementById('vl-ee-debug-panel');
+        if (!panel) return;
+
+        // Wire XYZ inputs
+        ['x', 'y', 'z'].forEach(axis => {
+            const input = document.getElementById(`vl-ee-${axis}`);
+            if (!input) return;
+            input.addEventListener('input', () => applyEEDebugOffset());
+            input.addEventListener('change', () => applyEEDebugOffset());
+        });
+
+        // Step buttons
+        document.querySelectorAll('#vl-ee-debug-panel .ee-step').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const axis  = btn.dataset.axis;
+                const delta = parseFloat(btn.dataset.delta);
+                const inp   = document.getElementById(`vl-ee-${axis}`);
+                if (inp) {
+                    inp.value = (parseFloat(inp.value) || 0) + delta;
+                    applyEEDebugOffset();
+                }
+            });
+        });
+
+        // Copy button
+        const copyBtn = document.getElementById('vl-ee-copy');
+        if (copyBtn) {
+            copyBtn.addEventListener('click', () => {
+                const x = document.getElementById('vl-ee-x')?.value || 0;
+                const y = document.getElementById('vl-ee-y')?.value || 0;
+                const z = document.getElementById('vl-ee-z')?.value || 0;
+                const txt = `EE Drawer offset: X: ${x}, Y: ${y}, Z: ${z}`;
+                navigator.clipboard?.writeText(txt).then(() => showVLStatus('EE offsets copied to clipboard', 'ok'))
+                    .catch(() => showVLStatus(txt, 'ok'));
+            });
+        }
+
+        // Set (Apply) button – bake current debug offsets into localStorage
+        const applyBtn = document.getElementById('vl-ee-apply');
+        if (applyBtn) {
+            applyBtn.addEventListener('click', () => {
+                const mesh = vlState.drawerMesh;
+                if (!mesh || !vlState._eeBasePos) {
+                    showVLStatus('No EE drawer installed yet.', 'error');
+                    return;
+                }
+                const dx = parseFloat(document.getElementById('vl-ee-x')?.value) || 0;
+                const dy = parseFloat(document.getElementById('vl-ee-y')?.value) || 0;
+                const dz = parseFloat(document.getElementById('vl-ee-z')?.value) || 0;
+                // Save cumulative offsets to localStorage
+                try {
+                    const prev = JSON.parse(localStorage.getItem('vl-ee-debug-offsets')) || { x: 0, y: 0, z: 0 };
+                    const cumulative = {
+                        x: (prev.x || 0) + dx,
+                        y: (prev.y || 0) + dy,
+                        z: (prev.z || 0) + dz
+                    };
+                    localStorage.setItem('vl-ee-debug-offsets', JSON.stringify(cumulative));
+                } catch (_) { /* ignore */ }
+                // Bake current position as new base
+                vlState._eeBasePos = mesh.position.clone();
+                // Reset debug inputs to 0
+                ['x', 'y', 'z'].forEach(a => {
+                    const inp = document.getElementById(`vl-ee-${a}`);
+                    if (inp) inp.value = 0;
+                });
+                refreshEEDebugReadout();
+                showVLStatus('EE offsets applied and saved', 'ok');
+            });
+        }
+
+        // Reset button
+        const resetBtn = document.getElementById('vl-ee-reset');
+        if (resetBtn) {
+            resetBtn.addEventListener('click', () => {
+                ['x', 'y', 'z'].forEach(a => {
+                    const inp = document.getElementById(`vl-ee-${a}`);
+                    if (inp) inp.value = 0;
+                });
+                applyEEDebugOffset();
+            });
+        }
+    }
+
+    function applyEEDebugOffset() {
+        const mesh = vlState.drawerMesh;
+        if (!mesh) { showVLStatus('No EE drawer installed.', 'error'); return; }
+
+        const dx = parseFloat(document.getElementById('vl-ee-x')?.value) || 0;
+        const dy = parseFloat(document.getElementById('vl-ee-y')?.value) || 0;
+        const dz = parseFloat(document.getElementById('vl-ee-z')?.value) || 0;
+
+        if (!vlState._eeBasePos) {
+            vlState._eeBasePos = mesh.position.clone();
+        }
+        mesh.position.set(
+            vlState._eeBasePos.x + dx,
+            vlState._eeBasePos.y + dy,
+            vlState._eeBasePos.z + dz
+        );
+        refreshEEDebugReadout();
+    }
+
+    function refreshEEDebugReadout() {
+        const el = document.getElementById('vl-ee-readout');
+        if (!el) return;
+        const mesh = vlState.drawerMesh;
+        if (!mesh) { el.textContent = 'No drawer installed'; return; }
+        const p = mesh.position;
+        el.textContent = `pos  X: ${p.x.toFixed(2)}  Y: ${p.y.toFixed(2)}  Z: ${p.z.toFixed(2)}`;
+    }
+
+    function snapshotEEBasePos() {
+        if (vlState.drawerMesh) {
+            vlState._eeBasePos = vlState.drawerMesh.position.clone();
+        }
+    }
+
+    function restoreEEDebugOffsets() {
+        if (!vlState.drawerMesh) return;
+        try {
+            const saved = JSON.parse(localStorage.getItem('vl-ee-debug-offsets'));
+            if (saved && (saved.x || saved.y || saved.z)) {
+                vlState.drawerMesh.position.set(
+                    vlState._eeBasePos.x + (saved.x || 0),
+                    vlState._eeBasePos.y + (saved.y || 0),
+                    vlState._eeBasePos.z + (saved.z || 0)
+                );
+                vlState._eeBasePos = vlState.drawerMesh.position.clone();
+            }
+        } catch (_) { /* ignore */ }
+    }
+
     function wireVLSettingsPanel() {
         // ── Cutout toggles ───────────────────────────────────────────
         for (let i = 0; i < 4; i++) {
@@ -3525,6 +3586,21 @@
                     populateComponentSelect();
                     syncFixtureDebugInputs();
                     refreshFixtureDebugReadout();
+                }
+            });
+        }
+
+        // ── EE Drawer Debug toggle ───────────────────────────────────
+        const eeDebugToggle = document.getElementById('settings-ee-debug-toggle');
+        if (eeDebugToggle) {
+            eeDebugToggle.checked = vlState.eeDebugMode;
+            eeDebugToggle.addEventListener('change', function () {
+                vlState.eeDebugMode = eeDebugToggle.checked;
+                const panel = document.getElementById('vl-ee-debug-panel');
+                if (panel) panel.classList.toggle('is-open', vlState.eeDebugMode);
+                if (vlState.eeDebugMode) {
+                    snapshotEEBasePos();
+                    refreshEEDebugReadout();
                 }
             });
         }

@@ -2931,6 +2931,15 @@ body {
     bottom: 8px;
     right: 64px;
 }
+
+/* ── EE Drawer Debug Panel ── */
+.vl-ee-debug-panel {
+    top: auto;
+    bottom: 8px;
+    left: 16px;
+    right: auto;
+}
+
 .vl-fix-target-row {
     display: flex;
     gap: 4px;

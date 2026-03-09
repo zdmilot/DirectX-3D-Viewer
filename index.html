@@ -1289,6 +1289,41 @@
                     </div>
                 </div>
 
+                <!-- Entry/Exit Drawer Debug Panel -->
+                <div class="vl-deck-debug-panel vl-ee-debug-panel" id="vl-ee-debug-panel">
+                    <div class="vl-dbg-header"><i class="fas fa-door-open"></i> EE Drawer Debug</div>
+                    <div class="vl-dbg-readout" id="vl-ee-readout">No drawer installed</div>
+                    <div class="vl-dbg-row">
+                        <span class="vl-dbg-axis x">X</span>
+                        <button class="dbg-step-btn ee-step" data-axis="x" data-delta="-10">−10</button>
+                        <button class="dbg-step-btn ee-step" data-axis="x" data-delta="-1">−1</button>
+                        <input type="number" id="vl-ee-x" class="vl-dbg-input" value="0" step="0.5">
+                        <button class="dbg-step-btn ee-step" data-axis="x" data-delta="1">+1</button>
+                        <button class="dbg-step-btn ee-step" data-axis="x" data-delta="10">+10</button>
+                    </div>
+                    <div class="vl-dbg-row">
+                        <span class="vl-dbg-axis y">Y</span>
+                        <button class="dbg-step-btn ee-step" data-axis="y" data-delta="-10">−10</button>
+                        <button class="dbg-step-btn ee-step" data-axis="y" data-delta="-1">−1</button>
+                        <input type="number" id="vl-ee-y" class="vl-dbg-input" value="0" step="0.5">
+                        <button class="dbg-step-btn ee-step" data-axis="y" data-delta="1">+1</button>
+                        <button class="dbg-step-btn ee-step" data-axis="y" data-delta="10">+10</button>
+                    </div>
+                    <div class="vl-dbg-row">
+                        <span class="vl-dbg-axis z">Z</span>
+                        <button class="dbg-step-btn ee-step" data-axis="z" data-delta="-10">−10</button>
+                        <button class="dbg-step-btn ee-step" data-axis="z" data-delta="-1">−1</button>
+                        <input type="number" id="vl-ee-z" class="vl-dbg-input" value="0" step="0.5">
+                        <button class="dbg-step-btn ee-step" data-axis="z" data-delta="1">+1</button>
+                        <button class="dbg-step-btn ee-step" data-axis="z" data-delta="10">+10</button>
+                    </div>
+                    <div class="vl-dbg-actions">
+                        <button id="vl-ee-reset" class="vl-dbg-action-btn"><i class="fas fa-undo"></i> Reset</button>
+                        <button id="vl-ee-copy"  class="vl-dbg-action-btn vl-dbg-action-accent"><i class="fas fa-copy"></i> Copy offsets</button>
+                        <button id="vl-ee-apply" class="vl-dbg-action-btn vl-dbg-action-accent"><i class="fas fa-check"></i> Set</button>
+                    </div>
+                </div>
+
                 <!-- Place Carrier Dialog -->
                 <div class="vl-dialog-overlay" id="vl-place-dialog">
                     <div class="vl-dialog">
@@ -1448,11 +1483,6 @@
                     </select>
                 </div>
 
-                <div id="waste-accessories-section" style="display:none;">
-                    <p class="settings-hint" style="margin-top:6px;">Toggle individual waste accessories on/off.</p>
-                    <div id="waste-accessories-list"></div>
-                </div>
-
                 <div class="settings-divider"></div>
 
                 <!-- Entry/Exit Drawer -->
@@ -1512,6 +1542,13 @@
                     <span class="settings-toggle-label">Fixture Position Debug</span>
                     <label class="settings-switch">
                         <input type="checkbox" id="settings-fixture-debug-toggle">
+                        <span class="settings-switch-slider"></span>
+                    </label>
+                </div>
+                <div class="settings-toggle-row">
+                    <span class="settings-toggle-label">EE Drawer Debug</span>
+                    <label class="settings-switch">
+                        <input type="checkbox" id="settings-ee-debug-toggle">
                         <span class="settings-switch-slider"></span>
                     </label>
                 </div>
