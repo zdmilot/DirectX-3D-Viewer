@@ -226,7 +226,7 @@
         deckCoverNodes: null,
 
         // Waste chute state: which cutout has waste installed (-1 = none, 0-3 = cutout index)
-        wasteCutoutIdx: -1,
+        wasteCutoutIdx: 2,   // Default to Panel 3
         // Parsed waste TML data (loaded from server on init)
         wasteTmlDef: null,
         // Three.js group for the installed waste chute (removed/rebuilt on change)
@@ -1217,6 +1217,11 @@
                     // Fine-tune from debug: accessories { x: -15, y: 0, z: -3.5 }
                     child.position.x += -15.0;
                     child.position.z += -3.5;
+                    // Per-component fix for labware_10: { x: 15, y: 8, z: 0 }
+                    if (child.name.indexOf('_labware_10__') !== -1) {
+                        child.position.x += 15.0;
+                        child.position.y += 8.0;
+                    }
                 }
             });
         }
@@ -1519,8 +1524,9 @@
                 console.warn('[VantageLayout] No modelFileHamilton found in waste TML');
             }
 
-            // If waste is already installed, load site labware
+            // Auto-install waste at default cutout if set
             if (vlState.wasteCutoutIdx >= 0) {
+                installWasteAtCutout(vlState.wasteCutoutIdx);
                 loadSiteLabwareModels(vlState.wasteModelCacheKey, parsed.sites);
             }
         }).catch(function (err) {
