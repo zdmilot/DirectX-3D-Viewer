@@ -573,7 +573,7 @@
         Object.keys(mfxState.slotState).forEach(function (id) {
             var entry = mfxState.slotState[id];
             if (entry.slotMesh) {
-                entry.slotMesh.position.y = ny + 3; // +3 mm above nesting surface
+                entry.slotMesh.position.y = ny + 4; // +4 mm above nesting surface
             }
             if (entry.moduleMesh) {
                 positionModuleInSlot(entry.moduleMesh, entry.slot);
@@ -601,10 +601,10 @@
         mesh.renderOrder = 10;
         // Three.js coords: X=width, Y=height(z), Z=depth(y)
         // Place slot mesh on top of the carrier nesting surface
-        // Raise visual target 3 mm above nesting surface
+        // Raise visual target 4 mm above nesting surface
         mesh.position.set(
             slot.x + slot.dx / 2,
-            getNestingY() + 3,
+            getNestingY() + 4,
             slot.y + slot.dy / 2
         );
         mesh.name = '__slot_' + slot.id + '__';
