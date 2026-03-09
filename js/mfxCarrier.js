@@ -221,14 +221,20 @@
     //  Init
     // ================================================================
     function initMFXCarrier() {
+        try { _initMFXCarrierInner(); } catch(e) { console.error('[MFXCarrier] init failed:', e); }
+    }
+    function _initMFXCarrierInner() {
+        console.log('[MFXCarrier] init start');
         mfxState.isDark = document.documentElement.hasAttribute('data-theme');
 
         const canvas = $('#mfx-canvas');
         const host   = $('#mfx-host');
+        console.log('[MFXCarrier] canvas=', canvas, 'host=', host);
         if (!canvas || !host) return;
 
         // Guard: only initialise once
         if (mfxState.renderer) {
+            console.log('[MFXCarrier] already initialized, skipping');
             updateMFXTheme();
             return;
         }
@@ -238,6 +244,7 @@
 
         const w = host.clientWidth  || 800;
         const h = host.clientHeight || 600;
+        console.log('[MFXCarrier] host dimensions:', w, 'x', h);
 
         // Scene
         mfxState.scene = new THREE.Scene();
@@ -290,6 +297,7 @@
 
         // Build initial scene
         buildCarrierScene(mfxState.carrierKey);
+        console.log('[MFXCarrier] scene built');
 
         // Wire UI
         wireMFXControls();
@@ -297,6 +305,7 @@
         populateCarrierSelector();
         populateModuleCatalog();
         updateSlotList();
+        console.log('[MFXCarrier] init complete');
     }
 
     // ================================================================
