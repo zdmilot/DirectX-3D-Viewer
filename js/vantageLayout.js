@@ -248,6 +248,10 @@
         backPanelNode: null,
         backPanelVisible: true,
 
+        // Back panel sections (split at runtime for selective removal)
+        backPanelSections: [],       // [{index, mesh, label}]
+        backPanelSectionVisible: [], // boolean per section
+
         // Fixture position debug state
         fixtureDebugMode: false,
         fixtureDebugTarget: 'body',   // 'body' | 'accessories' | 'group' | 'component'
@@ -1470,9 +1474,28 @@
 
     function setBackPanelVisible(visible) {
         vlState.backPanelVisible = visible;
-        if (vlState.backPanelNode) {
+        if (vlState.backPanelSections.length > 0) {
+            // When using sections, toggle all sections and sync checkboxes
+            vlState.backPanelSections.forEach(function (sec, i) {
+                sec.mesh.visible = visible;
+                vlState.backPanelSectionVisible[i] = visible;
+                var cb = document.getElementById('settings-back-section-' + i);
+                if (cb) cb.checked = visible;
+            });
+        } else if (vlState.backPanelNode) {
             vlState.backPanelNode.visible = visible;
         }
+    }
+
+    function setBackPanelSectionVisible(idx, visible) {
+        if (idx < 0 || idx >= vlState.backPanelSections.length) return;
+        vlState.backPanelSectionVisible[idx] = visible;
+        vlState.backPanelSections[idx].mesh.visible = visible;
+        // Update master toggle: checked only if all sections are visible
+        var allVisible = vlState.backPanelSectionVisible.every(function (v) { return v; });
+        vlState.backPanelVisible = allVisible;
+        var masterCb = document.getElementById('settings-back-panel-toggle');
+        if (masterCb) masterCb.checked = allVisible;
     }
 
     /** Rebuild the waste 3D mesh (called when models finish loading). */
@@ -3056,7 +3079,191 @@
         });
 
         console.log('[VantageLayout] deck cover nodes:', covers.map(function (n) { return n.name; }));
-        if (vlState.backPanelNode) console.log('[VantageLayout] back panel node found: 6606544-01');
+        if (vlState.backPanelNode) {
+            console.log('[VantageLayout] back panel node found: 6606544-01');
+            splitBackPanelIntoSections(covers);
+        }
+    }
+
+    // ================================================================
+    //  Back Panel Section Splitting
+    // ================================================================
+    // Splits the single back-panel mesh into sections by X position so
+    // each can be independently shown/hidden from the settings panel.
+
+    function splitBackPanelIntoSections(covers) {
+        if (!vlState.backPanelNode) return;
+
+        // Find the actual child mesh inside the back-panel group node
+        var originalMesh = null;
+        vlState.backPanelNode.traverse(function (obj) {
+            if (obj.isMesh && !originalMesh) originalMesh = obj;
+        });
+        if (!originalMesh) return;
+
+        vlState.gltfModel.updateMatrixWorld(true);
+        var worldMat = originalMesh.matrixWorld;
+
+        // Back-panel bounding box in world space
+        var panelBB = new THREE.Box3().setFromObject(vlState.backPanelNode);
+
+        // Build section boundaries from cover-panel bounding boxes.
+        // Midpoints between adjacent covers serve as dividers → N+1 sections
+        // where N = number of gaps between covers.
+        var dividers = [];
+        if (covers.length >= 2) {
+            // Add midpoint before the first cover (left-of-covers boundary)
+            var firstBB = new THREE.Box3().setFromObject(covers[0]);
+            dividers.push(firstBB.min.x);
+            for (var c = 0; c < covers.length - 1; c++) {
+                var bbA = new THREE.Box3().setFromObject(covers[c]);
+                var bbB = new THREE.Box3().setFromObject(covers[c + 1]);
+                dividers.push((bbA.max.x + bbB.min.x) / 2);
+            }
+        }
+
+        // Full range: [leftEdge, divider0, divider1, ..., rightEdge]
+        var bounds = [panelBB.min.x - 1].concat(dividers).concat([panelBB.max.x + 1]);
+        var numSections = bounds.length - 1;
+
+        // Access geometry data
+        var geo = originalMesh.geometry;
+        var posAttr = geo.attributes.position;
+        var normalAttr = geo.attributes.normal;
+        var uvAttr = geo.attributes.uv;
+        var index = geo.index;
+
+        // Classify each triangle by centroid world-X position
+        var sectionTris = [];
+        for (var s = 0; s < numSections; s++) sectionTris.push([]);
+
+        var triCount = index ? index.count / 3 : posAttr.count / 3;
+        var v = new THREE.Vector3();
+
+        for (var t = 0; t < triCount; t++) {
+            var i0, i1, i2;
+            if (index) {
+                i0 = index.getX(t * 3);
+                i1 = index.getX(t * 3 + 1);
+                i2 = index.getX(t * 3 + 2);
+            } else {
+                i0 = t * 3; i1 = t * 3 + 1; i2 = t * 3 + 2;
+            }
+
+            // Centroid X in world space
+            var cx = 0;
+            v.set(posAttr.getX(i0), posAttr.getY(i0), posAttr.getZ(i0)).applyMatrix4(worldMat); cx += v.x;
+            v.set(posAttr.getX(i1), posAttr.getY(i1), posAttr.getZ(i1)).applyMatrix4(worldMat); cx += v.x;
+            v.set(posAttr.getX(i2), posAttr.getY(i2), posAttr.getZ(i2)).applyMatrix4(worldMat); cx += v.x;
+            cx /= 3;
+
+            var sec = numSections - 1;
+            for (var si = 0; si < numSections; si++) {
+                if (cx >= bounds[si] && cx < bounds[si + 1]) { sec = si; break; }
+            }
+            sectionTris[sec].push([i0, i1, i2]);
+        }
+
+        // Build a new mesh for each non-empty section
+        var sectionGroup = new THREE.Group();
+        sectionGroup.name = '__back_panel_sections__';
+
+        var sections = [];
+        var sectionLabels = ['Left End'];
+        for (var li = 0; li < covers.length - 1; li++) sectionLabels.push('Section ' + (li + 1));
+        sectionLabels.push('Right End');
+        // If there's only one cover gap, just use generic labels
+        if (numSections <= 2) {
+            sectionLabels = [];
+            for (var gi = 0; gi < numSections; gi++) sectionLabels.push('Section ' + (gi + 1));
+        }
+
+        for (var s = 0; s < numSections; s++) {
+            if (sectionTris[s].length === 0) continue;
+
+            var vertMap = {};
+            var newPos = [], newNrm = [], newUv = [], newIdx = [];
+            var nextV = 0;
+
+            sectionTris[s].forEach(function (tri) {
+                tri.forEach(function (oldI) {
+                    if (!(oldI in vertMap)) {
+                        vertMap[oldI] = nextV++;
+                        newPos.push(posAttr.getX(oldI), posAttr.getY(oldI), posAttr.getZ(oldI));
+                        if (normalAttr) newNrm.push(normalAttr.getX(oldI), normalAttr.getY(oldI), normalAttr.getZ(oldI));
+                        if (uvAttr) newUv.push(uvAttr.getX(oldI), uvAttr.getY(oldI));
+                    }
+                    newIdx.push(vertMap[oldI]);
+                });
+            });
+
+            var newGeo = new THREE.BufferGeometry();
+            newGeo.setAttribute('position', new THREE.Float32BufferAttribute(newPos, 3));
+            if (newNrm.length) newGeo.setAttribute('normal', new THREE.Float32BufferAttribute(newNrm, 3));
+            if (newUv.length) newGeo.setAttribute('uv', new THREE.Float32BufferAttribute(newUv, 2));
+            newGeo.setIndex(newIdx);
+
+            var mat = originalMesh.material.clone();
+            var newMesh = new THREE.Mesh(newGeo, mat);
+            newMesh.name = '__back_section_' + s + '__';
+
+            // Copy the original mesh's local transform so positions stay correct
+            newMesh.matrix.copy(originalMesh.matrix);
+            newMesh.matrixAutoUpdate = false;
+
+            sectionGroup.add(newMesh);
+            sections.push({ index: s, mesh: newMesh, label: sectionLabels[s] || ('Section ' + (s + 1)) });
+        }
+
+        // Hide original mesh, add sections as siblings
+        originalMesh.visible = false;
+        vlState.backPanelNode.add(sectionGroup);
+
+        vlState.backPanelSections = sections;
+        vlState.backPanelSectionVisible = sections.map(function () { return true; });
+
+        console.log('[VantageLayout] back panel split into ' + sections.length + ' sections');
+
+        // Build dynamic UI toggles for each section
+        buildBackPanelSectionToggles();
+    }
+
+    function buildBackPanelSectionToggles() {
+        var container = document.getElementById('back-panel-section-toggles');
+        if (!container) return;
+        container.innerHTML = '';
+
+        vlState.backPanelSections.forEach(function (sec, i) {
+            var row = document.createElement('div');
+            row.className = 'settings-toggle-row';
+            row.style.paddingLeft = '12px';
+
+            var label = document.createElement('span');
+            label.className = 'settings-toggle-label';
+            label.textContent = sec.label;
+            label.style.fontSize = '12px';
+
+            var switchLabel = document.createElement('label');
+            switchLabel.className = 'settings-switch';
+
+            var cb = document.createElement('input');
+            cb.type = 'checkbox';
+            cb.id = 'settings-back-section-' + i;
+            cb.checked = true;
+
+            var slider = document.createElement('span');
+            slider.className = 'settings-switch-slider';
+
+            switchLabel.appendChild(cb);
+            switchLabel.appendChild(slider);
+            row.appendChild(label);
+            row.appendChild(switchLabel);
+            container.appendChild(row);
+
+            cb.addEventListener('change', function () {
+                setBackPanelSectionVisible(i, cb.checked);
+            });
+        });
     }
 
     function applyCutoutVisibility() {
