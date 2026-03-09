@@ -1482,16 +1482,15 @@
     function setBackPanelVisible(visible) {
         vlState.backPanelVisible = visible;
         if (vlState.backPanelSections.length > 0) {
-            // When using sections, toggle all sections and sync checkboxes
+            // Toggle only the shield sections — frame is always visible
             vlState.backPanelSections.forEach(function (sec, i) {
                 sec.mesh.visible = visible;
                 vlState.backPanelSectionVisible[i] = visible;
                 var cb = document.getElementById('settings-back-section-' + i);
                 if (cb) cb.checked = visible;
             });
-        } else if (vlState.backPanelNode) {
-            vlState.backPanelNode.visible = visible;
         }
+        // NOTE: never hide backPanelNode directly — the frame must stay visible
     }
 
     function setBackPanelSectionVisible(idx, visible) {
@@ -3095,8 +3094,10 @@
     // ================================================================
     //  Back Panel Section Splitting
     // ================================================================
-    // Splits the single back-panel mesh into sections by X position so
-    // each can be independently shown/hidden from the settings panel.
+    // Splits the single back-panel mesh into 4 shield sections (aligned
+    // with the 4 deck cover X-ranges) plus a permanent structural frame.
+    // Only the 4 shield sections can be individually shown/hidden.
+    // The structural frame is NEVER removable.
 
     function splitBackPanelIntoSections(covers) {
         if (!vlState.backPanelNode) return;
@@ -3111,27 +3112,12 @@
         vlState.gltfModel.updateMatrixWorld(true);
         var worldMat = originalMesh.matrixWorld;
 
-        // Back-panel bounding box in world space
-        var panelBB = new THREE.Box3().setFromObject(vlState.backPanelNode);
-
-        // Build section boundaries from cover-panel bounding boxes.
-        // Midpoints between adjacent covers serve as dividers → N+1 sections
-        // where N = number of gaps between covers.
-        var dividers = [];
-        if (covers.length >= 2) {
-            // Add midpoint before the first cover (left-of-covers boundary)
-            var firstBB = new THREE.Box3().setFromObject(covers[0]);
-            dividers.push(firstBB.min.x);
-            for (var c = 0; c < covers.length - 1; c++) {
-                var bbA = new THREE.Box3().setFromObject(covers[c]);
-                var bbB = new THREE.Box3().setFromObject(covers[c + 1]);
-                dividers.push((bbA.max.x + bbB.min.x) / 2);
-            }
-        }
-
-        // Full range: [leftEdge, divider0, divider1, ..., rightEdge]
-        var bounds = [panelBB.min.x - 1].concat(dividers).concat([panelBB.max.x + 1]);
-        var numSections = bounds.length - 1;
+        // Compute each cover's world-space X range
+        var coverRanges = [];
+        covers.forEach(function (coverNode, i) {
+            var bb = new THREE.Box3().setFromObject(coverNode);
+            coverRanges.push({ idx: i, xMin: bb.min.x, xMax: bb.max.x });
+        });
 
         // Access geometry data
         var geo = originalMesh.geometry;
@@ -3140,9 +3126,10 @@
         var uvAttr = geo.attributes.uv;
         var index = geo.index;
 
+        // Bin: 0..3 = cover-aligned shields, -1 = permanent frame
         // Classify each triangle by centroid world-X position
-        var sectionTris = [];
-        for (var s = 0; s < numSections; s++) sectionTris.push([]);
+        var shieldTris = [[], [], [], []]; // 4 covers
+        var frameTris = [];
 
         var triCount = index ? index.count / 3 : posAttr.count / 3;
         var v = new THREE.Vector3();
@@ -3164,35 +3151,28 @@
             v.set(posAttr.getX(i2), posAttr.getY(i2), posAttr.getZ(i2)).applyMatrix4(worldMat); cx += v.x;
             cx /= 3;
 
-            var sec = numSections - 1;
-            for (var si = 0; si < numSections; si++) {
-                if (cx >= bounds[si] && cx < bounds[si + 1]) { sec = si; break; }
+            // Check if centroid falls inside any cover's X range
+            var assigned = false;
+            for (var ci = 0; ci < coverRanges.length; ci++) {
+                if (cx >= coverRanges[ci].xMin && cx <= coverRanges[ci].xMax) {
+                    shieldTris[ci].push([i0, i1, i2]);
+                    assigned = true;
+                    break;
+                }
             }
-            sectionTris[sec].push([i0, i1, i2]);
+            if (!assigned) {
+                frameTris.push([i0, i1, i2]);
+            }
         }
 
-        // Build a new mesh for each non-empty section
-        var sectionGroup = new THREE.Group();
-        sectionGroup.name = '__back_panel_sections__';
-
-        var sections = [];
-        var sectionLabels = ['Left End'];
-        for (var li = 0; li < covers.length - 1; li++) sectionLabels.push('Section ' + (li + 1));
-        sectionLabels.push('Right End');
-        // If there's only one cover gap, just use generic labels
-        if (numSections <= 2) {
-            sectionLabels = [];
-            for (var gi = 0; gi < numSections; gi++) sectionLabels.push('Section ' + (gi + 1));
-        }
-
-        for (var s = 0; s < numSections; s++) {
-            if (sectionTris[s].length === 0) continue;
-
+        // Helper: build a mesh from a triangle list
+        function buildMesh(tris, name) {
+            if (tris.length === 0) return null;
             var vertMap = {};
             var newPos = [], newNrm = [], newUv = [], newIdx = [];
             var nextV = 0;
 
-            sectionTris[s].forEach(function (tri) {
+            tris.forEach(function (tri) {
                 tri.forEach(function (oldI) {
                     if (!(oldI in vertMap)) {
                         vertMap[oldI] = nextV++;
@@ -3211,27 +3191,41 @@
             newGeo.setIndex(newIdx);
 
             var mat = originalMesh.material.clone();
-            var newMesh = new THREE.Mesh(newGeo, mat);
-            newMesh.name = '__back_section_' + s + '__';
-
-            // Copy the original mesh's local transform so positions stay correct
-            newMesh.matrix.copy(originalMesh.matrix);
-            newMesh.matrixAutoUpdate = false;
-
-            sectionGroup.add(newMesh);
-            sections.push({ index: s, mesh: newMesh, label: sectionLabels[s] || ('Section ' + (s + 1)) });
+            var m = new THREE.Mesh(newGeo, mat);
+            m.name = name;
+            m.matrix.copy(originalMesh.matrix);
+            m.matrixAutoUpdate = false;
+            return m;
         }
 
-        // Hide original mesh, add sections as siblings
+        var sectionGroup = new THREE.Group();
+        sectionGroup.name = '__back_panel_sections__';
+
+        // Build the permanent frame mesh (always visible, never toggled)
+        var frameMesh = buildMesh(frameTris, '__back_frame__');
+        if (frameMesh) sectionGroup.add(frameMesh);
+
+        // Build 4 shield meshes (toggleable)
+        var sections = [];
+        var shieldLabels = ['Back Shield 1', 'Back Shield 2', 'Back Shield 3', 'Back Shield 4'];
+        for (var s = 0; s < 4; s++) {
+            var mesh = buildMesh(shieldTris[s], '__back_shield_' + s + '__');
+            if (mesh) {
+                sectionGroup.add(mesh);
+                sections.push({ index: s, mesh: mesh, label: shieldLabels[s] });
+            }
+        }
+
+        // Hide original mesh, add sections as children
         originalMesh.visible = false;
         vlState.backPanelNode.add(sectionGroup);
 
         vlState.backPanelSections = sections;
         vlState.backPanelSectionVisible = sections.map(function () { return true; });
 
-        console.log('[VantageLayout] back panel split into ' + sections.length + ' sections');
+        console.log('[VantageLayout] back panel split: ' + sections.length + ' shields + frame (' + frameTris.length + ' frame tris)');
 
-        // Build dynamic UI toggles for each section
+        // Build dynamic UI toggles for each shield section
         buildBackPanelSectionToggles();
     }
 
