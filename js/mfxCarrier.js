@@ -445,21 +445,55 @@
             fitModelIntoCarrier(xClone, def);
             mfxState.carrierGroup.add(xClone);
 
-            // Find the flat platform surface by raycasting down at a middle slot position
-            // (avoids hitting the flagpole/bracket at the ends)
-            var midSlot = def.slots[Math.floor(def.slots.length / 2)];
-            var rayOrigin = new THREE.Vector3(
-                midSlot.x + midSlot.dx / 2,
-                1000,
-                midSlot.y + midSlot.dy / 2
-            );
-            var rayDir = new THREE.Vector3(0, -1, 0);
-            var rc = new THREE.Raycaster(rayOrigin, rayDir);
-            var hits = rc.intersectObject(xClone, true);
-            if (hits.length > 0) {
-                mfxState.nestingY = hits[0].point.y;
+            // Find the largest flat horizontal surface in the model.
+            // Scan all upward-facing triangles, bucket by Y, pick the Y with the most area.
+            var yBuckets = {};  // rounded Y → total area
+            var BUCKET_RES = 0.5; // mm precision
+            xClone.traverse(function (child) {
+                if (!child.isMesh || !child.geometry) return;
+                var geo = child.geometry;
+                var posAttr = geo.attributes.position;
+                var normAttr = geo.attributes.normal;
+                if (!posAttr || !normAttr) return;
+                // Get world matrix for this mesh
+                child.updateWorldMatrix(true, false);
+                var wm = child.matrixWorld;
+                var idx = geo.index;
+                var triCount = idx ? idx.count / 3 : posAttr.count / 3;
+                var vA = new THREE.Vector3(), vB = new THREE.Vector3(), vC = new THREE.Vector3();
+                var nA = new THREE.Vector3();
+                for (var t = 0; t < triCount; t++) {
+                    var i0, i1, i2;
+                    if (idx) { i0 = idx.getX(t*3); i1 = idx.getX(t*3+1); i2 = idx.getX(t*3+2); }
+                    else { i0 = t*3; i1 = t*3+1; i2 = t*3+2; }
+                    // Check if face normal points up (Y > 0.9)
+                    nA.set(normAttr.getX(i0), normAttr.getY(i0), normAttr.getZ(i0));
+                    if (nA.y < 0.9) continue;
+                    // Get world-space vertices
+                    vA.set(posAttr.getX(i0), posAttr.getY(i0), posAttr.getZ(i0)).applyMatrix4(wm);
+                    vB.set(posAttr.getX(i1), posAttr.getY(i1), posAttr.getZ(i1)).applyMatrix4(wm);
+                    vC.set(posAttr.getX(i2), posAttr.getY(i2), posAttr.getZ(i2)).applyMatrix4(wm);
+                    // Triangle area
+                    var ab = new THREE.Vector3().subVectors(vB, vA);
+                    var ac = new THREE.Vector3().subVectors(vC, vA);
+                    var area = ab.cross(ac).length() * 0.5;
+                    // Average Y of the triangle
+                    var avgY = (vA.y + vB.y + vC.y) / 3;
+                    var bucketKey = Math.round(avgY / BUCKET_RES) * BUCKET_RES;
+                    yBuckets[bucketKey] = (yBuckets[bucketKey] || 0) + area;
+                }
+            });
+            // Find the Y bucket with the largest total area
+            var bestY = 0, bestArea = 0;
+            Object.keys(yBuckets).forEach(function (k) {
+                if (yBuckets[k] > bestArea) {
+                    bestArea = yBuckets[k];
+                    bestY = parseFloat(k);
+                }
+            });
+            if (bestArea > 0) {
+                mfxState.nestingY = bestY;
             } else {
-                // Fallback: use model top
                 var modelBox = new THREE.Box3().setFromObject(xClone);
                 mfxState.nestingY = modelBox.max.y;
             }
