@@ -198,6 +198,9 @@
         // Pending module to place (key or null)
         pendingModuleKey: null,
 
+        // Y value of the carrier nesting surface (top of base model)
+        nestingY: 23,
+
         // Model cache: modelFile path → THREE.Group template
         xModelCache: {},
 
@@ -424,6 +427,9 @@
         // Build procedural carrier body (always shown; replaced by .x model when loaded)
         buildProceduralCarrier(def, group);
 
+        // Set initial nesting Y from procedural base height
+        mfxState.nestingY = def.dz * 0.18;
+
         // Attempt to load .x model from server
         loadXModelFromServer(def.modelFile, def.key, function (xGroup) {
             if (!mfxState.carrierGroup || mfxState.carrierGroup.name !== '__mfx_carrier__') return;
@@ -438,6 +444,13 @@
             cloneMaterials(xClone);
             fitModelIntoCarrier(xClone, def);
             mfxState.carrierGroup.add(xClone);
+
+            // Compute actual nesting Y from the loaded model's bounding box top
+            var modelBox = new THREE.Box3().setFromObject(xClone);
+            mfxState.nestingY = modelBox.max.y;
+
+            // Reposition all existing slot meshes and modules to the correct height
+            repositionAllSlots();
         });
 
         // Build slot meshes
@@ -497,12 +510,26 @@
     }
 
     // ----------------------------------------------------------------
-    //  Compute baseplate surface Y for the current carrier
+    //  Nesting surface Y (top of the carrier base model)
     // ----------------------------------------------------------------
-    function getBaseplateY() {
-        var def = MFX_CARRIER_DEFS[mfxState.carrierKey];
-        if (!def) return 23;
-        return def.dz * 0.18;
+    function getNestingY() {
+        return mfxState.nestingY || 23;
+    }
+
+    // ----------------------------------------------------------------
+    //  Reposition all slot meshes and placed modules after model loads
+    // ----------------------------------------------------------------
+    function repositionAllSlots() {
+        var ny = getNestingY();
+        Object.keys(mfxState.slotState).forEach(function (id) {
+            var entry = mfxState.slotState[id];
+            if (entry.slotMesh) {
+                entry.slotMesh.position.y = ny;
+            }
+            if (entry.moduleMesh) {
+                positionModuleInSlot(entry.moduleMesh, entry.slot);
+            }
+        });
     }
 
     // ----------------------------------------------------------------
@@ -519,10 +546,10 @@
         });
         var mesh = new THREE.Mesh(geo, mat);
         // Three.js coords: X=width, Y=height(z), Z=depth(y)
-        // Place slot mesh at the slot's defined z height (nesting surface)
+        // Place slot mesh on top of the carrier nesting surface
         mesh.position.set(
             slot.x + slot.dx / 2,
-            slot.z,
+            getNestingY(),
             slot.y + slot.dy / 2
         );
         mesh.name = '__slot_' + slot.id + '__';
@@ -582,7 +609,7 @@
         var center = box.getCenter(new THREE.Vector3());
         xModel.position.set(
             slot.x + slot.dx / 2 - center.x,
-            slot.z - box.min.y,
+            getNestingY() - box.min.y,
             slot.y + slot.dy / 2 - center.z
         );
     }
@@ -602,7 +629,7 @@
         mesh.add(wfMesh);
         mesh.position.set(
             slot.x + slot.dx / 2,
-            slot.z + h / 2,
+            getNestingY() + h / 2,
             slot.y + slot.dy / 2
         );
         mesh.name = '__placeholder__';
