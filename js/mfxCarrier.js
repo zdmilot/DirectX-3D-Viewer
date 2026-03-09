@@ -445,9 +445,12 @@
             fitModelIntoCarrier(xClone, def);
             mfxState.carrierGroup.add(xClone);
 
-            // Compute actual nesting Y from the loaded model's bounding box top
+            // Compute nesting Y from the model height, scaled by slot.z/def.dz ratio
+            // This targets the flat platform surface, not the flagpole/bracket
             var modelBox = new THREE.Box3().setFromObject(xClone);
-            mfxState.nestingY = modelBox.max.y;
+            var modelHeight = modelBox.max.y - modelBox.min.y;
+            var platformRatio = def.slots[0].z / def.dz;
+            mfxState.nestingY = modelHeight * platformRatio;
 
             // Reposition all existing slot meshes and modules to the correct height
             repositionAllSlots();
