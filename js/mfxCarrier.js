@@ -573,7 +573,7 @@
         Object.keys(mfxState.slotState).forEach(function (id) {
             var entry = mfxState.slotState[id];
             if (entry.slotMesh) {
-                entry.slotMesh.position.y = ny + 3; // +3 mm above nesting surface
+                entry.slotMesh.position.y = ny + 0.5; // just above nesting surface
             }
             if (entry.moduleMesh) {
                 positionModuleInSlot(entry.moduleMesh, entry.slot);
@@ -585,13 +585,13 @@
     //  Slot placeholder mesh
     // ----------------------------------------------------------------
     function buildSlotMesh(slot, isSelected) {
-        var h = 6;
-        var geo = new THREE.BoxGeometry(slot.dx, h, slot.dy);
+        var geo = new THREE.PlaneGeometry(slot.dx, slot.dy);
         var color = isSelected ? 0x2288ff : 0x1a2a3a;
-        var mat = new THREE.MeshLambertMaterial({
+        var mat = new THREE.MeshBasicMaterial({
             color: color,
             transparent: true,
             opacity: isSelected ? 0.75 : 0.55,
+            side: THREE.DoubleSide,
             depthWrite: false,
             polygonOffset: true,
             polygonOffsetFactor: -4,
@@ -599,25 +599,26 @@
         });
         var mesh = new THREE.Mesh(geo, mat);
         mesh.renderOrder = 10;
+        // PlaneGeometry faces along XY — rotate to lie flat on XZ
+        mesh.rotation.x = -Math.PI / 2;
         // Three.js coords: X=width, Y=height(z), Z=depth(y)
-        // Place slot mesh on top of the carrier nesting surface
-        // Raise visual target 3 mm above nesting surface
+        // Place slot plane on top of the carrier nesting surface
         mesh.position.set(
             slot.x + slot.dx / 2,
-            getNestingY() + 3,
+            getNestingY() + 0.5,
             slot.y + slot.dy / 2
         );
         mesh.name = '__slot_' + slot.id + '__';
         mesh.userData.slotId = slot.id;
         mesh.userData.isSlot = true;
-        // Wireframe outline
-        var edgesGeo = new THREE.EdgesGeometry(geo);
+        // Wireframe outline (rectangle)
+        var outlineGeo = new THREE.EdgesGeometry(geo);
         var edgesMat = new THREE.LineBasicMaterial({
             color: isSelected ? 0x66aaff : 0x4488aa,
             linewidth: 1,
             depthTest: false,
         });
-        var edges = new THREE.LineSegments(edgesGeo, edgesMat);
+        var edges = new THREE.LineSegments(outlineGeo, edgesMat);
         edges.renderOrder = 11;
         mesh.add(edges);
         return mesh;
