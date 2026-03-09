@@ -1246,11 +1246,17 @@
                     <div class="vl-dbg-header"><i class="fas fa-crosshairs"></i> Fixture Position Debug</div>
                     <div class="vl-dbg-readout" id="vl-fix-readout">No fixture installed</div>
 
-                    <!-- Target selector: Body vs Accessories -->
+                    <!-- Target selector: Body / All Accessories / Individual / Group -->
                     <div class="vl-fix-target-row">
                         <button class="vl-fix-target-btn is-active" id="vl-fix-target-body" data-target="body">Body</button>
-                        <button class="vl-fix-target-btn" id="vl-fix-target-acc" data-target="accessories">Accessories</button>
+                        <button class="vl-fix-target-btn" id="vl-fix-target-acc" data-target="accessories">All Acces</button>
                         <button class="vl-fix-target-btn" id="vl-fix-target-group" data-target="group">Group</button>
+                    </div>
+                    <div class="vl-fix-component-row">
+                        <label style="font-size:10px;color:#9ab;">Component:</label>
+                        <select id="vl-fix-component-select" class="vl-dbg-input" style="flex:1;font-size:10px;">
+                            <option value="">(none — use target above)</option>
+                        </select>
                     </div>
 
                     <div class="vl-dbg-row">

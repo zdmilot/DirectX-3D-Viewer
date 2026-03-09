@@ -246,12 +246,14 @@
 
         // Fixture position debug state
         fixtureDebugMode: false,
-        fixtureDebugTarget: 'body',   // 'body' | 'accessories' | 'group'
+        fixtureDebugTarget: 'body',   // 'body' | 'accessories' | 'group' | 'component'
+        fixtureDebugComponent: '',    // child name when target === 'component'
         fixtureDebugOffsets: {
             body: { x: 0, y: 0, z: 0 },
             accessories: { x: 0, y: 0, z: 0 },
             group: { x: 0, y: 0, z: 0 }
         },
+        fixtureDebugComponentOffsets: {},  // keyed by child.name → {x,y,z},
 
         // Settings: use generic (procedural) carrier rendering instead of .x models
         useGenericCarriers: false,
@@ -3073,6 +3075,7 @@
         if (!fix) return;
         var mesh = fix.mesh;
         var off = vlState.fixtureDebugOffsets;
+        var compOff = vlState.fixtureDebugComponentOffsets;
 
         // Apply group-level offset to the mesh itself
         if (mesh.userData._fixBasePos) {
@@ -3086,17 +3089,26 @@
         mesh.children.forEach(function (child) {
             if (!child.userData._fixBasePos) return;
             var base = child.userData._fixBasePos;
-            if (child.name.indexOf('_body_x__') !== -1 || child.name.indexOf('_body__') !== -1) {
+            var cx = 0, cy = 0, cz = 0;
+
+            // Per-component offset (if any)
+            if (child.name && compOff[child.name]) {
+                cx = compOff[child.name].x || 0;
+                cy = compOff[child.name].y || 0;
+                cz = compOff[child.name].z || 0;
+            }
+
+            if (child.name && (child.name.indexOf('_body_x__') !== -1 || child.name.indexOf('_body__') !== -1)) {
                 child.position.set(
-                    base.x + off.body.x,
-                    base.y + off.body.y,
-                    base.z + off.body.z
+                    base.x + off.body.x + cx,
+                    base.y + off.body.y + cy,
+                    base.z + off.body.z + cz
                 );
-            } else if (child.name.indexOf('_labware_') !== -1) {
+            } else if (child.name && child.name.indexOf('_labware_') !== -1) {
                 child.position.set(
-                    base.x + off.accessories.x,
-                    base.y + off.accessories.y,
-                    base.z + off.accessories.z
+                    base.x + off.accessories.x + cx,
+                    base.y + off.accessories.y + cy,
+                    base.z + off.accessories.z + cz
                 );
             }
         });
@@ -3122,48 +3134,67 @@
         if (!fix) { el.textContent = 'No fixture installed'; return; }
         var mesh = fix.mesh;
         var off = vlState.fixtureDebugOffsets;
+        var compOff = vlState.fixtureDebugComponentOffsets;
         var fmt = function (o) { return 'X:' + o.x.toFixed(1) + ' Y:' + o.y.toFixed(1) + ' Z:' + o.z.toFixed(1); };
 
-        // Compute actual world positions for body and accessories
-        var bodyWorldPos = null;
-        var accWorldPositions = [];
+        var lines = [fix.name];
+        lines.push('Group: ' + fmt(mesh.position) + '  off: ' + fmt(off.group));
+
         mesh.children.forEach(function (child) {
             if (!child.name) return;
+            var wp = new THREE.Vector3();
+            child.getWorldPosition(wp);
+            var label = child.name.replace(/__/g, '').replace('waste_chute_', '');
+            var co = compOff[child.name];
+            var coStr = co ? '  comp: ' + fmt(co) : '';
             if (child.name.indexOf('_body_x__') !== -1 || child.name.indexOf('_body__') !== -1) {
-                var wp = new THREE.Vector3();
-                child.getWorldPosition(wp);
-                bodyWorldPos = wp;
+                lines.push('Body: ' + fmt(wp) + coStr);
             } else if (child.name.indexOf('_labware_') !== -1) {
-                var wp2 = new THREE.Vector3();
-                child.getWorldPosition(wp2);
-                accWorldPositions.push({ name: child.name, pos: wp2 });
+                var selected = (vlState.fixtureDebugTarget === 'component' && vlState.fixtureDebugComponent === child.name);
+                lines.push((selected ? '> ' : '  ') + label + ': ' + fmt(wp) + coStr);
             }
         });
 
-        var groupPos = mesh.position;
-        var lines = [fix.name];
-        lines.push('Group pos: ' + fmt(groupPos) + '  off: ' + fmt(off.group));
-        if (bodyWorldPos) {
-            lines.push('Body world: ' + fmt(bodyWorldPos) + '  off: ' + fmt(off.body));
-        }
-        if (accWorldPositions.length > 0) {
-            // Show first accessory world pos as representative
-            lines.push('Acces world: ' + fmt(accWorldPositions[0].pos) + '  off: ' + fmt(off.accessories));
-            lines.push('(' + accWorldPositions.length + ' accessory items)');
-        }
         el.textContent = lines.join('\n');
     }
 
     /** Update the input values to match the currently selected target. */
     function syncFixtureDebugInputs() {
         var target = vlState.fixtureDebugTarget;
-        var off = vlState.fixtureDebugOffsets[target];
+        var off;
+        if (target === 'component' && vlState.fixtureDebugComponent) {
+            var cname = vlState.fixtureDebugComponent;
+            if (!vlState.fixtureDebugComponentOffsets[cname]) {
+                vlState.fixtureDebugComponentOffsets[cname] = { x: 0, y: 0, z: 0 };
+            }
+            off = vlState.fixtureDebugComponentOffsets[cname];
+        } else {
+            off = vlState.fixtureDebugOffsets[target];
+        }
+        if (!off) return;
         var xi = document.getElementById('vl-fix-x');
         var yi = document.getElementById('vl-fix-y');
         var zi = document.getElementById('vl-fix-z');
         if (xi) xi.value = off.x;
         if (yi) yi.value = off.y;
         if (zi) zi.value = off.z;
+    }
+
+    /** Populate the component dropdown with current fixture children. */
+    function populateComponentSelect() {
+        var sel = document.getElementById('vl-fix-component-select');
+        if (!sel) return;
+        sel.innerHTML = '<option value="">(none — use target above)</option>';
+        var fix = getActiveFixtureMesh();
+        if (!fix) return;
+        fix.mesh.children.forEach(function (child) {
+            if (!child.name) return;
+            var label = child.name.replace(/__/g, '').replace('waste_chute_', '').replace('entry_exit_drawer_', '');
+            var opt = document.createElement('option');
+            opt.value = child.name;
+            opt.textContent = label;
+            sel.appendChild(opt);
+        });
     }
 
     /** Wire up the fixture debug panel controls. */
@@ -3174,6 +3205,9 @@
             if (!btn) return;
             btn.addEventListener('click', function () {
                 vlState.fixtureDebugTarget = t;
+                vlState.fixtureDebugComponent = '';
+                var compSel = document.getElementById('vl-fix-component-select');
+                if (compSel) compSel.value = '';
                 document.querySelectorAll('.vl-fix-target-btn').forEach(function (b) {
                     b.classList.toggle('is-active', b.dataset.target === t);
                 });
@@ -3181,13 +3215,43 @@
             });
         });
 
+        // Component dropdown
+        var compSel = document.getElementById('vl-fix-component-select');
+        if (compSel) {
+            compSel.addEventListener('change', function () {
+                var val = compSel.value;
+                if (val) {
+                    vlState.fixtureDebugTarget = 'component';
+                    vlState.fixtureDebugComponent = val;
+                    document.querySelectorAll('.vl-fix-target-btn').forEach(function (b) {
+                        b.classList.remove('is-active');
+                    });
+                } else {
+                    vlState.fixtureDebugTarget = 'body';
+                    vlState.fixtureDebugComponent = '';
+                    var bodyBtn = document.getElementById('vl-fix-target-body');
+                    if (bodyBtn) bodyBtn.classList.add('is-active');
+                }
+                syncFixtureDebugInputs();
+                refreshFixtureDebugReadout();
+            });
+        }
+
         // Step buttons
         document.querySelectorAll('.fix-step').forEach(function (btn) {
             btn.addEventListener('click', function () {
                 var axis = btn.dataset.axis;
                 var delta = parseFloat(btn.dataset.delta);
                 var target = vlState.fixtureDebugTarget;
-                vlState.fixtureDebugOffsets[target][axis] += delta;
+                if (target === 'component' && vlState.fixtureDebugComponent) {
+                    var cname = vlState.fixtureDebugComponent;
+                    if (!vlState.fixtureDebugComponentOffsets[cname]) {
+                        vlState.fixtureDebugComponentOffsets[cname] = { x: 0, y: 0, z: 0 };
+                    }
+                    vlState.fixtureDebugComponentOffsets[cname][axis] += delta;
+                } else {
+                    vlState.fixtureDebugOffsets[target][axis] += delta;
+                }
                 syncFixtureDebugInputs();
                 applyFixtureDebugOffsets();
                 refreshFixtureDebugReadout();
@@ -3200,7 +3264,15 @@
             if (!input) return;
             input.addEventListener('input', function () {
                 var target = vlState.fixtureDebugTarget;
-                vlState.fixtureDebugOffsets[target][axis] = parseFloat(input.value) || 0;
+                if (target === 'component' && vlState.fixtureDebugComponent) {
+                    var cname = vlState.fixtureDebugComponent;
+                    if (!vlState.fixtureDebugComponentOffsets[cname]) {
+                        vlState.fixtureDebugComponentOffsets[cname] = { x: 0, y: 0, z: 0 };
+                    }
+                    vlState.fixtureDebugComponentOffsets[cname][axis] = parseFloat(input.value) || 0;
+                } else {
+                    vlState.fixtureDebugOffsets[target][axis] = parseFloat(input.value) || 0;
+                }
                 applyFixtureDebugOffsets();
                 refreshFixtureDebugReadout();
             });
@@ -3215,6 +3287,7 @@
                     accessories: { x: 0, y: 0, z: 0 },
                     group: { x: 0, y: 0, z: 0 }
                 };
+                vlState.fixtureDebugComponentOffsets = {};
                 syncFixtureDebugInputs();
                 applyFixtureDebugOffsets();
                 refreshFixtureDebugReadout();
@@ -3226,11 +3299,19 @@
         if (copyBtn) {
             copyBtn.addEventListener('click', function () {
                 var off = vlState.fixtureDebugOffsets;
+                var compOff = vlState.fixtureDebugComponentOffsets;
                 var fmt = function (o) { return '{ x: ' + o.x.toFixed(1) + ', y: ' + o.y.toFixed(1) + ', z: ' + o.z.toFixed(1) + ' }'; };
                 var text = 'Fixture Debug Offsets:\n'
                     + '  body:        ' + fmt(off.body) + '\n'
                     + '  accessories: ' + fmt(off.accessories) + '\n'
                     + '  group:       ' + fmt(off.group);
+                var compKeys = Object.keys(compOff);
+                if (compKeys.length > 0) {
+                    text += '\n  Per-component:';
+                    compKeys.forEach(function (k) {
+                        text += '\n    ' + k + ': ' + fmt(compOff[k]);
+                    });
+                }
                 navigator.clipboard.writeText(text).then(function () {
                     showVLStatus('Fixture offsets copied to clipboard', '');
                 });
@@ -3347,6 +3428,7 @@
                     // Snapshot positions so debug offsets work from current state
                     var fix = getActiveFixtureMesh();
                     if (fix) snapshotFixtureBasePositions(fix.mesh);
+                    populateComponentSelect();
                     syncFixtureDebugInputs();
                     refreshFixtureDebugReadout();
                 }

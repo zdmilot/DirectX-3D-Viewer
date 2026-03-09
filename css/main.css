@@ -2957,6 +2957,18 @@ body {
     color: #7bc8ff;
     font-weight: 600;
 }
+.vl-fix-component-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.vl-fix-component-row select {
+    background: rgba(0,0,0,0.35);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 4px;
+    color: #dde4ec;
+    padding: 3px 4px;
+}
 
 /* ── Left Panel (Carrier Palette + TML + Placed List) ── */
 .vl-left-panel {
