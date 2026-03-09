@@ -427,9 +427,12 @@
         // Attempt to load .x model from server
         loadXModelFromServer(def.modelFile, def.key, function (xGroup) {
             if (!mfxState.carrierGroup || mfxState.carrierGroup.name !== '__mfx_carrier__') return;
-            // Remove procedural body, add .x model
+            // Remove procedural body and rails, add .x model
             var proc = mfxState.carrierGroup.getObjectByName('__proc_body__');
             if (proc) mfxState.carrierGroup.remove(proc);
+            var rails = [];
+            mfxState.carrierGroup.children.forEach(function (c) { if (c.name === '__proc_rail__') rails.push(c); });
+            rails.forEach(function (r) { mfxState.carrierGroup.remove(r); });
             var xClone = xGroup.clone(true);
             xClone.name = '__x_body__';
             cloneMaterials(xClone);
@@ -516,11 +519,10 @@
         });
         var mesh = new THREE.Mesh(geo, mat);
         // Three.js coords: X=width, Y=height(z), Z=depth(y)
-        // Place slot mesh on the baseplate surface, not at max carrier height
-        var baseY = getBaseplateY();
+        // Place slot mesh at the slot's defined z height (nesting surface)
         mesh.position.set(
             slot.x + slot.dx / 2,
-            baseY,
+            slot.z,
             slot.y + slot.dy / 2
         );
         mesh.name = '__slot_' + slot.id + '__';
@@ -578,10 +580,9 @@
     function positionModuleInSlot(xModel, slot) {
         var box = new THREE.Box3().setFromObject(xModel);
         var center = box.getCenter(new THREE.Vector3());
-        var baseY = getBaseplateY();
         xModel.position.set(
             slot.x + slot.dx / 2 - center.x,
-            baseY - box.min.y,
+            slot.z - box.min.y,
             slot.y + slot.dy / 2 - center.z
         );
     }
@@ -599,10 +600,9 @@
         var wfMat = new THREE.MeshBasicMaterial({ color: 0x88bbdd, wireframe: true });
         var wfMesh = new THREE.Mesh(wfGeo, wfMat);
         mesh.add(wfMesh);
-        var baseY = getBaseplateY();
         mesh.position.set(
             slot.x + slot.dx / 2,
-            baseY + h / 2,
+            slot.z + h / 2,
             slot.y + slot.dy / 2
         );
         mesh.name = '__placeholder__';
