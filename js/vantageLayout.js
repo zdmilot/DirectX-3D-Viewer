@@ -1190,13 +1190,29 @@
         var group = buildDeckFixtureMesh(cutoutIdx, vlState.wasteTmlDef,
             vlState.wasteModelCacheKey, '__waste_chute__');
         if (group) {
-            // Apply calibrated offsets for body and accessories alignment
+            // Base repositioning: align TML origin with the right edge of the cutout
+            var slot = DECK_CUTOUTS[cutoutIdx];
+            var slotX = DECK.FIRST_TRACK_X + (slot.trackStart - 1) * DECK.TRACK_SPACING;
+            var cutoutWidth = slot.trackSpan * DECK.TRACK_SPACING;
+            group.position.x = slotX + cutoutWidth;
+
+            // Shift group 8 tracks left for accessories base alignment
+            var accessoryShift = -8 * DECK.TRACK_SPACING;   // -180mm
+            var bodyShift      = -3 * DECK.TRACK_SPACING;   // -67.5mm
+            group.position.x += accessoryShift;
+
+            // Apply per-child offsets
             group.traverse(function (child) {
                 if (!child.name) return;
                 if (child.name.indexOf('_body_x__') !== -1 || child.name.indexOf('_body__') !== -1) {
+                    // Body: +5 tracks right relative to group (nets 3 left overall)
+                    child.position.x += (accessoryShift - bodyShift) * -1; // +112.5
+                    child.position.z += DECK.TRACK_Y_START / 2;           // +31.5
+                    // Fine-tune from debug: body { x: -10, y: 0, z: -10 }
                     child.position.x += -10.0;
                     child.position.z += -10.0;
                 } else if (child.name.indexOf('_labware_') !== -1) {
+                    // Fine-tune from debug: accessories { x: -15, y: 0, z: -3.5 }
                     child.position.x += -15.0;
                     child.position.z += -3.5;
                 }
