@@ -75,7 +75,7 @@
         cvState.mainCamera.position.set(3, 2, 5);
 
         // -- Renderer --
-        cvState.mainRenderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+        cvState.mainRenderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
         cvState.mainRenderer.setPixelRatio(window.devicePixelRatio);
         cvState.mainRenderer.setSize(w, h);
 
