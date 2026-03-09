@@ -3113,12 +3113,38 @@
         if (!el) return;
         var fix = getActiveFixtureMesh();
         if (!fix) { el.textContent = 'No fixture installed'; return; }
+        var mesh = fix.mesh;
         var off = vlState.fixtureDebugOffsets;
         var fmt = function (o) { return 'X:' + o.x.toFixed(1) + ' Y:' + o.y.toFixed(1) + ' Z:' + o.z.toFixed(1); };
-        el.textContent = fix.name + '\n'
-            + 'Body:  ' + fmt(off.body) + '\n'
-            + 'Acces: ' + fmt(off.accessories) + '\n'
-            + 'Group: ' + fmt(off.group);
+
+        // Compute actual world positions for body and accessories
+        var bodyWorldPos = null;
+        var accWorldPositions = [];
+        mesh.children.forEach(function (child) {
+            if (!child.name) return;
+            if (child.name.indexOf('_body_x__') !== -1 || child.name.indexOf('_body__') !== -1) {
+                var wp = new THREE.Vector3();
+                child.getWorldPosition(wp);
+                bodyWorldPos = wp;
+            } else if (child.name.indexOf('_labware_') !== -1) {
+                var wp2 = new THREE.Vector3();
+                child.getWorldPosition(wp2);
+                accWorldPositions.push({ name: child.name, pos: wp2 });
+            }
+        });
+
+        var groupPos = mesh.position;
+        var lines = [fix.name];
+        lines.push('Group pos: ' + fmt(groupPos) + '  off: ' + fmt(off.group));
+        if (bodyWorldPos) {
+            lines.push('Body world: ' + fmt(bodyWorldPos) + '  off: ' + fmt(off.body));
+        }
+        if (accWorldPositions.length > 0) {
+            // Show first accessory world pos as representative
+            lines.push('Acces world: ' + fmt(accWorldPositions[0].pos) + '  off: ' + fmt(off.accessories));
+            lines.push('(' + accWorldPositions.length + ' accessory items)');
+        }
+        el.textContent = lines.join('\n');
     }
 
     /** Update the input values to match the currently selected target. */
