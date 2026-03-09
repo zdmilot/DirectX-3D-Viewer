@@ -2846,6 +2846,7 @@ body {
     padding: 4px 8px;
     border-radius: 4px;
     letter-spacing: 0.3px;
+    white-space: pre-wrap;
 }
 .vl-dbg-row {
     display: flex;
@@ -2930,6 +2931,15 @@ body {
     bottom: 8px;
     right: 64px;
 }
+
+/* ── EE Drawer Debug Panel ── */
+.vl-ee-debug-panel {
+    top: auto;
+    bottom: 8px;
+    left: 236px;
+    right: auto;
+}
+
 .vl-fix-target-row {
     display: flex;
     gap: 4px;
@@ -2955,6 +2965,18 @@ body {
     border-color: rgba(2,117,216,0.6);
     color: #7bc8ff;
     font-weight: 600;
+}
+.vl-fix-component-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.vl-fix-component-row select {
+    background: rgba(0,0,0,0.35);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 4px;
+    color: #dde4ec;
+    padding: 3px 4px;
 }
 
 /* ── Left Panel (Carrier Palette + TML + Placed List) ── */
@@ -3415,6 +3437,211 @@ body {
 .vl-site-action-btn-muted:hover {
     background: rgba(0,0,0,0.06);
     color: var(--text-primary);
+}
+
+/* ── Rack / Container Library Panel ── */
+.vl-rack-list {
+    max-height: 140px;
+    overflow-y: auto;
+    padding: 2px 0;
+}
+
+.vl-rack-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    border-bottom: 1px solid var(--card-border);
+    font-size: 11px;
+    cursor: default;
+}
+
+.vl-rack-item.drag-over {
+    background: rgba(2,117,216,0.08);
+}
+
+.vl-rack-icon {
+    color: var(--accent);
+    font-size: 12px;
+    width: 18px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.vl-rack-name {
+    font-weight: 600;
+    font-size: 11px;
+    color: var(--text-primary);
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.vl-rack-desc {
+    font-size: 9px;
+    color: var(--text-muted);
+    max-width: 80px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.vl-rack-del {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 2px 4px;
+    font-size: 10px;
+    opacity: 0.5;
+    transition: opacity var(--t-fast);
+}
+
+.vl-rack-del:hover {
+    opacity: 1;
+    color: #e05555;
+}
+
+/* ── Site row: container assignment ── */
+.vl-site-row.has-container {
+    background: rgba(200,176,128,0.08);
+}
+
+.vl-site-container-name {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--accent);
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.vl-site-container-name i {
+    margin-right: 3px;
+    font-size: 9px;
+}
+
+.vl-site-btn-rack {
+    padding: 3px 6px !important;
+    min-width: unset;
+}
+
+.vl-site-btn-remove {
+    border-color: rgba(224,85,85,0.5) !important;
+    color: #e05555 !important;
+}
+
+.vl-site-btn-remove:hover {
+    background: rgba(224,85,85,0.1);
+}
+
+/* ── Container Picker Dialog ── */
+.vl-dialog-wide {
+    width: 380px;
+    max-height: 480px;
+}
+
+.vl-cd-body {
+    padding: 0 !important;
+    gap: 0 !important;
+    display: flex;
+    flex-direction: column;
+    max-height: 340px;
+}
+
+.vl-cd-actions {
+    display: flex;
+    gap: 6px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--card-border);
+}
+
+.vl-cd-action-btn {
+    flex: 1;
+    padding: 5px 8px;
+    font-size: 10px;
+    border: 1px solid var(--card-border);
+    border-radius: var(--r-xs);
+    background: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    transition: all var(--t-fast);
+}
+
+.vl-cd-action-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.vl-cd-list-wrap {
+    flex: 1;
+    overflow-y: auto;
+    padding: 4px 0;
+}
+
+.vl-cd-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 7px 14px;
+    border: none;
+    border-bottom: 1px solid var(--card-border);
+    background: none;
+    color: var(--text-primary);
+    font-size: 11px;
+    cursor: pointer;
+    text-align: left;
+    transition: background var(--t-fast);
+}
+
+.vl-cd-item:hover {
+    background: rgba(2,117,216,0.06);
+}
+
+.vl-cd-item i {
+    color: var(--accent);
+    font-size: 11px;
+    flex-shrink: 0;
+}
+
+.vl-cd-item-name {
+    flex: 1;
+    font-weight: 600;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.vl-cd-item-dim {
+    font-size: 9px;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+.vl-cd-filter {
+    width: calc(100% - 28px);
+    margin: 8px 14px;
+    padding: 5px 10px;
+    border: 1px solid var(--card-border);
+    border-radius: var(--r-xs);
+    background: var(--body-bg);
+    color: var(--text-primary);
+    font-size: 11px;
+}
+
+.vl-cd-items-scroll {
+    max-height: 240px;
+    overflow-y: auto;
 }
 
 /* ── Place Carrier Dialog ── */

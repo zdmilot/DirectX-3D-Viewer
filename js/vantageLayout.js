@@ -171,6 +171,7 @@
         controls: null,
         isDark: false,
         gridVisible: false,
+        labelsVisible: true,
         isPerspective: true,
         isPanning: false,
         toolbarCollapsed: false,
@@ -203,6 +204,13 @@
         // Currently selected carrier
         selectedCarrierId: null,
 
+        // Rack / Container library:  keyed by user-chosen name
+        // Each entry: { name, description, dx, dy, dz, model, modelRel,
+        //               xOff, yOff, zOff, fileName, source:'file'|'server' }
+        rackLibrary: {},
+        rackModelCache: {},    // keyed same as rackLibrary → THREE.Group
+        rackModelLoading: {},
+
         // Cache of THREE.Group models loaded from .x files, keyed by carrier key
         xModelCache: {},
 
@@ -225,7 +233,7 @@
         deckCoverNodes: null,
 
         // Waste chute state: which cutout has waste installed (-1 = none, 0-3 = cutout index)
-        wasteCutoutIdx: -1,
+        wasteCutoutIdx: 2,   // Default to Panel 3
         // Parsed waste TML data (loaded from server on init)
         wasteTmlDef: null,
         // Three.js group for the installed waste chute (removed/rebuilt on change)
@@ -239,18 +247,20 @@
         drawerMesh: null,
         drawerModelCacheKey: '__ENTRY_EXIT_DRAWER__',
 
-        // Back panel node reference
-        backPanelNode: null,
-        backPanelVisible: true,
+        // EE drawer debug state
+        eeDebugMode: false,
+        _eeBasePos: null,
 
         // Fixture position debug state
         fixtureDebugMode: false,
-        fixtureDebugTarget: 'body',   // 'body' | 'accessories' | 'group'
+        fixtureDebugTarget: 'body',   // 'body' | 'accessories' | 'group' | 'component'
+        fixtureDebugComponent: '',    // child name when target === 'component'
         fixtureDebugOffsets: {
             body: { x: 0, y: 0, z: 0 },
             accessories: { x: 0, y: 0, z: 0 },
             group: { x: 0, y: 0, z: 0 }
         },
+        fixtureDebugComponentOffsets: {},  // keyed by child.name → {x,y,z},
 
         // Settings: use generic (procedural) carrier rendering instead of .x models
         useGenericCarriers: false,
@@ -383,6 +393,7 @@
         wireVLControls();
         wireVLToolbar();
         wireTMLImport();
+        wireRackImport();
         wireCarrierPalette();
         wireCanvasEvents();
 
@@ -390,6 +401,7 @@
         setDragToPlace(true);
         wireVLPanelToggles();
         populateCarrierPalette();
+        populateRackPalette();
         resetVLCamera();
     }
 
@@ -457,6 +469,9 @@
         const grid = DeckUnits.createGrid(2000, 22.5, gridColor, { name: '__vlgrid__', visible: vlState.gridVisible });
         grid.position.set(DECK.FIRST_TRACK_X + (DECK.TRACK_COUNT * DECK.TRACK_SPACING) / 2, DECK.SURFACE_Z + 4.1, 310);
         scene.add(grid);
+
+        // Orientation labels (Front / Back / Left / Right)
+        addOrientationLabels();
     }
 
     // ================================================================
@@ -535,6 +550,9 @@
                     const o = vlState.scene.getObjectByName(`__track_${i}__`);
                     if (o) o.visible = false;
                 }
+
+                // Reposition orientation labels to sit outside the actual GLTF bounds
+                repositionOrientationLabels(model);
 
                 showVLStatus('Vantage deck model loaded', 'ok');
             },
@@ -675,6 +693,23 @@
             carrier.mesh = result.group;
             carrier.siteMeshes = result.siteMeshes;
             carrier.plateMeshes = plateMeshes;
+
+            // Re-attach any assigned containers
+            if (carrier.siteContainers) {
+                carrier.containerMeshes = [];
+                Object.keys(carrier.siteContainers).forEach(function (siteIdStr) {
+                    var rackKey = carrier.siteContainers[siteIdStr];
+                    var rackDef = vlState.rackLibrary[rackKey];
+                    var site = def.sites.find(function (s) { return s.id === parseInt(siteIdStr, 10); });
+                    if (rackDef && site) {
+                        var cm = buildContainerMesh(rackKey, rackDef, site, def);
+                        if (cm) {
+                            result.group.add(cm);
+                            carrier.containerMeshes.push({ siteId: parseInt(siteIdStr, 10), rackKey: rackKey, mesh: cm });
+                        }
+                    }
+                });
+            }
         });
     }
 
@@ -710,6 +745,87 @@
         sprite.position.set(xPos + DECK.TRACK_WIDTH / 2, DECK.SURFACE_Z + 12, DECK.TRACK_Y_START + DECK.TRACK_DEPTH + 12);
         sprite.name = `__tracklabel_${text}__`;
         vlState.scene.add(sprite);
+    }
+
+    function addOrientationLabel(text, x, y, z, scaleFactor) {
+        const cvW = 512;
+        const cvH = 128;
+        const cv = document.createElement('canvas');
+        cv.width = cvW; cv.height = cvH;
+        const ctx = cv.getContext('2d');
+        ctx.clearRect(0, 0, cvW, cvH);
+        ctx.fillStyle = '#000000';
+        ctx.font = 'bold 72px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(text, cvW / 2, cvH / 2);
+        const tex = new THREE.CanvasTexture(cv);
+        tex.premultiplyAlpha = false;
+        const mat = new THREE.SpriteMaterial({
+            map: tex,
+            transparent: true,
+            alphaTest: 0.1,
+            depthTest: false,
+            depthWrite: false
+        });
+        const sprite = new THREE.Sprite(mat);
+        sprite.renderOrder = 9999;
+        sprite.scale.set(scaleFactor * 4, scaleFactor, 1);
+        sprite.position.set(x, y, z);
+        sprite.name = `__orientlabel_${text.toLowerCase()}__`;
+        vlState.scene.add(sprite);
+    }
+
+    function addOrientationLabels() {
+        const centerX = DECK.FIRST_TRACK_X + (DECK.PHYSICAL_TRACKS * DECK.TRACK_SPACING) / 2;
+        const centerZ = DECK.TRACK_Y_START + DECK.TRACK_DEPTH / 2;
+        const labelY = DECK.SURFACE_Z + 20;
+        const scale = 18;
+
+        // Place labels well outside the track area as initial fallback;
+        // repositionOrientationLabels() will update them once the GLTF loads.
+        const padFB = 300;
+        const padLR = 300;
+
+        addOrientationLabel('FRONT', centerX, labelY, DECK.TRACK_Y_START + DECK.TRACK_DEPTH + padFB, scale);
+        addOrientationLabel('BACK', centerX, labelY, DECK.TRACK_Y_START - padFB, scale);
+        addOrientationLabel('LEFT', DECK.FIRST_TRACK_X - padLR, labelY, centerZ, scale);
+        addOrientationLabel('RIGHT', DECK.FIRST_TRACK_X + DECK.PHYSICAL_TRACKS * DECK.TRACK_SPACING + padLR, labelY, centerZ, scale);
+    }
+
+    function toggleOrientationLabels() {
+        vlState.labelsVisible = !vlState.labelsVisible;
+        const names = ['__orientlabel_front__', '__orientlabel_back__', '__orientlabel_left__', '__orientlabel_right__'];
+        names.forEach(function (n) {
+            const obj = vlState.scene.getObjectByName(n);
+            if (obj) obj.visible = vlState.labelsVisible;
+        });
+        const btn = vlState.host.querySelector('#vl-vt-labels');
+        if (btn) btn.classList.toggle('vt-active', vlState.labelsVisible);
+    }
+
+    /**
+     * Reposition orientation labels so they sit outside the actual GLTF
+     * bounding box with equal symmetric padding on each axis pair.
+     */
+    function repositionOrientationLabels(gltfModel) {
+        // Compute world-space bounding box of the placed GLTF model
+        const box = new THREE.Box3().setFromObject(gltfModel);
+        const pad = 80;  // mm clearance outside the model on every side
+        const labelY = DECK.SURFACE_Z + 20;
+        const centerX = (box.min.x + box.max.x) / 2;
+        const centerZ = (box.min.z + box.max.z) / 2;
+
+        const names = {
+            front: vlState.scene.getObjectByName('__orientlabel_front__'),
+            back:  vlState.scene.getObjectByName('__orientlabel_back__'),
+            left:  vlState.scene.getObjectByName('__orientlabel_left__'),
+            right: vlState.scene.getObjectByName('__orientlabel_right__'),
+        };
+        if (names.front) names.front.position.set(centerX, labelY, box.max.z + pad);
+        if (names.back)  names.back.position.set(centerX, labelY, box.min.z - pad);
+        if (names.left)  names.left.position.set(box.min.x - pad, labelY, centerZ);
+        if (names.right)  names.right.position.set(box.max.x + pad, labelY, centerZ);
     }
 
     // ================================================================
@@ -978,6 +1094,698 @@
     }
 
     // ================================================================
+    //  Rack / Container Library — parse .rck & load 3D model
+    // ================================================================
+
+    /**
+     * Parse a text-format .rck and extract full rack metadata
+     * (dimensions, description, 3D model, container references, etc.).
+     */
+    function parseRCKFull(text) {
+        var result = {
+            name: '', description: '',
+            dx: 0, dy: 0, dz: 0,
+            model: null, modelRel: null,
+            xOff: 0, yOff: 0, zOff: 0,
+            viewName: '', rows: 0, columns: 0,
+        };
+        var kvRe = /^(\S+),\s*"([^"]*)"[;,]?\s*$/gm;
+        var m;
+        while ((m = kvRe.exec(text)) !== null) {
+            switch (m[1]) {
+                case '3DModel':     result.model      = m[2]; break;
+                case '3DModelRel':  result.modelRel   = m[2]; break;
+                case '3DxOffset':   result.xOff       = parseFloat(m[2]) || 0; break;
+                case '3DyOffset':   result.yOff       = parseFloat(m[2]) || 0; break;
+                case '3DzOffset':   result.zOff       = parseFloat(m[2]) || 0; break;
+                case 'Description': result.description = m[2]; break;
+                case 'ViewName':    result.viewName   = m[2]; break;
+                case 'Dim.Dx':      result.dx         = parseFloat(m[2]) || 0; break;
+                case 'Dim.Dy':      result.dy         = parseFloat(m[2]) || 0; break;
+                case 'Dim.Dz':      result.dz         = parseFloat(m[2]) || 0; break;
+                case 'Rows':        result.rows       = parseInt(m[2], 10) || 0; break;
+                case 'Columns':     result.columns    = parseInt(m[2], 10) || 0; break;
+            }
+        }
+        if (!result.name) result.name = result.viewName || 'Unnamed Rack';
+        return result;
+    }
+
+    /**
+     * Parse a binary .rck into full rack metadata (same fields as parseRCKFull).
+     */
+    function parseRCKFullBinary(arrayBuffer) {
+        var bytes = new Uint8Array(arrayBuffer);
+        var text = '';
+        for (var i = 0; i < bytes.length; i++) {
+            text += (bytes[i] >= 32 && bytes[i] < 127) ? String.fromCharCode(bytes[i]) : '\n';
+        }
+        var result = {
+            name: '', description: '',
+            dx: 0, dy: 0, dz: 0,
+            model: null, modelRel: null,
+            xOff: 0, yOff: 0, zOff: 0,
+            viewName: '', rows: 0, columns: 0,
+        };
+        var match;
+        match = text.match(/3DModel\n([^\n]+)/);     if (match) result.model = match[1];
+        match = text.match(/3DModelRel\n([^\n]+)/);  if (match) result.modelRel = match[1];
+        match = text.match(/3DxOffset\n([^\n]+)/);   if (match) result.xOff = parseFloat(match[1]) || 0;
+        match = text.match(/3DyOffset\n([^\n]+)/);   if (match) result.yOff = parseFloat(match[1]) || 0;
+        match = text.match(/3DzOffset\n([^\n]+)/);   if (match) result.zOff = parseFloat(match[1]) || 0;
+        match = text.match(/Description\n([^\n]+)/); if (match) result.description = match[1];
+        match = text.match(/ViewName\n([^\n]+)/);    if (match) result.viewName = match[1];
+        match = text.match(/Dim\.Dx\n([^\n]+)/);     if (match) result.dx = parseFloat(match[1]) || 0;
+        match = text.match(/Dim\.Dy\n([^\n]+)/);     if (match) result.dy = parseFloat(match[1]) || 0;
+        match = text.match(/Dim\.Dz\n([^\n]+)/);     if (match) result.dz = parseFloat(match[1]) || 0;
+        match = text.match(/Rows\n([^\n]+)/);        if (match) result.rows = parseInt(match[1], 10) || 0;
+        match = text.match(/Columns\n([^\n]+)/);     if (match) result.columns = parseInt(match[1], 10) || 0;
+        if (!result.name) result.name = result.viewName || 'Unnamed Rack';
+        return result;
+    }
+
+    /**
+     * Import a .rck file (from File object) into the rack library.
+     * Optionally also receives a companion .x/.hxx file.
+     */
+    function importRackFile(rckFile, companionXFile) {
+        var reader = new FileReader();
+        reader.onload = function () {
+            var ab = reader.result;
+            var header = new Uint8Array(ab, 0, Math.min(ab.byteLength, 20));
+            var headerStr = String.fromCharCode.apply(null, header);
+            var rackInfo;
+            if (headerStr.indexOf('HxCfgFile') >= 0) {
+                rackInfo = parseRCKFull(new TextDecoder().decode(ab));
+            } else {
+                rackInfo = parseRCKFullBinary(ab);
+            }
+
+            var rackKey = rckFile.name.replace(/\.rck$/i, '');
+            rackInfo.name = rackInfo.viewName || rackKey;
+            rackInfo.fileName = rckFile.name;
+            rackInfo.source = 'file';
+
+            vlState.rackLibrary[rackKey] = rackInfo;
+            showVLStatus('Imported rack: ' + rackInfo.name, 'ok');
+            populateRackPalette();
+
+            // If companion .x/.hxx is provided, load it immediately
+            if (companionXFile) {
+                loadXModelForRack(rackKey, companionXFile);
+            } else if (rackInfo.model) {
+                // Try auto-fetch from Hamilton server path
+                autoFetchRackModel(rackKey, rackInfo.model);
+            }
+        };
+        reader.readAsArrayBuffer(rckFile);
+    }
+
+    /**
+     * Load a .x/.hxx model file for a rack definition and cache it.
+     */
+    function loadXModelForRack(rackKey, file) {
+        if (!vlState.rackLibrary[rackKey]) return;
+        var reader = new FileReader();
+        reader.onload = function () {
+            var ab = reader.result;
+            var isHxx = /\.hxx$/i.test(file.name);
+
+            var dataPromise;
+            if (isHxx && typeof HXXLoader !== 'undefined') {
+                dataPromise = HXXLoader.parse(ab).then(function (result) {
+                    return result.xFileBinary || result.xFileText;
+                });
+            } else {
+                dataPromise = Promise.resolve(ab);
+            }
+
+            dataPromise.then(function (xData) {
+                if (!xData) return;
+                var blob = new Blob([xData], { type: 'application/octet-stream' });
+                var url = URL.createObjectURL(blob);
+                var loader = new THREE.XFileLoader(new THREE.LoadingManager());
+                loader.load(url, function (object) {
+                    URL.revokeObjectURL(url);
+                    if (!object || !object.models || object.models.length === 0) return;
+                    var group = new THREE.Group();
+                    group.name = '__rack_model_' + rackKey + '__';
+                    object.models.forEach(function (mdl, idx) {
+                        mdl.renderOrder = idx + 50;
+                        group.add(mdl);
+                    });
+                    fixXFileCoords(group);
+                    vlState.rackModelCache[rackKey] = group;
+                    showVLStatus('Loaded 3D model for rack: ' + rackKey, 'ok');
+                    populateRackPalette();
+                    // Rebuild any carriers that have this rack assigned
+                    rebuildCarriersWithRack(rackKey);
+                }, undefined, function () {
+                    URL.revokeObjectURL(url);
+                });
+            });
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    /**
+     * Auto-fetch rack 3D model from server using its Hamilton path.
+     */
+    function autoFetchRackModel(rackKey, hamiltonPath) {
+        var serverPath = resolveHamiltonPath(hamiltonPath);
+        if (!serverPath) return;
+        if (vlState.rackModelLoading[rackKey]) return;
+        vlState.rackModelLoading[rackKey] = true;
+
+        var isHxx = /\.hxx$/i.test(serverPath);
+        fetch(serverPath).then(function (resp) {
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+            return resp.arrayBuffer();
+        }).then(function (data) {
+            if (isHxx && typeof HXXLoader !== 'undefined') {
+                return HXXLoader.parse(data).then(function (result) {
+                    return result.xFileBinary || result.xFileText;
+                });
+            }
+            return data;
+        }).then(function (xData) {
+            if (!xData) return;
+            var blob = new Blob([xData], { type: 'application/octet-stream' });
+            var url = URL.createObjectURL(blob);
+            var basePath = serverPath.substring(0, serverPath.lastIndexOf('/') + 1);
+            var manager = new THREE.LoadingManager();
+            manager.setURLModifier(function (texUrl) {
+                if (/\.(png|jpg|jpeg|bmp|tga)$/i.test(texUrl)) {
+                    return basePath + texUrl.split('/').pop();
+                }
+                return texUrl;
+            });
+            var loader = new THREE.XFileLoader(manager);
+            loader.load(url, function (object) {
+                URL.revokeObjectURL(url);
+                if (!object || !object.models || object.models.length === 0) return;
+                var group = new THREE.Group();
+                group.name = '__rack_model_' + rackKey + '__';
+                object.models.forEach(function (mdl, idx) {
+                    mdl.renderOrder = idx + 50;
+                    if (mdl.material) {
+                        var mats = Array.isArray(mdl.material) ? mdl.material : [mdl.material];
+                        mats.forEach(function (mat) {
+                            if (!mat) return;
+                            mat.polygonOffset = true;
+                            mat.polygonOffsetFactor = -2;
+                            mat.polygonOffsetUnits = -4;
+                        });
+                    }
+                    group.add(mdl);
+                });
+                fixXFileCoords(group);
+                vlState.rackModelCache[rackKey] = group;
+                populateRackPalette();
+                rebuildCarriersWithRack(rackKey);
+            }, undefined, function () {
+                URL.revokeObjectURL(url);
+            });
+        }).catch(function (err) {
+            console.warn('[VantageLayout] Could not fetch rack model:', serverPath, err.message);
+        }).finally(function () {
+            vlState.rackModelLoading[rackKey] = false;
+        });
+    }
+
+    /**
+     * Import a .rck from a server Hamilton path (e.g. browsing available racks).
+     */
+    function importRackFromServer(hamiltonPath) {
+        var serverPath = resolveHamiltonPath(hamiltonPath);
+        if (!serverPath) return Promise.reject(new Error('Invalid path'));
+
+        return fetch(serverPath).then(function (resp) {
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+            return resp.arrayBuffer();
+        }).then(function (ab) {
+            var header = new Uint8Array(ab, 0, Math.min(ab.byteLength, 20));
+            var headerStr = String.fromCharCode.apply(null, header);
+            var rackInfo;
+            if (headerStr.indexOf('HxCfgFile') >= 0) {
+                rackInfo = parseRCKFull(new TextDecoder().decode(ab));
+            } else {
+                rackInfo = parseRCKFullBinary(ab);
+            }
+
+            var fileName = hamiltonPath.replace(/\\/g, '/').split('/').pop();
+            var rackKey = fileName.replace(/\.rck$/i, '');
+            rackInfo.name = rackInfo.viewName || rackKey;
+            rackInfo.fileName = fileName;
+            rackInfo.source = 'server';
+            rackInfo.hamiltonPath = hamiltonPath;
+
+            vlState.rackLibrary[rackKey] = rackInfo;
+            populateRackPalette();
+
+            // Auto-load 3D model if referenced
+            if (rackInfo.model) {
+                autoFetchRackModel(rackKey, rackInfo.model);
+            }
+
+            return rackKey;
+        });
+    }
+
+    /**
+     * Assign a rack from the rack library to a carrier site.
+     */
+    function assignRackToSite(carrierId, siteId, rackKey) {
+        var carrier = vlState.placedCarriers.find(function (c) { return c.id === carrierId; });
+        if (!carrier) return;
+        var site = carrier.def.sites.find(function (s) { return s.id === siteId; });
+        if (!site) return;
+        var rackDef = vlState.rackLibrary[rackKey];
+        if (!rackDef) return;
+
+        // Remove existing plate mesh on this site if any
+        var existingPlate = carrier.plateMeshes.find(function (p) { return p.siteId === siteId; });
+        if (existingPlate) {
+            carrier.mesh.remove(existingPlate.mesh);
+            existingPlate.mesh.traverse(function (child) {
+                if (child.geometry) child.geometry.dispose();
+                if (child.material) {
+                    (Array.isArray(child.material) ? child.material : [child.material]).forEach(function (m) { if (m) m.dispose(); });
+                }
+            });
+            carrier.plateMeshes = carrier.plateMeshes.filter(function (p) { return p.siteId !== siteId; });
+        }
+
+        // Remove existing container model on this site if any
+        removeContainerFromSite(carrier, siteId);
+
+        // Store assignment on the carrier entry
+        if (!carrier.siteContainers) carrier.siteContainers = {};
+        carrier.siteContainers[siteId] = rackKey;
+
+        // Build container mesh at site
+        var containerMesh = buildContainerMesh(rackKey, rackDef, site, carrier.def);
+        if (containerMesh) {
+            carrier.mesh.add(containerMesh);
+            if (!carrier.containerMeshes) carrier.containerMeshes = [];
+            carrier.containerMeshes.push({ siteId: siteId, rackKey: rackKey, mesh: containerMesh });
+        }
+
+        showVLStatus('Placed ' + rackDef.name + ' on site ' + siteId + '.', 'ok');
+        updateSitePanel(carrier);
+    }
+
+    /**
+     * Remove a container/rack from a carrier site.
+     */
+    function removeContainerFromSite(carrier, siteId) {
+        if (!carrier.containerMeshes) return;
+        var existing = carrier.containerMeshes.find(function (c) { return c.siteId === siteId; });
+        if (!existing) return;
+        carrier.mesh.remove(existing.mesh);
+        existing.mesh.traverse(function (child) {
+            if (child.geometry) child.geometry.dispose();
+            if (child.material) {
+                (Array.isArray(child.material) ? child.material : [child.material]).forEach(function (m) { if (m) m.dispose(); });
+            }
+        });
+        carrier.containerMeshes = carrier.containerMeshes.filter(function (c) { return c.siteId !== siteId; });
+        if (carrier.siteContainers) delete carrier.siteContainers[siteId];
+    }
+
+    /**
+     * Build a 3D mesh for a container/rack placed on a carrier site.
+     */
+    function buildContainerMesh(rackKey, rackDef, site, carrierDef) {
+        var cachedModel = vlState.rackModelCache[rackKey];
+        var mesh;
+
+        if (cachedModel) {
+            // Clone cached 3D model
+            mesh = cachedModel.clone(true);
+            mesh.name = '__container_site' + site.id + '_' + rackKey + '__';
+
+            // Deep-clone materials
+            mesh.traverse(function (child) {
+                if (!child.isMesh) return;
+                child.frustumCulled = false;
+                if (Array.isArray(child.material)) {
+                    child.material = child.material.map(function (m) { return m ? m.clone() : m; });
+                } else if (child.material) {
+                    child.material = child.material.clone();
+                }
+            });
+
+            // Position at site: center on site, bottom at site.z
+            var box = new THREE.Box3().setFromObject(mesh);
+            var center = box.getCenter(new THREE.Vector3());
+            var xOff = rackDef.xOff || 0;
+            var yOff = rackDef.yOff || 0;
+            var zOff = rackDef.zOff || 0;
+
+            mesh.position.set(
+                site.x + site.dx / 2 - center.x + xOff,
+                site.z - box.min.y + zOff,
+                site.y + site.dy / 2 - center.z + yOff
+            );
+        } else {
+            // Procedural fallback: box matching rack dimensions
+            var rdx = rackDef.dx || site.dx;
+            var rdy = rackDef.dy || site.dy;
+            var rdz = rackDef.dz || 14;
+
+            var geo = new THREE.BoxGeometry(rdx, rdz, rdy);
+            var mat = new THREE.MeshLambertMaterial({
+                color: 0xc8b080,
+                transparent: true,
+                opacity: 0.85,
+                depthWrite: true,
+                polygonOffset: true,
+                polygonOffsetFactor: -2,
+                polygonOffsetUnits: -2,
+            });
+            mesh = new THREE.Mesh(geo, mat);
+            mesh.renderOrder = 100;
+            mesh.name = '__container_site' + site.id + '_' + rackKey + '__';
+            mesh.position.set(
+                site.x + site.dx / 2,
+                site.z + rdz / 2,
+                site.y + site.dy / 2
+            );
+
+            // Add label sprite on top
+            var labelCv = document.createElement('canvas');
+            labelCv.width = 256; labelCv.height = 64;
+            var ctx = labelCv.getContext('2d');
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 20px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(rackDef.name.substring(0, 20), 128, 32);
+            var tex = new THREE.CanvasTexture(labelCv);
+            var spriteMat = new THREE.SpriteMaterial({ map: tex, transparent: true });
+            var sprite = new THREE.Sprite(spriteMat);
+            sprite.scale.set(Math.min(rdx, 60), 15, 1);
+            sprite.position.y = rdz / 2 + 8;
+            mesh.add(sprite);
+        }
+
+        return mesh;
+    }
+
+    /**
+     * Rebuild all placed carriers that have a specific rack assigned.
+     */
+    function rebuildCarriersWithRack(rackKey) {
+        vlState.placedCarriers.forEach(function (carrier) {
+            if (!carrier.siteContainers) return;
+            var needsRebuild = false;
+            Object.keys(carrier.siteContainers).forEach(function (siteIdStr) {
+                if (carrier.siteContainers[siteIdStr] === rackKey) needsRebuild = true;
+            });
+            if (needsRebuild) {
+                // Re-assign to trigger mesh rebuild
+                Object.keys(carrier.siteContainers).forEach(function (siteIdStr) {
+                    if (carrier.siteContainers[siteIdStr] === rackKey) {
+                        assignRackToSite(carrier.id, parseInt(siteIdStr, 10), rackKey);
+                    }
+                });
+            }
+        });
+    }
+
+    // ================================================================
+    //  Rack Palette UI
+    // ================================================================
+
+    function populateRackPalette() {
+        var list = document.getElementById('vl-rack-list');
+        if (!list) return;
+        list.innerHTML = '';
+
+        var keys = Object.keys(vlState.rackLibrary);
+        if (keys.length === 0) {
+            list.innerHTML = '<div class="vl-empty-hint">No racks imported yet.</div>';
+            return;
+        }
+
+        keys.forEach(function (key) {
+            var def = vlState.rackLibrary[key];
+            var has3D = !!(vlState.rackModelCache[key] || def.model);
+            var item = document.createElement('div');
+            item.className = 'vl-rack-item';
+            item.dataset.rackKey = key;
+            item.innerHTML =
+                '<span class="vl-rack-icon"><i class="fas fa-box"></i></span>' +
+                '<span class="vl-rack-name">' + (def.name || key) +
+                    (has3D ? ' <i class="fas fa-cube" title="3D model available"></i>' : '') +
+                '</span>' +
+                '<span class="vl-rack-desc">' + (def.description || (def.dx + '×' + def.dy + '×' + def.dz + 'mm')) + '</span>' +
+                '<button class="vl-rack-del" data-rack="' + key + '" title="Remove rack"><i class="fas fa-times"></i></button>';
+
+            // Allow dropping .x file onto a rack item to attach a model
+            item.addEventListener('dragover', function (e) { e.preventDefault(); item.classList.add('drag-over'); });
+            item.addEventListener('dragleave', function () { item.classList.remove('drag-over'); });
+            item.addEventListener('drop', function (e) {
+                e.preventDefault();
+                item.classList.remove('drag-over');
+                var files = Array.from(e.dataTransfer.files).filter(function (f) { return /\.(x|hxx)$/i.test(f.name); });
+                if (files.length > 0) loadXModelForRack(key, files[0]);
+            });
+
+            // Delete button
+            item.querySelector('.vl-rack-del').addEventListener('click', function (e) {
+                e.stopPropagation();
+                delete vlState.rackLibrary[key];
+                delete vlState.rackModelCache[key];
+                populateRackPalette();
+                showVLStatus('Removed rack: ' + key);
+            });
+
+            list.appendChild(item);
+        });
+    }
+
+    /**
+     * Wire the rack import drop zone and browse button.
+     */
+    function wireRackImport() {
+        var fileInput = document.getElementById('vl-rack-input');
+        var openBtn   = document.getElementById('vl-rack-open');
+        var dropZone  = document.getElementById('vl-rack-drop');
+
+        if (openBtn && fileInput) {
+            openBtn.addEventListener('click', function () { fileInput.click(); });
+            fileInput.addEventListener('change', function (e) {
+                var files = Array.from(e.target.files);
+                if (files.length > 0) processRackDrop(files);
+                fileInput.value = '';
+            });
+        }
+
+        if (dropZone) {
+            dropZone.addEventListener('dragover', function (e) { e.preventDefault(); dropZone.classList.add('drag-over'); });
+            dropZone.addEventListener('dragleave', function () { dropZone.classList.remove('drag-over'); });
+            dropZone.addEventListener('drop', function (e) {
+                e.preventDefault();
+                dropZone.classList.remove('drag-over');
+                var files = Array.from(e.dataTransfer.files);
+                if (files.length > 0) processRackDrop(files);
+            });
+        }
+    }
+
+    function processRackDrop(files) {
+        var rckFiles = files.filter(function (f) { return /\.rck$/i.test(f.name); });
+        var xFiles   = files.filter(function (f) { return /\.(x|hxx)$/i.test(f.name); });
+
+        if (rckFiles.length === 0 && xFiles.length === 0) {
+            showVLStatus('Please drop .rck file(s) (optionally with .x/.hxx model).', 'error');
+            return;
+        }
+
+        rckFiles.forEach(function (rckFile) {
+            var baseName = rckFile.name.replace(/\.rck$/i, '').toLowerCase();
+            var companionX = xFiles.find(function (f) {
+                return f.name.replace(/\.(x|hxx)$/i, '').toLowerCase() === baseName;
+            });
+            if (!companionX && rckFiles.length === 1 && xFiles.length === 1) {
+                companionX = xFiles[0];
+            }
+            importRackFile(rckFile, companionX || null);
+        });
+
+        // Standalone .x files: attach to most recently added rack
+        if (rckFiles.length === 0 && xFiles.length > 0) {
+            var lastKey = Object.keys(vlState.rackLibrary).pop();
+            if (lastKey) {
+                xFiles.forEach(function (f) { loadXModelForRack(lastKey, f); });
+            } else {
+                showVLStatus('Drop a .rck alongside the .x/.hxx to create a rack definition.', 'error');
+            }
+        }
+    }
+
+    /**
+     * Show the container picker dialog for assigning a rack to a site.
+     */
+    function showContainerPicker(carrierId, siteId) {
+        var dialog = document.getElementById('vl-container-dialog');
+        if (!dialog) return;
+
+        dialog.dataset.carrierId = carrierId;
+        dialog.dataset.siteId = siteId;
+
+        var carrier = vlState.placedCarriers.find(function (c) { return c.id === carrierId; });
+        var siteName = carrier ? carrier.def.viewName + ' — Site ' + siteId : 'Site ' + siteId;
+        var titleEl = document.getElementById('vl-cd-title');
+        if (titleEl) titleEl.textContent = 'Assign Container to ' + siteName;
+
+        // Populate container list
+        var listEl = document.getElementById('vl-cd-list');
+        if (!listEl) return;
+        listEl.innerHTML = '';
+
+        var keys = Object.keys(vlState.rackLibrary);
+        if (keys.length === 0) {
+            listEl.innerHTML = '<div class="vl-empty-hint">No racks loaded yet.<br>Import a .rck file first.</div>';
+        } else {
+            keys.forEach(function (key) {
+                var def = vlState.rackLibrary[key];
+                var has3D = !!(vlState.rackModelCache[key] || def.model);
+                var btn = document.createElement('button');
+                btn.className = 'vl-cd-item';
+                btn.innerHTML =
+                    '<i class="fas fa-box"></i> ' +
+                    '<span class="vl-cd-item-name">' + (def.name || key) + '</span>' +
+                    (has3D ? ' <i class="fas fa-cube" style="color:var(--accent);font-size:9px"></i>' : '') +
+                    '<span class="vl-cd-item-dim">' + def.dx + '×' + def.dy + '×' + def.dz + '</span>';
+                btn.addEventListener('click', function () {
+                    assignRackToSite(carrierId, siteId, key);
+                    dialog.classList.remove('is-visible');
+                });
+                listEl.appendChild(btn);
+            });
+        }
+
+        // Also allow browsing server racks
+        var serverBrowse = document.getElementById('vl-cd-browse-server');
+        if (serverBrowse) {
+            serverBrowse.onclick = function () {
+                showServerRackBrowser(carrierId, siteId);
+            };
+        }
+
+        dialog.classList.add('is-visible');
+    }
+
+    /**
+     * Browse available .rck files from the Hamilton server path.
+     */
+    function showServerRackBrowser(carrierId, siteId) {
+        var dialog = document.getElementById('vl-container-dialog');
+        var listEl = document.getElementById('vl-cd-list');
+        if (!listEl) return;
+
+        listEl.innerHTML = '<div class="vl-empty-hint"><i class="fas fa-spinner fa-spin"></i> Scanning server for .rck files…</div>';
+
+        // Fetch a directory listing from the server
+        var basePaths = [
+            'Base Hamilton Files/Labware/ML_STAR/',
+            'Base Hamilton Files/Labware/GREINER/',
+            'Base Hamilton Files/Labware/KAYCO_DALLAS/',
+        ];
+
+        var allFiles = [];
+        var pending = basePaths.length;
+
+        basePaths.forEach(function (basePath) {
+            fetch(basePath).then(function (resp) {
+                if (!resp.ok) throw new Error('HTTP ' + resp.status);
+                return resp.text();
+            }).then(function (html) {
+                // Parse directory listing for .rck links
+                var re = /href="([^"]*\.rck)"/gi;
+                var m;
+                while ((m = re.exec(html)) !== null) {
+                    var fileName = decodeURIComponent(m[1]);
+                    if (fileName.startsWith('/')) fileName = fileName.substring(1);
+                    if (!fileName.startsWith('Base Hamilton')) fileName = basePath + fileName;
+                    allFiles.push(fileName);
+                }
+            }).catch(function () {
+                // Directory not browseable, try scanning known files
+            }).finally(function () {
+                pending--;
+                if (pending <= 0) displayServerRacks(allFiles, carrierId, siteId);
+            });
+        });
+    }
+
+    function displayServerRacks(files, carrierId, siteId) {
+        var dialog = document.getElementById('vl-container-dialog');
+        var listEl = document.getElementById('vl-cd-list');
+        if (!listEl) return;
+
+        if (files.length === 0) {
+            listEl.innerHTML = '<div class="vl-empty-hint">No .rck files found on server.<br>Import from file instead.</div>';
+            return;
+        }
+
+        listEl.innerHTML = '';
+
+        // Sort files alphabetically
+        files.sort();
+
+        // Add a search filter
+        var filterInput = document.createElement('input');
+        filterInput.type = 'text';
+        filterInput.className = 'vl-cd-filter';
+        filterInput.placeholder = 'Filter racks…';
+        listEl.appendChild(filterInput);
+
+        var itemContainer = document.createElement('div');
+        itemContainer.className = 'vl-cd-items-scroll';
+        listEl.appendChild(itemContainer);
+
+        function renderItems(filter) {
+            itemContainer.innerHTML = '';
+            var filtered = filter
+                ? files.filter(function (f) { return f.toLowerCase().indexOf(filter.toLowerCase()) >= 0; })
+                : files;
+
+            filtered.slice(0, 100).forEach(function (filePath) {
+                var fileName = filePath.split('/').pop();
+                var btn = document.createElement('button');
+                btn.className = 'vl-cd-item';
+                btn.innerHTML = '<i class="fas fa-file"></i> <span class="vl-cd-item-name">' + fileName + '</span>';
+                btn.title = filePath;
+                btn.addEventListener('click', function () {
+                    // Derive Hamilton path from server path
+                    var hamiltonPath = filePath.replace('Base Hamilton Files/Labware/', '').replace(/\//g, '\\');
+                    importRackFromServer(hamiltonPath).then(function (rackKey) {
+                        assignRackToSite(carrierId, siteId, rackKey);
+                        dialog.classList.remove('is-visible');
+                    }).catch(function (err) {
+                        showVLStatus('Failed to load rack: ' + err.message, 'error');
+                    });
+                });
+                itemContainer.appendChild(btn);
+            });
+
+            if (filtered.length > 100) {
+                var more = document.createElement('div');
+                more.className = 'vl-empty-hint';
+                more.textContent = (filtered.length - 100) + ' more — use filter to narrow results';
+                itemContainer.appendChild(more);
+            }
+        }
+
+        renderItems('');
+        filterInput.addEventListener('input', function () { renderItems(filterInput.value); });
+    }
+
+    // ================================================================
     //  Waste Chute — install / remove / build mesh
     // ================================================================
 
@@ -1099,8 +1907,43 @@
     }
 
     function buildWasteMesh(cutoutIdx) {
-        return buildDeckFixtureMesh(cutoutIdx, vlState.wasteTmlDef,
+        var group = buildDeckFixtureMesh(cutoutIdx, vlState.wasteTmlDef,
             vlState.wasteModelCacheKey, '__waste_chute__');
+        if (group) {
+            // Base repositioning: align TML origin with the right edge of the cutout
+            var slot = DECK_CUTOUTS[cutoutIdx];
+            var slotX = DECK.FIRST_TRACK_X + (slot.trackStart - 1) * DECK.TRACK_SPACING;
+            var cutoutWidth = slot.trackSpan * DECK.TRACK_SPACING;
+            group.position.x = slotX + cutoutWidth;
+
+            // Shift group 8 tracks left for accessories base alignment
+            var accessoryShift = -8 * DECK.TRACK_SPACING;   // -180mm
+            var bodyShift      = -3 * DECK.TRACK_SPACING;   // -67.5mm
+            group.position.x += accessoryShift;
+
+            // Apply per-child offsets
+            group.traverse(function (child) {
+                if (!child.name) return;
+                if (child.name.indexOf('_body_x__') !== -1 || child.name.indexOf('_body__') !== -1) {
+                    // Body: +5 tracks right relative to group (nets 3 left overall)
+                    child.position.x += (accessoryShift - bodyShift) * -1; // +112.5
+                    child.position.z += DECK.TRACK_Y_START / 2;           // +31.5
+                    // Fine-tune from debug: body { x: -10, y: 0, z: -10 }
+                    child.position.x += -10.0;
+                    child.position.z += -10.0;
+                } else if (child.name.indexOf('_labware_') !== -1) {
+                    // Fine-tune from debug: accessories { x: -15, y: 0, z: -3.5 }
+                    child.position.x += -15.0;
+                    child.position.z += -3.5;
+                    // Per-component fix for labware_10: { x: 15, y: 8, z: 0 }
+                    if (child.name.indexOf('_labware_10__') !== -1) {
+                        child.position.x += 15.0;
+                        child.position.y += 8.0;
+                    }
+                }
+            });
+        }
+        return group;
     }
 
     /**
@@ -1221,11 +2064,6 @@
         vlState.deckCutouts[cutoutIdx] = false;
         applyCutoutVisibility();
 
-        // Auto-hide back panel (drawer extends through back of deck)
-        setBackPanelVisible(false);
-        var bpCb = document.getElementById('settings-back-panel-toggle');
-        if (bpCb) bpCb.checked = false;
-
         var drawerTracks = getDrawerOccupiedTracks();
         var toRemove = [];
         vlState.placedCarriers.forEach(function (carrier) {
@@ -1243,7 +2081,10 @@
             vlState.drawerMesh = mesh;
             vlState.scene.add(mesh);
             snapshotFixtureBasePositions(mesh);
+            snapshotEEBasePos();
+            restoreEEDebugOffsets();
             if (vlState.fixtureDebugMode) refreshFixtureDebugReadout();
+            if (vlState.eeDebugMode) refreshEEDebugReadout();
         }
 
         if (vlState.drawerTmlDef) {
@@ -1267,6 +2108,7 @@
             });
             vlState.scene.remove(vlState.drawerMesh);
             vlState.drawerMesh = null;
+            vlState._eeBasePos = null;
         }
 
         var oldIdx = vlState.drawerCutoutIdx;
@@ -1295,7 +2137,10 @@
             vlState.drawerMesh = mesh;
             vlState.scene.add(mesh);
             snapshotFixtureBasePositions(mesh);
+            snapshotEEBasePos();
+            restoreEEDebugOffsets();
             if (vlState.fixtureDebugMode) refreshFixtureDebugReadout();
+            if (vlState.eeDebugMode) refreshEEDebugReadout();
         }
     }
 
@@ -1315,7 +2160,14 @@
                 var serverPath = resolveHamiltonPath(parsed.modelFileHamilton);
                 if (serverPath) {
                     fetchAndCacheXModel(vlState.drawerModelCacheKey, serverPath, function () {
-                        rebuildDrawerMesh();
+                        // Default to Position 4 (cutout index 3) if no drawer placed yet
+                        if (vlState.drawerCutoutIdx < 0) {
+                            installDrawerAtCutout(3);
+                            var ds = document.getElementById('settings-drawer-position');
+                            if (ds) ds.value = '3';
+                        } else {
+                            rebuildDrawerMesh();
+                        }
                     });
                 }
             }
@@ -1326,17 +2178,6 @@
         }).catch(function (err) {
             console.warn('[VantageLayout] Could not load drawer TML:', err.message);
         });
-    }
-
-    // ================================================================
-    //  Back panel visibility
-    // ================================================================
-
-    function setBackPanelVisible(visible) {
-        vlState.backPanelVisible = visible;
-        if (vlState.backPanelNode) {
-            vlState.backPanelNode.visible = visible;
-        }
     }
 
     /** Rebuild the waste 3D mesh (called when models finish loading). */
@@ -1399,8 +2240,9 @@
                 console.warn('[VantageLayout] No modelFileHamilton found in waste TML');
             }
 
-            // If waste is already installed, load site labware
+            // Auto-install waste at default cutout if set
             if (vlState.wasteCutoutIdx >= 0) {
+                installWasteAtCutout(vlState.wasteCutoutIdx);
                 loadSiteLabwareModels(vlState.wasteModelCacheKey, parsed.sites);
             }
         }).catch(function (err) {
@@ -2380,18 +3222,52 @@
 
         sorted.forEach(site => {
             const hasPlate = carrier.plateMeshes.some(p => p.siteId === site.id);
+            const assignedRack = carrier.siteContainers ? carrier.siteContainers[site.id] : null;
+            const rackDef = assignedRack ? vlState.rackLibrary[assignedRack] : null;
+
             const row = document.createElement('div');
-            row.className = `vl-site-row${hasPlate ? ' has-plate' : ''}`;
-            row.innerHTML = `
-                <span class="vl-site-label">Site ${site.id}</span>
-                <span class="vl-site-pos">Y: ${site.y.toFixed(1)}mm</span>
-                <button class="vl-site-btn${hasPlate ? ' plate-on' : ''}" data-carrier="${carrier.id}" data-site="${site.id}">
-                    <i class="fas ${hasPlate ? 'fa-minus-circle' : 'fa-plus-circle'}"></i>
-                    ${hasPlate ? 'Remove' : 'Place'} Plate
-                </button>`;
-            row.querySelector('.vl-site-btn').addEventListener('click', () => {
-                togglePlateOnSite(carrier.id, site.id);
-            });
+            row.className = 'vl-site-row' + (hasPlate ? ' has-plate' : '') + (assignedRack ? ' has-container' : '');
+
+            // Build row content
+            var rowHTML = '<span class="vl-site-label">Site ' + site.id + '</span>' +
+                '<span class="vl-site-pos">Y: ' + site.y.toFixed(1) + 'mm</span>';
+
+            if (assignedRack && rackDef) {
+                // Show assigned container with remove button
+                rowHTML += '<span class="vl-site-container-name"><i class="fas fa-box"></i> ' +
+                    (rackDef.name || assignedRack) + '</span>' +
+                    '<button class="vl-site-btn vl-site-btn-remove" data-carrier="' + carrier.id + '" data-site="' + site.id + '">' +
+                    '<i class="fas fa-times-circle"></i> Remove</button>';
+            } else {
+                // Show plate toggle + container assign button
+                rowHTML += '<button class="vl-site-btn' + (hasPlate ? ' plate-on' : '') + '" data-carrier="' + carrier.id + '" data-site="' + site.id + '">' +
+                    '<i class="fas ' + (hasPlate ? 'fa-minus-circle' : 'fa-plus-circle') + '"></i> ' +
+                    (hasPlate ? 'Remove' : 'Place') + ' Plate</button>' +
+                    '<button class="vl-site-btn vl-site-btn-rack" data-carrier="' + carrier.id + '" data-site="' + site.id + '" title="Assign rack / container">' +
+                    '<i class="fas fa-box"></i></button>';
+            }
+
+            row.innerHTML = rowHTML;
+
+            // Wire events
+            if (assignedRack) {
+                row.querySelector('.vl-site-btn-remove').addEventListener('click', function () {
+                    removeContainerFromSite(carrier, site.id);
+                    showVLStatus('Removed container from site ' + site.id + '.');
+                    updateSitePanel(carrier);
+                });
+            } else {
+                row.querySelector('.vl-site-btn:not(.vl-site-btn-rack)').addEventListener('click', function () {
+                    togglePlateOnSite(carrier.id, site.id);
+                });
+                var rackBtn = row.querySelector('.vl-site-btn-rack');
+                if (rackBtn) {
+                    rackBtn.addEventListener('click', function () {
+                        showContainerPicker(carrier.id, site.id);
+                    });
+                }
+            }
+
             panel.appendChild(row);
         });
     }
@@ -2700,6 +3576,33 @@
                 [...carrier.plateMeshes].forEach(p => togglePlateOnSite(carrier.id, p.siteId));
             });
         }
+
+        // Container picker dialog cancel
+        const cdCancel = document.getElementById('vl-cd-cancel');
+        const cdDialog = document.getElementById('vl-container-dialog');
+        if (cdCancel && cdDialog) {
+            cdCancel.addEventListener('click', function () {
+                cdDialog.classList.remove('is-visible');
+            });
+        }
+
+        // Container dialog: import .rck inline
+        const cdImportBtn = document.getElementById('vl-cd-import-btn');
+        const cdImportInput = document.getElementById('vl-cd-import-input');
+        if (cdImportBtn && cdImportInput) {
+            cdImportBtn.addEventListener('click', function () { cdImportInput.click(); });
+            cdImportInput.addEventListener('change', function (e) {
+                var files = Array.from(e.target.files);
+                if (files.length > 0) {
+                    processRackDrop(files);
+                    // Refresh the dialog
+                    var cId = parseInt(cdDialog.dataset.carrierId, 10);
+                    var sId = parseInt(cdDialog.dataset.siteId, 10);
+                    setTimeout(function () { showContainerPicker(cId, sId); }, 300);
+                }
+                cdImportInput.value = '';
+            });
+        }
     }
 
     // ================================================================
@@ -2721,6 +3624,9 @@
                 sites: c.def.sites.map(s => ({
                     siteId: s.id,
                     hasPlate: c.plateMeshes.some(p => p.siteId === s.id),
+                    container: (c.siteContainers && c.siteContainers[s.id])
+                        ? { rackKey: c.siteContainers[s.id], name: (vlState.rackLibrary[c.siteContainers[s.id]] || {}).name || '' }
+                        : null,
                     absoluteX: (DECK.FIRST_TRACK_X + (c.trackStart - 1) * DECK.TRACK_SPACING) + s.x,
                     absoluteY: DECK.TRACK_Y_START + s.y,
                     absoluteZ: DECK.SURFACE_Z + s.z,
@@ -2758,6 +3664,7 @@
 
         wireDeckDebugPanel();
         wireFixtureDebugPanel();
+        wireEEDebugPanel();
         wireVLSettingsPanel();
     }
 
@@ -2894,10 +3801,7 @@
             if (/^VANTAGE_DECK_COVER/i.test(obj.name)) {
                 covers.push(obj);
             }
-            // Collect back panel node (6606544-01)
-            if (obj.name === '6606544-01') {
-                vlState.backPanelNode = obj;
-            }
+
         });
         covers.sort(function (a, b) { return a.name.localeCompare(b.name); });
         vlState.deckCoverNodes = covers;
@@ -2918,7 +3822,6 @@
         });
 
         console.log('[VantageLayout] deck cover nodes:', covers.map(function (n) { return n.name; }));
-        if (vlState.backPanelNode) console.log('[VantageLayout] back panel node found: 6606544-01');
     }
 
     function applyCutoutVisibility() {
@@ -2955,6 +3858,7 @@
         if (!fix) return;
         var mesh = fix.mesh;
         var off = vlState.fixtureDebugOffsets;
+        var compOff = vlState.fixtureDebugComponentOffsets;
 
         // Apply group-level offset to the mesh itself
         if (mesh.userData._fixBasePos) {
@@ -2968,17 +3872,26 @@
         mesh.children.forEach(function (child) {
             if (!child.userData._fixBasePos) return;
             var base = child.userData._fixBasePos;
-            if (child.name.indexOf('_body_x__') !== -1 || child.name.indexOf('_body__') !== -1) {
+            var cx = 0, cy = 0, cz = 0;
+
+            // Per-component offset (if any)
+            if (child.name && compOff[child.name]) {
+                cx = compOff[child.name].x || 0;
+                cy = compOff[child.name].y || 0;
+                cz = compOff[child.name].z || 0;
+            }
+
+            if (child.name && (child.name.indexOf('_body_x__') !== -1 || child.name.indexOf('_body__') !== -1)) {
                 child.position.set(
-                    base.x + off.body.x,
-                    base.y + off.body.y,
-                    base.z + off.body.z
+                    base.x + off.body.x + cx,
+                    base.y + off.body.y + cy,
+                    base.z + off.body.z + cz
                 );
-            } else if (child.name.indexOf('_labware_') !== -1) {
+            } else if (child.name && child.name.indexOf('_labware_') !== -1) {
                 child.position.set(
-                    base.x + off.accessories.x,
-                    base.y + off.accessories.y,
-                    base.z + off.accessories.z
+                    base.x + off.accessories.x + cx,
+                    base.y + off.accessories.y + cy,
+                    base.z + off.accessories.z + cz
                 );
             }
         });
@@ -3002,24 +3915,69 @@
         if (!el) return;
         var fix = getActiveFixtureMesh();
         if (!fix) { el.textContent = 'No fixture installed'; return; }
+        var mesh = fix.mesh;
         var off = vlState.fixtureDebugOffsets;
+        var compOff = vlState.fixtureDebugComponentOffsets;
         var fmt = function (o) { return 'X:' + o.x.toFixed(1) + ' Y:' + o.y.toFixed(1) + ' Z:' + o.z.toFixed(1); };
-        el.textContent = fix.name + '\n'
-            + 'Body:  ' + fmt(off.body) + '\n'
-            + 'Acces: ' + fmt(off.accessories) + '\n'
-            + 'Group: ' + fmt(off.group);
+
+        var lines = [fix.name];
+        lines.push('Group: ' + fmt(mesh.position) + '  off: ' + fmt(off.group));
+
+        mesh.children.forEach(function (child) {
+            if (!child.name) return;
+            var wp = new THREE.Vector3();
+            child.getWorldPosition(wp);
+            var label = child.name.replace(/__/g, '').replace('waste_chute_', '');
+            var co = compOff[child.name];
+            var coStr = co ? '  comp: ' + fmt(co) : '';
+            if (child.name.indexOf('_body_x__') !== -1 || child.name.indexOf('_body__') !== -1) {
+                lines.push('Body: ' + fmt(wp) + coStr);
+            } else if (child.name.indexOf('_labware_') !== -1) {
+                var selected = (vlState.fixtureDebugTarget === 'component' && vlState.fixtureDebugComponent === child.name);
+                lines.push((selected ? '> ' : '  ') + label + ': ' + fmt(wp) + coStr);
+            }
+        });
+
+        el.textContent = lines.join('\n');
     }
 
     /** Update the input values to match the currently selected target. */
     function syncFixtureDebugInputs() {
         var target = vlState.fixtureDebugTarget;
-        var off = vlState.fixtureDebugOffsets[target];
+        var off;
+        if (target === 'component' && vlState.fixtureDebugComponent) {
+            var cname = vlState.fixtureDebugComponent;
+            if (!vlState.fixtureDebugComponentOffsets[cname]) {
+                vlState.fixtureDebugComponentOffsets[cname] = { x: 0, y: 0, z: 0 };
+            }
+            off = vlState.fixtureDebugComponentOffsets[cname];
+        } else {
+            off = vlState.fixtureDebugOffsets[target];
+        }
+        if (!off) return;
         var xi = document.getElementById('vl-fix-x');
         var yi = document.getElementById('vl-fix-y');
         var zi = document.getElementById('vl-fix-z');
         if (xi) xi.value = off.x;
         if (yi) yi.value = off.y;
         if (zi) zi.value = off.z;
+    }
+
+    /** Populate the component dropdown with current fixture children. */
+    function populateComponentSelect() {
+        var sel = document.getElementById('vl-fix-component-select');
+        if (!sel) return;
+        sel.innerHTML = '<option value="">(none — use target above)</option>';
+        var fix = getActiveFixtureMesh();
+        if (!fix) return;
+        fix.mesh.children.forEach(function (child) {
+            if (!child.name) return;
+            var label = child.name.replace(/__/g, '').replace('waste_chute_', '').replace('entry_exit_drawer_', '');
+            var opt = document.createElement('option');
+            opt.value = child.name;
+            opt.textContent = label;
+            sel.appendChild(opt);
+        });
     }
 
     /** Wire up the fixture debug panel controls. */
@@ -3030,6 +3988,9 @@
             if (!btn) return;
             btn.addEventListener('click', function () {
                 vlState.fixtureDebugTarget = t;
+                vlState.fixtureDebugComponent = '';
+                var compSel = document.getElementById('vl-fix-component-select');
+                if (compSel) compSel.value = '';
                 document.querySelectorAll('.vl-fix-target-btn').forEach(function (b) {
                     b.classList.toggle('is-active', b.dataset.target === t);
                 });
@@ -3037,13 +3998,43 @@
             });
         });
 
+        // Component dropdown
+        var compSel = document.getElementById('vl-fix-component-select');
+        if (compSel) {
+            compSel.addEventListener('change', function () {
+                var val = compSel.value;
+                if (val) {
+                    vlState.fixtureDebugTarget = 'component';
+                    vlState.fixtureDebugComponent = val;
+                    document.querySelectorAll('.vl-fix-target-btn').forEach(function (b) {
+                        b.classList.remove('is-active');
+                    });
+                } else {
+                    vlState.fixtureDebugTarget = 'body';
+                    vlState.fixtureDebugComponent = '';
+                    var bodyBtn = document.getElementById('vl-fix-target-body');
+                    if (bodyBtn) bodyBtn.classList.add('is-active');
+                }
+                syncFixtureDebugInputs();
+                refreshFixtureDebugReadout();
+            });
+        }
+
         // Step buttons
         document.querySelectorAll('.fix-step').forEach(function (btn) {
             btn.addEventListener('click', function () {
                 var axis = btn.dataset.axis;
                 var delta = parseFloat(btn.dataset.delta);
                 var target = vlState.fixtureDebugTarget;
-                vlState.fixtureDebugOffsets[target][axis] += delta;
+                if (target === 'component' && vlState.fixtureDebugComponent) {
+                    var cname = vlState.fixtureDebugComponent;
+                    if (!vlState.fixtureDebugComponentOffsets[cname]) {
+                        vlState.fixtureDebugComponentOffsets[cname] = { x: 0, y: 0, z: 0 };
+                    }
+                    vlState.fixtureDebugComponentOffsets[cname][axis] += delta;
+                } else {
+                    vlState.fixtureDebugOffsets[target][axis] += delta;
+                }
                 syncFixtureDebugInputs();
                 applyFixtureDebugOffsets();
                 refreshFixtureDebugReadout();
@@ -3056,7 +4047,15 @@
             if (!input) return;
             input.addEventListener('input', function () {
                 var target = vlState.fixtureDebugTarget;
-                vlState.fixtureDebugOffsets[target][axis] = parseFloat(input.value) || 0;
+                if (target === 'component' && vlState.fixtureDebugComponent) {
+                    var cname = vlState.fixtureDebugComponent;
+                    if (!vlState.fixtureDebugComponentOffsets[cname]) {
+                        vlState.fixtureDebugComponentOffsets[cname] = { x: 0, y: 0, z: 0 };
+                    }
+                    vlState.fixtureDebugComponentOffsets[cname][axis] = parseFloat(input.value) || 0;
+                } else {
+                    vlState.fixtureDebugOffsets[target][axis] = parseFloat(input.value) || 0;
+                }
                 applyFixtureDebugOffsets();
                 refreshFixtureDebugReadout();
             });
@@ -3071,6 +4070,7 @@
                     accessories: { x: 0, y: 0, z: 0 },
                     group: { x: 0, y: 0, z: 0 }
                 };
+                vlState.fixtureDebugComponentOffsets = {};
                 syncFixtureDebugInputs();
                 applyFixtureDebugOffsets();
                 refreshFixtureDebugReadout();
@@ -3082,16 +4082,161 @@
         if (copyBtn) {
             copyBtn.addEventListener('click', function () {
                 var off = vlState.fixtureDebugOffsets;
+                var compOff = vlState.fixtureDebugComponentOffsets;
                 var fmt = function (o) { return '{ x: ' + o.x.toFixed(1) + ', y: ' + o.y.toFixed(1) + ', z: ' + o.z.toFixed(1) + ' }'; };
                 var text = 'Fixture Debug Offsets:\n'
                     + '  body:        ' + fmt(off.body) + '\n'
                     + '  accessories: ' + fmt(off.accessories) + '\n'
                     + '  group:       ' + fmt(off.group);
+                var compKeys = Object.keys(compOff);
+                if (compKeys.length > 0) {
+                    text += '\n  Per-component:';
+                    compKeys.forEach(function (k) {
+                        text += '\n    ' + k + ': ' + fmt(compOff[k]);
+                    });
+                }
                 navigator.clipboard.writeText(text).then(function () {
                     showVLStatus('Fixture offsets copied to clipboard', '');
                 });
             });
         }
+    }
+
+    // ================================================================
+    //  EE Drawer Debug / Alignment Panel
+    // ================================================================
+    function wireEEDebugPanel() {
+        const panel = document.getElementById('vl-ee-debug-panel');
+        if (!panel) return;
+
+        // Wire XYZ inputs
+        ['x', 'y', 'z'].forEach(axis => {
+            const input = document.getElementById(`vl-ee-${axis}`);
+            if (!input) return;
+            input.addEventListener('input', () => applyEEDebugOffset());
+            input.addEventListener('change', () => applyEEDebugOffset());
+        });
+
+        // Step buttons
+        document.querySelectorAll('#vl-ee-debug-panel .ee-step').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const axis  = btn.dataset.axis;
+                const delta = parseFloat(btn.dataset.delta);
+                const inp   = document.getElementById(`vl-ee-${axis}`);
+                if (inp) {
+                    inp.value = (parseFloat(inp.value) || 0) + delta;
+                    applyEEDebugOffset();
+                }
+            });
+        });
+
+        // Copy button
+        const copyBtn = document.getElementById('vl-ee-copy');
+        if (copyBtn) {
+            copyBtn.addEventListener('click', () => {
+                const x = document.getElementById('vl-ee-x')?.value || 0;
+                const y = document.getElementById('vl-ee-y')?.value || 0;
+                const z = document.getElementById('vl-ee-z')?.value || 0;
+                const txt = `EE Drawer offset: X: ${x}, Y: ${y}, Z: ${z}`;
+                navigator.clipboard?.writeText(txt).then(() => showVLStatus('EE offsets copied to clipboard', 'ok'))
+                    .catch(() => showVLStatus(txt, 'ok'));
+            });
+        }
+
+        // Set (Apply) button – bake current debug offsets into localStorage
+        const applyBtn = document.getElementById('vl-ee-apply');
+        if (applyBtn) {
+            applyBtn.addEventListener('click', () => {
+                const mesh = vlState.drawerMesh;
+                if (!mesh || !vlState._eeBasePos) {
+                    showVLStatus('No EE drawer installed yet.', 'error');
+                    return;
+                }
+                const dx = parseFloat(document.getElementById('vl-ee-x')?.value) || 0;
+                const dy = parseFloat(document.getElementById('vl-ee-y')?.value) || 0;
+                const dz = parseFloat(document.getElementById('vl-ee-z')?.value) || 0;
+                // Save cumulative offsets to localStorage
+                try {
+                    const prev = JSON.parse(localStorage.getItem('vl-ee-debug-offsets')) || { x: 0, y: 0, z: 0 };
+                    const cumulative = {
+                        x: (prev.x || 0) + dx,
+                        y: (prev.y || 0) + dy,
+                        z: (prev.z || 0) + dz
+                    };
+                    localStorage.setItem('vl-ee-debug-offsets', JSON.stringify(cumulative));
+                } catch (_) { /* ignore */ }
+                // Bake current position as new base
+                vlState._eeBasePos = mesh.position.clone();
+                // Reset debug inputs to 0
+                ['x', 'y', 'z'].forEach(a => {
+                    const inp = document.getElementById(`vl-ee-${a}`);
+                    if (inp) inp.value = 0;
+                });
+                refreshEEDebugReadout();
+                showVLStatus('EE offsets applied and saved', 'ok');
+            });
+        }
+
+        // Reset button
+        const resetBtn = document.getElementById('vl-ee-reset');
+        if (resetBtn) {
+            resetBtn.addEventListener('click', () => {
+                ['x', 'y', 'z'].forEach(a => {
+                    const inp = document.getElementById(`vl-ee-${a}`);
+                    if (inp) inp.value = 0;
+                });
+                applyEEDebugOffset();
+            });
+        }
+    }
+
+    function applyEEDebugOffset() {
+        const mesh = vlState.drawerMesh;
+        if (!mesh) { showVLStatus('No EE drawer installed.', 'error'); return; }
+
+        const dx = parseFloat(document.getElementById('vl-ee-x')?.value) || 0;
+        const dy = parseFloat(document.getElementById('vl-ee-y')?.value) || 0;
+        const dz = parseFloat(document.getElementById('vl-ee-z')?.value) || 0;
+
+        if (!vlState._eeBasePos) {
+            vlState._eeBasePos = mesh.position.clone();
+        }
+        mesh.position.set(
+            vlState._eeBasePos.x + dx,
+            vlState._eeBasePos.y + dy,
+            vlState._eeBasePos.z + dz
+        );
+        refreshEEDebugReadout();
+    }
+
+    function refreshEEDebugReadout() {
+        const el = document.getElementById('vl-ee-readout');
+        if (!el) return;
+        const mesh = vlState.drawerMesh;
+        if (!mesh) { el.textContent = 'No drawer installed'; return; }
+        const p = mesh.position;
+        el.textContent = `pos  X: ${p.x.toFixed(2)}  Y: ${p.y.toFixed(2)}  Z: ${p.z.toFixed(2)}`;
+    }
+
+    function snapshotEEBasePos() {
+        if (vlState.drawerMesh) {
+            vlState._eeBasePos = vlState.drawerMesh.position.clone();
+        }
+    }
+
+    function restoreEEDebugOffsets() {
+        if (!vlState.drawerMesh) return;
+        try {
+            const saved = JSON.parse(localStorage.getItem('vl-ee-debug-offsets'));
+            if (saved && (saved.x || saved.y || saved.z)) {
+                vlState.drawerMesh.position.set(
+                    vlState._eeBasePos.x + (saved.x || 0),
+                    vlState._eeBasePos.y + (saved.y || 0),
+                    vlState._eeBasePos.z + (saved.z || 0)
+                );
+                vlState._eeBasePos = vlState.drawerMesh.position.clone();
+            }
+        } catch (_) { /* ignore */ }
     }
 
     function wireVLSettingsPanel() {
@@ -3150,15 +4295,6 @@
             });
         }
 
-        // ── Back Panel toggle ────────────────────────────────────────
-        var backPanelToggle = document.getElementById('settings-back-panel-toggle');
-        if (backPanelToggle) {
-            backPanelToggle.checked = vlState.backPanelVisible;
-            backPanelToggle.addEventListener('change', function () {
-                setBackPanelVisible(backPanelToggle.checked);
-            });
-        }
-
         // ── Grid toggle ──────────────────────────────────────────────
         const gridToggle = document.getElementById('settings-grid-toggle');
         if (gridToggle) {
@@ -3203,8 +4339,24 @@
                     // Snapshot positions so debug offsets work from current state
                     var fix = getActiveFixtureMesh();
                     if (fix) snapshotFixtureBasePositions(fix.mesh);
+                    populateComponentSelect();
                     syncFixtureDebugInputs();
                     refreshFixtureDebugReadout();
+                }
+            });
+        }
+
+        // ── EE Drawer Debug toggle ───────────────────────────────────
+        const eeDebugToggle = document.getElementById('settings-ee-debug-toggle');
+        if (eeDebugToggle) {
+            eeDebugToggle.checked = vlState.eeDebugMode;
+            eeDebugToggle.addEventListener('change', function () {
+                vlState.eeDebugMode = eeDebugToggle.checked;
+                const panel = document.getElementById('vl-ee-debug-panel');
+                if (panel) panel.classList.toggle('is-open', vlState.eeDebugMode);
+                if (vlState.eeDebugMode) {
+                    snapshotEEBasePos();
+                    refreshEEDebugReadout();
                 }
             });
         }
@@ -3313,8 +4465,14 @@
         if (rightClose) {
             rightClose.addEventListener('click', () => setSitesPanelOpen(false));
         }
-        // Default: right panel collapsed
+        // Default: both panels collapsed on launch
         setSitesPanelOpen(false);
+        if (leftPanel && host) {
+            leftPanel.classList.add('is-collapsed');
+            host.classList.add('vl-left-collapsed');
+            const icon = $('#vl-left-toggle-icon');
+            if (icon) icon.className = 'fas fa-chevron-right';
+        }
     }
 
     function wireVLToolbar() {
@@ -3329,6 +4487,9 @@
                 if (icon) icon.className = vlState.toolbarCollapsed ? 'fas fa-chevron-left' : 'fas fa-chevron-right';
             });
         }
+
+        // Labels toggle
+        wireBtn('#vl-vt-labels', toggleOrientationLabels);
 
         // Reset camera
         wireBtn('#vl-vt-reset-cam', resetVLCamera);

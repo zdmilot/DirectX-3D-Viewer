@@ -6,7 +6,7 @@
     <title>3D File Tools</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1F9EA;</text></svg>">
     <link rel="stylesheet" href="css/fontawesome.min.css">
-    <link rel="stylesheet" href="css/main.css?v=20260305x">
+    <link rel="stylesheet" href="css/main.css?v=20260309a">
 </head>
 <body>
 
@@ -1119,6 +1119,9 @@
                             <div class="vt-gizmo pp-gizmo-sm" id="vl-vt-gizmo">
                                 <canvas id="vl-gizmo-canvas" width="28" height="28"></canvas>
                             </div>
+                            <button class="vt-btn vt-active" id="vl-vt-labels" title="Toggle orientation labels">
+                                <i class="fas fa-font"></i>
+                            </button>
                             <div class="vt-separator"></div>
                             <button class="vt-btn" id="vl-vt-reset-cam" title="Reset camera">
                                 <i class="fas fa-video"></i>
@@ -1170,6 +1173,21 @@
                             <i class="fas fa-file-upload"></i>
                             <span>Drop .tml (+ .x model) here or</span>
                             <button class="vl-tml-browse" id="vl-tml-open">Browse</button>
+                        </div>
+                    </div>
+                    <div class="vl-panel-divider"></div>
+                    <div class="vl-panel-section">
+                        <div class="vl-panel-header">
+                            <i class="fas fa-box"></i> Rack / Container Library
+                        </div>
+                        <input type="file" id="vl-rack-input" accept=".rck,.x,.hxx" multiple style="display:none">
+                        <div class="vl-tml-drop" id="vl-rack-drop">
+                            <i class="fas fa-file-upload"></i>
+                            <span>Drop .rck (+ .x model) here or</span>
+                            <button class="vl-tml-browse" id="vl-rack-open">Browse</button>
+                        </div>
+                        <div class="vl-rack-list" id="vl-rack-list">
+                            <div class="vl-empty-hint">No racks imported yet.</div>
                         </div>
                     </div>
                     <div class="vl-panel-divider"></div>
@@ -1247,11 +1265,17 @@
                     <div class="vl-dbg-header"><i class="fas fa-crosshairs"></i> Fixture Position Debug</div>
                     <div class="vl-dbg-readout" id="vl-fix-readout">No fixture installed</div>
 
-                    <!-- Target selector: Body vs Accessories -->
+                    <!-- Target selector: Body / All Accessories / Individual / Group -->
                     <div class="vl-fix-target-row">
                         <button class="vl-fix-target-btn is-active" id="vl-fix-target-body" data-target="body">Body</button>
-                        <button class="vl-fix-target-btn" id="vl-fix-target-acc" data-target="accessories">Accessories</button>
+                        <button class="vl-fix-target-btn" id="vl-fix-target-acc" data-target="accessories">All Acces</button>
                         <button class="vl-fix-target-btn" id="vl-fix-target-group" data-target="group">Group</button>
+                    </div>
+                    <div class="vl-fix-component-row">
+                        <label style="font-size:10px;color:#9ab;">Component:</label>
+                        <select id="vl-fix-component-select" class="vl-dbg-input" style="flex:1;font-size:10px;">
+                            <option value="">(none — use target above)</option>
+                        </select>
                     </div>
 
                     <div class="vl-dbg-row">
@@ -1281,6 +1305,41 @@
                     <div class="vl-dbg-actions">
                         <button id="vl-fix-reset" class="vl-dbg-action-btn"><i class="fas fa-undo"></i> Reset</button>
                         <button id="vl-fix-copy"  class="vl-dbg-action-btn vl-dbg-action-accent"><i class="fas fa-copy"></i> Copy offsets</button>
+                    </div>
+                </div>
+
+                <!-- Entry/Exit Drawer Debug Panel -->
+                <div class="vl-deck-debug-panel vl-ee-debug-panel" id="vl-ee-debug-panel">
+                    <div class="vl-dbg-header"><i class="fas fa-door-open"></i> EE Drawer Debug</div>
+                    <div class="vl-dbg-readout" id="vl-ee-readout">No drawer installed</div>
+                    <div class="vl-dbg-row">
+                        <span class="vl-dbg-axis x">X</span>
+                        <button class="dbg-step-btn ee-step" data-axis="x" data-delta="-10">−10</button>
+                        <button class="dbg-step-btn ee-step" data-axis="x" data-delta="-1">−1</button>
+                        <input type="number" id="vl-ee-x" class="vl-dbg-input" value="0" step="0.5">
+                        <button class="dbg-step-btn ee-step" data-axis="x" data-delta="1">+1</button>
+                        <button class="dbg-step-btn ee-step" data-axis="x" data-delta="10">+10</button>
+                    </div>
+                    <div class="vl-dbg-row">
+                        <span class="vl-dbg-axis y">Y</span>
+                        <button class="dbg-step-btn ee-step" data-axis="y" data-delta="-10">−10</button>
+                        <button class="dbg-step-btn ee-step" data-axis="y" data-delta="-1">−1</button>
+                        <input type="number" id="vl-ee-y" class="vl-dbg-input" value="0" step="0.5">
+                        <button class="dbg-step-btn ee-step" data-axis="y" data-delta="1">+1</button>
+                        <button class="dbg-step-btn ee-step" data-axis="y" data-delta="10">+10</button>
+                    </div>
+                    <div class="vl-dbg-row">
+                        <span class="vl-dbg-axis z">Z</span>
+                        <button class="dbg-step-btn ee-step" data-axis="z" data-delta="-10">−10</button>
+                        <button class="dbg-step-btn ee-step" data-axis="z" data-delta="-1">−1</button>
+                        <input type="number" id="vl-ee-z" class="vl-dbg-input" value="0" step="0.5">
+                        <button class="dbg-step-btn ee-step" data-axis="z" data-delta="1">+1</button>
+                        <button class="dbg-step-btn ee-step" data-axis="z" data-delta="10">+10</button>
+                    </div>
+                    <div class="vl-dbg-actions">
+                        <button id="vl-ee-reset" class="vl-dbg-action-btn"><i class="fas fa-undo"></i> Reset</button>
+                        <button id="vl-ee-copy"  class="vl-dbg-action-btn vl-dbg-action-accent"><i class="fas fa-copy"></i> Copy offsets</button>
+                        <button id="vl-ee-apply" class="vl-dbg-action-btn vl-dbg-action-accent"><i class="fas fa-check"></i> Set</button>
                     </div>
                 </div>
 
@@ -1323,6 +1382,32 @@
                             <button class="vl-dialog-confirm" id="vl-pd-confirm">
                                 <i class="fas fa-check"></i> Place
                             </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Container Picker Dialog -->
+                <div class="vl-dialog-overlay" id="vl-container-dialog">
+                    <div class="vl-dialog vl-dialog-wide">
+                        <div class="vl-dialog-header">
+                            <i class="fas fa-box"></i> <span id="vl-cd-title">Assign Container</span>
+                        </div>
+                        <div class="vl-dialog-body vl-cd-body">
+                            <div class="vl-cd-actions">
+                                <input type="file" id="vl-cd-import-input" accept=".rck,.x,.hxx" multiple style="display:none">
+                                <button class="vl-cd-action-btn" id="vl-cd-import-btn">
+                                    <i class="fas fa-file-import"></i> Import .rck
+                                </button>
+                                <button class="vl-cd-action-btn" id="vl-cd-browse-server">
+                                    <i class="fas fa-server"></i> Browse Server
+                                </button>
+                            </div>
+                            <div class="vl-cd-list-wrap" id="vl-cd-list">
+                                <div class="vl-empty-hint">No racks loaded yet.</div>
+                            </div>
+                        </div>
+                        <div class="vl-dialog-footer">
+                            <button class="vl-dialog-cancel" id="vl-cd-cancel">Cancel</button>
                         </div>
                     </div>
                 </div>
@@ -1528,7 +1613,7 @@
 
                 <!-- Entry/Exit Drawer -->
                 <div class="settings-section-title"><i class="fas fa-door-open"></i> Entry/Exit Drawer</div>
-                <p class="settings-hint">Install the entry/exit drawer at a deck cutout. The drawer extends below the deck with 4 stack locations and requires the back panel to be hidden.</p>
+                <p class="settings-hint">Install the entry/exit drawer at a deck cutout. The drawer extends below the deck with 4 stack locations.</p>
 
                 <div class="settings-toggle-row">
                     <span class="settings-toggle-label">Drawer Position</span>
@@ -1542,17 +1627,6 @@
                 </div>
 
                 <div class="settings-divider"></div>
-
-                <!-- Deck Panels -->
-                <div class="settings-section-title"><i class="fas fa-layer-group"></i> Deck Panels</div>
-
-                <div class="settings-toggle-row">
-                    <span class="settings-toggle-label">Back Panel</span>
-                    <label class="settings-switch">
-                        <input type="checkbox" id="settings-back-panel-toggle" checked>
-                        <span class="settings-switch-slider"></span>
-                    </label>
-                </div>
 
                 <div class="settings-divider"></div>
 
@@ -1583,6 +1657,13 @@
                     <span class="settings-toggle-label">Fixture Position Debug</span>
                     <label class="settings-switch">
                         <input type="checkbox" id="settings-fixture-debug-toggle">
+                        <span class="settings-switch-slider"></span>
+                    </label>
+                </div>
+                <div class="settings-toggle-row">
+                    <span class="settings-toggle-label">EE Drawer Debug</span>
+                    <label class="settings-switch">
+                        <input type="checkbox" id="settings-ee-debug-toggle">
                         <span class="settings-switch-slider"></span>
                     </label>
                 </div>
@@ -1656,8 +1737,7 @@
     <script src="js/lib/STLLoader.js"></script>
     <script src="js/hxxLoader.js?v=20260305a"></script>
     <script src="js/deckUnits.js?v=20260308a"></script>
-    <script src="js/vantageLayout.js?v=20260308a"></script>
-    <script src="js/mfxCarrier.js?v=20260308a"></script>
+    <script src="js/vantageLayout.js?v=20260309a"></script>
     <script src="js/converter.js?v=20260304d"></script>
     <script src="js/platePlacer.js?v=20260304d"></script>
     <script src="js/labwareGenerator.js?v=20260308a"></script>
