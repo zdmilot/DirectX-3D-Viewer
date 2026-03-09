@@ -4228,6 +4228,26 @@ body {
     right: 0;
 }
 
+/* ── MFX Toolbar anchored to left edge of right panel ─────────── */
+.mfx-toolbar-anchor {
+    position: absolute;
+    top: 8px;
+    right: 200px; /* flush with left edge of 200px right panel */
+    z-index: 22;
+    pointer-events: none;
+    transition: right 0.25s ease;
+}
+#mfx-host.vl-right-collapsed .mfx-toolbar-anchor {
+    right: 0; /* panel collapsed, toolbar hugs right edge of viewport */
+}
+.mfx-anchored-vt-body {
+    position: relative !important;
+    top: auto !important;
+    right: auto !important;
+    border-radius: 14px 0 0 14px !important;
+    pointer-events: auto;
+}
+
 /* Scrollbar for module list */
 .mfx-module-list::-webkit-scrollbar,
 .mfx-slot-list::-webkit-scrollbar { width: 4px; }

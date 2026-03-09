@@ -903,20 +903,57 @@
             mfxState._mouse.x =  ((e.clientX - rect.left)  / rect.width)  * 2 - 1;
             mfxState._mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
             mfxState._raycaster.setFromCamera(mfxState._mouse, mfxState.camera);
-            // Collect all slot meshes
-            var slotMeshes = [];
+
+            // Collect all pickable objects: slot meshes + module meshes
+            var pickables = [];
             Object.keys(mfxState.slotState).forEach(function (id) {
                 var e2 = mfxState.slotState[id];
-                if (e2.slotMesh) slotMeshes.push(e2.slotMesh);
+                if (e2.slotMesh) pickables.push(e2.slotMesh);
+                if (e2.moduleMesh) pickables.push(e2.moduleMesh);
             });
-            var hits = mfxState._raycaster.intersectObjects(slotMeshes, false);
+            var hits = mfxState._raycaster.intersectObjects(pickables, true);
             if (hits.length > 0) {
-                var slotId = hits[0].object.userData.slotId;
-                if (slotId !== undefined) {
-                    selectSlot(parseInt(slotId, 10));
+                // Resolve hit to a slot ID
+                var resolvedSlotId = resolveHitToSlotId(hits[0].object);
+                if (resolvedSlotId !== null) {
+                    selectSlot(resolvedSlotId);
                 }
             }
         });
+    }
+
+    // Resolve a raycast hit object to the slot ID it belongs to
+    function resolveHitToSlotId(hitObject) {
+        // Direct slot mesh hit
+        if (hitObject.userData && hitObject.userData.slotId !== undefined) {
+            return parseInt(hitObject.userData.slotId, 10);
+        }
+        // Walk up parents to check if it's part of a slot mesh
+        var parent = hitObject.parent;
+        while (parent) {
+            if (parent.userData && parent.userData.slotId !== undefined) {
+                return parseInt(parent.userData.slotId, 10);
+            }
+            parent = parent.parent;
+        }
+        // Check if this object is a child of a module mesh in any slot
+        var ids = Object.keys(mfxState.slotState);
+        for (var i = 0; i < ids.length; i++) {
+            var entry = mfxState.slotState[ids[i]];
+            if (entry.moduleMesh && isDescendantOf(hitObject, entry.moduleMesh)) {
+                return parseInt(ids[i], 10);
+            }
+        }
+        return null;
+    }
+
+    function isDescendantOf(child, ancestor) {
+        var obj = child;
+        while (obj) {
+            if (obj === ancestor) return true;
+            obj = obj.parent;
+        }
+        return false;
     }
 
     // ================================================================
@@ -1359,9 +1396,6 @@
 
         // Reorder mode toggle
         wireBtn('#mfx-vt-reorder', toggleMFXReorder);
-
-        // Drag-to-move toolbar
-        wireMFXDragHandle('#mfx-vt-grab-handle', '#mfx-toolbar');
     }
 
     function wireBtn(sel, fn) {
@@ -1539,15 +1573,16 @@
         mfxState._mouse.y = -((e.clientY - rect.top)  / rect.height) * 2 + 1;
         mfxState._raycaster.setFromCamera(mfxState._mouse, mfxState.camera);
 
-        var slotMeshes = [];
+        var pickables = [];
         Object.keys(mfxState.slotState).forEach(function (id) {
             var e2 = mfxState.slotState[id];
-            if (e2.slotMesh) slotMeshes.push(e2.slotMesh);
+            if (e2.slotMesh) pickables.push(e2.slotMesh);
+            if (e2.moduleMesh) pickables.push(e2.moduleMesh);
         });
-        var hits = mfxState._raycaster.intersectObjects(slotMeshes, false);
+        var hits = mfxState._raycaster.intersectObjects(pickables, true);
         if (hits.length > 0) {
-            var sid = hits[0].object.userData.slotId;
-            if (sid !== undefined) return parseInt(sid, 10);
+            var resolved = resolveHitToSlotId(hits[0].object);
+            if (resolved !== null) return resolved;
         }
         return null;
     }

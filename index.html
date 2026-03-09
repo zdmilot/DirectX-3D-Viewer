@@ -1459,9 +1459,9 @@
             <div class="view-panel" data-view-panel="mfx" id="mfx-host">
                 <canvas id="mfx-canvas"></canvas>
 
-                <!-- Floating 3D Toolbar -->
-                <div class="viewer-toolbar" id="mfx-toolbar">
-                    <div class="vt-body" id="mfx-vt-body">
+                <!-- 3D Toolbar anchored to left edge of right panel -->
+                <div class="mfx-toolbar-anchor" id="mfx-toolbar">
+                    <div class="vt-body mfx-anchored-vt-body" id="mfx-vt-body">
                         <button class="vt-toggle" id="mfx-vt-toggle" title="Toggle toolbar">
                             <i class="fas fa-chevron-right"></i>
                         </button>
@@ -1495,10 +1495,6 @@
                             <button class="vt-btn vt-btn-round is-active" id="mfx-vt-reorder" title="Reorder modules (drag to rearrange)">
                                 <i class="fas fa-mouse-pointer"></i>
                             </button>
-                            <div class="vt-separator"></div>
-                            <div class="vt-grab-handle" id="mfx-vt-grab-handle" title="Drag to move toolbar">
-                                <i class="fas fa-grip-horizontal"></i>
-                            </div>
                         </div>
                     </div>
                 </div>
