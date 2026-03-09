@@ -573,7 +573,7 @@
         Object.keys(mfxState.slotState).forEach(function (id) {
             var entry = mfxState.slotState[id];
             if (entry.slotMesh) {
-                entry.slotMesh.position.y = ny + 2; // +2 mm to avoid z-fighting
+                entry.slotMesh.position.y = ny + 3; // +3 mm to avoid z-fighting
             }
             if (entry.moduleMesh) {
                 positionModuleInSlot(entry.moduleMesh, entry.slot);
@@ -596,10 +596,10 @@
         var mesh = new THREE.Mesh(geo, mat);
         // Three.js coords: X=width, Y=height(z), Z=depth(y)
         // Place slot mesh on top of the carrier nesting surface
-        // Raise visual target 2 mm above nesting surface to avoid z-fighting
+        // Raise visual target 3 mm above nesting surface to avoid z-fighting
         mesh.position.set(
             slot.x + slot.dx / 2,
-            getNestingY() + 2,
+            getNestingY() + 3,
             slot.y + slot.dy / 2
         );
         mesh.name = '__slot_' + slot.id + '__';
