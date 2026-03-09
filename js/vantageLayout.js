@@ -1190,24 +1190,15 @@
         var group = buildDeckFixtureMesh(cutoutIdx, vlState.wasteTmlDef,
             vlState.wasteModelCacheKey, '__waste_chute__');
         if (group) {
-            // Reposition: align TML origin with the right edge of the cutout
-            // so the body model (negative 3DxOffset) extends left INTO the
-            // cutout opening, and accessories sit on the deck surface to the right.
-            var slot = DECK_CUTOUTS[cutoutIdx];
-            var slotX = DECK.FIRST_TRACK_X + (slot.trackStart - 1) * DECK.TRACK_SPACING;
-            var cutoutWidth = slot.trackSpan * DECK.TRACK_SPACING;
-            group.position.x = slotX + cutoutWidth;
-
-            // Temp adjustments: accessories 8 tracks left, body 3 tracks left
-            var accessoryShift = -8 * DECK.TRACK_SPACING;   // -180mm
-            var bodyShift      = -3 * DECK.TRACK_SPACING;   // -67.5mm
-            group.position.x += accessoryShift;
-            // Body needs 5 tracks right relative to group (8-3=5) to net 3 left
+            // Apply calibrated offsets for body and accessories alignment
             group.traverse(function (child) {
-                if (child.name && child.name.indexOf('_body_x__') !== -1) {
-                    child.position.x += (accessoryShift - bodyShift) * -1; // +5 tracks
-                    // Shift body backward to align with deck cutout hole
-                    child.position.z += DECK.TRACK_Y_START / 2;
+                if (!child.name) return;
+                if (child.name.indexOf('_body_x__') !== -1 || child.name.indexOf('_body__') !== -1) {
+                    child.position.x += -10.0;
+                    child.position.z += -10.0;
+                } else if (child.name.indexOf('_labware_') !== -1) {
+                    child.position.x += -15.0;
+                    child.position.z += -3.5;
                 }
             });
         }
