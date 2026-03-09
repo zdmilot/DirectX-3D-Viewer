@@ -114,6 +114,10 @@
                         <i class="fas fa-layer-group"></i>
                         <span>Vantage Layout</span>
                     </button>
+                    <button class="sidebar-nav-item" data-view="mfx">
+                        <i class="fas fa-th-large"></i>
+                        <span>MFX Carrier</span>
+                    </button>
                 </div>
             </aside>
 
@@ -1426,6 +1430,87 @@
                     <div class="cv-ctrl-divider"></div>
                     <button class="cv-ctrl-btn cv-ctrl-btn-accent" id="vl-export-btn" title="Export layout as JSON">
                         <i class="fas fa-download"></i> Export Layout
+                    </button>
+                </div>
+            </div>
+
+            <!-- ======================================================
+                 MFX Carrier Creator Panel
+                 ====================================================== -->
+            <div class="view-panel" data-view-panel="mfx" id="mfx-host">
+                <canvas id="mfx-canvas"></canvas>
+
+                <!-- Left Panel: Carrier selector + Module catalog -->
+                <div class="vl-left-panel" id="mfx-left-panel">
+                    <div class="vl-panel-section">
+                        <div class="vl-panel-header">
+                            <i class="fas fa-th-large"></i> Carrier Type
+                        </div>
+                        <div class="mfx-carrier-tabs" id="mfx-carrier-tabs">
+                            <!-- populated by JS -->
+                        </div>
+                    </div>
+                    <div class="vl-panel-divider"></div>
+                    <div class="vl-panel-section">
+                        <div class="vl-panel-header">
+                            <i class="fas fa-puzzle-piece"></i> Module Catalog
+                        </div>
+                        <div class="mfx-catalog-filters">
+                            <select class="mfx-cat-select" id="mfx-cat-filter">
+                                <option value="All">All Categories</option>
+                            </select>
+                            <input type="text" class="mfx-search-input" id="mfx-module-search" placeholder="Search modules…">
+                        </div>
+                        <div class="mfx-module-list" id="mfx-module-list">
+                            <!-- populated by JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Panel: Slot list -->
+                <div class="vl-right-panel" id="mfx-right-panel">
+                    <div class="vl-panel-header">
+                        <i class="fas fa-list-ol"></i> Carrier Slots
+                    </div>
+
+                    <!-- Pending placement banner -->
+                    <div class="mfx-pending-banner" id="mfx-pending-banner" style="display:none">
+                        <i class="fas fa-hand-pointer"></i>
+                        Placing: <strong id="mfx-pending-name"></strong>
+                        <button class="mfx-pending-cancel" id="mfx-cancel-pending" title="Cancel placement">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+
+                    <div class="mfx-slot-list" id="mfx-slot-list">
+                        <!-- populated by JS -->
+                    </div>
+
+                    <div class="vl-site-actions">
+                        <button class="vl-danger-btn" id="mfx-clear-all">
+                            <i class="fas fa-trash"></i> Clear All Slots
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Panel collapse toggles -->
+                <button class="vl-panel-toggle vl-left-toggle" id="mfx-left-toggle" title="Show / hide left panel">
+                    <i class="fas fa-chevron-left" id="mfx-left-toggle-icon"></i>
+                </button>
+                <button class="vl-panel-toggle vl-right-toggle" id="mfx-right-toggle" title="Show / hide right panel">
+                    <i class="fas fa-chevron-right" id="mfx-right-toggle-icon"></i>
+                </button>
+
+                <!-- Bottom Controls Bar -->
+                <div class="viewer-controls-bar" id="mfx-controls-bar">
+                    <span class="vl-status-msg" id="mfx-status">Select a carrier type, then click a module to place it.</span>
+                    <div class="cv-ctrl-spacer"></div>
+                    <button class="cv-ctrl-btn" id="mfx-reset-cam" title="Reset camera view">
+                        <i class="fas fa-video"></i> Reset View
+                    </button>
+                    <div class="cv-ctrl-divider"></div>
+                    <button class="cv-ctrl-btn cv-ctrl-btn-accent" id="mfx-export-btn" title="Export configuration">
+                        <i class="fas fa-download"></i> Export Config
                     </button>
                 </div>
             </div>

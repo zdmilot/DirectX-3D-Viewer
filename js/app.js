@@ -708,6 +708,8 @@
         if (window.HamiltonImportModule) window.HamiltonImportModule.updateTheme();
         // Also update vantage layout theme
         if (window.VantageLayoutModule) window.VantageLayoutModule.updateTheme();
+        // Also update MFX carrier theme
+        if (window.MFXCarrierModule) window.MFXCarrierModule.updateTheme();
 
     }
 
@@ -757,6 +759,11 @@
         // Initialize vantage layout on first switch
         if (viewName === 'vantage' && window.VantageLayoutModule) {
             setTimeout(() => window.VantageLayoutModule.init(), 50);
+        }
+
+        // Initialize MFX Carrier Creator on first switch
+        if (viewName === 'mfx' && window.MFXCarrierModule) {
+            setTimeout(() => window.MFXCarrierModule.init(), 50);
         }
 
         // Auto-collapse sidebar after navigation
