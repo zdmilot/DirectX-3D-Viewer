@@ -573,7 +573,7 @@
         Object.keys(mfxState.slotState).forEach(function (id) {
             var entry = mfxState.slotState[id];
             if (entry.slotMesh) {
-                entry.slotMesh.position.y = ny + 5; // +5 mm to avoid z-fighting
+                entry.slotMesh.position.y = ny + 3; // +3 mm above nesting surface
             }
             if (entry.moduleMesh) {
                 positionModuleInSlot(entry.moduleMesh, entry.slot);
@@ -592,14 +592,19 @@
             color: color,
             transparent: true,
             opacity: isSelected ? 0.75 : 0.55,
+            depthWrite: false,
+            polygonOffset: true,
+            polygonOffsetFactor: -1,
+            polygonOffsetUnits: -1,
         });
         var mesh = new THREE.Mesh(geo, mat);
+        mesh.renderOrder = 10;
         // Three.js coords: X=width, Y=height(z), Z=depth(y)
         // Place slot mesh on top of the carrier nesting surface
-        // Raise visual target 5 mm above nesting surface to avoid z-fighting
+        // Raise visual target 3 mm above nesting surface
         mesh.position.set(
             slot.x + slot.dx / 2,
-            getNestingY() + 5,
+            getNestingY() + 3,
             slot.y + slot.dy / 2
         );
         mesh.name = '__slot_' + slot.id + '__';
@@ -607,8 +612,13 @@
         mesh.userData.isSlot = true;
         // Wireframe outline
         var edgesGeo = new THREE.EdgesGeometry(geo);
-        var edgesMat = new THREE.LineBasicMaterial({ color: isSelected ? 0x66aaff : 0x4488aa, linewidth: 1 });
+        var edgesMat = new THREE.LineBasicMaterial({
+            color: isSelected ? 0x66aaff : 0x4488aa,
+            linewidth: 1,
+            depthTest: false,
+        });
         var edges = new THREE.LineSegments(edgesGeo, edgesMat);
+        edges.renderOrder = 11;
         mesh.add(edges);
         return mesh;
     }
