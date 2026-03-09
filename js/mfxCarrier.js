@@ -598,7 +598,7 @@
             polygonOffsetUnits: -4,
         });
         var mesh = new THREE.Mesh(geo, mat);
-        mesh.renderOrder = 10;
+        mesh.renderOrder = 1;
         // PlaneGeometry faces along XY — rotate to lie flat on XZ
         mesh.rotation.x = -Math.PI / 2;
         // Three.js coords: X=width, Y=height(z), Z=depth(y)
@@ -616,10 +616,9 @@
         var edgesMat = new THREE.LineBasicMaterial({
             color: isSelected ? 0x66aaff : 0x4488aa,
             linewidth: 1,
-            depthTest: false,
         });
         var edges = new THREE.LineSegments(outlineGeo, edgesMat);
-        edges.renderOrder = 11;
+        edges.renderOrder = 1;
         mesh.add(edges);
         return mesh;
     }
