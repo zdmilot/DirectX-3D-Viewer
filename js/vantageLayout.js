@@ -253,8 +253,9 @@
         _eeBasePos: null,
 
         // Back shield nodes (4 light-gray panels on the back side)
-        backShieldNodes: [],          // [Object3D, ...] sorted by X (left→right)
+        backShieldNodes: [],          // [Mesh, ...] shield section meshes (4)
         backShieldVisible: [true, true, true, true],
+        _backWallOriginal: null,      // original back-wall mesh (hidden after split)
 
         // Fixture position debug state
         fixtureDebugMode: false,
@@ -3979,36 +3980,159 @@
 
         console.log('[VantageLayout] deck cover nodes:', covers.map(function (n) { return n.name; }));
 
-        // Collect the 4 back shield meshes ("Color #959595ff" panels
-        // whose world X-range aligns with each deck cover).
-        var coverBBs = covers.map(function (c) {
-            return new THREE.Box3().setFromObject(c);
-        });
-        var shieldCandidates = [];
-        vlState.gltfModel.traverse(function (obj) {
-            if (!obj.isMesh) return;
-            if (obj.name !== 'Color #959595ff') return;
-            var bb = new THREE.Box3().setFromObject(obj);
-            // Match shield to a cover by overlapping X range
-            for (var ci = 0; ci < coverBBs.length; ci++) {
-                if (bb.min.x < coverBBs[ci].max.x && bb.max.x > coverBBs[ci].min.x) {
-                    shieldCandidates.push({ idx: ci, node: obj, xMin: bb.min.x });
-                    break;
-                }
-            }
-        });
-        // Sort by cover index so shields[0] = cover 1, etc.
-        shieldCandidates.sort(function (a, b) { return a.idx - b.idx; });
-        vlState.backShieldNodes = shieldCandidates.map(function (s) { return s.node; });
-        console.log('[VantageLayout] back shield nodes:', vlState.backShieldNodes.length);
+        // Split the back wall mesh into 4 shield sections + permanent frame.
+        // The back wall is "Color #a0a0a0ff" (direct child of the main 99032-01 assembly).
+        splitBackWallIntoShields(covers);
     }
 
     // ================================================================
-    //  Back shield visibility (4 light panels on the back side)
+    //  Back wall splitting — shield sections
+    // ================================================================
+    // The back wall ("Color #a0a0a0ff") is a single mesh spanning the
+    // full deck width. We split it into 4 shield sections (aligned
+    // with the 4 deck cover X-ranges) plus a permanent frame.
+
+    function splitBackWallIntoShields(covers) {
+        // Find the back wall mesh by name (not inside a VANTAGE_DECK_COVER group)
+        var backWall = null;
+        vlState.gltfModel.traverse(function (obj) {
+            if (backWall) return;
+            if (!obj.isMesh) return;
+            if (obj.name !== 'Color #a0a0a0ff') return;
+            // Verify it's not inside a VANTAGE_DECK_COVER group
+            var p = obj.parent;
+            var insideCover = false;
+            while (p) {
+                if (/^VANTAGE_DECK_COVER/i.test(p.name)) { insideCover = true; break; }
+                p = p.parent;
+            }
+            if (!insideCover) backWall = obj;
+        });
+        if (!backWall) {
+            console.warn('[VantageLayout] back wall mesh not found');
+            return;
+        }
+
+        vlState._backWallOriginal = backWall;
+        vlState.gltfModel.updateMatrixWorld(true);
+        var worldMat = backWall.matrixWorld;
+
+        // Compute each cover's world-space X range
+        var coverRanges = [];
+        covers.forEach(function (coverNode) {
+            var bb = new THREE.Box3().setFromObject(coverNode);
+            coverRanges.push({ xMin: bb.min.x, xMax: bb.max.x });
+        });
+
+        // Access geometry
+        var geo = backWall.geometry;
+        var posAttr = geo.attributes.position;
+        var normalAttr = geo.attributes.normal;
+        var uvAttr = geo.attributes.uv;
+        var index = geo.index;
+
+        // Classify each triangle: 0-3 = cover-aligned shields, -1 = frame
+        var shieldTris = [[], [], [], []];
+        var frameTris = [];
+        var triCount = index ? index.count / 3 : posAttr.count / 3;
+        var v = new THREE.Vector3();
+
+        for (var t = 0; t < triCount; t++) {
+            var i0, i1, i2;
+            if (index) {
+                i0 = index.getX(t * 3);
+                i1 = index.getX(t * 3 + 1);
+                i2 = index.getX(t * 3 + 2);
+            } else {
+                i0 = t * 3; i1 = t * 3 + 1; i2 = t * 3 + 2;
+            }
+
+            // Centroid X in world space
+            var cx = 0;
+            v.set(posAttr.getX(i0), posAttr.getY(i0), posAttr.getZ(i0)).applyMatrix4(worldMat); cx += v.x;
+            v.set(posAttr.getX(i1), posAttr.getY(i1), posAttr.getZ(i1)).applyMatrix4(worldMat); cx += v.x;
+            v.set(posAttr.getX(i2), posAttr.getY(i2), posAttr.getZ(i2)).applyMatrix4(worldMat); cx += v.x;
+            cx /= 3;
+
+            var assigned = false;
+            for (var ci = 0; ci < coverRanges.length; ci++) {
+                if (cx >= coverRanges[ci].xMin && cx <= coverRanges[ci].xMax) {
+                    shieldTris[ci].push([i0, i1, i2]);
+                    assigned = true;
+                    break;
+                }
+            }
+            if (!assigned) frameTris.push([i0, i1, i2]);
+        }
+
+        // Helper: build a mesh from triangle list sharing the original material & transform
+        function buildSplitMesh(tris, name) {
+            if (tris.length === 0) return null;
+            var vertMap = {};
+            var newPos = [], newNrm = [], newUv = [], newIdx = [];
+            var nextV = 0;
+            tris.forEach(function (tri) {
+                tri.forEach(function (oldI) {
+                    if (!(oldI in vertMap)) {
+                        vertMap[oldI] = nextV++;
+                        newPos.push(posAttr.getX(oldI), posAttr.getY(oldI), posAttr.getZ(oldI));
+                        if (normalAttr) newNrm.push(normalAttr.getX(oldI), normalAttr.getY(oldI), normalAttr.getZ(oldI));
+                        if (uvAttr) newUv.push(uvAttr.getX(oldI), uvAttr.getY(oldI));
+                    }
+                    newIdx.push(vertMap[oldI]);
+                });
+            });
+            var newGeo = new THREE.BufferGeometry();
+            newGeo.setAttribute('position', new THREE.Float32BufferAttribute(newPos, 3));
+            if (newNrm.length) newGeo.setAttribute('normal', new THREE.Float32BufferAttribute(newNrm, 3));
+            if (newUv.length) newGeo.setAttribute('uv', new THREE.Float32BufferAttribute(newUv, 2));
+            newGeo.setIndex(newIdx);
+            var mat = backWall.material.clone();
+            var m = new THREE.Mesh(newGeo, mat);
+            m.name = name;
+            m.matrix.copy(backWall.matrix);
+            m.matrixAutoUpdate = false;
+            return m;
+        }
+
+        var sectionGroup = new THREE.Group();
+        sectionGroup.name = '__back_wall_sections__';
+
+        // Permanent frame (always visible)
+        var frameMesh = buildSplitMesh(frameTris, '__back_frame__');
+        if (frameMesh) sectionGroup.add(frameMesh);
+
+        // 4 shield sections (toggleable)
+        var shields = [];
+        for (var s = 0; s < 4; s++) {
+            var mesh = buildSplitMesh(shieldTris[s], '__back_shield_' + s + '__');
+            if (mesh) {
+                sectionGroup.add(mesh);
+                shields.push(mesh);
+            } else {
+                shields.push(null);
+            }
+        }
+
+        // Hide original, add split group in its place
+        backWall.visible = false;
+        backWall.parent.add(sectionGroup);
+
+        vlState.backShieldNodes = shields;
+        vlState.backShieldVisible = shields.map(function () { return true; });
+
+        console.log('[VantageLayout] back wall split into', shields.filter(Boolean).length,
+            'shields + frame (' + frameTris.length + ' frame tris,',
+            shieldTris.map(function (t) { return t.length; }).join('/'), 'shield tris)');
+    }
+
+    // ================================================================
+    //  Back shield visibility
     // ================================================================
 
     function setBackShieldVisible(idx, visible) {
         if (idx < 0 || idx >= vlState.backShieldNodes.length) return;
+        if (!vlState.backShieldNodes[idx]) return;
         vlState.backShieldVisible[idx] = visible;
         vlState.backShieldNodes[idx].visible = visible;
     }
