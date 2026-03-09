@@ -573,7 +573,7 @@
         Object.keys(mfxState.slotState).forEach(function (id) {
             var entry = mfxState.slotState[id];
             if (entry.slotMesh) {
-                entry.slotMesh.position.y = ny + 0.3;
+                entry.slotMesh.position.y = ny + 3;
             }
             if (entry.moduleMesh) {
                 positionModuleInSlot(entry.moduleMesh, entry.slot);
@@ -602,10 +602,10 @@
         mesh.renderOrder = 10;
         // Rotate plane to face up (PlaneGeometry faces +Z by default)
         mesh.rotation.x = -Math.PI / 2;
-        // Place flat on the carrier nesting surface (tiny offset above)
+        // Place flat above the carrier nesting surface
         mesh.position.set(
             slot.x + slot.dx / 2,
-            getNestingY() + 0.3,
+            getNestingY() + 3,
             slot.y + slot.dy / 2
         );
         mesh.name = '__slot_' + slot.id + '__';
