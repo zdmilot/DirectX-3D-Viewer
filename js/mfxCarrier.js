@@ -1450,49 +1450,95 @@
             );
         });
 
-        // --- MOUSEMOVE: update drag state + highlight target slot ---
-        canvas.addEventListener('mousemove', function (e) {
-            // Show pointer cursor + green glow on hover over modules
-            if (mfxState.isReorderMode && mfxState._canvasDragSourceSlot === null) {
-                var hoverSlot = pickSlotAt(e);
-                var prevHover = mfxState._hoveredModuleSlot;
-                if (hoverSlot !== null) {
-                    var hEntry = mfxState.slotState[hoverSlot];
-                    var hasModule = hEntry && hEntry.moduleKey;
-                    canvas.style.cursor = hasModule ? 'grab' : 'default';
-                    if (hasModule && hoverSlot !== prevHover) {
-                        if (prevHover != null) clearModuleGlow(prevHover);
-                        setModuleGlow(hoverSlot, 0x00cc66, 0.3);
-                        mfxState._hoveredModuleSlot = hoverSlot;
-                    } else if (!hasModule && prevHover != null) {
-                        clearModuleGlow(prevHover);
-                        mfxState._hoveredModuleSlot = null;
-                    }
-                } else {
-                    canvas.style.cursor = 'default';
-                    if (prevHover != null) {
-                        clearModuleGlow(prevHover);
-                        mfxState._hoveredModuleSlot = null;
-                    }
+        // --- Shared drag-completion logic (used by both mouseup and document handlers) ---
+        function completeDrag(e) {
+            if (mfxState._canvasDragSourceSlot === null) return;
+            var sourceSlotId = mfxState._canvasDragSourceSlot;
+            var wasDragging = mfxState._canvasDragging;
+
+            // Save mesh position + offset BEFORE clearing state
+            var origPos = mfxState._dragOrigPos;
+            var savedDragOffset = mfxState._dragMeshOffset;
+            var srcEntry = mfxState.slotState[sourceSlotId];
+            var savedMeshPos = (srcEntry && srcEntry.moduleMesh)
+                ? srcEntry.moduleMesh.position.clone() : null;
+            var lastHoveredSlot = mfxState._canvasReorderHoveredSlot;
+            var snappedSlot = mfxState._dragSnappedSlot;
+
+            // Clean up state
+            mfxState._canvasDragSourceSlot = null;
+            mfxState._canvasDragging = false;
+            mfxState._canvasDragStartPos = null;
+            mfxState._hoveredModuleSlot = null;
+            mfxState._dragOrigPos = null;
+            mfxState._dragPlane = null;
+            mfxState._dragMeshOffset = null;
+            mfxState._dragSnappedSlot = null;
+            canvas.style.cursor = 'default';
+            document.body.style.cursor = '';
+            clearAllModuleGlows();
+            clearCanvasReorderHighlights();
+            showMFXTrashZone(false);
+            showMFXDragLabel(false);
+            // Remove document-level drag listeners
+            document.removeEventListener('mousemove', onDocDragMove, true);
+            document.removeEventListener('mouseup', onDocDragUp, true);
+
+            if (!wasDragging) return;
+
+            // Check if dropped on trash zone
+            if (e && isMFXTrashHit(e)) {
+                removeModuleMeshFromSlot(sourceSlotId);
+                setSlotHighlight(sourceSlotId, mfxState.selectedSlotId === sourceSlotId);
+                updateSlotList();
+                setMFXStatus('Removed module from slot');
+                return;
+            }
+
+            // 1) Primary: use the slot the mesh visually snapped to (this is what the user sees)
+            var targetSlot = (snappedSlot !== null && snappedSlot !== sourceSlotId) ? snappedSlot : null;
+
+            // 2) Fallback: cursor-based pick
+            if (targetSlot === null && e) {
+                var cursorSlot = pickSlotAt(e);
+                if (cursorSlot !== null && cursorSlot !== sourceSlotId) {
+                    targetSlot = cursorSlot;
                 }
             }
-            if (mfxState._canvasDragSourceSlot === null) return;
-            if (!mfxState._canvasDragging) {
-                // Only start dragging after threshold (5px) to avoid accidental drags
-                var dx = e.clientX - mfxState._canvasDragStartPos.x;
-                var dy = e.clientY - mfxState._canvasDragStartPos.y;
-                if (Math.sqrt(dx * dx + dy * dy) < 5) return;
-                mfxState._canvasDragging = true;
-                mfxState._canvasDragDidMove = true;
-                // Highlight the source slot + module glow
-                setSlotHighlight(mfxState._canvasDragSourceSlot, true);
-                setModuleGlow(mfxState._canvasDragSourceSlot, 0x00ff66, 0.5);
-                canvas.style.cursor = 'grabbing';
-                // Show trash drop zone
-                showMFXTrashZone(true);
-                // Show floating drag label
-                showMFXDragLabel(true, mfxState._canvasDragSourceSlot);
+
+            // 3) Fallback: check where the module mesh actually is (handles fast drags)
+            if (targetSlot === null && savedMeshPos) {
+                var meshTarget = findSlotByMeshPosition(sourceSlotId, savedMeshPos, savedDragOffset);
+                if (meshTarget !== null) {
+                    targetSlot = meshTarget;
+                }
             }
+
+            // 4) Fallback: use the last hovered slot from mousemove
+            if (targetSlot === null && lastHoveredSlot !== null && lastHoveredSlot !== sourceSlotId) {
+                targetSlot = lastHoveredSlot;
+            }
+
+            if (targetSlot !== null && targetSlot !== sourceSlotId) {
+                // Snap source module back first (swap will reposition both)
+                var srcE = mfxState.slotState[sourceSlotId];
+                if (srcE && srcE.moduleMesh && origPos) {
+                    srcE.moduleMesh.position.copy(origPos);
+                }
+                swapModulesBetweenSlots(sourceSlotId, targetSlot);
+            } else {
+                // Invalid drop — snap back to original position
+                var srcE2 = mfxState.slotState[sourceSlotId];
+                if (srcE2 && srcE2.moduleMesh && origPos) {
+                    srcE2.moduleMesh.position.copy(origPos);
+                }
+                setSlotHighlight(sourceSlotId, mfxState.selectedSlotId === sourceSlotId);
+            }
+        }
+
+        // --- Document-level handlers (attached once dragging is confirmed) ---
+        function onDocDragMove(e) {
+            if (mfxState._canvasDragSourceSlot === null) return;
 
             // --- Move the module mesh to follow the cursor ---
             var srcEntry = mfxState.slotState[mfxState._canvasDragSourceSlot];
@@ -1554,6 +1600,61 @@
             updateMFXDragLabel(e);
             // Check if hovering over trash zone
             updateMFXTrashHover(e);
+        }
+
+        function onDocDragUp(e) {
+            completeDrag(e);
+        }
+
+        // --- MOUSEMOVE on canvas: hover effects + drag threshold detection ---
+        canvas.addEventListener('mousemove', function (e) {
+            // Show pointer cursor + green glow on hover over modules (only when not dragging)
+            if (mfxState.isReorderMode && mfxState._canvasDragSourceSlot === null) {
+                var hoverSlot = pickSlotAt(e);
+                var prevHover = mfxState._hoveredModuleSlot;
+                if (hoverSlot !== null) {
+                    var hEntry = mfxState.slotState[hoverSlot];
+                    var hasModule = hEntry && hEntry.moduleKey;
+                    canvas.style.cursor = hasModule ? 'grab' : 'default';
+                    if (hasModule && hoverSlot !== prevHover) {
+                        if (prevHover != null) clearModuleGlow(prevHover);
+                        setModuleGlow(hoverSlot, 0x00cc66, 0.3);
+                        mfxState._hoveredModuleSlot = hoverSlot;
+                    } else if (!hasModule && prevHover != null) {
+                        clearModuleGlow(prevHover);
+                        mfxState._hoveredModuleSlot = null;
+                    }
+                } else {
+                    canvas.style.cursor = 'default';
+                    if (prevHover != null) {
+                        clearModuleGlow(prevHover);
+                        mfxState._hoveredModuleSlot = null;
+                    }
+                }
+            }
+            // If already actively dragging, the document-level handler takes over
+            if (mfxState._canvasDragging) return;
+            if (mfxState._canvasDragSourceSlot === null) return;
+            if (!mfxState._canvasDragging) {
+                // Only start dragging after threshold (5px) to avoid accidental drags
+                var dx = e.clientX - mfxState._canvasDragStartPos.x;
+                var dy = e.clientY - mfxState._canvasDragStartPos.y;
+                if (Math.sqrt(dx * dx + dy * dy) < 5) return;
+                mfxState._canvasDragging = true;
+                mfxState._canvasDragDidMove = true;
+                // Highlight the source slot + module glow
+                setSlotHighlight(mfxState._canvasDragSourceSlot, true);
+                setModuleGlow(mfxState._canvasDragSourceSlot, 0x00ff66, 0.5);
+                canvas.style.cursor = 'grabbing';
+                document.body.style.cursor = 'grabbing';
+                // Show trash drop zone
+                showMFXTrashZone(true);
+                // Show floating drag label
+                showMFXDragLabel(true, mfxState._canvasDragSourceSlot);
+                // Attach document-level listeners so drag continues outside canvas
+                document.addEventListener('mousemove', onDocDragMove, true);
+                document.addEventListener('mouseup', onDocDragUp, true);
+            }
         });
 
         // --- Helper: find the best slot overlapping the module mesh's current position ---
@@ -1588,126 +1689,25 @@
             return bestSlot;
         }
 
-        // --- MOUSEUP: complete the reorder drag ---
+        // --- MOUSEUP on canvas: complete the reorder drag (for drops landing on canvas) ---
         canvas.addEventListener('mouseup', function (e) {
-            if (mfxState._canvasDragSourceSlot === null) return;
-            var sourceSlotId = mfxState._canvasDragSourceSlot;
-            var wasDragging = mfxState._canvasDragging;
-
-            // Save mesh position + offset BEFORE clearing state
-            var origPos = mfxState._dragOrigPos;
-            var savedDragOffset = mfxState._dragMeshOffset;
-            var srcEntry = mfxState.slotState[sourceSlotId];
-            var savedMeshPos = (srcEntry && srcEntry.moduleMesh)
-                ? srcEntry.moduleMesh.position.clone() : null;
-            var lastHoveredSlot = mfxState._canvasReorderHoveredSlot;
-            var snappedSlot = mfxState._dragSnappedSlot;
-
-            // Clean up state
-            mfxState._canvasDragSourceSlot = null;
-            mfxState._canvasDragging = false;
-            mfxState._canvasDragStartPos = null;
-            mfxState._hoveredModuleSlot = null;
-            mfxState._dragOrigPos = null;
-            mfxState._dragPlane = null;
-            mfxState._dragMeshOffset = null;
-            mfxState._dragSnappedSlot = null;
-            canvas.style.cursor = 'default';
-            clearAllModuleGlows();
-            clearCanvasReorderHighlights();
-            showMFXTrashZone(false);
-            showMFXDragLabel(false);
-
-            if (!wasDragging) return;
-
-            // Check if dropped on trash zone
-            if (isMFXTrashHit(e)) {
-                removeModuleMeshFromSlot(sourceSlotId);
-                setSlotHighlight(sourceSlotId, mfxState.selectedSlotId === sourceSlotId);
-                updateSlotList();
-                setMFXStatus('Removed module from slot');
-                return;
-            }
-
-            // 1) Primary: use the slot the mesh visually snapped to (this is what the user sees)
-            var targetSlot = (snappedSlot !== null && snappedSlot !== sourceSlotId) ? snappedSlot : null;
-
-            // 2) Fallback: cursor-based pick
-            if (targetSlot === null) {
-                var cursorSlot = pickSlotAt(e);
-                if (cursorSlot !== null && cursorSlot !== sourceSlotId) {
-                    targetSlot = cursorSlot;
-                }
-            }
-
-            // 3) Fallback: check where the module mesh actually is (handles fast drags)
-            if (targetSlot === null && savedMeshPos) {
-                var meshTarget = findSlotByMeshPosition(sourceSlotId, savedMeshPos, savedDragOffset);
-                if (meshTarget !== null) {
-                    targetSlot = meshTarget;
-                }
-            }
-
-            // 4) Fallback: use the last hovered slot from mousemove
-            if (targetSlot === null && lastHoveredSlot !== null && lastHoveredSlot !== sourceSlotId) {
-                targetSlot = lastHoveredSlot;
-            }
-
-            if (targetSlot !== null && targetSlot !== sourceSlotId) {
-                // Snap source module back first (swap will reposition both)
-                var srcE = mfxState.slotState[sourceSlotId];
-                if (srcE && srcE.moduleMesh && origPos) {
-                    srcE.moduleMesh.position.copy(origPos);
-                }
-                swapModulesBetweenSlots(sourceSlotId, targetSlot);
-            } else {
-                // Invalid drop — snap back to original position
-                var srcE2 = mfxState.slotState[sourceSlotId];
-                if (srcE2 && srcE2.moduleMesh && origPos) {
-                    srcE2.moduleMesh.position.copy(origPos);
-                }
-                setSlotHighlight(sourceSlotId, mfxState.selectedSlotId === sourceSlotId);
-            }
+            completeDrag(e);
         });
 
-        // If mouse leaves canvas during drag, complete swap if snapped or cancel
+        // If mouse leaves canvas during drag, let the document-level handlers
+        // continue tracking so the user can reach the trash zone.
+        // Only cancel if NOT actively dragging (e.g. pre-threshold).
         canvas.addEventListener('mouseleave', function () {
-            if (mfxState._canvasDragSourceSlot !== null) {
-                var src = mfxState._canvasDragSourceSlot;
-                var snappedTarget = mfxState._dragSnappedSlot;
-                var origP = mfxState._dragOrigPos;
-                var wasDragging = mfxState._canvasDragging;
-                var srcE3 = mfxState.slotState[src];
-
-                // Clean up drag state
+            if (mfxState._canvasDragSourceSlot !== null && !mfxState._canvasDragging) {
+                // Pre-threshold: cancel the pending drag
                 mfxState._canvasDragSourceSlot = null;
-                mfxState._canvasDragging = false;
                 mfxState._canvasDragStartPos = null;
-                mfxState._hoveredModuleSlot = null;
                 mfxState._dragOrigPos = null;
                 mfxState._dragPlane = null;
                 mfxState._dragMeshOffset = null;
-                mfxState._dragSnappedSlot = null;
                 canvas.style.cursor = 'default';
-                clearAllModuleGlows();
-                clearCanvasReorderHighlights();
-                showMFXTrashZone(false);
-                showMFXDragLabel(false);
-
-                // If the mesh was visually snapped to a valid slot, complete the swap
-                if (wasDragging && snappedTarget !== null && snappedTarget !== src) {
-                    if (srcE3 && srcE3.moduleMesh && origP) {
-                        srcE3.moduleMesh.position.copy(origP);
-                    }
-                    swapModulesBetweenSlots(src, snappedTarget);
-                } else {
-                    // No valid snap — revert to original position
-                    if (srcE3 && srcE3.moduleMesh && origP) {
-                        srcE3.moduleMesh.position.copy(origP);
-                    }
-                    setSlotHighlight(src, mfxState.selectedSlotId === src);
-                }
             }
+            // If actively dragging, do nothing — document-level handlers continue the drag
         });
     }
 
