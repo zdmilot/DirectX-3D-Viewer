@@ -1899,10 +1899,15 @@
             });
         }
 
-        // Right panel toggle
+        // Right panel toggle (start collapsed by default)
         var rightToggle = $('#mfx-right-toggle');
         var rightPanel  = $('#mfx-right-panel');
         if (rightToggle && rightPanel && host) {
+            rightPanel.classList.add('is-collapsed');
+            host.classList.add('vl-right-collapsed');
+            var initIcon = document.querySelector('#mfx-right-toggle-icon');
+            if (initIcon) initIcon.className = 'fas fa-chevron-left';
+
             rightToggle.addEventListener('click', function () {
                 var collapsed = rightPanel.classList.toggle('is-collapsed');
                 host.classList.toggle('vl-right-collapsed', collapsed);
