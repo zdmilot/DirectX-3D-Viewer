@@ -1234,22 +1234,28 @@
             }
         });
 
-        // --- Block OrbitControls pointer events in reorder mode ---
-        // OrbitControls uses pointerdown/pointermove/pointerup internally.
-        // In reorder mode we must prevent these from reaching it.
-        canvas.addEventListener('pointerdown', function (e) {
-            if (!mfxState.isReorderMode) return;
-            if (e.button !== 0) return;
-            e.stopPropagation();
-        }, true); // capture phase — fires before OrbitControls
+        // --- Block ALL OrbitControls pointer events in reorder mode ---
+        // OrbitControls registers pointerdown/pointermove/pointerup on this
+        // same canvas element.  stopPropagation only blocks parent elements;
+        // stopImmediatePropagation is required to prevent later same-element
+        // listeners (OrbitControls) from seeing the event AND from calling
+        // setPointerCapture which steals all future pointer events.
+        ['pointerdown', 'pointermove', 'pointerup'].forEach(function (evtName) {
+            canvas.addEventListener(evtName, function (e) {
+                if (!mfxState.isReorderMode) return;
+                // Block left button interactions entirely; allow right-click
+                // context menu through but still prevent orbit
+                if (e.button === 2 && evtName === 'pointerdown') {
+                    // let context menu work, but stop orbit
+                }
+                e.stopImmediatePropagation();
+            }, true); // capture phase — fires before OrbitControls
+        });
 
         // --- MOUSEDOWN: start 3D reorder drag if in reorder mode ---
         canvas.addEventListener('mousedown', function (e) {
             if (!mfxState.isReorderMode) return;
             if (e.button !== 0) return; // only left mouse
-
-            // Stop OrbitControls from seeing this event at all
-            e.stopPropagation();
 
             var slotId = pickSlotAt(e);
             if (slotId === null) return;
@@ -2132,22 +2138,28 @@
     function applyReorderOrbitState() {
         if (!mfxState.controls) return;
         if (mfxState.isReorderMode) {
-            // Completely unassign left mouse from OrbitControls so it
-            // does not intercept pointer events at all.  Scroll-zoom
-            // (wheel) still works because it is independent.
-            mfxState.controls.mouseButtons.LEFT = -1;
-            mfxState.controls.mouseButtons.MIDDLE = THREE.MOUSE.PAN;
+            // Disable every mouse-button action so OrbitControls does nothing
+            // even if a pointer event somehow slips through the
+            // stopImmediatePropagation guard.  Scroll-wheel zoom uses a
+            // separate 'wheel' event listener and is NOT affected here.
+            mfxState.controls.mouseButtons.LEFT   = -1;
+            mfxState.controls.mouseButtons.MIDDLE = -1;
+            mfxState.controls.mouseButtons.RIGHT  = -1;
             mfxState.controls.enableRotate = false;
-            mfxState.controls.enablePan = false;
+            mfxState.controls.enablePan    = false;
+            // enableZoom remains true so scroll-wheel still zooms
+            mfxState.controls.enableZoom   = true;
             if (mfxState.canvas) mfxState.canvas.style.cursor = 'default';
         } else {
             // Restore normal orbit: rotate on left, pan if pan-mode active
             mfxState.controls.enableRotate = true;
-            mfxState.controls.enablePan = true;
+            mfxState.controls.enablePan    = true;
+            mfxState.controls.enableZoom   = true;
             mfxState.controls.mouseButtons.LEFT = mfxState.isPanning
                 ? THREE.MOUSE.PAN
                 : THREE.MOUSE.ROTATE;
             mfxState.controls.mouseButtons.MIDDLE = THREE.MOUSE.DOLLY;
+            mfxState.controls.mouseButtons.RIGHT  = THREE.MOUSE.PAN;
             if (mfxState.canvas) mfxState.canvas.style.cursor = '';
         }
     }
