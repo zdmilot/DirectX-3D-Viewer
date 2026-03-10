@@ -1234,10 +1234,23 @@
             }
         });
 
+        // --- Block OrbitControls pointer events in reorder mode ---
+        // OrbitControls uses pointerdown/pointermove/pointerup internally.
+        // In reorder mode we must prevent these from reaching it.
+        canvas.addEventListener('pointerdown', function (e) {
+            if (!mfxState.isReorderMode) return;
+            if (e.button !== 0) return;
+            e.stopPropagation();
+        }, true); // capture phase — fires before OrbitControls
+
         // --- MOUSEDOWN: start 3D reorder drag if in reorder mode ---
         canvas.addEventListener('mousedown', function (e) {
             if (!mfxState.isReorderMode) return;
             if (e.button !== 0) return; // only left mouse
+
+            // Stop OrbitControls from seeing this event at all
+            e.stopPropagation();
+
             var slotId = pickSlotAt(e);
             if (slotId === null) return;
             var entry = mfxState.slotState[slotId];
@@ -1251,6 +1264,16 @@
 
         // --- MOUSEMOVE: update drag state + highlight target slot ---
         canvas.addEventListener('mousemove', function (e) {
+            // Show pointer cursor on hover over modules in reorder mode
+            if (mfxState.isReorderMode && mfxState._canvasDragSourceSlot === null) {
+                var hoverSlot = pickSlotAt(e);
+                if (hoverSlot !== null) {
+                    var hEntry = mfxState.slotState[hoverSlot];
+                    canvas.style.cursor = (hEntry && hEntry.moduleKey) ? 'grab' : 'default';
+                } else {
+                    canvas.style.cursor = 'default';
+                }
+            }
             if (mfxState._canvasDragSourceSlot === null) return;
             if (!mfxState._canvasDragging) {
                 // Only start dragging after threshold (5px) to avoid accidental drags
@@ -1262,6 +1285,10 @@
                 // Highlight the source slot
                 setSlotHighlight(mfxState._canvasDragSourceSlot, true);
                 canvas.style.cursor = 'grabbing';
+                // Show trash drop zone
+                showMFXTrashZone(true);
+                // Show floating drag label
+                showMFXDragLabel(true, mfxState._canvasDragSourceSlot);
             }
             // Highlight target slot under mouse
             clearCanvasReorderHighlights();
@@ -1274,6 +1301,10 @@
                     tEntry.slotMesh.material.opacity = 0.8;
                 }
             }
+            // Update floating label position
+            updateMFXDragLabel(e);
+            // Check if hovering over trash zone
+            updateMFXTrashHover(e);
         });
 
         // --- MOUSEUP: complete the reorder drag ---
@@ -1286,10 +1317,21 @@
             mfxState._canvasDragSourceSlot = null;
             mfxState._canvasDragging = false;
             mfxState._canvasDragStartPos = null;
-            canvas.style.cursor = '';
+            canvas.style.cursor = 'default';
             clearCanvasReorderHighlights();
+            showMFXTrashZone(false);
+            showMFXDragLabel(false);
 
             if (!wasDragging) return;
+
+            // Check if dropped on trash zone
+            if (isMFXTrashHit(e)) {
+                removeModuleMeshFromSlot(sourceSlotId);
+                setSlotHighlight(sourceSlotId, mfxState.selectedSlotId === sourceSlotId);
+                updateSlotList();
+                setMFXStatus('Removed module from slot');
+                return;
+            }
 
             var targetSlot = pickSlotAt(e);
             if (targetSlot !== null && targetSlot !== sourceSlotId) {
@@ -1307,8 +1349,10 @@
                 mfxState._canvasDragSourceSlot = null;
                 mfxState._canvasDragging = false;
                 mfxState._canvasDragStartPos = null;
-                canvas.style.cursor = '';
+                canvas.style.cursor = 'default';
                 clearCanvasReorderHighlights();
+                showMFXTrashZone(false);
+                showMFXDragLabel(false);
                 setSlotHighlight(src, mfxState.selectedSlotId === src);
             }
         });
@@ -1320,6 +1364,59 @@
             mfxState._canvasReorderHoveredSlot = null;
             setSlotHighlight(prev, mfxState.selectedSlotId === prev);
         }
+    }
+
+    // ---- Trash drop-zone helpers ----
+    function _getTrashEl() {
+        return document.getElementById('mfx-trash-zone');
+    }
+    function showMFXTrashZone(show) {
+        var el = _getTrashEl();
+        if (!el) return;
+        el.classList.toggle('visible', !!show);
+    }
+    function updateMFXTrashHover(e) {
+        var el = _getTrashEl();
+        if (!el) return;
+        el.classList.toggle('hover', isMFXTrashHit(e));
+    }
+    function isMFXTrashHit(e) {
+        var el = _getTrashEl();
+        if (!el || !el.classList.contains('visible')) return false;
+        var r = el.getBoundingClientRect();
+        return e.clientX >= r.left && e.clientX <= r.right &&
+               e.clientY >= r.top  && e.clientY <= r.bottom;
+    }
+
+    // ---- Floating drag label helpers ----
+    function _getDragLabelEl() {
+        var el = document.getElementById('mfx-drag-label');
+        if (!el) {
+            el = document.createElement('div');
+            el.id = 'mfx-drag-label';
+            el.className = 'mfx-drag-label';
+            document.getElementById('mfx-host').appendChild(el);
+        }
+        return el;
+    }
+    function showMFXDragLabel(show, slotId) {
+        var el = _getDragLabelEl();
+        if (show && slotId != null) {
+            var entry = mfxState.slotState[slotId];
+            var name = (entry && entry.moduleKey) || 'Module';
+            el.textContent = name;
+            el.classList.add('visible');
+        } else {
+            el.classList.remove('visible');
+        }
+    }
+    function updateMFXDragLabel(e) {
+        var el = _getDragLabelEl();
+        if (!el.classList.contains('visible')) return;
+        var host = document.getElementById('mfx-host');
+        var hr = host.getBoundingClientRect();
+        el.style.left = (e.clientX - hr.left + 14) + 'px';
+        el.style.top  = (e.clientY - hr.top  + 14) + 'px';
     }
 
     // ================================================================
@@ -2035,10 +2132,14 @@
     function applyReorderOrbitState() {
         if (!mfxState.controls) return;
         if (mfxState.isReorderMode) {
-            // Disable left-mouse orbit rotation; keep scroll zoom & middle-mouse pan
+            // Completely unassign left mouse from OrbitControls so it
+            // does not intercept pointer events at all.  Scroll-zoom
+            // (wheel) still works because it is independent.
+            mfxState.controls.mouseButtons.LEFT = -1;
+            mfxState.controls.mouseButtons.MIDDLE = THREE.MOUSE.PAN;
             mfxState.controls.enableRotate = false;
             mfxState.controls.enablePan = false;
-            mfxState.canvas.style.cursor = 'default';
+            if (mfxState.canvas) mfxState.canvas.style.cursor = 'default';
         } else {
             // Restore normal orbit: rotate on left, pan if pan-mode active
             mfxState.controls.enableRotate = true;
@@ -2046,7 +2147,8 @@
             mfxState.controls.mouseButtons.LEFT = mfxState.isPanning
                 ? THREE.MOUSE.PAN
                 : THREE.MOUSE.ROTATE;
-            mfxState.canvas.style.cursor = '';
+            mfxState.controls.mouseButtons.MIDDLE = THREE.MOUSE.DOLLY;
+            if (mfxState.canvas) mfxState.canvas.style.cursor = '';
         }
     }
 
