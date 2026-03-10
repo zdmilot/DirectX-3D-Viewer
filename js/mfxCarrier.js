@@ -464,10 +464,164 @@
         _catalogPreviewMesh: null,   // THREE.Group — semi-transparent preview in scene
         _catalogPreviewKey: null,    // module key being previewed
         _catalogDragPlane: null,     // THREE.Plane for cursor projection
+
+        // Auto-generated thumbnail cache: moduleKey → dataURL
+        _thumbnailCache: {},
     };
 
     const LIGHT_BG = 0xf0f0f0;
     const DARK_BG  = 0x1b2838;
+
+    // ================================================================
+    //  Auto-generate thumbnails for modules with no preview image
+    // ================================================================
+
+    // Shared offscreen renderer (created lazily)
+    var _thumbRenderer = null;
+    var _thumbScene    = null;
+    var _thumbCamera   = null;
+
+    /**
+     * Create (or reuse) a small offscreen WebGL renderer for thumbnail capture.
+     */
+    function _ensureThumbRenderer() {
+        if (_thumbRenderer) return;
+        var size = 256;
+        _thumbRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+        _thumbRenderer.setSize(size, size);
+        _thumbRenderer.setClearColor(0x000000, 0);
+
+        _thumbScene = new THREE.Scene();
+        // No background → transparent PNG
+        _thumbScene.add(new THREE.AmbientLight(0xffffff, 1.0));
+        var d1 = new THREE.DirectionalLight(0xffffff, 0.8);
+        d1.position.set(1, 2, 1).normalize();
+        _thumbScene.add(d1);
+        var d2 = new THREE.DirectionalLight(0x8899bb, 0.4);
+        d2.position.set(-1, -0.5, -1).normalize();
+        _thumbScene.add(d2);
+
+        _thumbCamera = new THREE.PerspectiveCamera(45, 1, 0.1, 100000);
+    }
+
+    /**
+     * Render a model group from a 45-degree elevation / 45-degree azimuth
+     * and return a data-URL PNG.
+     */
+    function _renderThumbnail(group) {
+        _ensureThumbRenderer();
+
+        // Clone the group so we don't disturb the cached original
+        var clone = group.clone(true);
+        _thumbScene.add(clone);
+
+        // Compute bounding box/sphere for framing
+        var box = new THREE.Box3().setFromObject(clone);
+        var center = box.getCenter(new THREE.Vector3());
+        var sphere = box.getBoundingSphere(new THREE.Sphere());
+        var r = sphere.radius || 1;
+
+        // 45-degree elevation, 45-degree azimuth (matching existing preview style)
+        var dist = r * 2.8;
+        var elev = Math.PI / 4;   // 45° above horizon
+        var azim = Math.PI / 4;   // 45° from front
+        _thumbCamera.position.set(
+            center.x + dist * Math.cos(elev) * Math.sin(azim),
+            center.y + dist * Math.sin(elev),
+            center.z + dist * Math.cos(elev) * Math.cos(azim)
+        );
+        _thumbCamera.lookAt(center);
+        _thumbCamera.updateProjectionMatrix();
+
+        _thumbRenderer.render(_thumbScene, _thumbCamera);
+        var dataURL = _thumbRenderer.domElement.toDataURL('image/png');
+
+        _thumbScene.remove(clone);
+        return dataURL;
+    }
+
+    /**
+     * Try to load from localStorage first; returns dataURL string or null.
+     */
+    function _loadCachedThumbnail(moduleKey) {
+        if (mfxState._thumbnailCache[moduleKey]) return mfxState._thumbnailCache[moduleKey];
+        try {
+            var stored = localStorage.getItem('mfx_thumb_' + moduleKey);
+            if (stored) {
+                mfxState._thumbnailCache[moduleKey] = stored;
+                return stored;
+            }
+        } catch (e) { /* localStorage unavailable */ }
+        return null;
+    }
+
+    /**
+     * Persist a generated thumbnail to localStorage and in-memory cache.
+     */
+    function _saveThumbnail(moduleKey, dataURL) {
+        mfxState._thumbnailCache[moduleKey] = dataURL;
+        try { localStorage.setItem('mfx_thumb_' + moduleKey, dataURL); } catch (e) { /* quota */ }
+    }
+
+    /**
+     * Update the DOM card for a module that just got a generated thumbnail.
+     */
+    function _updateCardImage(moduleKey, dataURL) {
+        var cards = document.querySelectorAll('.mfx-module-card[data-module-key="' + moduleKey + '"]');
+        cards.forEach(function (card) {
+            var imgDiv = card.querySelector('.mfx-module-img');
+            if (!imgDiv) return;
+            imgDiv.innerHTML = '';
+            var img = document.createElement('img');
+            img.src = dataURL;
+            img.alt = moduleKey;
+            imgDiv.appendChild(img);
+        });
+    }
+
+    /**
+     * Generate thumbnail for a single module definition.
+     * Returns a Promise that resolves when done (or immediately if cached).
+     */
+    function generateModuleThumbnail(moduleDef) {
+        var cached = _loadCachedThumbnail(moduleDef.key);
+        if (cached) {
+            _updateCardImage(moduleDef.key, cached);
+            return Promise.resolve();
+        }
+        return new Promise(function (resolve) {
+            loadXModelFromServer(moduleDef.modelFile, moduleDef.key, function (group) {
+                var dataURL = _renderThumbnail(group);
+                _saveThumbnail(moduleDef.key, dataURL);
+                _updateCardImage(moduleDef.key, dataURL);
+                resolve();
+            }, function () {
+                // Model failed to load — leave the cube icon
+                resolve();
+            });
+        });
+    }
+
+    /**
+     * Scan the catalog for entries with a 3D model but no preview image
+     * and generate thumbnails for each, sequentially (to avoid GPU contention).
+     */
+    function resolveAllMissingThumbnails() {
+        var missing = MFX_MODULE_CATALOG.filter(function (m) {
+            return m.modelFile && !m.previewImg;
+        });
+        if (missing.length === 0) return;
+        console.log('[MFXCarrier] Generating thumbnails for', missing.length, 'module(s) with no preview image');
+
+        // Process sequentially so the offscreen renderer isn't overwhelmed
+        var chain = Promise.resolve();
+        missing.forEach(function (m) {
+            chain = chain.then(function () { return generateModuleThumbnail(m); });
+        });
+        chain.then(function () {
+            console.log('[MFXCarrier] All missing thumbnails generated');
+        });
+    }
 
     // ================================================================
     //  Screenshot
@@ -618,6 +772,7 @@
         populateCarrierSelector();
         populateModuleCatalog();
         makeModuleCardsDraggable();
+        resolveAllMissingThumbnails();
         updateSlotList();
 
         // Apply initial reorder mode orbit restrictions
@@ -1740,9 +1895,10 @@
 
             var imgEl = document.createElement('div');
             imgEl.className = 'mfx-module-img';
-            if (moduleDef.previewImg) {
+            var cachedThumb = !moduleDef.previewImg ? _loadCachedThumbnail(moduleDef.key) : null;
+            if (moduleDef.previewImg || cachedThumb) {
                 var img = document.createElement('img');
-                img.src = moduleDef.previewImg;
+                img.src = cachedThumb || moduleDef.previewImg;
                 img.alt = moduleDef.label;
                 img.onerror = function () { imgEl.innerHTML = '<i class="fas fa-cube mfx-module-noimg"></i>'; };
                 imgEl.appendChild(img);
