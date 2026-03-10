@@ -1465,6 +1465,9 @@
             var lastHoveredSlot = mfxState._canvasReorderHoveredSlot;
             var snappedSlot = mfxState._dragSnappedSlot;
 
+            // Check trash zone hit BEFORE hiding it (isMFXTrashHit requires .visible)
+            var trashHit = wasDragging && e && isMFXTrashHit(e);
+
             // Clean up state
             mfxState._canvasDragSourceSlot = null;
             mfxState._canvasDragging = false;
@@ -1487,7 +1490,7 @@
             if (!wasDragging) return;
 
             // Check if dropped on trash zone
-            if (e && isMFXTrashHit(e)) {
+            if (trashHit) {
                 removeModuleMeshFromSlot(sourceSlotId);
                 setSlotHighlight(sourceSlotId, mfxState.selectedSlotId === sourceSlotId);
                 updateSlotList();
@@ -1598,8 +1601,14 @@
             }
             // Update floating label position
             updateMFXDragLabel(e);
-            // Check if hovering over trash zone
+            // Check if hovering over trash zone — apply red glow to 3D module
+            var overTrash = isMFXTrashHit(e);
             updateMFXTrashHover(e);
+            if (overTrash) {
+                setModuleGlow(mfxState._canvasDragSourceSlot, 0xdd3c3c, 0.6);
+            } else {
+                setModuleGlow(mfxState._canvasDragSourceSlot, 0x00ff66, 0.5);
+            }
         }
 
         function onDocDragUp(e) {
