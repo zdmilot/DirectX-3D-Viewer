@@ -1334,11 +1334,33 @@
                 mfxState._raycaster.setFromCamera({ x: ndcX, y: ndcY }, mfxState.camera);
                 var hitPt = new THREE.Vector3();
                 if (mfxState._raycaster.ray.intersectPlane(mfxState._dragPlane, hitPt)) {
-                    // Offset so the mesh center tracks to the hit point
-                    var box = new THREE.Box3().setFromObject(srcEntry.moduleMesh);
-                    var center = box.getCenter(new THREE.Vector3());
-                    srcEntry.moduleMesh.position.x += hitPt.x - center.x;
-                    srcEntry.moduleMesh.position.z += hitPt.z - center.z;
+                    // Check if hitPt is within 50% of any slot's bounds — if so, snap there
+                    var snappedSlot = null;
+                    var ids = Object.keys(mfxState.slotState);
+                    for (var si = 0; si < ids.length; si++) {
+                        var sid = parseInt(ids[si], 10);
+                        if (sid === mfxState._canvasDragSourceSlot) continue;
+                        var sEntry = mfxState.slotState[sid];
+                        if (!sEntry || !sEntry.slot) continue;
+                        var sl = sEntry.slot;
+                        var cx = sl.x + sl.dx / 2;
+                        var cz = sl.y + sl.dy / 2;
+                        if (Math.abs(hitPt.x - cx) <= sl.dx / 2 &&
+                            Math.abs(hitPt.z - cz) <= sl.dy / 2) {
+                            snappedSlot = sid;
+                            break;
+                        }
+                    }
+                    if (snappedSlot !== null) {
+                        // Snap module to the target slot position
+                        positionModuleInSlot(srcEntry.moduleMesh, mfxState.slotState[snappedSlot].slot);
+                    } else {
+                        // Free follow — offset so the mesh center tracks the hit point
+                        var box = new THREE.Box3().setFromObject(srcEntry.moduleMesh);
+                        var center = box.getCenter(new THREE.Vector3());
+                        srcEntry.moduleMesh.position.x += hitPt.x - center.x;
+                        srcEntry.moduleMesh.position.z += hitPt.z - center.z;
+                    }
                 }
             }
 
