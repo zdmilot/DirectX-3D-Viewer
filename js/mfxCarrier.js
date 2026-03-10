@@ -458,6 +458,12 @@
         _hoveredModuleSlot: null,    // slot id whose module is glow-hovered
         _dragOrigPos: null,          // THREE.Vector3 — original module position before drag
         _dragPlane: null,            // THREE.Plane used to project mouse onto carrier surface
+        _dragMeshOffset: null,       // {x,z} offset from slot center to mesh.position
+
+        // Catalog drag-to-place 3D preview state
+        _catalogPreviewMesh: null,   // THREE.Group — semi-transparent preview in scene
+        _catalogPreviewKey: null,    // module key being previewed
+        _catalogDragPlane: null,     // THREE.Plane for cursor projection
     };
 
     const LIGHT_BG = 0xf0f0f0;
@@ -1273,6 +1279,13 @@
             // Store original 3D position so we can snap back
             if (entry.moduleMesh) {
                 mfxState._dragOrigPos = entry.moduleMesh.position.clone();
+                // Store offset from slot center to mesh position for smooth drag
+                var slotCX = entry.slot.x + entry.slot.dx / 2;
+                var slotCZ = entry.slot.y + entry.slot.dy / 2;
+                mfxState._dragMeshOffset = {
+                    x: entry.moduleMesh.position.x - slotCX,
+                    z: entry.moduleMesh.position.z - slotCZ
+                };
             }
             // Create a horizontal plane at nesting height for projection
             mfxState._dragPlane = new THREE.Plane(
@@ -1327,14 +1340,14 @@
 
             // --- Move the module mesh to follow the cursor ---
             var srcEntry = mfxState.slotState[mfxState._canvasDragSourceSlot];
-            if (srcEntry && srcEntry.moduleMesh && mfxState._dragPlane) {
+            if (srcEntry && srcEntry.moduleMesh && mfxState._dragPlane && mfxState._dragMeshOffset) {
                 var rect2 = canvas.getBoundingClientRect();
                 var ndcX =  ((e.clientX - rect2.left)  / rect2.width)  * 2 - 1;
                 var ndcY = -((e.clientY - rect2.top) / rect2.height) * 2 + 1;
                 mfxState._raycaster.setFromCamera({ x: ndcX, y: ndcY }, mfxState.camera);
                 var hitPt = new THREE.Vector3();
                 if (mfxState._raycaster.ray.intersectPlane(mfxState._dragPlane, hitPt)) {
-                    // Check if hitPt is within 50% of any slot's bounds — if so, snap there
+                    // Check if hitPt is within any OTHER slot's bounds — snap there
                     var snappedSlot = null;
                     var ids = Object.keys(mfxState.slotState);
                     for (var si = 0; si < ids.length; si++) {
@@ -1352,14 +1365,14 @@
                         }
                     }
                     if (snappedSlot !== null) {
-                        // Snap module to the target slot position
-                        positionModuleInSlot(srcEntry.moduleMesh, mfxState.slotState[snappedSlot].slot);
+                        // Snap: position module at target slot using stored offset
+                        var tsl = mfxState.slotState[snappedSlot].slot;
+                        srcEntry.moduleMesh.position.x = tsl.x + tsl.dx / 2 + mfxState._dragMeshOffset.x;
+                        srcEntry.moduleMesh.position.z = tsl.y + tsl.dy / 2 + mfxState._dragMeshOffset.z;
                     } else {
-                        // Free follow — offset so the mesh center tracks the hit point
-                        var box = new THREE.Box3().setFromObject(srcEntry.moduleMesh);
-                        var center = box.getCenter(new THREE.Vector3());
-                        srcEntry.moduleMesh.position.x += hitPt.x - center.x;
-                        srcEntry.moduleMesh.position.z += hitPt.z - center.z;
+                        // Free follow: use hitPt + stored offset
+                        srcEntry.moduleMesh.position.x = hitPt.x + mfxState._dragMeshOffset.x;
+                        srcEntry.moduleMesh.position.z = hitPt.z + mfxState._dragMeshOffset.z;
                     }
                 }
             }
@@ -1399,6 +1412,7 @@
             mfxState._hoveredModuleSlot = null;
             mfxState._dragOrigPos = null;
             mfxState._dragPlane = null;
+            mfxState._dragMeshOffset = null;
             canvas.style.cursor = 'default';
             clearAllModuleGlows();
             clearCanvasReorderHighlights();
@@ -1449,6 +1463,7 @@
                 mfxState._hoveredModuleSlot = null;
                 mfxState._dragOrigPos = null;
                 mfxState._dragPlane = null;
+                mfxState._dragMeshOffset = null;
                 canvas.style.cursor = 'default';
                 clearAllModuleGlows();
                 clearCanvasReorderHighlights();
@@ -2335,6 +2350,81 @@
 
         var ghost = document.getElementById('mfx-drag-cursor-ghost');
 
+        // Helper: position a preview mesh at the cursor / snap to slot
+        function positionPreview(e) {
+            var preview = mfxState._catalogPreviewMesh;
+            if (!preview || !mfxState._catalogDragPlane) return;
+            var rect = canvas.getBoundingClientRect();
+            var ndcX =  ((e.clientX - rect.left)  / rect.width)  * 2 - 1;
+            var ndcY = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+            mfxState._raycaster.setFromCamera({ x: ndcX, y: ndcY }, mfxState.camera);
+            var hitPt = new THREE.Vector3();
+            if (!mfxState._raycaster.ray.intersectPlane(mfxState._catalogDragPlane, hitPt)) return;
+
+            // Find slot under hitPt
+            var snappedSlot = null;
+            var ids = Object.keys(mfxState.slotState);
+            for (var i = 0; i < ids.length; i++) {
+                var sid = parseInt(ids[i], 10);
+                var sEntry = mfxState.slotState[sid];
+                if (!sEntry || !sEntry.slot) continue;
+                var sl = sEntry.slot;
+                var cx = sl.x + sl.dx / 2;
+                var cz = sl.y + sl.dy / 2;
+                if (Math.abs(hitPt.x - cx) <= sl.dx / 2 &&
+                    Math.abs(hitPt.z - cz) <= sl.dy / 2) {
+                    snappedSlot = sid;
+                    break;
+                }
+            }
+
+            if (snappedSlot !== null) {
+                // Snap preview to slot center
+                var tsl = mfxState.slotState[snappedSlot].slot;
+                var box = new THREE.Box3().setFromObject(preview);
+                var center = box.getCenter(new THREE.Vector3());
+                preview.position.set(
+                    tsl.x + tsl.dx / 2 - center.x + preview.position.x,
+                    getNestingY() - box.min.y + preview.position.y,
+                    tsl.y + tsl.dy / 2 - center.z + preview.position.z
+                );
+            } else {
+                // Free follow on drag plane
+                var box2 = new THREE.Box3().setFromObject(preview);
+                var center2 = box2.getCenter(new THREE.Vector3());
+                preview.position.x += hitPt.x - center2.x;
+                preview.position.z += hitPt.z - center2.z;
+            }
+        }
+
+        // Helper: remove 3D preview from scene
+        function removeCatalogPreview() {
+            if (mfxState._catalogPreviewMesh) {
+                mfxState.carrierGroup.remove(mfxState._catalogPreviewMesh);
+                disposeGroup(mfxState._catalogPreviewMesh);
+                mfxState._catalogPreviewMesh = null;
+            }
+            mfxState._catalogPreviewKey = null;
+            mfxState._catalogDragPlane = null;
+        }
+
+        // Helper: make a mesh semi-transparent for preview
+        function makePreviewTransparent(group) {
+            group.traverse(function (child) {
+                if (child.isMesh && child.material) {
+                    var mats = Array.isArray(child.material) ? child.material : [child.material];
+                    mats.forEach(function (m) {
+                        m.transparent = true;
+                        m.opacity = 0.55;
+                        if (m.emissive) {
+                            m.emissive.setHex(0x00cc66);
+                            m.emissiveIntensity = 0.25;
+                        }
+                    });
+                }
+            });
+        }
+
         // Make module cards draggable
         document.addEventListener('dragstart', function (e) {
             var card = e.target.closest && e.target.closest('.mfx-module-card');
@@ -2344,6 +2434,8 @@
             e.dataTransfer.setData('text/plain', key);
             e.dataTransfer.effectAllowed = 'copy';
             mfxState._dragModuleKey = key;
+
+            // Use small ghost (browser requires one for DnD)
             if (ghost) {
                 var mod = _moduleByKey[key];
                 var label = ghost.querySelector('#mfx-drag-ghost-label');
@@ -2352,17 +2444,48 @@
                 e.dataTransfer.setDragImage(ghost, 16, 16);
                 setTimeout(function () { ghost.style.display = 'none'; }, 0);
             }
+
+            // Create drag plane
+            mfxState._catalogDragPlane = new THREE.Plane(
+                new THREE.Vector3(0, 1, 0),
+                -getNestingY()
+            );
+
+            // Load 3D preview model
+            var moduleDef = _moduleByKey[key];
+            if (moduleDef && moduleDef.modelFile) {
+                mfxState._catalogPreviewKey = key;
+                loadXModelFromServer(moduleDef.modelFile, key, function (xGroup) {
+                    if (mfxState._catalogPreviewKey !== key) return; // drag ended
+                    var clone = xGroup.clone(true);
+                    clone.name = '__catalog_preview__';
+                    cloneMaterials(clone);
+                    makePreviewTransparent(clone);
+                    // Start at center of carrier
+                    clone.position.set(0, getNestingY(), 0);
+                    mfxState.carrierGroup.add(clone);
+                    mfxState._catalogPreviewMesh = clone;
+                });
+            }
         });
 
         // Allow drop on canvas
         canvas.addEventListener('dragover', function (e) {
             e.preventDefault();
             e.dataTransfer.dropEffect = 'copy';
+            // Position 3D preview
+            positionPreview(e);
             // Highlight hovered slot
             highlightSlotUnderMouse(e);
         });
 
         canvas.addEventListener('dragleave', function () {
+            clearDragHighlights();
+        });
+
+        document.addEventListener('dragend', function () {
+            // Always clean up preview on drag end (cancelled or completed)
+            removeCatalogPreview();
             clearDragHighlights();
             mfxState._dragModuleKey = null;
         });
@@ -2371,12 +2494,15 @@
             e.preventDefault();
             var moduleKey = e.dataTransfer.getData('text/plain');
             mfxState._dragModuleKey = null;
+            removeCatalogPreview();
             if (!moduleKey || !_moduleByKey[moduleKey]) return;
 
             var slotId = getSlotIdUnderMouse(e);
             if (slotId !== null) {
                 placeModuleInSlot(slotId, moduleKey);
                 setMFXStatus('Dropped ' + (_moduleByKey[moduleKey] || {}).label + ' at slot ' + slotId);
+            } else {
+                setMFXStatus('Module not placed \u2014 drop on a carrier slot');
             }
             clearDragHighlights();
         });
