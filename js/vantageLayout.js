@@ -379,7 +379,7 @@
 
         // -- Camera -- (orthographic top-down by default for deck layout clarity)
         vlState.isPerspective = true;
-        vlState.camera = new THREE.PerspectiveCamera(45, w / h, 0.1, 100000);
+        vlState.camera = new THREE.PerspectiveCamera(45, w / h, 1, 100000);
         // Position camera top-down, slightly tilted so it reads naturally
         const deckCX = DECK.FIRST_TRACK_X + (DECK.TRACK_COUNT * DECK.TRACK_SPACING) / 2;
         vlState.camera.position.set(deckCX, 1600, 600);
@@ -391,6 +391,7 @@
             antialias: true,
             alpha: true,
             preserveDrawingBuffer: true,
+            logarithmicDepthBuffer: true,
         });
         vlState.renderer.setPixelRatio(window.devicePixelRatio);
         vlState.renderer.setSize(w, h);
@@ -693,8 +694,8 @@
                             mats.forEach(function (mat) {
                                 if (!mat) return;
                                 mat.polygonOffset = true;
-                                mat.polygonOffsetFactor = idx === 0 ? 1 : -Math.min(idx, 10);
-                                mat.polygonOffsetUnits  = idx === 0 ? 1 : -Math.min(idx, 10) * 4;
+                                mat.polygonOffsetFactor = idx === 0 ? 1 : -(idx + 1);
+                                mat.polygonOffsetUnits  = idx === 0 ? 1 : -(idx + 1) * 2;
                             });
                         }
                         group.add(m);
@@ -1299,6 +1300,15 @@
                     group.name = '__rack_model_' + rackKey + '__';
                     object.models.forEach(function (mdl, idx) {
                         mdl.renderOrder = idx + 50;
+                        if (mdl.material) {
+                            var mats = Array.isArray(mdl.material) ? mdl.material : [mdl.material];
+                            mats.forEach(function (mat) {
+                                if (!mat) return;
+                                mat.polygonOffset = true;
+                                mat.polygonOffsetFactor = -2;
+                                mat.polygonOffsetUnits = -4;
+                            });
+                        }
                         group.add(mdl);
                     });
                     fixXFileCoords(group);
@@ -1504,6 +1514,7 @@
             });
 
             // Position at site: center on site, bottom at site.z
+            // Add tiny Y lift (+0.15) to prevent coplanar z-fighting with carrier shelf surfaces
             var box = new THREE.Box3().setFromObject(mesh);
             var center = box.getCenter(new THREE.Vector3());
             var xOff = rackDef.xOff || 0;
@@ -1512,7 +1523,7 @@
 
             mesh.position.set(
                 site.x + site.dx / 2 - center.x + xOff,
-                site.z - box.min.y + zOff,
+                site.z - box.min.y + zOff + 0.15,
                 site.y + site.dy / 2 - center.z + yOff
             );
         } else {
