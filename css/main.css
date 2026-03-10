@@ -4184,7 +4184,7 @@ body {
 .mfx-trash-zone {
     position: absolute;
     bottom: 52px;
-    right: 18px;
+    right: 218px;
     width: 120px;
     height: 90px;
     display: flex;
@@ -4228,6 +4228,10 @@ body {
     border-color: rgba(255, 80, 80, 0.95);
     background: rgba(255, 80, 80, 0.25);
     color: rgba(255, 80, 80, 1);
+}
+/* When right panel is collapsed, shift trash zone closer to edge */
+#mfx-host.vl-right-collapsed .mfx-trash-zone {
+    right: 18px;
 }
 
 /* ---- MFX Floating drag label ---- */

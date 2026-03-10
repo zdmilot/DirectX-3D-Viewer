@@ -456,6 +456,8 @@
         _canvasDragDidMove: false,
         _canvasReorderHoveredSlot: null,
         _hoveredModuleSlot: null,    // slot id whose module is glow-hovered
+        _dragOrigPos: null,          // THREE.Vector3 — original module position before drag
+        _dragPlane: null,            // THREE.Plane used to project mouse onto carrier surface
     };
 
     const LIGHT_BG = 0xf0f0f0;
@@ -1267,6 +1269,16 @@
             mfxState._canvasDragging = false;
             mfxState._canvasDragDidMove = false;
             mfxState._canvasDragStartPos = { x: e.clientX, y: e.clientY };
+
+            // Store original 3D position so we can snap back
+            if (entry.moduleMesh) {
+                mfxState._dragOrigPos = entry.moduleMesh.position.clone();
+            }
+            // Create a horizontal plane at nesting height for projection
+            mfxState._dragPlane = new THREE.Plane(
+                new THREE.Vector3(0, 1, 0),
+                -getNestingY()
+            );
         });
 
         // --- MOUSEMOVE: update drag state + highlight target slot ---
@@ -1312,6 +1324,24 @@
                 // Show floating drag label
                 showMFXDragLabel(true, mfxState._canvasDragSourceSlot);
             }
+
+            // --- Move the module mesh to follow the cursor ---
+            var srcEntry = mfxState.slotState[mfxState._canvasDragSourceSlot];
+            if (srcEntry && srcEntry.moduleMesh && mfxState._dragPlane) {
+                var rect2 = canvas.getBoundingClientRect();
+                var ndcX =  ((e.clientX - rect2.left)  / rect2.width)  * 2 - 1;
+                var ndcY = -((e.clientY - rect2.top) / rect2.height) * 2 + 1;
+                mfxState._raycaster.setFromCamera({ x: ndcX, y: ndcY }, mfxState.camera);
+                var hitPt = new THREE.Vector3();
+                if (mfxState._raycaster.ray.intersectPlane(mfxState._dragPlane, hitPt)) {
+                    // Offset so the mesh center tracks to the hit point
+                    var box = new THREE.Box3().setFromObject(srcEntry.moduleMesh);
+                    var center = box.getCenter(new THREE.Vector3());
+                    srcEntry.moduleMesh.position.x += hitPt.x - center.x;
+                    srcEntry.moduleMesh.position.z += hitPt.z - center.z;
+                }
+            }
+
             // Highlight target slot under mouse
             clearCanvasReorderHighlights();
             var targetSlot = pickSlotAt(e);
@@ -1340,10 +1370,13 @@
             var wasDragging = mfxState._canvasDragging;
 
             // Clean up state
+            var origPos = mfxState._dragOrigPos;
             mfxState._canvasDragSourceSlot = null;
             mfxState._canvasDragging = false;
             mfxState._canvasDragStartPos = null;
             mfxState._hoveredModuleSlot = null;
+            mfxState._dragOrigPos = null;
+            mfxState._dragPlane = null;
             canvas.style.cursor = 'default';
             clearAllModuleGlows();
             clearCanvasReorderHighlights();
@@ -1363,9 +1396,18 @@
 
             var targetSlot = pickSlotAt(e);
             if (targetSlot !== null && targetSlot !== sourceSlotId) {
+                // Snap source module back first (swap will reposition both)
+                var srcE = mfxState.slotState[sourceSlotId];
+                if (srcE && srcE.moduleMesh && origPos) {
+                    srcE.moduleMesh.position.copy(origPos);
+                }
                 swapModulesBetweenSlots(sourceSlotId, targetSlot);
             } else {
-                // Restore source slot highlight
+                // Invalid drop — snap back to original position
+                var srcE2 = mfxState.slotState[sourceSlotId];
+                if (srcE2 && srcE2.moduleMesh && origPos) {
+                    srcE2.moduleMesh.position.copy(origPos);
+                }
                 setSlotHighlight(sourceSlotId, mfxState.selectedSlotId === sourceSlotId);
             }
         });
@@ -1374,10 +1416,17 @@
         canvas.addEventListener('mouseleave', function () {
             if (mfxState._canvasDragSourceSlot !== null) {
                 var src = mfxState._canvasDragSourceSlot;
+                // Snap module back to original position
+                var srcE3 = mfxState.slotState[src];
+                if (srcE3 && srcE3.moduleMesh && mfxState._dragOrigPos) {
+                    srcE3.moduleMesh.position.copy(mfxState._dragOrigPos);
+                }
                 mfxState._canvasDragSourceSlot = null;
                 mfxState._canvasDragging = false;
                 mfxState._canvasDragStartPos = null;
                 mfxState._hoveredModuleSlot = null;
+                mfxState._dragOrigPos = null;
+                mfxState._dragPlane = null;
                 canvas.style.cursor = 'default';
                 clearAllModuleGlows();
                 clearCanvasReorderHighlights();
