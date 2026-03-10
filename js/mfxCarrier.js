@@ -455,7 +455,7 @@
         _canvasDragStartPos: null,
         _canvasDragDidMove: false,
         _canvasReorderHoveredSlot: null,
-        _reorderHoverGlowSlot: null,   // slot whose module has hover glow
+        _hoveredModuleSlot: null,    // slot id whose module is glow-hovered
     };
 
     const LIGHT_BG = 0xf0f0f0;
@@ -1271,26 +1271,29 @@
 
         // --- MOUSEMOVE: update drag state + highlight target slot ---
         canvas.addEventListener('mousemove', function (e) {
-            // Show pointer cursor & hover glow on modules in reorder mode
+            // Show pointer cursor + green glow on hover over modules
             if (mfxState.isReorderMode && mfxState._canvasDragSourceSlot === null) {
                 var hoverSlot = pickSlotAt(e);
-                var hasModule = hoverSlot !== null &&
-                    mfxState.slotState[hoverSlot] &&
-                    mfxState.slotState[hoverSlot].moduleKey;
-
-                // Update hover glow
-                if (hoverSlot !== mfxState._reorderHoverGlowSlot) {
-                    if (mfxState._reorderHoverGlowSlot != null) {
-                        setModuleGlow(mfxState._reorderHoverGlowSlot, null);
+                var prevHover = mfxState._hoveredModuleSlot;
+                if (hoverSlot !== null) {
+                    var hEntry = mfxState.slotState[hoverSlot];
+                    var hasModule = hEntry && hEntry.moduleKey;
+                    canvas.style.cursor = hasModule ? 'grab' : 'default';
+                    if (hasModule && hoverSlot !== prevHover) {
+                        if (prevHover != null) clearModuleGlow(prevHover);
+                        setModuleGlow(hoverSlot, 0x00cc66, 0.3);
+                        mfxState._hoveredModuleSlot = hoverSlot;
+                    } else if (!hasModule && prevHover != null) {
+                        clearModuleGlow(prevHover);
+                        mfxState._hoveredModuleSlot = null;
                     }
-                    if (hasModule) {
-                        setModuleGlow(hoverSlot, 0x44ff44);
-                        mfxState._reorderHoverGlowSlot = hoverSlot;
-                    } else {
-                        mfxState._reorderHoverGlowSlot = null;
+                } else {
+                    canvas.style.cursor = 'default';
+                    if (prevHover != null) {
+                        clearModuleGlow(prevHover);
+                        mfxState._hoveredModuleSlot = null;
                     }
                 }
-                canvas.style.cursor = hasModule ? 'grab' : 'default';
             }
             if (mfxState._canvasDragSourceSlot === null) return;
             if (!mfxState._canvasDragging) {
@@ -1300,10 +1303,9 @@
                 if (Math.sqrt(dx * dx + dy * dy) < 5) return;
                 mfxState._canvasDragging = true;
                 mfxState._canvasDragDidMove = true;
-                // Green glow on source module being dragged
-                setModuleGlow(mfxState._canvasDragSourceSlot, 0x44ff44);
-                // Highlight the source slot
+                // Highlight the source slot + module glow
                 setSlotHighlight(mfxState._canvasDragSourceSlot, true);
+                setModuleGlow(mfxState._canvasDragSourceSlot, 0x00ff66, 0.5);
                 canvas.style.cursor = 'grabbing';
                 // Show trash drop zone
                 showMFXTrashZone(true);
@@ -1320,9 +1322,9 @@
                     tEntry.slotMesh.material.color.setHex(0x44cc44);
                     tEntry.slotMesh.material.opacity = 0.8;
                 }
-                // Green glow on the target module (if any)
+                // Glow the target module too (lighter green)
                 if (tEntry && tEntry.moduleKey) {
-                    setModuleGlow(targetSlot, 0x88ff88);
+                    setModuleGlow(targetSlot, 0x44cc44, 0.25);
                 }
             }
             // Update floating label position
@@ -1341,9 +1343,10 @@
             mfxState._canvasDragSourceSlot = null;
             mfxState._canvasDragging = false;
             mfxState._canvasDragStartPos = null;
+            mfxState._hoveredModuleSlot = null;
             canvas.style.cursor = 'default';
+            clearAllModuleGlows();
             clearCanvasReorderHighlights();
-            clearAllModuleGlow();
             showMFXTrashZone(false);
             showMFXDragLabel(false);
 
@@ -1374,9 +1377,10 @@
                 mfxState._canvasDragSourceSlot = null;
                 mfxState._canvasDragging = false;
                 mfxState._canvasDragStartPos = null;
+                mfxState._hoveredModuleSlot = null;
                 canvas.style.cursor = 'default';
+                clearAllModuleGlows();
                 clearCanvasReorderHighlights();
-                clearAllModuleGlow();
                 showMFXTrashZone(false);
                 showMFXDragLabel(false);
                 setSlotHighlight(src, mfxState.selectedSlotId === src);
@@ -1389,35 +1393,45 @@
             var prev = mfxState._canvasReorderHoveredSlot;
             mfxState._canvasReorderHoveredSlot = null;
             setSlotHighlight(prev, mfxState.selectedSlotId === prev);
-            setModuleGlow(prev, null);  // clear target glow
+            clearModuleGlow(prev);
         }
     }
 
-    /**
-     * Set emissive glow on every mesh material inside a module.
-     * colour = null / 0x000000 → remove glow.
-     */
-    function setModuleGlow(slotId, colour) {
+    // ---- Module 3D glow helpers ----
+    // Traverse every Mesh child under moduleMesh and set emissive
+    function setModuleGlow(slotId, hexColor, intensity) {
         var entry = mfxState.slotState[slotId];
         if (!entry || !entry.moduleMesh) return;
-        var hex = colour || 0x000000;
         entry.moduleMesh.traverse(function (child) {
             if (child.isMesh && child.material) {
                 var mats = Array.isArray(child.material) ? child.material : [child.material];
                 mats.forEach(function (m) {
-                    if (m.emissive !== undefined) {
-                        m.emissive.setHex(hex);
-                        m.emissiveIntensity = hex ? 0.35 : 0;
+                    if (m.emissive) {
+                        m.emissive.setHex(hexColor);
+                        m.emissiveIntensity = intensity != null ? intensity : 0.35;
                     }
                 });
             }
         });
     }
-
-    /** Clear emissive glow on ALL module meshes (safety reset). */
-    function clearAllModuleGlow() {
+    function clearModuleGlow(slotId) {
+        var entry = mfxState.slotState[slotId];
+        if (!entry || !entry.moduleMesh) return;
+        entry.moduleMesh.traverse(function (child) {
+            if (child.isMesh && child.material) {
+                var mats = Array.isArray(child.material) ? child.material : [child.material];
+                mats.forEach(function (m) {
+                    if (m.emissive) {
+                        m.emissive.setHex(0x000000);
+                        m.emissiveIntensity = 1;
+                    }
+                });
+            }
+        });
+    }
+    function clearAllModuleGlows() {
         Object.keys(mfxState.slotState).forEach(function (id) {
-            setModuleGlow(parseInt(id, 10), null);
+            clearModuleGlow(parseInt(id, 10));
         });
     }
 
