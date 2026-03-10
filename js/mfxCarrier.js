@@ -1430,6 +1430,7 @@
             mfxState._canvasDragging = false;
             mfxState._canvasDragDidMove = false;
             mfxState._canvasDragStartPos = { x: e.clientX, y: e.clientY };
+            mfxState._dragSnappedSlot = null; // track which slot the mesh visually snapped to
 
             // Store original 3D position so we can snap back
             if (entry.moduleMesh) {
@@ -1524,10 +1525,12 @@
                         var tsl = mfxState.slotState[snappedSlot].slot;
                         srcEntry.moduleMesh.position.x = tsl.x + tsl.dx / 2 + mfxState._dragMeshOffset.x;
                         srcEntry.moduleMesh.position.z = tsl.y + tsl.dy / 2 + mfxState._dragMeshOffset.z;
+                        mfxState._dragSnappedSlot = snappedSlot; // remember visual snap
                     } else {
                         // Free follow: use hitPt + stored offset
                         srcEntry.moduleMesh.position.x = hitPt.x + mfxState._dragMeshOffset.x;
                         srcEntry.moduleMesh.position.z = hitPt.z + mfxState._dragMeshOffset.z;
+                        mfxState._dragSnappedSlot = null; // no longer snapped
                     }
                 }
             }
@@ -1598,6 +1601,7 @@
             var savedMeshPos = (srcEntry && srcEntry.moduleMesh)
                 ? srcEntry.moduleMesh.position.clone() : null;
             var lastHoveredSlot = mfxState._canvasReorderHoveredSlot;
+            var snappedSlot = mfxState._dragSnappedSlot;
 
             // Clean up state
             mfxState._canvasDragSourceSlot = null;
@@ -1607,6 +1611,7 @@
             mfxState._dragOrigPos = null;
             mfxState._dragPlane = null;
             mfxState._dragMeshOffset = null;
+            mfxState._dragSnappedSlot = null;
             canvas.style.cursor = 'default';
             clearAllModuleGlows();
             clearCanvasReorderHighlights();
@@ -1624,19 +1629,27 @@
                 return;
             }
 
-            // 1) Try cursor-based pick first
-            var targetSlot = pickSlotAt(e);
+            // 1) Primary: use the slot the mesh visually snapped to (this is what the user sees)
+            var targetSlot = (snappedSlot !== null && snappedSlot !== sourceSlotId) ? snappedSlot : null;
 
-            // 2) Fallback: check where the module mesh actually is (handles fast drags)
-            if ((targetSlot === null || targetSlot === sourceSlotId) && savedMeshPos) {
+            // 2) Fallback: cursor-based pick
+            if (targetSlot === null) {
+                var cursorSlot = pickSlotAt(e);
+                if (cursorSlot !== null && cursorSlot !== sourceSlotId) {
+                    targetSlot = cursorSlot;
+                }
+            }
+
+            // 3) Fallback: check where the module mesh actually is (handles fast drags)
+            if (targetSlot === null && savedMeshPos) {
                 var meshTarget = findSlotByMeshPosition(sourceSlotId, savedMeshPos, savedDragOffset);
                 if (meshTarget !== null) {
                     targetSlot = meshTarget;
                 }
             }
 
-            // 3) Fallback: use the last hovered slot from mousemove
-            if ((targetSlot === null || targetSlot === sourceSlotId) && lastHoveredSlot !== null && lastHoveredSlot !== sourceSlotId) {
+            // 4) Fallback: use the last hovered slot from mousemove
+            if (targetSlot === null && lastHoveredSlot !== null && lastHoveredSlot !== sourceSlotId) {
                 targetSlot = lastHoveredSlot;
             }
 
@@ -1657,15 +1670,16 @@
             }
         });
 
-        // If mouse leaves canvas during drag, cancel
+        // If mouse leaves canvas during drag, complete swap if snapped or cancel
         canvas.addEventListener('mouseleave', function () {
             if (mfxState._canvasDragSourceSlot !== null) {
                 var src = mfxState._canvasDragSourceSlot;
-                // Snap module back to original position
+                var snappedTarget = mfxState._dragSnappedSlot;
+                var origP = mfxState._dragOrigPos;
+                var wasDragging = mfxState._canvasDragging;
                 var srcE3 = mfxState.slotState[src];
-                if (srcE3 && srcE3.moduleMesh && mfxState._dragOrigPos) {
-                    srcE3.moduleMesh.position.copy(mfxState._dragOrigPos);
-                }
+
+                // Clean up drag state
                 mfxState._canvasDragSourceSlot = null;
                 mfxState._canvasDragging = false;
                 mfxState._canvasDragStartPos = null;
@@ -1673,12 +1687,26 @@
                 mfxState._dragOrigPos = null;
                 mfxState._dragPlane = null;
                 mfxState._dragMeshOffset = null;
+                mfxState._dragSnappedSlot = null;
                 canvas.style.cursor = 'default';
                 clearAllModuleGlows();
                 clearCanvasReorderHighlights();
                 showMFXTrashZone(false);
                 showMFXDragLabel(false);
-                setSlotHighlight(src, mfxState.selectedSlotId === src);
+
+                // If the mesh was visually snapped to a valid slot, complete the swap
+                if (wasDragging && snappedTarget !== null && snappedTarget !== src) {
+                    if (srcE3 && srcE3.moduleMesh && origP) {
+                        srcE3.moduleMesh.position.copy(origP);
+                    }
+                    swapModulesBetweenSlots(src, snappedTarget);
+                } else {
+                    // No valid snap — revert to original position
+                    if (srcE3 && srcE3.moduleMesh && origP) {
+                        srcE3.moduleMesh.position.copy(origP);
+                    }
+                    setSlotHighlight(src, mfxState.selectedSlotId === src);
+                }
             }
         });
     }
@@ -1924,30 +1952,10 @@
 
         container.innerHTML = '';
 
-        // Collect all allowed pedestal types across every slot on this carrier
-        var carrierRules = MFX_SLOT_RULES[mfxState.carrierKey] || {};
-        var allCarrierTypes = [];
-        Object.keys(carrierRules).forEach(function (sid) {
-            carrierRules[sid].forEach(function (t) {
-                if (allCarrierTypes.indexOf(t) === -1) allCarrierTypes.push(t);
-            });
-        });
-
         var filtered = MFX_MODULE_CATALOG.filter(function (m) {
             var catOk  = catFilter === 'All' || m.category === catFilter;
             var searchOk = !searchText || m.label.toLowerCase().indexOf(searchText) !== -1;
-            if (!catOk || !searchOk) return false;
-
-            // Hide modules that cannot go into ANY slot on this carrier
-            var info = MFX_MODULE_TYPES[m.key];
-            if (info && allCarrierTypes.length > 0) {
-                var canFitAny = false;
-                for (var i = 0; i < info.types.length; i++) {
-                    if (allCarrierTypes.indexOf(info.types[i]) !== -1) { canFitAny = true; break; }
-                }
-                if (!canFitAny) return false;
-            }
-            return true;
+            return catOk && searchOk;
         });
 
         if (filtered.length === 0) {
