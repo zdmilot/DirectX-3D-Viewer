@@ -1553,14 +1553,53 @@
             updateMFXTrashHover(e);
         });
 
+        // --- Helper: find the best slot overlapping the module mesh's current position ---
+        // Uses the mesh center (minus drag offset) and checks >50% overlap with each slot.
+        function findSlotByMeshPosition(sourceSlotId, meshPos, dragOffset) {
+            if (!meshPos) return null;
+            // Effective center of the dragged module in slot-space
+            var effX = meshPos.x - (dragOffset ? dragOffset.x : 0);
+            var effZ = meshPos.z - (dragOffset ? dragOffset.z : 0);
+            var bestSlot = null;
+            var bestDist = Infinity;
+            var ids = Object.keys(mfxState.slotState);
+            for (var i = 0; i < ids.length; i++) {
+                var sid = parseInt(ids[i], 10);
+                if (sid === sourceSlotId) continue;
+                var sEntry = mfxState.slotState[sid];
+                if (!sEntry || !sEntry.slot) continue;
+                var sl = sEntry.slot;
+                var cx = sl.x + sl.dx / 2;
+                var cz = sl.y + sl.dy / 2;
+                var overlapX = Math.max(0, (sl.dx / 2) - Math.abs(effX - cx));
+                var overlapZ = Math.max(0, (sl.dy / 2) - Math.abs(effZ - cz));
+                // Must overlap >50% of the slot dimension on both axes
+                if (overlapX > sl.dx * 0.5 && overlapZ > sl.dy * 0.5) {
+                    var dist = Math.abs(effX - cx) + Math.abs(effZ - cz);
+                    if (dist < bestDist) {
+                        bestDist = dist;
+                        bestSlot = sid;
+                    }
+                }
+            }
+            return bestSlot;
+        }
+
         // --- MOUSEUP: complete the reorder drag ---
         canvas.addEventListener('mouseup', function (e) {
             if (mfxState._canvasDragSourceSlot === null) return;
             var sourceSlotId = mfxState._canvasDragSourceSlot;
             var wasDragging = mfxState._canvasDragging;
 
-            // Clean up state
+            // Save mesh position + offset BEFORE clearing state
             var origPos = mfxState._dragOrigPos;
+            var savedDragOffset = mfxState._dragMeshOffset;
+            var srcEntry = mfxState.slotState[sourceSlotId];
+            var savedMeshPos = (srcEntry && srcEntry.moduleMesh)
+                ? srcEntry.moduleMesh.position.clone() : null;
+            var lastHoveredSlot = mfxState._canvasReorderHoveredSlot;
+
+            // Clean up state
             mfxState._canvasDragSourceSlot = null;
             mfxState._canvasDragging = false;
             mfxState._canvasDragStartPos = null;
@@ -1585,7 +1624,22 @@
                 return;
             }
 
+            // 1) Try cursor-based pick first
             var targetSlot = pickSlotAt(e);
+
+            // 2) Fallback: check where the module mesh actually is (handles fast drags)
+            if ((targetSlot === null || targetSlot === sourceSlotId) && savedMeshPos) {
+                var meshTarget = findSlotByMeshPosition(sourceSlotId, savedMeshPos, savedDragOffset);
+                if (meshTarget !== null) {
+                    targetSlot = meshTarget;
+                }
+            }
+
+            // 3) Fallback: use the last hovered slot from mousemove
+            if ((targetSlot === null || targetSlot === sourceSlotId) && lastHoveredSlot !== null && lastHoveredSlot !== sourceSlotId) {
+                targetSlot = lastHoveredSlot;
+            }
+
             if (targetSlot !== null && targetSlot !== sourceSlotId) {
                 // Snap source module back first (swap will reposition both)
                 var srcE = mfxState.slotState[sourceSlotId];
