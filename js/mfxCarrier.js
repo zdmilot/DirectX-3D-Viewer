@@ -1924,10 +1924,30 @@
 
         container.innerHTML = '';
 
+        // Collect all allowed pedestal types across every slot on this carrier
+        var carrierRules = MFX_SLOT_RULES[mfxState.carrierKey] || {};
+        var allCarrierTypes = [];
+        Object.keys(carrierRules).forEach(function (sid) {
+            carrierRules[sid].forEach(function (t) {
+                if (allCarrierTypes.indexOf(t) === -1) allCarrierTypes.push(t);
+            });
+        });
+
         var filtered = MFX_MODULE_CATALOG.filter(function (m) {
             var catOk  = catFilter === 'All' || m.category === catFilter;
             var searchOk = !searchText || m.label.toLowerCase().indexOf(searchText) !== -1;
-            return catOk && searchOk;
+            if (!catOk || !searchOk) return false;
+
+            // Hide modules that cannot go into ANY slot on this carrier
+            var info = MFX_MODULE_TYPES[m.key];
+            if (info && allCarrierTypes.length > 0) {
+                var canFitAny = false;
+                for (var i = 0; i < info.types.length; i++) {
+                    if (allCarrierTypes.indexOf(info.types[i]) !== -1) { canFitAny = true; break; }
+                }
+                if (!canFitAny) return false;
+            }
+            return true;
         });
 
         if (filtered.length === 0) {
