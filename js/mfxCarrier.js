@@ -948,6 +948,10 @@
         resetMFXCamera();
         updateSlotList();
         updatePendingModuleHint();
+        // Re-sync carrier metadata fields when carrier type changes
+        mfxState.carrierMeta.viewName = def.key;
+        mfxState.carrierMeta.description = def.description || '';
+        initCarrierMetaFromDef();
         setMFXStatus('Carrier loaded: ' + def.label);
     }
 
@@ -1883,6 +1887,14 @@
         // Export button
         var exportBtn = $('#mfx-export-btn');
         if (exportBtn) exportBtn.addEventListener('click', exportConfiguration);
+
+        // Export .tml button
+        var tmlBtn = $('#mfx-export-tml-btn');
+        if (tmlBtn) tmlBtn.addEventListener('click', exportMfxTml);
+
+        // Export package (.zip) button
+        var zipBtn = $('#mfx-export-zip-btn');
+        if (zipBtn) zipBtn.addEventListener('click', exportMfxPackageZip);
 
         // Cancel pending module placement
         var cancelPendingBtn = $('#mfx-cancel-pending');
@@ -2899,6 +2911,455 @@
         document.querySelectorAll('.mfx-module-card').forEach(function (card) {
             card.setAttribute('draggable', 'true');
         });
+    }
+
+    // ================================================================
+    //  Wire collapsible right-panel / left-panel section toggles
+    // ================================================================
+    function wireRightPanelSections() {
+        var pairs = [
+            ['#mfx-meta-toggle',         '#mfx-meta-body'],
+            ['#mfx-carrier-type-toggle',  '#mfx-carrier-type-body'],
+            ['#mfx-catalog-toggle',       '#mfx-catalog-body'],
+            ['#mfx-slots-toggle',         '#mfx-slots-body'],
+        ];
+        pairs.forEach(function (p) {
+            var header = $(p[0]);
+            var body   = $(p[1]);
+            if (!header || !body) return;
+            header.addEventListener('click', function () {
+                body.classList.toggle('is-hidden');
+                var chevron = header.querySelector('.mfx-rp-chevron');
+                if (chevron) {
+                    if (body.classList.contains('is-hidden')) {
+                        chevron.classList.remove('fa-chevron-down');
+                        chevron.classList.add('fa-chevron-right');
+                    } else {
+                        chevron.classList.remove('fa-chevron-right');
+                        chevron.classList.add('fa-chevron-down');
+                    }
+                }
+            });
+        });
+    }
+
+    // ================================================================
+    //  Wire carrier metadata form fields ↔ mfxState.carrierMeta
+    // ================================================================
+    function wireCarrierMetadata() {
+        var nameEl  = $('#mfx-car-name');
+        var descEl  = $('#mfx-car-desc');
+        var bcEl    = $('#mfx-car-barcode');
+        var bcuEl   = $('#mfx-car-bc-unique');
+        var catEl   = $('#mfx-car-categories');
+        var addProp = $('#mfx-add-prop');
+
+        function sync(el, field) {
+            if (!el) return;
+            el.addEventListener('input', function () {
+                mfxState.carrierMeta[field] = el.value;
+            });
+        }
+        sync(nameEl,  'viewName');
+        sync(descEl,  'description');
+        sync(bcEl,    'barcodeMask');
+        sync(catEl,   '_categoriesRaw');
+
+        if (catEl) {
+            catEl.addEventListener('change', function () {
+                mfxState.carrierMeta.categories = catEl.value
+                    .split(',')
+                    .map(function (s) { return s.trim(); })
+                    .filter(Boolean);
+            });
+        }
+        if (bcuEl) {
+            bcuEl.addEventListener('change', function () {
+                mfxState.carrierMeta.barcodeUnique = bcuEl.checked;
+            });
+        }
+        if (addProp) {
+            addProp.addEventListener('click', function () {
+                mfxState.carrierMeta.properties.push({ name: '', value: '' });
+                renderPropertiesList();
+            });
+        }
+    }
+
+    function renderPropertiesList() {
+        var container = $('#mfx-car-props-list');
+        if (!container) return;
+        container.innerHTML = '';
+        mfxState.carrierMeta.properties.forEach(function (prop, idx) {
+            var row = document.createElement('div');
+            row.className = 'lwe-field-row';
+            row.style.gap = '4px';
+            row.style.marginBottom = '4px';
+
+            var nameInp = document.createElement('input');
+            nameInp.type = 'text';
+            nameInp.className = 'lwe-input';
+            nameInp.placeholder = 'Name';
+            nameInp.value = prop.name;
+            nameInp.style.flex = '1';
+            nameInp.addEventListener('input', function () {
+                mfxState.carrierMeta.properties[idx].name = nameInp.value;
+            });
+
+            var valInp = document.createElement('input');
+            valInp.type = 'text';
+            valInp.className = 'lwe-input';
+            valInp.placeholder = 'Value';
+            valInp.value = prop.value;
+            valInp.style.flex = '1';
+            valInp.addEventListener('input', function () {
+                mfxState.carrierMeta.properties[idx].value = valInp.value;
+            });
+
+            var delBtn = document.createElement('button');
+            delBtn.className = 'lwe-btn lwe-btn-sm lwe-btn-danger';
+            delBtn.innerHTML = '<i class="fas fa-times"></i>';
+            delBtn.title = 'Remove property';
+            delBtn.addEventListener('click', function () {
+                mfxState.carrierMeta.properties.splice(idx, 1);
+                renderPropertiesList();
+            });
+
+            row.appendChild(nameInp);
+            row.appendChild(valInp);
+            row.appendChild(delBtn);
+            container.appendChild(row);
+        });
+    }
+
+    // ================================================================
+    //  Wire inline labware assignment file inputs
+    // ================================================================
+    function wireLabwareAssignment() {
+        var rackInput = $('#mfx-lw-rack-input');
+        var ctrInput  = $('#mfx-lw-ctr-input');
+
+        if (rackInput) {
+            rackInput.addEventListener('change', function (e) {
+                var file = e.target.files && e.target.files[0];
+                if (!file) return;
+                var slotId = mfxState._pendingLabwareSlot;
+                if (slotId == null) return;
+                var reader = new FileReader();
+                reader.onload = function () {
+                    if (!mfxState.slotLabware[slotId]) {
+                        mfxState.slotLabware[slotId] = {};
+                    }
+                    mfxState.slotLabware[slotId].rackText = reader.result;
+                    mfxState.slotLabware[slotId].rackFileName = file.name;
+                    mfxState._pendingLabwareSlot = null;
+                    mfxState._pendingLabwareType = null;
+                    updateSlotList();
+                    setMFXStatus('Loaded rack: ' + file.name);
+                };
+                reader.readAsText(file);
+                rackInput.value = '';
+            });
+        }
+        if (ctrInput) {
+            ctrInput.addEventListener('change', function (e) {
+                var file = e.target.files && e.target.files[0];
+                if (!file) return;
+                var slotId = mfxState._pendingLabwareSlot;
+                if (slotId == null) return;
+                var reader = new FileReader();
+                reader.onload = function () {
+                    if (!mfxState.slotLabware[slotId]) {
+                        mfxState.slotLabware[slotId] = {};
+                    }
+                    mfxState.slotLabware[slotId].ctrText = reader.result;
+                    mfxState.slotLabware[slotId].ctrFileName = file.name;
+                    mfxState._pendingLabwareSlot = null;
+                    mfxState._pendingLabwareType = null;
+                    updateSlotList();
+                    setMFXStatus('Loaded container: ' + file.name);
+                };
+                reader.readAsText(file);
+                ctrInput.value = '';
+            });
+        }
+    }
+
+    // ================================================================
+    //  Populate carrier metadata from current carrier definition
+    // ================================================================
+    function initCarrierMetaFromDef() {
+        var def = MFX_CARRIER_DEFS[mfxState.carrierKey];
+        if (!def) return;
+
+        var meta = mfxState.carrierMeta;
+        if (!meta.viewName) meta.viewName = def.key;
+        if (!meta.description) meta.description = def.description || '';
+
+        // Sync form fields
+        var nameEl = $('#mfx-car-name');
+        var descEl = $('#mfx-car-desc');
+        var bcEl   = $('#mfx-car-barcode');
+        var bcuEl  = $('#mfx-car-bc-unique');
+        var catEl  = $('#mfx-car-categories');
+
+        if (nameEl) nameEl.value = meta.viewName;
+        if (descEl) descEl.value = meta.description;
+        if (bcEl)   bcEl.value   = meta.barcodeMask;
+        if (bcuEl)  bcuEl.checked = meta.barcodeUnique;
+        if (catEl)  catEl.value  = meta.categories.join(', ');
+
+        renderPropertiesList();
+    }
+
+    // ================================================================
+    //  Export .tml file (Hamilton HxCfgFile v3 TEMPLATE format)
+    // ================================================================
+    function _round3(v) {
+        return (Math.round(parseFloat(v) * 1000) / 1000).toString();
+    }
+
+    function exportMfxTml() {
+        var def = MFX_CARRIER_DEFS[mfxState.carrierKey];
+        if (!def) { setMFXStatus('No carrier selected.'); return null; }
+
+        var meta = mfxState.carrierMeta;
+        var lines = [];
+        lines.push('HxCfgFile,3;');
+        lines.push('');
+        lines.push('ConfigIsValid,Y;');
+        lines.push('');
+        lines.push('DataDef,TEMPLATE,1,default,');
+        lines.push('{');
+
+        function w(key, val) { lines.push(key + ', "' + val + '",'); }
+
+        w('BackgrndClr', '16777215');
+        w('Barcode.Value', meta.barcodeMask || '');
+        w('Bitmap', '');
+        w('CategoryCnt', String(meta.categories.length));
+        for (var i = 0; i < meta.categories.length; i++) {
+            w('Category.' + i + '.Id', meta.categories[i]);
+        }
+        w('Description', meta.description || '');
+        w('Dim.Dx', _round3(def.dx));
+        w('Dim.Dy', _round3(def.dy));
+        w('Dim.Dz', _round3(def.dz));
+        w('PropertyCnt', String(meta.properties.length));
+        for (var i = 0; i < meta.properties.length; i++) {
+            w('Property.' + (i + 1), meta.properties[i].name);
+            w('PropertyValue.' + (i + 1), meta.properties[i].value);
+        }
+        w('ReadOnly', '0');
+
+        // Build sites from carrier slots + placed modules
+        var siteIdx = 0;
+        def.slots.forEach(function (slot) {
+            var entry = mfxState.slotState[slot.id];
+            var moduleKey = entry ? entry.moduleKey : null;
+            var moduleDef = moduleKey ? _moduleByKey[moduleKey] : null;
+            siteIdx++;
+            var siteDx = moduleDef ? (moduleDef.siteDx || slot.dx) : slot.dx;
+            var siteDy = moduleDef ? (moduleDef.siteDy || slot.dy) : slot.dy;
+            var lw = mfxState.slotLabware[slot.id];
+            var labwareFile = (lw && lw.rackFileName) ? lw.rackFileName : '';
+
+            w('Site.' + siteIdx + '.Dx', _round3(siteDx));
+            w('Site.' + siteIdx + '.Dy', _round3(siteDy));
+            w('Site.' + siteIdx + '.Id', String(slot.id));
+            w('Site.' + siteIdx + '.IsCovered', '0');
+            w('Site.' + siteIdx + '.Label', slot.label || String(siteIdx));
+            w('Site.' + siteIdx + '.LabwareFile', labwareFile);
+            w('Site.' + siteIdx + '.SnapBase', '0');
+            w('Site.' + siteIdx + '.Stack', '0');
+            w('Site.' + siteIdx + '.StackSize', '0');
+            w('Site.' + siteIdx + '.Visible', '1');
+            w('Site.' + siteIdx + '.X', _round3(slot.x));
+            w('Site.' + siteIdx + '.Y', _round3(slot.y));
+            w('Site.' + siteIdx + '.Z', _round3(slot.z));
+        });
+        w('Site.Cnt', String(siteIdx));
+        w('UseBndry', '0');
+        w('ViewName', meta.viewName || def.key);
+        w('Visible', '0');
+        if (def.modelFile) w('3DModel', def.modelFile);
+        lines.push('};');
+        lines.push('');
+
+        var now = new Date();
+        var time = now.getFullYear() + '-' +
+            String(now.getMonth() + 1).padStart(2, '0') + '-' +
+            String(now.getDate()).padStart(2, '0') + ' ' +
+            String(now.getHours()).padStart(2, '0') + ':' +
+            String(now.getMinutes()).padStart(2, '0');
+        lines.push('* $$author=MFXCarrierCreator$$valid=1$$time=' + time + '$$checksum=00000000$$length=000$$');
+
+        var text = lines.join('\r\n') + '\r\n';
+        var fileName = (meta.viewName || def.key) + '.tml';
+
+        var blob = new Blob([text], { type: 'text/plain' });
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(a.href);
+        setMFXStatus('Exported ' + fileName);
+        return text;
+    }
+
+    // ================================================================
+    //  Export full package as .zip (TML + RCK + CTR files)
+    //  Uses pako for deflation — builds a minimal ZIP manually
+    // ================================================================
+    function exportMfxPackageZip() {
+        var tmlText = exportMfxTml();
+        if (!tmlText) return;
+
+        var def = MFX_CARRIER_DEFS[mfxState.carrierKey];
+        var meta = mfxState.carrierMeta;
+        var baseName = meta.viewName || def.key;
+
+        // Collect files for the zip
+        var files = [];
+        files.push({ name: baseName + '.tml', data: _strToU8(tmlText) });
+
+        // Add labware files from slot assignments
+        var addedFiles = {};
+        def.slots.forEach(function (slot) {
+            var lw = mfxState.slotLabware[slot.id];
+            if (!lw) return;
+            if (lw.rackText && lw.rackFileName && !addedFiles[lw.rackFileName]) {
+                files.push({ name: lw.rackFileName, data: _strToU8(lw.rackText) });
+                addedFiles[lw.rackFileName] = true;
+            }
+            if (lw.ctrText && lw.ctrFileName && !addedFiles[lw.ctrFileName]) {
+                files.push({ name: lw.ctrFileName, data: _strToU8(lw.ctrText) });
+                addedFiles[lw.ctrFileName] = true;
+            }
+        });
+
+        // Build ZIP
+        var zipData = _buildZip(files);
+        var blob = new Blob([zipData], { type: 'application/zip' });
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = baseName + '_package.zip';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(a.href);
+        setMFXStatus('Exported package: ' + baseName + '_package.zip');
+    }
+
+    // ── Minimal ZIP builder (uses pako for DEFLATE) ────────────────
+    function _strToU8(str) {
+        var enc = new TextEncoder();
+        return enc.encode(str);
+    }
+
+    function _buildZip(files) {
+        var localHeaders = [];
+        var centralHeaders = [];
+        var offset = 0;
+
+        files.forEach(function (f) {
+            var nameBytes = _strToU8(f.name);
+            var compressed = (typeof pako !== 'undefined')
+                ? pako.deflateRaw(f.data)
+                : f.data; // fallback: store if no pako
+            var method = (typeof pako !== 'undefined') ? 8 : 0;
+            var crc = _crc32(f.data);
+
+            // Local file header (30 + name + compressed data)
+            var local = new Uint8Array(30 + nameBytes.length + compressed.length);
+            var dv = new DataView(local.buffer);
+            dv.setUint32(0,  0x04034b50, true);   // signature
+            dv.setUint16(4,  20, true);            // version needed
+            dv.setUint16(6,  0, true);             // flags
+            dv.setUint16(8,  method, true);        // compression
+            dv.setUint16(10, 0, true);             // mod time
+            dv.setUint16(12, 0, true);             // mod date
+            dv.setUint32(14, crc, true);           // crc32
+            dv.setUint32(18, compressed.length, true); // compressed size
+            dv.setUint32(22, f.data.length, true);     // uncompressed size
+            dv.setUint16(26, nameBytes.length, true);  // name length
+            dv.setUint16(28, 0, true);             // extra length
+            local.set(nameBytes, 30);
+            local.set(compressed, 30 + nameBytes.length);
+            localHeaders.push(local);
+
+            // Central directory header (46 + name)
+            var central = new Uint8Array(46 + nameBytes.length);
+            var cdv = new DataView(central.buffer);
+            cdv.setUint32(0,  0x02014b50, true);   // signature
+            cdv.setUint16(4,  20, true);            // version made by
+            cdv.setUint16(6,  20, true);            // version needed
+            cdv.setUint16(8,  0, true);             // flags
+            cdv.setUint16(10, method, true);        // compression
+            cdv.setUint16(12, 0, true);             // mod time
+            cdv.setUint16(14, 0, true);             // mod date
+            cdv.setUint32(16, crc, true);           // crc32
+            cdv.setUint32(20, compressed.length, true);
+            cdv.setUint32(24, f.data.length, true);
+            cdv.setUint16(28, nameBytes.length, true);
+            cdv.setUint16(30, 0, true);             // extra length
+            cdv.setUint16(32, 0, true);             // comment length
+            cdv.setUint16(34, 0, true);             // disk number
+            cdv.setUint16(36, 0, true);             // internal attr
+            cdv.setUint32(38, 0, true);             // external attr
+            cdv.setUint32(42, offset, true);        // local header offset
+            central.set(nameBytes, 46);
+            centralHeaders.push(central);
+
+            offset += local.length;
+        });
+
+        // End of central directory
+        var cdOffset = offset;
+        var cdSize = 0;
+        centralHeaders.forEach(function (c) { cdSize += c.length; });
+
+        var eocd = new Uint8Array(22);
+        var edv = new DataView(eocd.buffer);
+        edv.setUint32(0,  0x06054b50, true);       // signature
+        edv.setUint16(4,  0, true);                 // disk number
+        edv.setUint16(6,  0, true);                 // cd disk
+        edv.setUint16(8,  files.length, true);      // entries on disk
+        edv.setUint16(10, files.length, true);      // total entries
+        edv.setUint32(12, cdSize, true);            // cd size
+        edv.setUint32(16, cdOffset, true);          // cd offset
+        edv.setUint16(20, 0, true);                 // comment length
+
+        // Combine
+        var total = offset + cdSize + 22;
+        var result = new Uint8Array(total);
+        var pos = 0;
+        localHeaders.forEach(function (l) { result.set(l, pos); pos += l.length; });
+        centralHeaders.forEach(function (c) { result.set(c, pos); pos += c.length; });
+        result.set(eocd, pos);
+        return result;
+    }
+
+    function _crc32(data) {
+        var table = _crc32.table;
+        if (!table) {
+            table = new Uint32Array(256);
+            for (var n = 0; n < 256; n++) {
+                var c = n;
+                for (var k = 0; k < 8; k++) {
+                    c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+                }
+                table[n] = c;
+            }
+            _crc32.table = table;
+        }
+        var crc = 0xFFFFFFFF;
+        for (var i = 0; i < data.length; i++) {
+            crc = table[(crc ^ data[i]) & 0xFF] ^ (crc >>> 8);
+        }
+        return (crc ^ 0xFFFFFFFF) >>> 0;
     }
 
 }());
