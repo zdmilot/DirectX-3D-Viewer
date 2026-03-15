@@ -536,7 +536,7 @@
         };
 
         const jsonStr = JSON.stringify(gltfJson);
-        const jsonBuf = padTo4(new TextEncoder().encode(jsonStr).buffer);
+        const jsonBuf = padTo4(new TextEncoder().encode(jsonStr).buffer, 0x20);
 
         // Combine binary chunks
         const binBuf = new ArrayBuffer(totalBufSize);
@@ -574,11 +574,15 @@
     }
 
     /** Pad an ArrayBuffer to a multiple of 4 bytes (GLB requirement) */
-    function padTo4(buf) {
+    function padTo4(buf, padByte) {
         const rem = buf.byteLength % 4;
         if (rem === 0) return buf;
         const padded = new ArrayBuffer(buf.byteLength + (4 - rem));
-        new Uint8Array(padded).set(new Uint8Array(buf));
+        const view = new Uint8Array(padded);
+        view.set(new Uint8Array(buf));
+        if (padByte) {
+            for (let i = buf.byteLength; i < padded.byteLength; i++) view[i] = padByte;
+        }
         return padded;
     }
 
