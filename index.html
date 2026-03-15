@@ -1604,8 +1604,8 @@
                         </div>
                     </div>
 
-                    <!-- Module Catalog (collapsible) -->
-                    <div class="mfx-rp-section">
+                    <!-- Module Catalog (collapsible) — hidden for Blank carriers -->
+                    <div class="mfx-rp-section" id="mfx-module-catalog-section">
                         <div class="mfx-rp-section-header" id="mfx-catalog-toggle">
                             <i class="fas fa-puzzle-piece"></i> Module Catalog
                             <i class="fas fa-chevron-down mfx-rp-chevron"></i>
@@ -1620,6 +1620,77 @@
                             <div class="mfx-module-list" id="mfx-module-list">
                                 <!-- populated by JS -->
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- Carrier Properties (collapsible) — shown only for Blank carriers -->
+                    <div class="mfx-rp-section" id="mfx-carrier-props-section" style="display:none">
+                        <div class="mfx-rp-section-header" id="mfx-carrier-props-toggle">
+                            <i class="fas fa-sliders-h"></i> Carrier Properties
+                            <i class="fas fa-chevron-down mfx-rp-chevron"></i>
+                        </div>
+                        <div class="mfx-rp-section-body" id="mfx-carrier-props-body">
+                            <div class="lwe-field-row">
+                                <div class="lwe-field"><label class="lwe-label">Width (mm)</label>
+                                    <input type="number" id="mfx-blank-dx" class="lwe-input" value="135" step="1" min="50">
+                                </div>
+                                <div class="lwe-field"><label class="lwe-label">Depth (mm)</label>
+                                    <input type="number" id="mfx-blank-dy" class="lwe-input" value="497" step="1" min="50">
+                                </div>
+                                <div class="lwe-field"><label class="lwe-label">Height (mm)</label>
+                                    <input type="number" id="mfx-blank-dz" class="lwe-input" value="20" step="1" min="5">
+                                </div>
+                            </div>
+                            <div class="lwe-field">
+                                <label class="lwe-label">Custom 3D Model</label>
+                                <div class="cated-field-row">
+                                    <input type="text" id="mfx-blank-model-name" class="lwe-input" placeholder="No model loaded" readonly>
+                                    <button class="lwe-btn lwe-btn-sm" id="mfx-blank-load-model" title="Load .x model file"><i class="fas fa-cube"></i></button>
+                                </div>
+                            </div>
+                            <input type="file" id="mfx-blank-model-input" accept=".x" style="display:none">
+                            <div class="lwe-field">
+                                <label class="lwe-label">Sites</label>
+                                <button class="cv-ctrl-btn mfx-scan-btn" id="mfx-blank-add-site" style="margin-bottom:6px">
+                                    <i class="fas fa-plus"></i> Add Site (SBS)
+                                </button>
+                                <div class="mfx-blank-site-list" id="mfx-blank-site-list">
+                                    <!-- populated by JS -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Site Properties (collapsible) — shown when clicking a site on Blank carrier -->
+                    <div class="mfx-rp-section" id="mfx-site-props-section" style="display:none">
+                        <div class="mfx-rp-section-header" id="mfx-site-props-toggle">
+                            <i class="fas fa-crosshairs"></i> Site Properties
+                            <i class="fas fa-chevron-down mfx-rp-chevron"></i>
+                        </div>
+                        <div class="mfx-rp-section-body" id="mfx-site-props-body">
+                            <div class="lwe-field">
+                                <label class="lwe-label">Label</label>
+                                <input type="text" id="mfx-site-label" class="lwe-input" placeholder="Site label">
+                            </div>
+                            <div class="lwe-field-row">
+                                <div class="lwe-field"><label class="lwe-label">X (mm)</label>
+                                    <input type="number" id="mfx-site-x" class="lwe-input" step="0.5" min="0">
+                                </div>
+                                <div class="lwe-field"><label class="lwe-label">Y (mm)</label>
+                                    <input type="number" id="mfx-site-y" class="lwe-input" step="0.5" min="0">
+                                </div>
+                            </div>
+                            <div class="lwe-field-row">
+                                <div class="lwe-field"><label class="lwe-label">Width (mm)</label>
+                                    <input type="number" id="mfx-site-dx" class="lwe-input" step="0.5" min="10">
+                                </div>
+                                <div class="lwe-field"><label class="lwe-label">Depth (mm)</label>
+                                    <input type="number" id="mfx-site-dy" class="lwe-input" step="0.5" min="10">
+                                </div>
+                            </div>
+                            <button class="cv-ctrl-btn mfx-site-remove-btn" id="mfx-site-remove">
+                                <i class="fas fa-trash"></i> Remove Site
+                            </button>
                         </div>
                     </div>
 

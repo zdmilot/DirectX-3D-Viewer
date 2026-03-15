@@ -4727,6 +4727,61 @@ body {
     text-overflow: ellipsis;
 }
 
+/* ── Blank carrier site list ────────────────────────────────── */
+.mfx-blank-site-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    max-height: 240px;
+    overflow-y: auto;
+}
+.mfx-blank-site-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 8px;
+    border-radius: 4px;
+    background: rgba(255,255,255,0.06);
+    cursor: pointer;
+    font-size: 12px;
+    transition: background 0.15s;
+}
+.mfx-blank-site-row:hover {
+    background: rgba(34, 136, 255, 0.15);
+}
+.mfx-blank-site-row.is-active {
+    background: rgba(34, 136, 255, 0.3);
+    outline: 1px solid #2288ff;
+}
+.mfx-blank-site-label {
+    font-weight: 500;
+}
+.mfx-blank-site-dims {
+    font-size: 10px;
+    color: var(--text-secondary, #8ea8bf);
+}
+[data-theme="dark"] .mfx-blank-site-row {
+    background: rgba(255,255,255,0.05);
+}
+[data-theme="dark"] .mfx-blank-site-row:hover {
+    background: rgba(34, 136, 255, 0.2);
+}
+
+/* ── Site remove button ─────────────────────────────────────── */
+.mfx-site-remove-btn {
+    background: #c0392b;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    padding: 5px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    margin-top: 4px;
+}
+.mfx-site-remove-btn:hover {
+    background: #e74c3c;
+}
+
 /* ============================================================
    Labware Editor
    ============================================================ */

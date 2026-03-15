@@ -514,6 +514,12 @@
         labwareCategories: {},    // {id: {id, parentId, name}}
         _labwareMeshCache: {},    // rckPath → THREE.Group template
         _labwareScanned: false,
+
+        // ── Blank carrier dynamic sites ─────────────────────────
+        blankSites: [],           // [{id, label, x, y, z, dx, dy}]
+        blankNextSiteId: 1,       // next auto-increment site id
+        blankModelFile: null,     // custom .x model file name (display only)
+        blankDims: null,          // {dx, dy, dz} overrides (null = use def)
     };
 
     const LIGHT_BG = 0xf0f0f0;
@@ -829,6 +835,7 @@
         initCarrierMetaFromDef();
 
         // Apply initial reorder mode orbit restrictions
+        wireBlankCarrierProps();
         applyReorderOrbitState();
         console.log('[MFXCarrier] init complete');
     }
@@ -881,20 +888,42 @@
         mfxState.selectedSlotId = null;
         mfxState.pendingModuleKey = null;
 
+        // Toggle UI sections for blank vs MFX carriers
+        toggleBlankUI(!!def.isBlank);
+
         // Create new carrier group
         var group = new THREE.Group();
         group.name = '__mfx_carrier__';
         mfxState.carrierGroup = group;
         mfxState.scene.add(group);
 
-        // Build procedural carrier body (always shown; replaced by .x model when loaded)
-        buildProceduralCarrier(def, group);
+        // Blank carriers use a flat planar body; MFX carriers use procedural + .x model
+        if (def.isBlank) {
+            var dims = mfxState.blankDims || { dx: def.dx, dy: def.dy, dz: def.dz };
+            buildBlankCarrierBody(dims, group);
+            mfxState.nestingY = dims.dz;
+            // Build slot meshes from dynamic blankSites
+            mfxState.blankSites.forEach(function (site) {
+                var slotMesh = buildSlotMesh(site, false);
+                group.add(slotMesh);
+                mfxState.slotState[site.id] = {
+                    slot: site,
+                    slotMesh: slotMesh,
+                    moduleMesh: null,
+                    moduleKey: '__blank__',  // sentinel — blank slots don't use modules
+                };
+            });
+            syncBlankDimsUI(dims);
+            populateBlankSiteList();
+        } else {
+            // Build procedural carrier body (always shown; replaced by .x model when loaded)
+            buildProceduralCarrier(def, group);
 
-        // Set initial nesting Y from procedural base height
-        mfxState.nestingY = def.dz * 0.18;
+            // Set initial nesting Y from procedural base height
+            mfxState.nestingY = def.dz * 0.18;
 
-        // Attempt to load .x model from server
-        loadXModelFromServer(def.modelFile, def.key, function (xGroup) {
+            // Attempt to load .x model from server
+            loadXModelFromServer(def.modelFile, def.key, function (xGroup) {
             if (!mfxState.carrierGroup || mfxState.carrierGroup.name !== '__mfx_carrier__') return;
             // Remove procedural body and rails, add .x model
             var proc = mfxState.carrierGroup.getObjectByName('__proc_body__');
@@ -965,17 +994,18 @@
             repositionAllSlots();
         });
 
-        // Build slot meshes
-        def.slots.forEach(function (slot) {
-            var slotMesh = buildSlotMesh(slot, false);
-            group.add(slotMesh);
-            mfxState.slotState[slot.id] = {
-                slot: slot,
-                slotMesh: slotMesh,
-                moduleMesh: null,
-                moduleKey: null,
-            };
-        });
+            // Build slot meshes
+            def.slots.forEach(function (slot) {
+                var slotMesh = buildSlotMesh(slot, false);
+                group.add(slotMesh);
+                mfxState.slotState[slot.id] = {
+                    slot: slot,
+                    slotMesh: slotMesh,
+                    moduleMesh: null,
+                    moduleKey: null,
+                };
+            });
+        } // end else (non-blank)
 
         resetMFXCamera();
         updateSlotList();
@@ -1009,6 +1039,370 @@
             rail.name = '__proc_rail__';
             group.add(rail);
         });
+    }
+
+    // ----------------------------------------------------------------
+    //  Blank carrier — flat planar body (no rails)
+    // ----------------------------------------------------------------
+    function buildBlankCarrierBody(dims, group) {
+        var h = dims.dz || 20;
+        var bodyGeo = new THREE.BoxGeometry(dims.dx, h, dims.dy);
+        var bodyMat = new THREE.MeshLambertMaterial({ color: 0x9090a0, transparent: true, opacity: 0.80 });
+        var bodyMesh = new THREE.Mesh(bodyGeo, bodyMat);
+        bodyMesh.position.set(dims.dx / 2, h / 2, dims.dy / 2);
+        bodyMesh.name = '__proc_body__';
+        group.add(bodyMesh);
+    }
+
+    // ----------------------------------------------------------------
+    //  Blank carrier helper — check if current carrier is blank
+    // ----------------------------------------------------------------
+    function isBlankCarrier() {
+        var def = MFX_CARRIER_DEFS[mfxState.carrierKey];
+        return !!(def && def.isBlank);
+    }
+
+    // ----------------------------------------------------------------
+    //  Toggle UI sections for blank vs MFX carriers
+    // ----------------------------------------------------------------
+    function toggleBlankUI(isBlank) {
+        var moduleSec = $('#mfx-module-catalog-section');
+        var carrierPropsSec = $('#mfx-carrier-props-section');
+        var sitePropsSec = $('#mfx-site-props-section');
+        if (moduleSec) moduleSec.style.display = isBlank ? 'none' : '';
+        if (carrierPropsSec) carrierPropsSec.style.display = isBlank ? '' : 'none';
+        if (sitePropsSec) sitePropsSec.style.display = 'none'; // hidden until a site is clicked
+    }
+
+    // ----------------------------------------------------------------
+    //  Sync blank dims UI fields from values
+    // ----------------------------------------------------------------
+    function syncBlankDimsUI(dims) {
+        var dxEl = $('#mfx-blank-dx');
+        var dyEl = $('#mfx-blank-dy');
+        var dzEl = $('#mfx-blank-dz');
+        if (dxEl) dxEl.value = dims.dx;
+        if (dyEl) dyEl.value = dims.dy;
+        if (dzEl) dzEl.value = dims.dz;
+    }
+
+    // ----------------------------------------------------------------
+    //  Add a new site (SBS defaults) to blank carrier
+    // ----------------------------------------------------------------
+    function addBlankSite() {
+        var dims = mfxState.blankDims || MFX_CARRIER_DEFS.BLANK;
+        var sbsDx = 127.76;
+        var sbsDy = 85.48;
+        var siteId = mfxState.blankNextSiteId++;
+        var numExisting = mfxState.blankSites.length;
+        // Stack sites along Y (depth) with 10mm spacing
+        var yOffset = 8.5 + numExisting * (sbsDy + 10);
+        var site = {
+            id: siteId,
+            label: 'Site ' + siteId,
+            x: (dims.dx - sbsDx) / 2,
+            y: yOffset,
+            z: dims.dz || 20,
+            dx: sbsDx,
+            dy: sbsDy,
+        };
+        mfxState.blankSites.push(site);
+        // Add to 3D scene
+        if (mfxState.carrierGroup) {
+            var slotMesh = buildSlotMesh(site, false);
+            mfxState.carrierGroup.add(slotMesh);
+            mfxState.slotState[site.id] = {
+                slot: site,
+                slotMesh: slotMesh,
+                moduleMesh: null,
+                moduleKey: '__blank__',
+            };
+        }
+        populateBlankSiteList();
+        setMFXStatus('Added ' + site.label);
+    }
+
+    // ----------------------------------------------------------------
+    //  Remove a site from blank carrier
+    // ----------------------------------------------------------------
+    function removeBlankSite(siteId) {
+        // Remove labware first
+        removeLabwareMeshFromSlot(siteId);
+        // Remove 3D slot mesh
+        var entry = mfxState.slotState[siteId];
+        if (entry && entry.slotMesh && mfxState.carrierGroup) {
+            mfxState.carrierGroup.remove(entry.slotMesh);
+            disposeGroup(entry.slotMesh);
+        }
+        delete mfxState.slotState[siteId];
+        delete mfxState.slotLabware[siteId];
+        // Remove from blankSites array
+        mfxState.blankSites = mfxState.blankSites.filter(function (s) { return s.id !== siteId; });
+        // Deselect if was selected
+        if (mfxState.selectedSlotId === siteId) {
+            mfxState.selectedSlotId = null;
+            var sitePropsSec = $('#mfx-site-props-section');
+            if (sitePropsSec) sitePropsSec.style.display = 'none';
+        }
+        populateBlankSiteList();
+        setMFXStatus('Removed site');
+    }
+
+    // ----------------------------------------------------------------
+    //  Update a site's properties and rebuild its 3D mesh
+    // ----------------------------------------------------------------
+    function updateBlankSite(siteId, props) {
+        var site = null;
+        for (var i = 0; i < mfxState.blankSites.length; i++) {
+            if (mfxState.blankSites[i].id === siteId) { site = mfxState.blankSites[i]; break; }
+        }
+        if (!site) return;
+        // Apply property updates
+        if (props.label !== undefined) site.label = props.label;
+        if (props.x !== undefined) site.x = parseFloat(props.x);
+        if (props.y !== undefined) site.y = parseFloat(props.y);
+        if (props.dx !== undefined) site.dx = parseFloat(props.dx);
+        if (props.dy !== undefined) site.dy = parseFloat(props.dy);
+        // Rebuild the slot mesh in 3D
+        var entry = mfxState.slotState[siteId];
+        if (entry && mfxState.carrierGroup) {
+            if (entry.slotMesh) {
+                mfxState.carrierGroup.remove(entry.slotMesh);
+                disposeGroup(entry.slotMesh);
+            }
+            var isSelected = mfxState.selectedSlotId === siteId;
+            var newMesh = buildSlotMesh(site, isSelected);
+            mfxState.carrierGroup.add(newMesh);
+            entry.slot = site;
+            entry.slotMesh = newMesh;
+        }
+        populateBlankSiteList();
+    }
+
+    // ----------------------------------------------------------------
+    //  Populate the sites list in Carrier Properties panel
+    // ----------------------------------------------------------------
+    function populateBlankSiteList() {
+        var container = $('#mfx-blank-site-list');
+        if (!container) return;
+        container.innerHTML = '';
+        mfxState.blankSites.forEach(function (site) {
+            var row = document.createElement('div');
+            row.className = 'mfx-blank-site-row';
+            row.innerHTML = '<span class="mfx-blank-site-label">' + _escHtml(site.label) +
+                '</span><span class="mfx-blank-site-dims">' +
+                site.dx.toFixed(1) + ' \u00d7 ' + site.dy.toFixed(1) + '</span>';
+            row.title = 'Click to select and edit';
+            row.addEventListener('click', function () {
+                selectSlot(site.id);
+            });
+            if (mfxState.selectedSlotId === site.id) row.classList.add('is-active');
+            container.appendChild(row);
+        });
+    }
+
+    function _escHtml(str) {
+        var d = document.createElement('div');
+        d.textContent = str;
+        return d.innerHTML;
+    }
+
+    // ----------------------------------------------------------------
+    //  Show / populate site properties panel for a blank site
+    // ----------------------------------------------------------------
+    function showSiteProperties(slotId) {
+        var siteSec = $('#mfx-site-props-section');
+        if (!siteSec) return;
+        var site = null;
+        for (var i = 0; i < mfxState.blankSites.length; i++) {
+            if (mfxState.blankSites[i].id === slotId) { site = mfxState.blankSites[i]; break; }
+        }
+        if (!site) { siteSec.style.display = 'none'; return; }
+        siteSec.style.display = '';
+        // Ensure section body is visible
+        var body = $('#mfx-site-props-body');
+        if (body) body.classList.remove('is-hidden');
+        var chevron = siteSec.querySelector('.mfx-rp-chevron');
+        if (chevron) { chevron.classList.remove('fa-chevron-right'); chevron.classList.add('fa-chevron-down'); }
+
+        $('#mfx-site-label').value = site.label;
+        $('#mfx-site-x').value = site.x;
+        $('#mfx-site-y').value = site.y;
+        $('#mfx-site-dx').value = site.dx;
+        $('#mfx-site-dy').value = site.dy;
+    }
+
+    // ----------------------------------------------------------------
+    //  Rebuild blank carrier 3D body after dimension changes
+    // ----------------------------------------------------------------
+    function rebuildBlankCarrier() {
+        if (!isBlankCarrier()) return;
+        var dims = mfxState.blankDims || MFX_CARRIER_DEFS.BLANK;
+        // Remove old body
+        if (mfxState.carrierGroup) {
+            var proc = mfxState.carrierGroup.getObjectByName('__proc_body__');
+            if (proc) { mfxState.carrierGroup.remove(proc); disposeGroup(proc); }
+            // Remove custom model if any
+            var xBody = mfxState.carrierGroup.getObjectByName('__x_body__');
+            if (xBody) { mfxState.carrierGroup.remove(xBody); disposeGroup(xBody); }
+        }
+        buildBlankCarrierBody(dims, mfxState.carrierGroup);
+        mfxState.nestingY = dims.dz;
+        // Reposition all site slots to new nesting Y
+        Object.keys(mfxState.slotState).forEach(function (id) {
+            var entry = mfxState.slotState[id];
+            if (entry.slotMesh) {
+                entry.slotMesh.position.y = dims.dz + 0.5;
+            }
+        });
+    }
+
+    // ----------------------------------------------------------------
+    //  Wire blank carrier property inputs
+    // ----------------------------------------------------------------
+    function wireBlankCarrierProps() {
+        var dxEl = $('#mfx-blank-dx');
+        var dyEl = $('#mfx-blank-dy');
+        var dzEl = $('#mfx-blank-dz');
+        var addSiteBtn = $('#mfx-blank-add-site');
+        var loadModelBtn = $('#mfx-blank-load-model');
+        var modelInput = $('#mfx-blank-model-input');
+
+        function readDims() {
+            var def = MFX_CARRIER_DEFS.BLANK;
+            mfxState.blankDims = {
+                dx: parseFloat(dxEl ? dxEl.value : def.dx) || def.dx,
+                dy: parseFloat(dyEl ? dyEl.value : def.dy) || def.dy,
+                dz: parseFloat(dzEl ? dzEl.value : def.dz) || def.dz,
+            };
+            rebuildBlankCarrier();
+        }
+        if (dxEl) dxEl.addEventListener('change', readDims);
+        if (dyEl) dyEl.addEventListener('change', readDims);
+        if (dzEl) dzEl.addEventListener('change', readDims);
+        if (addSiteBtn) addSiteBtn.addEventListener('click', function () { addBlankSite(); });
+        if (loadModelBtn) loadModelBtn.addEventListener('click', function () {
+            if (modelInput) modelInput.click();
+        });
+        if (modelInput) modelInput.addEventListener('change', function () {
+            if (!modelInput.files || !modelInput.files[0]) return;
+            loadBlankCustomModel(modelInput.files[0]);
+        });
+
+        // Wire carrier props and site props collapsible toggles
+        var cpPairs = [
+            ['#mfx-carrier-props-toggle', '#mfx-carrier-props-body'],
+            ['#mfx-site-props-toggle',    '#mfx-site-props-body'],
+        ];
+        cpPairs.forEach(function (p) {
+            var header = $(p[0]);
+            var body   = $(p[1]);
+            if (!header || !body) return;
+            header.addEventListener('click', function () {
+                body.classList.toggle('is-hidden');
+                var chevron = header.querySelector('.mfx-rp-chevron');
+                if (chevron) {
+                    if (body.classList.contains('is-hidden')) {
+                        chevron.classList.remove('fa-chevron-down');
+                        chevron.classList.add('fa-chevron-right');
+                    } else {
+                        chevron.classList.remove('fa-chevron-right');
+                        chevron.classList.add('fa-chevron-down');
+                    }
+                }
+            });
+        });
+
+        // Wire site property inputs
+        wireSitePropertyInputs();
+    }
+
+    // ----------------------------------------------------------------
+    //  Wire site property form inputs
+    // ----------------------------------------------------------------
+    function wireSitePropertyInputs() {
+        var labelEl = $('#mfx-site-label');
+        var xEl = $('#mfx-site-x');
+        var yEl = $('#mfx-site-y');
+        var dxEl = $('#mfx-site-dx');
+        var dyEl = $('#mfx-site-dy');
+        var removeBtn = $('#mfx-site-remove');
+
+        function pushSiteChange() {
+            var sid = mfxState.selectedSlotId;
+            if (sid === null || !isBlankCarrier()) return;
+            updateBlankSite(sid, {
+                label: labelEl ? labelEl.value : undefined,
+                x: xEl ? xEl.value : undefined,
+                y: yEl ? yEl.value : undefined,
+                dx: dxEl ? dxEl.value : undefined,
+                dy: dyEl ? dyEl.value : undefined,
+            });
+        }
+        if (labelEl) labelEl.addEventListener('change', pushSiteChange);
+        if (xEl)     xEl.addEventListener('change', pushSiteChange);
+        if (yEl)     yEl.addEventListener('change', pushSiteChange);
+        if (dxEl)    dxEl.addEventListener('change', pushSiteChange);
+        if (dyEl)    dyEl.addEventListener('change', pushSiteChange);
+        if (removeBtn) removeBtn.addEventListener('click', function () {
+            var sid = mfxState.selectedSlotId;
+            if (sid !== null && isBlankCarrier()) removeBlankSite(sid);
+        });
+    }
+
+    // ----------------------------------------------------------------
+    //  Load a custom .x model for blank carrier
+    // ----------------------------------------------------------------
+    function loadBlankCustomModel(file) {
+        var reader = new FileReader();
+        reader.onload = function (e) {
+            var data = e.target.result; // ArrayBuffer
+            try {
+                var blob = new Blob([data], { type: 'application/octet-stream' });
+                var url  = URL.createObjectURL(blob);
+                var loader = new THREE.XFileLoader();
+                loader.load(url, function (object) {
+                    URL.revokeObjectURL(url);
+                    if (!object || !object.models || object.models.length === 0) {
+                        setMFXStatus('No models found in .x file');
+                        return;
+                    }
+                    var group = new THREE.Group();
+                    group.name = '__x_body__';
+                    object.models.forEach(function (m) { group.add(m); });
+                    fixXFileCoords(group);
+
+                    // Remove old bodies
+                    if (mfxState.carrierGroup) {
+                        var oldBody = mfxState.carrierGroup.getObjectByName('__proc_body__');
+                        if (oldBody) { mfxState.carrierGroup.remove(oldBody); disposeGroup(oldBody); }
+                        var oldX = mfxState.carrierGroup.getObjectByName('__x_body__');
+                        if (oldX) { mfxState.carrierGroup.remove(oldX); disposeGroup(oldX); }
+                    }
+                    var dims = mfxState.blankDims || MFX_CARRIER_DEFS.BLANK;
+                    fitModelIntoCarrier(group, dims);
+                    mfxState.carrierGroup.add(group);
+
+                    // Update nesting Y from model top
+                    var modelBox = new THREE.Box3().setFromObject(group);
+                    mfxState.nestingY = modelBox.max.y;
+                    repositionAllSlots();
+
+                    mfxState.blankModelFile = file.name;
+                    var nameEl = $('#mfx-blank-model-name');
+                    if (nameEl) nameEl.value = file.name;
+                    setMFXStatus('Custom model loaded: ' + file.name);
+                }, undefined, function (err) {
+                    URL.revokeObjectURL(url);
+                    console.error('[MFXCarrier] Failed to parse custom .x model:', err);
+                    setMFXStatus('Error parsing model file');
+                });
+            } catch (err) {
+                console.error('[MFXCarrier] Failed to load custom model:', err);
+                setMFXStatus('Error loading model');
+            }
+        };
+        reader.readAsArrayBuffer(file);
     }
 
     // ----------------------------------------------------------------
@@ -1210,15 +1604,27 @@
             setSlotHighlight(slotId, true);
         }
         updateSlotList();
-        updateModuleCatalogSelection();
-        // Refresh catalog to show compatibility with newly selected slot
-        populateModuleCatalog();
 
-        // If a pending module is waiting, place it now
-        if (slotId !== null && mfxState.pendingModuleKey) {
-            placeModuleInSlot(slotId, mfxState.pendingModuleKey);
-            mfxState.pendingModuleKey = null;
-            updatePendingModuleHint();
+        if (isBlankCarrier()) {
+            // Show site properties panel for blank carriers
+            if (slotId !== null) {
+                showSiteProperties(slotId);
+            } else {
+                var siteSec = $('#mfx-site-props-section');
+                if (siteSec) siteSec.style.display = 'none';
+            }
+            populateBlankSiteList();
+        } else {
+            // MFX carrier: normal module placement flow
+            updateModuleCatalogSelection();
+            populateModuleCatalog();
+
+            // If a pending module is waiting, place it now
+            if (slotId !== null && mfxState.pendingModuleKey) {
+                placeModuleInSlot(slotId, mfxState.pendingModuleKey);
+                mfxState.pendingModuleKey = null;
+                updatePendingModuleHint();
+            }
         }
     }
 
@@ -1226,7 +1632,9 @@
         var entry = mfxState.slotState[slotId];
         if (!entry || !entry.slotMesh) return;
         var mat = entry.slotMesh.material;
-        var blocked = !entry.moduleKey && !!_blockedBy(mfxState.carrierKey, slotId, mfxState.slotState);
+        var blank = isBlankCarrier();
+        var blocked = !blank && !entry.moduleKey && !!_blockedBy(mfxState.carrierKey, slotId, mfxState.slotState);
+        var hasLabware = !!(mfxState.slotLabware[slotId] && mfxState.slotLabware[slotId].rackFileName);
         if (active) {
             mat.color.setHex(blocked ? 0x884422 : 0x2288ff);
             mat.opacity = 0.75;
@@ -1234,8 +1642,8 @@
             mat.color.setHex(0x442222);
             mat.opacity = 0.55;
         } else {
-            // Occupied slots get a subtle green tint
-            if (entry.moduleKey) {
+            // Occupied slots get a subtle green tint; blank sites with labware too
+            if (blank ? hasLabware : !!entry.moduleKey) {
                 mat.color.setHex(0x224422);
                 mat.opacity = 0.5;
             } else {
@@ -1244,7 +1652,8 @@
             }
         }
         // Update edge color
-        var edgeColor = active ? 0x66aaff : (blocked ? 0xaa6644 : (entry.moduleKey ? 0x44aa44 : 0x4488aa));
+        var occupied = blank ? hasLabware : !!entry.moduleKey;
+        var edgeColor = active ? 0x66aaff : (blocked ? 0xaa6644 : (occupied ? 0x44aa44 : 0x4488aa));
         entry.slotMesh.children.forEach(function (child) {
             if (child.isLineSegments) {
                 child.material.color.setHex(edgeColor);
@@ -3310,7 +3719,9 @@
     function canPlaceLabware(slotId, rck) {
         var entry = mfxState.slotState[slotId];
         if (!entry) return { allowed: false, reason: 'Slot not found.' };
-        if (!entry.moduleKey) return { allowed: false, reason: 'Place a module first.' };
+        var blank = isBlankCarrier();
+        // Blank carriers don't need a module; MFX carriers do
+        if (!blank && !entry.moduleKey) return { allowed: false, reason: 'Place a module first.' };
         if (mfxState.slotLabware[slotId] && mfxState.slotLabware[slotId].rackFileName) {
             return { allowed: false, reason: 'Slot already has labware \u2014 remove it first.' };
         }
@@ -3349,19 +3760,21 @@
             }
         }
 
-        // PCR module constraint
+        // PCR module constraint (skip for blank carriers)
         var moduleKey = entry.moduleKey;
-        var lwRules = MFX_LABWARE_RULES[moduleKey];
-        if (lwRules && lwRules.pcr) {
-            // Check well volume — estimate from rack dimensions
-            // RCK files store well depth in container's Dim.Dz / Hole.Z
-            var wellVolume = estimateWellVolume(rck);
-            if (wellVolume >= lwRules.maxVolume) {
-                return { allowed: false, reason: 'PCR module only accepts plates under ' + lwRules.maxVolume + ' \u00b5L (estimated: ' + wellVolume.toFixed(0) + ' \u00b5L).' };
-            }
-            // Check bottom shape — flat bottom plates (shape 0, holeShape 1 with no taper) are rejected
-            if (rck.shape === 1 && rck.dimDz > 20) {
-                return { allowed: false, reason: 'PCR module does not accept flat-bottom plates.' };
+        if (!blank) {
+            var lwRules = MFX_LABWARE_RULES[moduleKey];
+            if (lwRules && lwRules.pcr) {
+                // Check well volume — estimate from rack dimensions
+                // RCK files store well depth in container's Dim.Dz / Hole.Z
+                var wellVolume = estimateWellVolume(rck);
+                if (wellVolume >= lwRules.maxVolume) {
+                    return { allowed: false, reason: 'PCR module only accepts plates under ' + lwRules.maxVolume + ' \u00b5L (estimated: ' + wellVolume.toFixed(0) + ' \u00b5L).' };
+                }
+                // Check bottom shape — flat bottom plates (shape 0, holeShape 1 with no taper) are rejected
+                if (rck.shape === 1 && rck.dimDz > 20) {
+                    return { allowed: false, reason: 'PCR module does not accept flat-bottom plates.' };
+                }
             }
         }
 
@@ -3716,8 +4129,8 @@
         var entry = mfxState.slotState[slotId];
         if (!entry) return;
 
-        // Quick check: slot must have a module and not already have labware
-        if (!entry.moduleKey) {
+        // Quick check: MFX slots need a module; blank slots do not
+        if (!isBlankCarrier() && !entry.moduleKey) {
             setMFXStatus('Place a module first');
             return;
         }
