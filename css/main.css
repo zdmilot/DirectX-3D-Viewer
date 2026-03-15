@@ -4129,6 +4129,30 @@ body {
     color: var(--accent, #0275d8);
 }
 
+/* Inline labware row within slot rows */
+.mfx-slot-labware-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    width: 100%;
+    padding: 2px 0 0 18px;
+    font-size: 10px;
+    min-width: 0;
+    overflow: hidden;
+}
+.mfx-slot-lw-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+    color: var(--text-secondary);
+    font-size: 10px;
+}
+.mfx-slot-lw-name i {
+    margin-right: 3px;
+    opacity: 0.6;
+}
+
 /* Empty hint */
 .mfx-empty-hint {
     padding: 16px 8px;
