@@ -519,9 +519,8 @@
         }
 
         // Track number labels (sprite-based text above every track)
-        // Labels are shifted right by half a track spacing so they sit between the almond slots
         for (let i = 1; i <= DECK.TRACK_COUNT; i++) {
-            const x = DECK.FIRST_TRACK_X + (i - 1) * DECK.TRACK_SPACING + DECK.TRACK_SPACING / 2;
+            const x = DECK.FIRST_TRACK_X + (i - 1) * DECK.TRACK_SPACING;
             const color = (i === 4) ? '#ee2222' : (i > MAX_USABLE_TRACK) ? '#aa4444' : undefined;
             addTrackLabel(String(i), x, isDark, color);
         }
@@ -2894,22 +2893,19 @@
         const newRange = new Set();
         for (let t = trackStart; t < trackStart + tWidth; t++) newRange.add(t);
 
-        // Block tracks beyond usable range (61+ reserved)
-        for (let t of newRange) {
-            if (t > MAX_USABLE_TRACK) return 'out_of_range';
+        // Check against waste chute position
+        if (vlState.wasteCutoutIdx >= 0 && vlState.wasteCutoutIdx < DECK_CUTOUTS.length) {
+            const slot = DECK_CUTOUTS[vlState.wasteCutoutIdx];
+            for (let t = slot.trackStart; t < slot.trackStart + slot.trackSpan; t++) {
+                if (newRange.has(t)) return 'waste:' + slot.label;
+            }
         }
 
-        // Block removed deck cover panels (toggled off, or waste/drawer installed)
-        for (let i = 0; i < DECK_CUTOUTS.length; i++) {
-            if (vlState.deckCutouts[i] === false) {
-                const slot = DECK_CUTOUTS[i];
-                for (let t = slot.trackStart; t < slot.trackStart + slot.trackSpan; t++) {
-                    if (newRange.has(t)) {
-                        if (vlState.wasteCutoutIdx === i) return 'waste:' + slot.label;
-                        if (vlState.drawerCutoutIdx === i) return 'drawer:' + slot.label;
-                        return 'panel:' + slot.label;
-                    }
-                }
+        // Check against entry/exit drawer position
+        if (vlState.drawerCutoutIdx >= 0 && vlState.drawerCutoutIdx < DECK_CUTOUTS.length) {
+            const slot = DECK_CUTOUTS[vlState.drawerCutoutIdx];
+            for (let t = slot.trackStart; t < slot.trackStart + slot.trackSpan; t++) {
+                if (newRange.has(t)) return 'drawer:' + slot.label;
             }
         }
 
@@ -2928,8 +2924,6 @@
         if (collision.startsWith('carrier:')) return 'Blocked by ' + collision.slice(8);
         if (collision.startsWith('waste:'))   return 'Blocked by Waste Chute (' + collision.slice(6) + ')';
         if (collision.startsWith('drawer:'))  return 'Blocked by Entry/Exit Drawer (' + collision.slice(7) + ')';
-        if (collision.startsWith('panel:'))   return 'Deck cover removed (' + collision.slice(6) + ')';
-        if (collision === 'out_of_range')     return 'Tracks 61+ reserved';
         return 'Position blocked';
     }
 
@@ -3199,7 +3193,7 @@
         }
 
         const trackNum    = snapToTrack(hitPoint.x);
-        const clamped     = Math.max(4, Math.min(MAX_USABLE_TRACK - carrier.def.tWidth + 1, trackNum));
+        const clamped     = Math.max(4, Math.min(DECK.TRACK_COUNT - carrier.def.tWidth + 1, trackNum));
         const snappedX    = DECK.FIRST_TRACK_X + (clamped - 1) * DECK.TRACK_SPACING;
 
         if (vlState.ghostMesh) {
@@ -3491,7 +3485,7 @@
         const point = hits[0].point;
         const def   = vlState.paletteDrag.def;
         const trackNum    = snapToTrack(point.x);
-        const clampedTrack = Math.max(4, Math.min(MAX_USABLE_TRACK - def.tWidth + 1, trackNum));
+        const clampedTrack = Math.max(4, Math.min(DECK.TRACK_COUNT - def.tWidth + 1, trackNum));
         const snappedX     = DECK.FIRST_TRACK_X + (clampedTrack - 1) * DECK.TRACK_SPACING;
 
         if (vlState.ghostMesh) {
@@ -3574,14 +3568,14 @@
         const track = findNextFreeTrack(def.tWidth);
         $('#vl-pd-track').value = track;
         $('#vl-pd-track').min = '4';
-        $('#vl-pd-track').max = String(MAX_USABLE_TRACK - def.tWidth + 1);
+        $('#vl-pd-track').max = String(DECK.TRACK_COUNT - def.tWidth + 1);
 
         dialog.dataset.carrierType = carrierType;
         dialog.classList.add('is-visible');
     }
 
     function findNextFreeTrack(tWidth) {
-        for (let t = 4; t <= MAX_USABLE_TRACK - tWidth + 1; t++) {
+        for (let t = 4; t <= DECK.TRACK_COUNT - tWidth + 1; t++) {
             if (!checkCarrierCollision(t, tWidth, -1)) return t;
         }
         return 4;

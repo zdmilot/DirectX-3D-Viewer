@@ -191,6 +191,78 @@
     }
     window._fixLeftHandedCoords = fixLeftHandedCoords;
 
+    /**
+     * Physically nudge label/decal meshes outward along their average
+     * face normal so they sit slightly proud of the body surface.
+     * This is a geometric fix — immune to depth buffer precision issues
+     * that make polygon offset fail at large camera distances.
+     *
+     * Identifies the "body" mesh as the one with the most vertices
+     * (the main shell) and nudges everything else outward.
+     */
+    function nudgeDecalMeshes(group) {
+        var children = [];
+        group.traverse(function (child) {
+            if (child.isMesh && child.geometry) children.push(child);
+        });
+        if (children.length <= 1) return; // nothing to nudge
+
+        // Find the body mesh — it has the most vertices
+        var bodyIdx = 0;
+        var maxVerts = 0;
+        for (var ci = 0; ci < children.length; ci++) {
+            var pos = children[ci].geometry.attributes.position;
+            var count = pos ? pos.count : 0;
+            if (count > maxVerts) {
+                maxVerts = count;
+                bodyIdx = ci;
+            }
+        }
+
+        // Compute overall bounding box to scale the nudge distance
+        var totalBox = new THREE.Box3().setFromObject(group);
+        var totalSize = totalBox.getSize(new THREE.Vector3());
+        var maxDim = Math.max(totalSize.x, totalSize.y, totalSize.z);
+        if (maxDim <= 0) return;
+
+        // Nudge distance: 0.1% of the model size — invisible to the eye
+        // but more than enough for the depth buffer at any zoom level
+        var nudgeDist = maxDim * 0.001;
+
+        for (var ci = 0; ci < children.length; ci++) {
+            if (ci === bodyIdx) continue; // skip the body mesh
+            var mesh = children[ci];
+            var geom = mesh.geometry;
+            var pos = geom.attributes.position;
+            var norm = geom.attributes.normal;
+            if (!pos || !norm || pos.count === 0) continue;
+
+            // Compute average normal direction for this mesh
+            var avgNx = 0, avgNy = 0, avgNz = 0;
+            for (var i = 0; i < norm.count; i++) {
+                avgNx += norm.getX(i);
+                avgNy += norm.getY(i);
+                avgNz += norm.getZ(i);
+            }
+            var len = Math.sqrt(avgNx * avgNx + avgNy * avgNy + avgNz * avgNz);
+            if (len < 0.001) continue; // degenerate
+            avgNx /= len;
+            avgNy /= len;
+            avgNz /= len;
+
+            // Offset every vertex along the average normal
+            for (var i = 0; i < pos.count; i++) {
+                pos.setX(i, pos.getX(i) + avgNx * nudgeDist);
+                pos.setY(i, pos.getY(i) + avgNy * nudgeDist);
+                pos.setZ(i, pos.getZ(i) + avgNz * nudgeDist);
+            }
+            pos.needsUpdate = true;
+            geom.computeBoundingBox();
+            geom.computeBoundingSphere();
+        }
+    }
+    window._nudgeDecalMeshes = nudgeDecalMeshes;
+
     // -- Load generated .x file from labware generator ---------------
     window._loadGeneratedXFile = function (url, name) {
         state.loadedFileName = name || 'labware.x';
@@ -609,6 +681,12 @@
             // vertex positions and normals, and flip winding order
             // so faces remain outward-pointing.
             fixLeftHandedCoords(group);
+
+            // ── Nudge label/decal meshes outward ─────────────
+            // Physically offset non-body meshes along their face
+            // normals so they always sit proud of the body surface.
+            // This is immune to depth buffer precision issues.
+            nudgeDecalMeshes(group);
 
             // ── Make blue-dominant materials translucent ──────
             // channel.  Detect materials whose blue component is dominant

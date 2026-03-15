@@ -215,6 +215,9 @@
             // ── Left-handed → right-handed coordinate fix ──
             if (window._fixLeftHandedCoords) window._fixLeftHandedCoords(group);
 
+            // ── Nudge label/decal meshes outward ──
+            if (window._nudgeDecalMeshes) window._nudgeDecalMeshes(group);
+
             // ── Disable frustum culling & handle blue-dominant transparency ──
             group.traverse(function (child) {
                 if (!child.isMesh) return;
@@ -353,6 +356,9 @@
 
             // Fix left-handed DirectX coords
             if (window._fixLeftHandedCoords) window._fixLeftHandedCoords(group);
+
+            // Nudge label/decal meshes outward
+            if (window._nudgeDecalMeshes) window._nudgeDecalMeshes(group);
 
             // Disable frustum culling & handle blue-dominant transparency
             group.traverse(function (child) {

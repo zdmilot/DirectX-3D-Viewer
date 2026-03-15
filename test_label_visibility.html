@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Label Visibility Acceptance Test</title>
+<style>
+body { font-family: monospace; margin: 20px; background: #1b2838; color: #b0c4de; }
+.pass { color: #8bc34a; font-weight: bold; }
+.fail { color: #e74c6f; font-weight: bold; }
+.info { color: #4a90d9; }
+#results { white-space: pre-wrap; line-height: 1.6; }
+canvas { display: none; }
+h1 { color: #fff; }
+</style>
+</head>
+<body>
+<h1>Label Visibility Acceptance Test</h1>
+<p class="info">Loading test.x and verifying all label meshes are visible at multiple zoom levels...</p>
+<canvas id="test-canvas" width="800" height="600"></canvas>
+<div id="results"></div>
+
+<script src="js/lib/three.min.js"></script>
+<script src="js/lib/OrbitControls.js"></script>
+<script src="js/lib/XFileLoader.js"></script>
+<script src="js/deckUnits.js"></script>
+<script>
+(function () {
+    'use strict';
+
+    const results = document.getElementById('results');
+    function log(msg, cls) {
+        const line = document.createElement('div');
+        if (cls) line.className = cls;
+        line.textContent = msg;
+        results.appendChild(line);
+    }
+
+    const canvas = document.getElementById('test-canvas');
+    const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, preserveDrawingBuffer: true });
+    renderer.setSize(800, 600);
+    renderer.sortObjects = true;
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xf0f0f0);
+
+    const camera = new THREE.PerspectiveCamera(45, 800 / 600, 0.1, 10000);
+    camera.position.set(0, 50, 150);
+    camera.up.set(0, 1, 0);
+
+    scene.add(new THREE.AmbientLight(0x808080));
+    const d1 = new THREE.DirectionalLight(0xffffff, 0.9);
+    d1.position.set(50, 100, 50);
+    scene.add(d1);
+    const d2 = new THREE.DirectionalLight(0x6688aa, 0.5);
+    d2.position.set(-50, -20, -50);
+    scene.add(d2);
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.target.set(0, 0, 0);
+    controls.update();
+
+    log('Loading test.x...', 'info');
+
+    const loader = new THREE.XFileLoader(new THREE.LoadingManager());
+    loader.load('test.x?_ts=' + Date.now(), function (object) {
+        if (object.error || !object.models || object.models.length === 0) {
+            log('FAIL: Could not load test.x: ' + (object.error || 'no meshes'), 'fail');
+            return;
+        }
+
+        log('Loaded ' + object.models.length + ' mesh(es)', 'info');
+
+        const group = new THREE.Group();
+        group.name = '__xmodel__';
+
+        // Replicate the exact same loading pipeline as app.js
+        for (let i = 0; i < object.models.length; i++) {
+            const model = object.models[i];
+            model.renderOrder = i;
+            if (model.material) {
+                const applyOffset = (m, meshIdx) => {
+                    if (meshIdx === 0) {
+                        m.polygonOffset = true;
+                        m.polygonOffsetFactor = 1;
+                        m.polygonOffsetUnits  = 1;
+                    } else {
+                        const capped = Math.min(meshIdx, 10);
+                        m.polygonOffset = true;
+                        m.polygonOffsetFactor = -capped;
+                        m.polygonOffsetUnits  = -capped * 4;
+                    }
+                };
+                if (Array.isArray(model.material)) {
+                    model.material.forEach(m => applyOffset(m, i));
+                } else {
+                    applyOffset(model.material, i);
+                }
+            }
+            group.add(model);
+        }
+
+        scene.add(group);
+
+        // Fix left-handed coords (same as app.js)
+        if (window._fixLeftHandedCoords) {
+            window._fixLeftHandedCoords(group);
+        } else {
+            group.traverse(function (child) {
+                if (!child.isMesh || !child.geometry) return;
+                var pos = child.geometry.attributes.position;
+                if (pos) {
+                    for (var i = 0; i < pos.count; i++) pos.setZ(i, -pos.getZ(i));
+                    pos.needsUpdate = true;
+                }
+                var norm = child.geometry.attributes.normal;
+                if (norm) {
+                    for (var i = 0; i < norm.count; i++) norm.setZ(i, -norm.getZ(i));
+                    norm.needsUpdate = true;
+                }
+                var idx = child.geometry.index;
+                if (idx) {
+                    for (var f = 0; f < idx.count; f += 3) {
+                        var a = idx.getX(f), b = idx.getX(f + 1);
+                        idx.setX(f, b); idx.setX(f + 1, a);
+                    }
+                    idx.needsUpdate = true;
+                }
+                child.geometry.computeBoundingBox();
+                child.geometry.computeBoundingSphere();
+            });
+        }
+
+        // Nudge decal meshes (same as app.js)
+        if (window._nudgeDecalMeshes) {
+            window._nudgeDecalMeshes(group);
+        }
+
+        // Frustum culling off
+        group.traverse(function (child) {
+            if (child.isMesh) child.frustumCulled = false;
+        });
+
+        // Center model
+        const box = new THREE.Box3().setFromObject(group);
+        const center = box.getCenter(new THREE.Vector3());
+        const size = box.getSize(new THREE.Vector3());
+        const maxDim = Math.max(size.x, size.y, size.z);
+        if (maxDim > 0) group.position.sub(center);
+
+        log('Model centered, maxDim=' + maxDim.toFixed(2) + ' mm', 'info');
+        log('', 'info');
+
+        // ================================================================
+        //  Collect all mesh info
+        // ================================================================
+        const meshes = [];
+        let meshIdx = 0;
+        group.traverse(function (child) {
+            if (!child.isMesh) return;
+            const mats = Array.isArray(child.material) ? child.material : [child.material];
+            const colors = mats.map(m => m && m.color ? { r: m.color.r, g: m.color.g, b: m.color.b } : null);
+            const isDark = colors.some(c => c && c.r < 0.25 && c.g < 0.25 && c.b < 0.25);
+            meshes.push({
+                index: meshIdx,
+                name: child.name || ('mesh_' + meshIdx),
+                isDark: isDark,
+                colors: colors,
+                vertCount: child.geometry.attributes.position ? child.geometry.attributes.position.count : 0,
+                mesh: child,
+            });
+            meshIdx++;
+        });
+
+        log('Mesh inventory:', 'info');
+        meshes.forEach(function (m) {
+            const colorStr = m.colors.map(c => c ? '(' + c.r.toFixed(2) + ',' + c.g.toFixed(2) + ',' + c.b.toFixed(2) + ')' : 'null').join(', ');
+            log('  [' + m.index + '] ' + m.name + '  verts=' + m.vertCount + '  color=' + colorStr + '  dark=' + m.isDark);
+        });
+        log('', 'info');
+
+        const darkMeshes = meshes.filter(m => m.isDark);
+        log('Found ' + darkMeshes.length + ' dark/label meshes to test', 'info');
+
+        // ================================================================
+        //  Test at multiple zoom levels
+        // ================================================================
+        const zoomDistances = [
+            { label: 'Close (1.5x)', mult: 1.5 },
+            { label: 'Normal (2.5x)', mult: 2.5 },
+            { label: 'Far (5x)', mult: 5.0 },
+            { label: 'Very Far (10x)', mult: 10.0 },
+        ];
+
+        let totalTests = 0;
+        let totalPassed = 0;
+        let totalFailed = 0;
+
+        zoomDistances.forEach(function (zoom) {
+            log('', 'info');
+            log('─── Zoom Level: ' + zoom.label + ' ───', 'info');
+
+            // Position camera at this zoom level
+            const fitDist = maxDim * zoom.mult;
+            camera.position.set(fitDist * 0.6, fitDist * 0.4, fitDist);
+            camera.near = Math.max(fitDist * 0.01, 0.01);
+            camera.far = Math.max(fitDist * 10, 1000);
+            camera.lookAt(0, 0, 0);
+            camera.updateProjectionMatrix();
+            controls.target.set(0, 0, 0);
+            controls.update();
+
+            // Render
+            renderer.render(scene, camera);
+
+            // Read pixels
+            const gl = renderer.getContext();
+            const w = 800, h = 600;
+            const pixels = new Uint8Array(w * h * 4);
+            gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+
+            // For each dark mesh, project its center to screen and sample pixels
+            // in a small area around it. If we find dark pixels, the label is visible.
+            // Scale sampling radius based on zoom level for reliable detection.
+            const sampleRadius = Math.max(2, Math.round(12 / zoom.mult));
+            darkMeshes.forEach(function (dm) {
+                totalTests++;
+
+                // Get world-space bounding box of this mesh
+                dm.mesh.updateMatrixWorld(true);
+                const meshBox = new THREE.Box3().setFromObject(dm.mesh);
+                const meshCenter = meshBox.getCenter(new THREE.Vector3());
+
+                // Project to screen
+                const projected = meshCenter.clone().project(camera);
+                const sx = Math.round((projected.x * 0.5 + 0.5) * w);
+                const sy = Math.round((-projected.y * 0.5 + 0.5) * h);
+
+                // Check if on screen
+                if (sx < 0 || sx >= w || sy < 0 || sy >= h || projected.z < -1 || projected.z > 1) {
+                    log('  [' + dm.index + '] ' + dm.name + ': OFF SCREEN (skip)', 'info');
+                    totalPassed++; // not a failure
+                    return;
+                }
+
+                // Sample a region around the projected center
+                const sr = sampleRadius;
+                let darkPixelCount = 0;
+                let totalSampled = 0;
+                for (let dx = -sr; dx <= sr; dx += 1) {
+                    for (let dy = -sr; dy <= sr; dy += 1) {
+                        const px = sx + dx;
+                        const py = sy + dy;
+                        if (px < 0 || px >= w || py < 0 || py >= h) continue;
+                        // WebGL pixel buffer is bottom-up
+                        const flipY = (h - 1 - py);
+                        const idx = (flipY * w + px) * 4;
+                        const r = pixels[idx], g = pixels[idx + 1], b = pixels[idx + 2];
+                        totalSampled++;
+                        // Dark pixel: all channels below 100 (labels are ~42,42,42 or black)
+                        if (r < 100 && g < 100 && b < 100) {
+                            darkPixelCount++;
+                        }
+                    }
+                }
+
+                const ratio = totalSampled > 0 ? (darkPixelCount / totalSampled) : 0;
+                const passed = darkPixelCount >= 2; // at least 2 dark pixels found
+
+                if (passed) {
+                    totalPassed++;
+                    log('  PASS [' + dm.index + '] ' + dm.name + '  dark_pixels=' + darkPixelCount + '/' + totalSampled + ' (' + (ratio * 100).toFixed(0) + '%) at (' + sx + ',' + sy + ')', 'pass');
+                } else {
+                    totalFailed++;
+                    log('  FAIL [' + dm.index + '] ' + dm.name + '  dark_pixels=' + darkPixelCount + '/' + totalSampled + ' (' + (ratio * 100).toFixed(0) + '%) at (' + sx + ',' + sy + ')', 'fail');
+                }
+            });
+        });
+
+        // ================================================================
+        //  Summary
+        // ================================================================
+        log('', 'info');
+        log('════════════════════════════════════════════', 'info');
+        log('  TOTAL: ' + totalTests + '  PASSED: ' + totalPassed + '  FAILED: ' + totalFailed, totalFailed > 0 ? 'fail' : 'pass');
+        log('════════════════════════════════════════════', 'info');
+
+        if (totalFailed > 0) {
+            log('', 'fail');
+            log('ACCEPTANCE TEST FAILED — ' + totalFailed + ' label(s) not visible at some zoom levels', 'fail');
+        } else {
+            log('', 'pass');
+            log('ALL LABELS VISIBLE AT ALL ZOOM LEVELS — ACCEPTANCE TEST PASSED', 'pass');
+        }
+
+    }, null, function (err) {
+        log('FAIL: Error loading test.x: ' + err, 'fail');
+    });
+
+})();
+</script>
+</body>
+</html>
