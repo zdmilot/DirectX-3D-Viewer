@@ -958,6 +958,8 @@
             for (let i = 0; i < pos.count; i++) {
                 const v = new THREE.Vector3(pos.getX(i), pos.getY(i), pos.getZ(i));
                 v.applyMatrix4(matrix);
+                // Negate Z to convert from right-handed (THREE.js) to left-handed (DirectX .x)
+                v.z = -v.z;
                 allVerts.push(v);
             }
             vertOffset += pos.count;
@@ -967,19 +969,22 @@
                 for (let i = 0; i < normals.count; i++) {
                     const n = new THREE.Vector3(normals.getX(i), normals.getY(i), normals.getZ(i));
                     n.applyMatrix3(normalMatrix).normalize();
+                    // Negate Z to match left-handed coordinate system
+                    n.z = -n.z;
                     allNormals.push(n);
                 }
                 normalOffset += normals.count;
             }
 
             // Add faces (triangles)
+            // Reverse winding order (swap first two indices) to compensate for Z negation
             const faceCount = pos.count / 3;
             for (let f = 0; f < faceCount; f++) {
                 const i0 = vStart + f * 3;
                 const i1 = vStart + f * 3 + 1;
                 const i2 = vStart + f * 3 + 2;
-                allFaces.push([i0, i1, i2]);
-                allNormalFaces.push([nStart + f * 3, nStart + f * 3 + 1, nStart + f * 3 + 2]);
+                allFaces.push([i1, i0, i2]);
+                allNormalFaces.push([nStart + f * 3 + 1, nStart + f * 3, nStart + f * 3 + 2]);
             }
         });
 

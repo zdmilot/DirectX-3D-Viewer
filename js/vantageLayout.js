@@ -200,6 +200,7 @@
 
         // Canvas carrier drag state (moving a placed carrier)
         canvasCarrierDrag: null,  // { carrier } while dragging placed carrier
+        _carrierDragOffDeck: false,  // true when cursor is pulled far enough off-deck for removal
 
         // GLTF deck model reference (for debug positioning)
         gltfModel: null,
@@ -2919,25 +2920,25 @@
 
         // Block tracks beyond usable range (61-80 reserved for waste/entry-exit)
         for (let t of newRange) {
-            if (t > MAX_USABLE_TRACK) return true;
+            if (t > MAX_USABLE_TRACK) return 'out_of_range';
         }
 
         // Check waste-occupied tracks
         var wasteTracks = getWasteOccupiedTracks();
         for (let t of newRange) {
-            if (wasteTracks.has(t)) return true;
+            if (wasteTracks.has(t)) return 'waste';
         }
 
         // Check drawer-occupied tracks
         var drawerTracks = getDrawerOccupiedTracks();
         for (let t of newRange) {
-            if (drawerTracks.has(t)) return true;
+            if (drawerTracks.has(t)) return 'drawer';
         }
 
         for (const carrier of vlState.placedCarriers) {
             if (carrier.id === excludeId) continue;
             for (let t = carrier.trackStart; t < carrier.trackStart + carrier.def.tWidth; t++) {
-                if (newRange.has(t)) return true;
+                if (newRange.has(t)) return 'carrier:' + (carrier.def.viewName || carrier.type);
             }
         }
         return false;
@@ -3118,12 +3119,35 @@
         document.addEventListener('mouseup',   onCanvasCarrierDragEnd);
     }
 
+    // Distance (px) the cursor must be dragged outside the canvas to
+    // trigger "pull off the deck" removal (similar to MFX module disposal).
+    const VL_PULL_OFF_THRESHOLD = 80;
+
+    /**
+     * Compute how far (in pixels) the cursor is from the nearest canvas edge.
+     * Returns 0 when inside the canvas, positive when outside.
+     */
+    function cursorDistanceFromCanvas(e) {
+        const rect = vlState.canvas.getBoundingClientRect();
+        let dx = 0, dy = 0;
+        if (e.clientX < rect.left)       dx = rect.left - e.clientX;
+        else if (e.clientX > rect.right) dx = e.clientX - rect.right;
+        if (e.clientY < rect.top)        dy = rect.top - e.clientY;
+        else if (e.clientY > rect.bottom) dy = e.clientY - rect.bottom;
+        return Math.sqrt(dx * dx + dy * dy);
+    }
+
     function onCanvasCarrierDragMove(e) {
         if (!vlState.canvasCarrierDrag || !vlState._deckPlane) return;
 
         // Always check trash zone hover (even when cursor is off-canvas)
         const overTrash = isVLTrashHit(e);
         updateVLTrashHover(e);
+
+        // Detect "pull off the deck" — cursor far outside the 3D canvas
+        const offDist = cursorDistanceFromCanvas(e);
+        const pullingOff = offDist >= VL_PULL_OFF_THRESHOLD;
+        vlState._carrierDragOffDeck = pullingOff || overTrash;
 
         const canvas = vlState.canvas;
         const rect = canvas.getBoundingClientRect();
@@ -3132,17 +3156,28 @@
         vlState._raycaster.setFromCamera(vlState._mouse, vlState.camera);
 
         const hits = vlState._raycaster.intersectObject(vlState._deckPlane, false);
-        if (!hits.length) {
-            // Off-canvas: tint ghost red if over trash, hide otherwise
+
+        if (pullingOff || overTrash) {
+            // Show ghost at last valid position but tinted red + faded
             if (vlState.ghostMesh) {
-                if (overTrash) {
-                    vlState.ghostMesh.traverse(child => {
-                        if (child.isMesh) child.material.color.set(0xdd3c3c);
-                    });
-                } else {
-                    vlState.ghostMesh.visible = false;
-                }
+                vlState.ghostMesh.visible = true;
+                // Fade opacity proportional to distance (min 0.15)
+                const fadeAlpha = pullingOff
+                    ? Math.max(0.15, 0.42 - (offDist - VL_PULL_OFF_THRESHOLD) * 0.003)
+                    : 0.42;
+                vlState.ghostMesh.traverse(child => {
+                    if (child.isMesh) {
+                        child.material.color.set(0xdd3c3c);
+                        child.material.opacity = fadeAlpha;
+                    }
+                });
             }
+            return;
+        }
+
+        if (!hits.length) {
+            // Off-canvas but not far enough to remove — hide ghost
+            if (vlState.ghostMesh) vlState.ghostMesh.visible = false;
             return;
         }
 
@@ -3156,17 +3191,13 @@
             vlState.ghostMesh.visible = true;
             const hasCollision = checkCarrierCollision(clamped, carrier.def.tWidth, carrier.id);
             vlState.ghostMesh.traverse(child => {
-                if (child.isMesh) child.material.color.set(hasCollision ? 0xee4444 : 0x44aaee);
+                if (child.isMesh) {
+                    child.material.color.set(hasCollision ? 0xee4444 : 0x44aaee);
+                    child.material.opacity = 0.42;
+                }
             });
         }
         vlState.hoveredTrack = clamped;
-
-        // If hovering over trash zone, tint ghost red
-        if (overTrash && vlState.ghostMesh) {
-            vlState.ghostMesh.traverse(child => {
-                if (child.isMesh) child.material.color.set(0xdd3c3c);
-            });
-        }
     }
 
     function onCanvasCarrierDragEnd(e) {
@@ -3178,8 +3209,11 @@
 
         // Check trash zone hit BEFORE hiding it
         const trashHit = e && isVLTrashHit(e);
+        // Check "pulled off deck" state (cursor was far enough from canvas)
+        const pulledOff = vlState._carrierDragOffDeck;
 
         vlState.canvasCarrierDrag = null;
+        vlState._carrierDragOffDeck = false;
 
         // Re-enable orbit controls
         vlState.controls.enabled = true;
@@ -3189,8 +3223,8 @@
         vlState.hoveredTrack = null;
         showVLTrashZone(false);
 
-        // If dropped on trash zone, remove the carrier
-        if (trashHit) {
+        // If dropped on trash zone OR pulled off the deck, remove the carrier
+        if (trashHit || pulledOff) {
             carrier.mesh.visible = true;
             removeCarrier(carrier.id);
             showVLStatus('Carrier removed.');
@@ -3385,11 +3419,21 @@
         }
 
         const canvas = vlState.canvas;
-        if (!canvas || !vlState.scene || !vlState._deckPlane) return;
-
-        const rect = canvas.getBoundingClientRect();
-        const overCanvas = e.clientX >= rect.left && e.clientX <= rect.right &&
-                           e.clientY >= rect.top  && e.clientY <= rect.bottom;
+        if (!canvacollision = checkCarrierCollision(clampedTrack, def.tWidth, -1);
+            const ghostColor = collision ? 0xee4444 : 0x4499ee;
+            vlState.ghostMesh.traverse(child => {
+                if (child.isMesh) child.material.color.set(ghostColor);
+            });
+            // Show collision reason in status bar
+            if (collision) {
+                const reason = collision.startsWith('carrier:')
+                    ? 'Blocked by ' + collision.slice(8) : collision === 'waste'
+                    ? 'Blocked by waste chute' : collision === 'drawer'
+                    ? 'Blocked by entry/exit drawer' : 'Out of track range';
+                showVLStatus('Track ' + clampedTrack + ': ' + reason, 'error');
+            } else {
+                showVLStatus('Track ' + clampedTrack + ' — free');
+            }            e.clientY >= rect.top  && e.clientY <= rect.bottom;
 
         if (!overCanvas) {
             if (vlState.ghostMesh) vlState.ghostMesh.visible = false;
