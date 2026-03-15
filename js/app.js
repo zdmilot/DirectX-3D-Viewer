@@ -1067,6 +1067,11 @@
             setTimeout(() => window.CarrierEditorModule.init(), 50);
         }
 
+        // Initialize category editor on first switch
+        if (viewName === 'category-editor' && window.CategoryEditorModule) {
+            setTimeout(() => window.CategoryEditorModule.init(), 50);
+        }
+
         // Auto-collapse sidebar after navigation
         if (dom.sidebarNav) {
             dom.sidebarNav.classList.add('collapsed');
@@ -2479,6 +2484,10 @@
         if (dom.globalHamiltonDir) {
             var savedDir = '';
             try { savedDir = localStorage.getItem('hamilton-install-dir') || ''; } catch(e) {}
+            if (!savedDir) {
+                savedDir = 'Base Hamilton Files';
+                try { localStorage.setItem('hamilton-install-dir', savedDir); } catch(e) {}
+            }
             dom.globalHamiltonDir.value = savedDir;
             dom.globalHamiltonDir.addEventListener('input', () => {
                 try { localStorage.setItem('hamilton-install-dir', dom.globalHamiltonDir.value); } catch(e) {}

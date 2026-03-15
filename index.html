@@ -129,6 +129,10 @@
                         <i class="fas fa-pallet"></i>
                         <span>Carrier Editor</span>
                     </button>
+                    <button class="sidebar-nav-item" data-view="category-editor">
+                        <i class="fas fa-sitemap"></i>
+                        <span>Categories</span>
+                    </button>
                 </div>
             </aside>
 
@@ -1551,7 +1555,10 @@
                             </div>
                             <div class="lwe-field">
                                 <label class="lwe-label">Categories</label>
-                                <input type="text" id="mfx-car-categories" class="lwe-input" placeholder="e.g. 144 (comma-separated)" value="">
+                                <div class="cated-field-row">
+                                    <input type="text" id="mfx-car-categories" class="lwe-input" placeholder="No categories assigned" value="" readonly>
+                                    <button class="lwe-btn lwe-btn-sm" id="mfx-car-cat-picker" title="Choose categories"><i class="fas fa-sitemap"></i></button>
+                                </div>
                             </div>
                             <h4 class="lwe-subsection">Properties</h4>
                             <div id="mfx-car-props-list" class="mfx-props-list">
@@ -1861,6 +1868,40 @@
                         <button class="cv-ctrl-btn cv-ctrl-btn-accent" id="lwe-screenshot" title="Save screenshot">
                             <i class="fas fa-camera"></i> Screenshot
                         </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ====== Category Editor ====== -->
+            <div class="view-panel" data-view-panel="category-editor" id="category-editor-host">
+                <div class="cated-layout">
+                    <!-- Left: Category Tree -->
+                    <div class="cated-tree-panel">
+                        <div class="cated-tree-header">
+                            <i class="fas fa-sitemap"></i> Labware Categories
+                            <div class="cated-tree-actions">
+                                <button class="lwe-btn lwe-btn-sm" id="cated-expand-all" title="Expand All"><i class="fas fa-expand-alt"></i></button>
+                                <button class="lwe-btn lwe-btn-sm" id="cated-collapse-all" title="Collapse All"><i class="fas fa-compress-alt"></i></button>
+                                <button class="lwe-btn lwe-btn-sm" id="cated-refresh" title="Reload"><i class="fas fa-sync-alt"></i></button>
+                            </div>
+                        </div>
+                        <div class="cated-search-bar">
+                            <i class="fas fa-search cated-search-icon"></i>
+                            <input type="text" id="cated-search" class="cated-search-input" placeholder="Search categories or labware…" spellcheck="false" autocomplete="off">
+                        </div>
+                        <div class="cated-tree" id="cated-tree">
+                            <div class="cated-empty">Loading…</div>
+                        </div>
+                        <div class="cated-tree-footer">
+                            <span id="cated-status">Ready</span>
+                        </div>
+                    </div>
+                    <!-- Right: Detail Panel -->
+                    <div class="cated-detail-panel" id="cated-detail-panel">
+                        <div class="cated-detail-placeholder">
+                            <i class="fas fa-mouse-pointer"></i>
+                            <p>Select a labware item to view details</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -2260,6 +2301,7 @@
     <script src="js/mfxCarrier.js?v=20260310i"></script>
     <script src="js/labwareEditor.js?v=20260315b"></script>
     <script src="js/carrierEditor.js?v=20260315a"></script>
+    <script src="js/categoryEditor.js?v=20260315a"></script>
     <script src="js/app.js?v=20260310b"></script>
 </body>
 </html>

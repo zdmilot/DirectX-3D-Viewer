@@ -2952,14 +2952,26 @@
         sync(nameEl,  'viewName');
         sync(descEl,  'description');
         sync(bcEl,    'barcodeMask');
-        sync(catEl,   '_categoriesRaw');
 
-        if (catEl) {
-            catEl.addEventListener('change', function () {
-                mfxState.carrierMeta.categories = catEl.value
-                    .split(',')
-                    .map(function (s) { return s.trim(); })
-                    .filter(Boolean);
+        // Category picker button
+        var catPickerBtn = $('#mfx-car-cat-picker');
+        if (catPickerBtn && catEl) {
+            catPickerBtn.addEventListener('click', function () {
+                if (typeof window.CategoryEditorModule !== 'undefined' && window.CategoryEditorModule.openCategoryPicker) {
+                    window.CategoryEditorModule.openCategoryPicker(mfxState.carrierMeta.categories).then(function (result) {
+                        if (result !== null) {
+                            mfxState.carrierMeta.categories = result;
+                            catEl.value = result.join(', ');
+                        }
+                    });
+                } else {
+                    // Fallback: prompt for comma-separated IDs
+                    var ids = prompt('Enter category IDs (comma-separated):', mfxState.carrierMeta.categories.join(', '));
+                    if (ids !== null) {
+                        mfxState.carrierMeta.categories = ids.split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+                        catEl.value = mfxState.carrierMeta.categories.join(', ');
+                    }
+                }
             });
         }
         if (bcuEl) {
