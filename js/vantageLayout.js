@@ -3189,13 +3189,23 @@
         if (vlState.ghostMesh) {
             vlState.ghostMesh.position.set(snappedX, DECK.SURFACE_Z, DECK.TRACK_Y_START);
             vlState.ghostMesh.visible = true;
-            const hasCollision = checkCarrierCollision(clamped, carrier.def.tWidth, carrier.id);
+            const collision = checkCarrierCollision(clamped, carrier.def.tWidth, carrier.id);
             vlState.ghostMesh.traverse(child => {
                 if (child.isMesh) {
-                    child.material.color.set(hasCollision ? 0xee4444 : 0x44aaee);
+                    child.material.color.set(collision ? 0xee4444 : 0x44aaee);
                     child.material.opacity = 0.42;
                 }
             });
+            // Show collision reason in status bar
+            if (collision) {
+                const reason = typeof collision === 'string' && collision.startsWith('carrier:')
+                    ? 'Blocked by ' + collision.slice(8) : collision === 'waste'
+                    ? 'Blocked by waste chute' : collision === 'drawer'
+                    ? 'Blocked by entry/exit drawer' : 'Out of track range';
+                showVLStatus('Track ' + clamped + ': ' + reason, 'error');
+            } else {
+                showVLStatus('Track ' + clamped + ' — free');
+            }
         }
         vlState.hoveredTrack = clamped;
     }
@@ -3419,21 +3429,11 @@
         }
 
         const canvas = vlState.canvas;
-        if (!canvacollision = checkCarrierCollision(clampedTrack, def.tWidth, -1);
-            const ghostColor = collision ? 0xee4444 : 0x4499ee;
-            vlState.ghostMesh.traverse(child => {
-                if (child.isMesh) child.material.color.set(ghostColor);
-            });
-            // Show collision reason in status bar
-            if (collision) {
-                const reason = collision.startsWith('carrier:')
-                    ? 'Blocked by ' + collision.slice(8) : collision === 'waste'
-                    ? 'Blocked by waste chute' : collision === 'drawer'
-                    ? 'Blocked by entry/exit drawer' : 'Out of track range';
-                showVLStatus('Track ' + clampedTrack + ': ' + reason, 'error');
-            } else {
-                showVLStatus('Track ' + clampedTrack + ' — free');
-            }            e.clientY >= rect.top  && e.clientY <= rect.bottom;
+        if (!canvas || !vlState.scene || !vlState._deckPlane) return;
+
+        const rect = canvas.getBoundingClientRect();
+        const overCanvas = e.clientX >= rect.left && e.clientX <= rect.right &&
+                           e.clientY >= rect.top  && e.clientY <= rect.bottom;
 
         if (!overCanvas) {
             if (vlState.ghostMesh) vlState.ghostMesh.visible = false;
@@ -3462,11 +3462,21 @@
             vlState.ghostMesh.visible = true;
 
             // Red tint if occupied, blue if free
-            const hasCollision = checkCarrierCollision(clampedTrack, def.tWidth, -1);
-            const ghostColor = hasCollision ? 0xee4444 : 0x4499ee;
+            const collision = checkCarrierCollision(clampedTrack, def.tWidth, -1);
+            const ghostColor = collision ? 0xee4444 : 0x4499ee;
             vlState.ghostMesh.traverse(child => {
                 if (child.isMesh) child.material.color.set(ghostColor);
             });
+            // Show collision reason in status bar
+            if (collision) {
+                const reason = typeof collision === 'string' && collision.startsWith('carrier:')
+                    ? 'Blocked by ' + collision.slice(8) : collision === 'waste'
+                    ? 'Blocked by waste chute' : collision === 'drawer'
+                    ? 'Blocked by entry/exit drawer' : 'Out of track range';
+                showVLStatus('Track ' + clampedTrack + ': ' + reason, 'error');
+            } else {
+                showVLStatus('Track ' + clampedTrack + ' — free');
+            }
         }
         vlState.hoveredTrack = clampedTrack;
     }
