@@ -84,6 +84,7 @@
         });
         ppState.renderer.setPixelRatio(window.devicePixelRatio);
         ppState.renderer.setSize(w, h);
+        ppState.renderer.sortObjects = true;
 
         // -- Controls --
         ppState.controls = new THREE.OrbitControls(ppState.camera, ppState.renderer.domElement);
@@ -162,15 +163,18 @@
 
             for (let i = 0; i < object.models.length; i++) {
                 const model = object.models[i];
-                // Disable frustum culling so meshes remain visible at all zoom levels
-                model.traverse(ch => { ch.frustumCulled = false; });
                 model.renderOrder = i + 100; // offset to avoid z-fighting with main model
                 if (model.material) {
-                    const applyOffset = (m, idx) => {
-                        if (idx > 0) {
+                    const applyOffset = (m, meshIdx) => {
+                        if (meshIdx === 0) {
                             m.polygonOffset = true;
-                            m.polygonOffsetFactor = idx;
-                            m.polygonOffsetUnits  = idx * 4;
+                            m.polygonOffsetFactor = 1;
+                            m.polygonOffsetUnits  = 1;
+                        } else {
+                            const capped = Math.min(meshIdx, 10);
+                            m.polygonOffset = true;
+                            m.polygonOffsetFactor = -capped;
+                            m.polygonOffsetUnits  = -capped * 4;
                         }
                     };
                     if (Array.isArray(model.material)) {
@@ -196,6 +200,12 @@
             ppState._plateCenter = center.clone();
             ppState._plateNativeSize = box.getSize(new THREE.Vector3()).clone();
             if (window._fixLeftHandedCoords) window._fixLeftHandedCoords(group);
+
+            // Disable frustum culling on plate meshes
+            group.traverse(function (child) {
+                if (child.isMesh) child.frustumCulled = false;
+            });
+
             ppState.scene.add(group);
 
             // Auto-scale plate to match model if model is already loaded
@@ -270,15 +280,18 @@
 
             for (let i = 0; i < object.models.length; i++) {
                 const model = object.models[i];
-                // Disable frustum culling so small meshes remain visible at all zoom levels
-                model.traverse(ch => { ch.frustumCulled = false; });
                 model.renderOrder = i;
                 if (model.material) {
-                    const applyOffset = (m, idx) => {
-                        if (idx > 0) {
+                    const applyOffset = (m, meshIdx) => {
+                        if (meshIdx === 0) {
                             m.polygonOffset = true;
-                            m.polygonOffsetFactor = idx;
-                            m.polygonOffsetUnits  = idx * 4;
+                            m.polygonOffsetFactor = 1;
+                            m.polygonOffsetUnits  = 1;
+                        } else {
+                            const capped = Math.min(meshIdx, 10);
+                            m.polygonOffset = true;
+                            m.polygonOffsetFactor = -capped;
+                            m.polygonOffsetUnits  = -capped * 4;
                         }
                     };
                     if (Array.isArray(model.material)) {
@@ -294,6 +307,28 @@
 
             // Fix left-handed DirectX coords
             if (window._fixLeftHandedCoords) window._fixLeftHandedCoords(group);
+
+            // Disable frustum culling & handle blue-dominant transparency
+            group.traverse(function (child) {
+                if (!child.isMesh) return;
+                child.frustumCulled = false;
+                var mats = Array.isArray(child.material) ? child.material : [child.material];
+                var isTransparent = false;
+                mats.forEach(function (m) {
+                    if (!m || !m.color) return;
+                    var r = m.color.r, g = m.color.g, b = m.color.b;
+                    if (b > r * 1.5 && b > 0.1) {
+                        m.transparent = true;
+                        if (m.opacity >= 1.0) m.opacity = 0.4;
+                        m.depthWrite = false;
+                        m.side = THREE.DoubleSide;
+                        isTransparent = true;
+                    }
+                });
+                if (isTransparent) {
+                    child.renderOrder = 999;
+                }
+            });
 
             // Center model
             const box = new THREE.Box3().setFromObject(group);
