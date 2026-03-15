@@ -1964,6 +1964,12 @@
         SBS: SBS,
         saveScreenshot: lgSaveScreenshot,
         screenshotPreviewDataURL: lgScreenshotPreviewDataURL,
+        // Parsing functions for .rck/.ctr files
+        parseHxCfg: parseHxCfg,
+        parseRckFile: parseRckFile,
+        parseRckSegments: parseRckSegments,
+        parseCtrFile: parseCtrFile,
+        hamiltonToDefinition: hamiltonToDefinition,
     };
 
 })();

@@ -378,6 +378,12 @@
         html += '</div>';
         html += '</div>';
 
+        // Images: Bitmap + Image3D side by side (populated after file load)
+        html += '<div class="cated-detail-section" id="cated-images-section" style="display:none">';
+        html += '<div class="cated-detail-section-title"><i class="fas fa-image"></i> Images</div>';
+        html += '<div class="cated-images-row" id="cated-images-row"></div>';
+        html += '</div>';
+
         // 3D Preview container
         html += '<div class="cated-detail-section">';
         html += '<div class="cated-detail-section-title"><i class="fas fa-cube"></i> 3D Preview</div>';
@@ -413,6 +419,12 @@
         html += '</div>';
         html += '</div>';
 
+        // Resources section (populated after file load)
+        html += '<div class="cated-detail-section" id="cated-resources-section" style="display:none">';
+        html += '<div class="cated-detail-section-title"><i class="fas fa-paperclip"></i> Associated Resources</div>';
+        html += '<div id="cated-resources-list"></div>';
+        html += '</div>';
+
         // Labware configuration data (loaded from the actual file)
         html += '<div class="cated-detail-section">';
         html += '<div class="cated-detail-section-title"><i class="fas fa-cogs"></i> Configuration Data</div>';
@@ -430,11 +442,83 @@
         renderTree();
     }
 
+    /** Normalize a Hamilton backslash path to a URL relative to Labware/ */
+    function normResPath(raw) {
+        if (!raw) return '';
+        return raw.replace(/\\\\/g, '/').replace(/\\/g, '/');
+    }
+
+    /** Build a full URL for a resource path relative to the Labware directory */
+    function resUrl(relPath) {
+        return labwareDir() + '/' + normResPath(relPath);
+    }
+
+    /** Populate images section with Bitmap and Image3D */
+    function populateImages(cfg) {
+        var imagesRow = $('#cated-images-row');
+        var imagesSection = $('#cated-images-section');
+        if (!imagesRow || !imagesSection) return;
+
+        var bitmapVal = cfg['Bitmap'] ? cfg['Bitmap'].trim() : '';
+        var image3dVal = cfg['Image3D'] ? cfg['Image3D'].trim() : '';
+        if (!bitmapVal && !image3dVal) return;
+
+        var html = '';
+        if (bitmapVal) {
+            var bmpUrl = resUrl(bitmapVal);
+            html += '<div class="cated-image-card">';
+            html += '<div class="cated-image-label">Bitmap</div>';
+            html += '<img class="cated-image-thumb" src="' + escHtml(bmpUrl) + '" alt="Bitmap" onerror="this.parentElement.style.display=\'none\'">';
+            html += '<div class="cated-image-path">' + escHtml(normResPath(bitmapVal)) + '</div>';
+            html += '</div>';
+        }
+        if (image3dVal) {
+            var imgUrl = resUrl(image3dVal);
+            html += '<div class="cated-image-card">';
+            html += '<div class="cated-image-label">Image 3D</div>';
+            html += '<img class="cated-image-thumb" src="' + escHtml(imgUrl) + '" alt="Image3D" onerror="this.parentElement.style.display=\'none\'">';
+            html += '<div class="cated-image-path">' + escHtml(normResPath(image3dVal)) + '</div>';
+            html += '</div>';
+        }
+        imagesRow.innerHTML = html;
+        imagesSection.style.display = '';
+    }
+
+    /** Populate Associated Resources section */
+    function populateResources(cfg, ext) {
+        var resList = $('#cated-resources-list');
+        var resSection = $('#cated-resources-section');
+        if (!resList || !resSection) return;
+
+        var resources = [];
+        if (cfg['3DModel']) resources.push({ label: '3D Model', path: normResPath(cfg['3DModel']) });
+        if (cfg['3DModelRel']) resources.push({ label: '3D Model (rel)', path: normResPath(cfg['3DModelRel']) });
+        if (cfg['Bitmap']) resources.push({ label: 'Bitmap', path: normResPath(cfg['Bitmap']) });
+        if (cfg['Image3D']) resources.push({ label: 'Image 3D', path: normResPath(cfg['Image3D']) });
+
+        // Container file references
+        var cntrIdx = 1;
+        while (cfg['Cntr.' + cntrIdx + '.file']) {
+            resources.push({ label: 'Container ' + cntrIdx, path: normResPath(cfg['Cntr.' + cntrIdx + '.file']) });
+            cntrIdx++;
+        }
+
+        if (resources.length === 0) return;
+
+        var html = '<table class="cated-detail-table">';
+        for (var i = 0; i < resources.length; i++) {
+            html += '<tr><td class="cated-dt-label">' + escHtml(resources[i].label) + '</td>';
+            html += '<td class="cated-dt-value">' + escHtml(resources[i].path) + '</td></tr>';
+        }
+        html += '</table>';
+        resList.innerHTML = html;
+        resSection.style.display = '';
+    }
+
     /** Load and parse the actual labware file (.rck/.ctr/.tml) to show its properties */
     function loadLabwareFileData(entry) {
         var dir = labwareDir();
-        // Convert backslash path to forward slash
-        var filePath = entry.relPath.replace(/\\\\/g, '/').replace(/\\/g, '/');
+        var filePath = normResPath(entry.relPath);
         var url = dir + '/' + filePath;
 
         fetch(url).then(function(r) {
@@ -444,27 +528,27 @@
             var configEl = $('#cated-config-data');
             if (!configEl) return;
 
-            // Parse HxCfgFile format
             var cfg = parseHxCfgSimple(text);
             if (!cfg || Object.keys(cfg).length === 0) {
                 configEl.innerHTML = '<span class="cated-muted">No parseable configuration data.</span>';
                 return;
             }
 
+            // Populate images and resources from parsed data
+            populateImages(cfg);
+            populateResources(cfg, entry.fileName.split('.').pop().toLowerCase());
+
             var html = '<table class="cated-detail-table">';
-            // Show key fields first
             var keyFields = [
                 ['Description', 'Description'], ['Dim.Dx', 'Width (mm)'], ['Dim.Dy', 'Depth (mm)'],
                 ['Dim.Dz', 'Height (mm)'], ['Rows', 'Rows'], ['Columns', 'Columns'],
                 ['Dx', 'Col Spacing (mm)'], ['Dy', 'Row Spacing (mm)'],
                 ['Depth', 'Well Depth (mm)'], ['Clearance', 'Clearance (mm)'],
                 ['Shape', 'Shape'], ['StackHt', 'Stack Height (mm)'],
-                ['Bitmap', 'Bitmap'], ['3DModel', '3D Model'],
                 ['CategoryCnt', 'Category Count'], ['Visible', 'Visible'],
                 ['ReadOnly', 'Read-Only'], ['DataType', 'Data Type'],
                 ['SingleCntr', 'Single Container'], ['Segments', 'Segments'],
                 ['cLLD', 'Cap. LLD'], ['BaseMM', 'Base (mm)'],
-                ['Cntr.1.file', 'Container File'],
             ];
             var shown = {};
             for (var i = 0; i < keyFields.length; i++) {
@@ -472,7 +556,6 @@
                 var label = keyFields[i][1];
                 if (cfg[key] !== undefined) {
                     var val = cfg[key];
-                    // Interpret Visible: 0 = visible, 1 = hidden (Hamilton convention)
                     if (key === 'Visible') val = val === '0' ? 'Yes (visible)' : 'No (hidden)';
                     if (key === 'ReadOnly') val = val === '1' ? 'Yes' : 'No';
                     if (key === 'cLLD') val = val === '1' ? 'Enabled' : 'Disabled';
@@ -481,7 +564,6 @@
                 }
             }
 
-            // Show embedded category IDs
             var catCnt = parseInt(cfg['CategoryCnt']) || 0;
             for (var ci = 0; ci < catCnt; ci++) {
                 var catIdKey = 'Category.' + ci + '.Id';
@@ -493,7 +575,6 @@
                 }
             }
 
-            // Show site info for carriers
             var siteCount = 0;
             for (var sk in cfg) {
                 var siteMatch = sk.match(/^Site\.(\d+)\./);
@@ -506,7 +587,6 @@
                 html += '<tr><td class="cated-dt-label">Site Count</td><td class="cated-dt-value">' + siteCount + '</td></tr>';
             }
 
-            // Container segments for .ctr files
             var segments = parseInt(cfg['Segments']) || 0;
             for (var si = 1; si <= segments; si++) {
                 var eqn = cfg[si + '.EqnOfVol'];
@@ -520,7 +600,6 @@
                 }
             }
 
-            // Properties (MlStarCar* etc.)
             var propIdx = 0;
             while (cfg['Property.' + propIdx] !== undefined) {
                 var propName = cfg['Property.' + propIdx];
@@ -579,37 +658,43 @@
         cleanup3D();
 
         var dir = labwareDir();
-        var filePath = entry.relPath.replace(/\\\\/g, '/').replace(/\\/g, '/');
+        var filePath = normResPath(entry.relPath);
 
-        // Try to load the labware file first to get model references
+        // Load the labware file to get model references and dimensions
         fetch(dir + '/' + filePath).then(function(r) {
             if (!r.ok) throw new Error('not found');
             return r.text();
         }).then(function(text) {
             var cfg = parseHxCfgSimple(text);
-            var modelPath = cfg['3DModel'] || cfg['Bitmap'] || null;
-
-            // For .rck files, try to generate geometry from the rack data
             var ext = entry.fileName.split('.').pop().toLowerCase();
-            if (ext === 'rck' || ext === 'ctr') {
-                // Build a simple 3D representation from dimensions
-                init3DPreview(canvas);
-                buildLabwarePreview(cfg, ext);
-                if (loadingEl) loadingEl.style.display = 'none';
-                return;
+
+            // Look for a 3D model reference in the config
+            var modelRaw = (cfg['3DModel'] || '').trim();
+            var modelRelRaw = (cfg['3DModelRel'] || '').trim();
+
+            // Determine the directory the labware file lives in (for relative paths)
+            var fileDir = filePath.substring(0, filePath.lastIndexOf('/'));
+
+            var modelUrl = '';
+            if (modelRaw) {
+                modelUrl = dir + '/' + normResPath(modelRaw);
+            } else if (modelRelRaw) {
+                modelUrl = dir + '/' + (fileDir ? fileDir + '/' : '') + normResPath(modelRelRaw);
             }
 
-            // For .tml files with 3D models, try loading the model
-            if (modelPath && (modelPath.endsWith('.hxx') || modelPath.endsWith('.x'))) {
+            if (modelUrl) {
                 init3DPreview(canvas);
-                var modelUrl = dir + '/' + modelPath.replace(/\\\\/g, '/').replace(/\\/g, '/');
-                loadModelFile(modelUrl, function() {
+                loadModelFile(modelUrl, function(ok) {
                     if (loadingEl) loadingEl.style.display = 'none';
+                    if (!ok) {
+                        // Model failed — fall back to generated geometry
+                        buildLabwarePreview(cfg, ext);
+                    }
                 });
                 return;
             }
 
-            // Fallback: generate from dimensions
+            // No model reference — generate geometry from dimensions
             init3DPreview(canvas);
             buildLabwarePreview(cfg, ext);
             if (loadingEl) loadingEl.style.display = 'none';
@@ -748,30 +833,85 @@
     }
 
     function loadModelFile(url, callback) {
-        // Try XFileLoader for .x / .hxx files
-        if (typeof THREE.XFileLoader === 'function') {
-            var loader = new THREE.XFileLoader();
-            loader.load(url, function(obj) {
-                if (st.scene && obj) {
-                    var box = new THREE.Box3().setFromObject(obj);
-                    var center = box.getCenter(new THREE.Vector3());
-                    obj.position.sub(center);
-                    st.previewModel = obj;
-                    st.scene.add(obj);
+        var isHxx = /\.hxx$/i.test(url);
 
-                    var size = box.getSize(new THREE.Vector3());
-                    var maxDim = Math.max(size.x, size.y, size.z);
-                    st.camera.position.set(maxDim * 1.2, maxDim * 0.8, maxDim * 1.2);
-                    st.controls.target.set(0, 0, 0);
-                    st.controls.update();
-                }
-                if (callback) callback();
-            }, undefined, function() {
-                if (callback) callback();
+        if (isHxx && window.HXXLoader) {
+            // .hxx: fetch as ArrayBuffer → decompress → load the .x blob
+            fetch(url).then(function(r) {
+                if (!r.ok) throw new Error('HXX not found');
+                return r.arrayBuffer();
+            }).then(function(buf) {
+                return HXXLoader.toXFileBlob(buf);
+            }).then(function(blob) {
+                var blobUrl = URL.createObjectURL(blob);
+                // basePath stays at the original model's directory for textures
+                var basePath = url.substring(0, url.lastIndexOf('/') + 1);
+                loadXModel(blobUrl, basePath, function(ok) {
+                    URL.revokeObjectURL(blobUrl);
+                    if (callback) callback(ok);
+                });
+            }).catch(function(err) {
+                console.warn('[CatEd] HXX load error:', err);
+                if (callback) callback(false);
             });
-        } else {
-            if (callback) callback();
+            return;
         }
+
+        // .x file — load directly
+        var basePath = url.substring(0, url.lastIndexOf('/') + 1);
+        loadXModel(url, basePath, callback);
+    }
+
+    /** Load an .x file URL using XFileLoader with texture resolution */
+    function loadXModel(url, basePath, callback) {
+        if (typeof THREE.XFileLoader !== 'function') {
+            if (callback) callback(false);
+            return;
+        }
+
+        var manager = new THREE.LoadingManager();
+        manager.setURLModifier(function(texUrl) {
+            if (/\.(png|jpg|jpeg|bmp|tga)$/i.test(texUrl)) {
+                return basePath + texUrl.split('/').pop();
+            }
+            return texUrl;
+        });
+
+        var loader = new THREE.XFileLoader(manager);
+        // Add cache-bust for direct URLs (not blobs)
+        var finalUrl = /^blob:|^data:/i.test(url) ? url : url + (url.indexOf('?') >= 0 ? '&' : '?') + '_t=' + Date.now();
+
+        loader.load(finalUrl, function(obj) {
+            if (!st.scene || !obj) { if (callback) callback(false); return; }
+            if (obj.error || !obj.models || obj.models.length === 0) {
+                if (callback) callback(false);
+                return;
+            }
+
+            var group = new THREE.Group();
+            for (var i = 0; i < obj.models.length; i++) {
+                group.add(obj.models[i]);
+            }
+
+            // Center and frame
+            var box = new THREE.Box3().setFromObject(group);
+            var center = box.getCenter(new THREE.Vector3());
+            group.position.sub(center);
+
+            st.previewModel = group;
+            st.scene.add(group);
+
+            var size = box.getSize(new THREE.Vector3());
+            var maxDim = Math.max(size.x, size.y, size.z);
+            if (maxDim > 0) {
+                st.camera.position.set(maxDim * 1.2, maxDim * 0.8, maxDim * 1.2);
+                st.controls.target.set(0, 0, 0);
+                st.controls.update();
+            }
+            if (callback) callback(true);
+        }, undefined, function() {
+            if (callback) callback(false);
+        });
     }
 
     // ================================================================
