@@ -171,7 +171,7 @@
     MFX_MODULE_CATALOG.forEach(function (m) { _moduleByKey[m.key] = m; });
 
     // ================================================================
-    //  Pedestal-type rules per carrier slot (from StarDeckCarriers.xml)
+    //  Pedestal-type rules per carrier slot (from StarVantageCarriers.xml)
     //  Keyed by carrier key → slot id → array of allowed pedestal types.
     // ================================================================
     const MFX_SLOT_RULES = {
@@ -214,7 +214,7 @@
     //  types:     pedestal type keys this module is compatible with
     //  oversized: signed offset in position-number space
     //             -1 = blocks previous position, +1 = blocks next
-    //             (matches StarDeckCarrierPedestals.xml convention)
+    //             (matches StarVantageCarrierPedestals.xml convention)
     // ================================================================
     const MFX_MODULE_TYPES = {
         // Plate Handling
@@ -955,7 +955,7 @@
 
     // ----------------------------------------------------------------
     //  Fit a loaded .x model into the carrier footprint
-    //  (same centering algorithm as deckLayout.js)
+    //  (same centering algorithm as vantageLayout.js)
     // ----------------------------------------------------------------
     function fitModelIntoCarrier(xModel, def) {
         var box = new THREE.Box3().setFromObject(xModel);
@@ -1268,7 +1268,7 @@
 
     // ================================================================
     //  Convert DirectX left-hand coords → Three.js right-hand
-    //  (identical to deckLayout.js fixXFileCoords)
+    //  (identical to vantageLayout.js fixXFileCoords)
     // ================================================================
     function fixXFileCoords(group) {
         group.traverse(function (child) {
@@ -2355,7 +2355,7 @@
     }
 
     // ================================================================
-    //  Gizmo (orientation indicator) — same pattern as deckLayout
+    //  Gizmo (orientation indicator) — same pattern as vantageLayout
     // ================================================================
     function drawMFXGizmo() {
         var canvas = $('#mfx-gizmo-canvas');
