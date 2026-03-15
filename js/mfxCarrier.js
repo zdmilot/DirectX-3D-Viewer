@@ -2191,16 +2191,6 @@
             slotLabel.className = 'mfx-slot-label';
             slotLabel.textContent = slot.label;
 
-            // Show allowed types as a subtle hint
-            var allowed = _allowedTypes(mfxState.carrierKey, slot.id);
-            var typeHint = null;
-            if (allowed) {
-                typeHint = document.createElement('div');
-                typeHint.className = 'mfx-slot-type-hint';
-                typeHint.textContent = allowed.join(', ');
-                typeHint.title = 'Allowed pedestal types for this position';
-            }
-
             var moduleInfo = document.createElement('div');
             moduleInfo.className = 'mfx-slot-module';
             if (blockedByLabel && !moduleKey) {
@@ -2244,7 +2234,6 @@
             }
 
             row.appendChild(slotLabel);
-            if (typeHint) row.appendChild(typeHint);
             row.appendChild(moduleInfo);
             row.appendChild(actions);
 

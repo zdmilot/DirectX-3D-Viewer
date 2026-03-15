@@ -4658,31 +4658,32 @@ body {
 [data-theme="dark"] .lwe-subsection { color: #7799aa; }
 .lwe-label {
     display: block;
-    font-size: 11px;
-    color: #666;
-    margin-bottom: 2px;
+    font-size: 0.72rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 3px;
 }
-[data-theme="dark"] .lwe-label { color: #8899aa; }
 .lwe-input {
     width: 100%;
-    padding: 4px 6px;
-    border: 1px solid #ccc;
-    border-radius: 3px;
-    font-size: 12px;
-    background: #fff;
-    color: #333;
+    padding: 5px 8px;
+    border: 1px solid var(--card-border);
+    border-radius: var(--r-xs, 3px);
+    font-size: 0.8rem;
+    font-family: 'Menlo', 'Consolas', monospace;
+    background: var(--body-bg);
+    color: var(--text-primary);
     margin-bottom: 6px;
     box-sizing: border-box;
+    outline: none;
+    transition: border-color var(--t-fast, 0.15s);
 }
-[data-theme="dark"] .lwe-input {
-    background: #1e2a36;
-    border-color: #3a4e60;
-    color: #d0dde8;
+textarea.lwe-input {
+    resize: vertical;
+    min-height: 48px;
+    font-family: inherit;
 }
 .lwe-input:focus {
-    border-color: #1a73e8;
-    outline: none;
-    box-shadow: 0 0 0 2px rgba(26,115,232,.2);
+    border-color: var(--accent, #1a73e8);
 }
 .lwe-field-row {
     display: flex;
@@ -4695,12 +4696,11 @@ body {
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    font-size: 12px;
-    color: #555;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
     cursor: pointer;
     margin-bottom: 4px;
 }
-[data-theme="dark"] .lwe-check-label { color: #99aabb; }
 .lwe-check-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 4px; }
 .lwe-well-count {
     font-size: 11px;
@@ -4712,21 +4712,18 @@ body {
 /* Buttons */
 .lwe-btn {
     padding: 5px 10px;
-    border: 1px solid #bbb;
-    border-radius: 4px;
-    background: #f0f2f4;
-    color: #333;
+    border: 1px solid var(--card-border);
+    border-radius: var(--r-xs, 4px);
+    background: var(--card-bg);
+    color: var(--text-primary);
     cursor: pointer;
-    font-size: 12px;
+    font-size: 0.78rem;
     transition: background .15s;
 }
-[data-theme="dark"] .lwe-btn { background: #263545; border-color: #445566; color: #ccdde8; }
-.lwe-btn:hover { background: #e0e4e8; }
-[data-theme="dark"] .lwe-btn:hover { background: #304050; }
+.lwe-btn:hover { background: rgba(2,117,216,0.08); }
 .lwe-btn-sm { padding: 3px 8px; font-size: 11px; }
 .lwe-btn-danger { color: #d44; border-color: #d44; }
-.lwe-btn-danger:hover { background: #fdd; }
-[data-theme="dark"] .lwe-btn-danger:hover { background: #3a2020; }
+.lwe-btn-danger:hover { background: rgba(221,68,68,0.12); }
 .lwe-site-actions { display: flex; gap: 6px; margin-top: 8px; }
 
 /* Segment list */
