@@ -305,16 +305,31 @@
     }
 
     function handleFileSelected(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-        loadUserFile(file);
+        const files = e.target.files;
+        if (!files || files.length === 0) return;
+        // Find the primary 3D file (not .mtl, not texture)
+        let primary = null;
+        const companionMap = {};
+        for (let i = 0; i < files.length; i++) {
+            const ext = files[i].name.split('.').pop().toLowerCase();
+            if (/^(x|hxx|obj|stl|glb|gltf)$/.test(ext) && !primary) {
+                primary = files[i];
+            }
+            companionMap[files[i].name.toLowerCase()] = files[i];
+        }
+        if (!primary) primary = files[0];
+        loadUserFile(primary, companionMap);
         // Reset input so re-selecting the same file triggers change
         dom.fileInput.value = '';
     }
 
-    function loadUserFile(file) {
-        if (!HXXLoader.isXOrHXX(file.name)) {
-            alert('Please select a .x or .hxx file.');
+    /** Supported 3D file extensions for the viewer */
+    const VIEWER_3D_EXTS = /\.(x|hxx|obj|stl|glb|gltf)$/i;
+
+    function loadUserFile(file, companionFiles) {
+        const ext = file.name.split('.').pop().toLowerCase();
+        if (!VIEWER_3D_EXTS.test(file.name)) {
+            alert('Unsupported file format. Please select a .x, .hxx, .obj, .stl, .glb, or .gltf file.');
             return;
         }
         const loading = $('#viewer-loading');
@@ -322,7 +337,6 @@
 
         // Track loaded file name and path for screenshot naming / display
         state.loadedFileName = file.name;
-        // Try to get the best available path: file.path (Electron/NW.js), webkitRelativePath, or just name
         state.loadedFilePath = file.path || file.webkitRelativePath || file.name;
 
         // Clear previous model
@@ -336,34 +350,198 @@
         }
         if (errorEl) errorEl.classList.add('viewer-hidden');
 
-        if (HXXLoader.isHXXFilename(file.name)) {
-            // Read as ArrayBuffer, decompress, then load
-            const reader = new FileReader();
-            reader.onload = function () {
-                HXXLoader.toXFileBlob(reader.result).then(function (blob) {
-                    const url = URL.createObjectURL(blob);
-                    state.lastLoadedUrl = url;
-                    // Update filename display after URL is set
-                    setFilenameDisplay();
-                    loadXFile(url, loading, errorEl);
-                }).catch(function (err) {
-                    if (loading) loading.classList.add('viewer-hidden');
-                    showError(errorEl, 'HXX parse error: ' + (err.message || err));
-                    console.error('[HXX]', err);
-                });
-            };
-            reader.onerror = function () {
+        switch (ext) {
+            case 'hxx':
+                loadViewerHXX(file, loading, errorEl);
+                break;
+            case 'x':
+                loadViewerXFile(file, loading, errorEl);
+                break;
+            case 'obj':
+                loadViewerOBJ(file, companionFiles || {}, loading, errorEl);
+                break;
+            case 'stl':
+                loadViewerSTL(file, loading, errorEl);
+                break;
+            case 'glb':
+            case 'gltf':
+                loadViewerGLTF(file, loading, errorEl);
+                break;
+            default:
                 if (loading) loading.classList.add('viewer-hidden');
-                showError(errorEl, 'Failed to read .hxx file.');
-            };
-            reader.readAsArrayBuffer(file);
-        } else {
-            const url = URL.createObjectURL(file);
-            state.lastLoadedUrl = url;
-            // Update filename display after URL is set
-            setFilenameDisplay();
-            loadXFile(url, loading, errorEl);
+                showError(errorEl, 'Unsupported format: .' + ext);
         }
+    }
+
+    function loadViewerHXX(file, loadingEl, errorEl) {
+        const reader = new FileReader();
+        reader.onload = function () {
+            HXXLoader.toXFileBlob(reader.result).then(function (blob) {
+                const url = URL.createObjectURL(blob);
+                state.lastLoadedUrl = url;
+                setFilenameDisplay();
+                loadXFile(url, loadingEl, errorEl);
+            }).catch(function (err) {
+                if (loadingEl) loadingEl.classList.add('viewer-hidden');
+                showError(errorEl, 'HXX parse error: ' + (err.message || err));
+                console.error('[HXX]', err);
+            });
+        };
+        reader.onerror = function () {
+            if (loadingEl) loadingEl.classList.add('viewer-hidden');
+            showError(errorEl, 'Failed to read .hxx file.');
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    function loadViewerXFile(file, loadingEl, errorEl) {
+        const url = URL.createObjectURL(file);
+        state.lastLoadedUrl = url;
+        setFilenameDisplay();
+        loadXFile(url, loadingEl, errorEl);
+    }
+
+    function loadViewerOBJ(file, fileMap, loadingEl, errorEl) {
+        const reader = new FileReader();
+        reader.onload = function () {
+            try {
+                const objText = reader.result;
+                const mtlMatch = objText.match(/^mtllib\s+(.+)$/m);
+                const mtlFileName = mtlMatch ? mtlMatch[1].trim() : null;
+
+                const finishOBJ = function (materials) {
+                    const loader = new THREE.OBJLoader();
+                    if (materials) loader.setMaterials(materials);
+                    const object = loader.parse(objText);
+                    const group = new THREE.Group();
+                    group.add(object);
+                    addModelToViewerScene(group, loadingEl, errorEl);
+                };
+
+                if (mtlFileName && fileMap[mtlFileName.toLowerCase()]) {
+                    const mtlReader = new FileReader();
+                    mtlReader.onload = function () {
+                        try {
+                            const mtlLoader = new THREE.MTLLoader();
+                            const materials = mtlLoader.parse(mtlReader.result, '');
+                            // Handle companion textures
+                            if (fileMap) {
+                                Object.keys(materials.materialsInfo).forEach(function (name) {
+                                    const info = materials.materialsInfo[name];
+                                    if (info.map_kd) {
+                                        const texKey = info.map_kd.toLowerCase();
+                                        if (fileMap[texKey]) {
+                                            info.map_kd = URL.createObjectURL(fileMap[texKey]);
+                                        }
+                                    }
+                                });
+                            }
+                            materials.preload();
+                            finishOBJ(materials);
+                        } catch (err) {
+                            console.warn('MTL parse failed, loading OBJ without materials:', err);
+                            finishOBJ(null);
+                        }
+                    };
+                    mtlReader.readAsText(fileMap[mtlFileName.toLowerCase()]);
+                } else {
+                    finishOBJ(null);
+                }
+            } catch (err) {
+                if (loadingEl) loadingEl.classList.add('viewer-hidden');
+                showError(errorEl, 'OBJ parse error: ' + err.message);
+                console.error('[OBJ]', err);
+            }
+        };
+        reader.onerror = function () {
+            if (loadingEl) loadingEl.classList.add('viewer-hidden');
+            showError(errorEl, 'Failed to read .obj file.');
+        };
+        reader.readAsText(file);
+    }
+
+    function loadViewerSTL(file, loadingEl, errorEl) {
+        const reader = new FileReader();
+        reader.onload = function () {
+            try {
+                const loader = new THREE.STLLoader();
+                const geometry = loader.parse(reader.result);
+                const material = new THREE.MeshPhongMaterial({
+                    color: 0x8899aa,
+                    specular: 0x333333,
+                    shininess: 30,
+                    flatShading: false,
+                });
+                const mesh = new THREE.Mesh(geometry, material);
+                const group = new THREE.Group();
+                group.add(mesh);
+                addModelToViewerScene(group, loadingEl, errorEl);
+            } catch (err) {
+                if (loadingEl) loadingEl.classList.add('viewer-hidden');
+                showError(errorEl, 'STL parse error: ' + err.message);
+                console.error('[STL]', err);
+            }
+        };
+        reader.onerror = function () {
+            if (loadingEl) loadingEl.classList.add('viewer-hidden');
+            showError(errorEl, 'Failed to read .stl file.');
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    function loadViewerGLTF(file, loadingEl, errorEl) {
+        const url = URL.createObjectURL(file);
+        const loader = new THREE.GLTFLoader();
+        loader.load(url, function (gltf) {
+            URL.revokeObjectURL(url);
+            addModelToViewerScene(gltf.scene, loadingEl, errorEl);
+        }, undefined, function (err) {
+            URL.revokeObjectURL(url);
+            if (loadingEl) loadingEl.classList.add('viewer-hidden');
+            showError(errorEl, 'GLTF load error: ' + (err.message || err));
+            console.error('[GLTF]', err);
+        });
+    }
+
+    /**
+     * Add a generic 3D model (from OBJ/STL/GLB) to the main viewer scene.
+     * Handles centering, camera fit, grid resize, and material processing,
+     * but skips the left-handed coordinate fix (only needed for .x files).
+     */
+    function addModelToViewerScene(object, loadingEl, errorEl) {
+        if (loadingEl) loadingEl.classList.add('viewer-hidden');
+
+        const group = new THREE.Group();
+        group.name = '__xmodel__';
+        group.add(object);
+        scene.add(group);
+
+        // Disable frustum culling on all meshes
+        group.traverse(function (child) {
+            if (child.isMesh) child.frustumCulled = false;
+        });
+
+        // Auto-fit: center & scale model to fill view
+        const box = new THREE.Box3().setFromObject(group);
+        const center = box.getCenter(new THREE.Vector3());
+        const size = box.getSize(new THREE.Vector3());
+        const maxDim = Math.max(size.x, size.y, size.z);
+
+        if (maxDim > 0) {
+            group.position.sub(center);
+            DeckUnits.fitCamera(camera, controls, maxDim, { fitMultiplier: 1.8 });
+
+            // Resize grid
+            const oldGrid = scene.getObjectByName('__grid__');
+            if (oldGrid) scene.remove(oldGrid);
+            const gColor = state.isDark ? DARK_GRID : LIGHT_GRID;
+            const newGrid = DeckUnits.createModelGrid(maxDim, gColor, { name: '__grid__', visible: state.gridVisible });
+            newGrid.position.y = -size.y / 2 - maxDim * 0.002;
+            scene.add(newGrid);
+        }
+
+        state.lastLoadedUrl = null; // Non-X files don't have a URL for the placer
+        setFilenameDisplay();
     }
 
     function clearModel() {
@@ -390,7 +568,7 @@
         // Keep navbar subtitle fixed for this app
         const subtitle = document.querySelector('.navbar-subtitle');
         if (subtitle) {
-            subtitle.textContent = 'FOR DIRECT3D';
+            subtitle.textContent = 'UNIVERSAL 3D VIEWER';
         }
         // Update loaded file path in bottom bar
         const pathText = $('#viewer-file-path-text');
@@ -438,8 +616,20 @@
             e.preventDefault();
             dragCounter = 0;
             dom.dropzone.classList.add('viewer-hidden');
-            const file = e.dataTransfer.files[0];
-            if (file) loadUserFile(file);
+            const files = e.dataTransfer.files;
+            if (!files || files.length === 0) return;
+            // Find the primary 3D file
+            let primary = null;
+            const companionMap = {};
+            for (let i = 0; i < files.length; i++) {
+                const ext = files[i].name.split('.').pop().toLowerCase();
+                if (/^(x|hxx|obj|stl|glb|gltf)$/.test(ext) && !primary) {
+                    primary = files[i];
+                }
+                companionMap[files[i].name.toLowerCase()] = files[i];
+            }
+            if (!primary) primary = files[0];
+            loadUserFile(primary, companionMap);
         });
     }
 
@@ -1937,6 +2127,7 @@
         if (!model) { alert('No model loaded.'); return; }
         try {
             switch (fmt) {
+                case 'x':   saveXFile(); break;
                 case 'obj': exportViewerOBJ(); break;
                 case 'stl': exportViewerSTL(); break;
                 case 'glb': exportViewerGLB(); break;

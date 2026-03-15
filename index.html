@@ -48,7 +48,7 @@
                 </svg>
             </div>
             <div class="splash-title">3D File Tools</div>
-            <div class="splash-subtitle">FOR DIRECT3D</div>
+            <div class="splash-subtitle">UNIVERSAL 3D VIEWER</div>
         </div>
     </div>
 
@@ -68,11 +68,11 @@
                     </div>
                     <div class="navbar-title-group">
                         <span class="navbar-title">3D File Tools</span>
-                        <span class="navbar-subtitle">FOR DIRECT3D</span>
+                        <span class="navbar-subtitle">UNIVERSAL 3D VIEWER</span>
                     </div>
                 </div>
             <div class="navbar-actions">
-                <input type="file" id="file-input" accept=".x,.hxx" style="display:none">
+                <input type="file" id="file-input" accept=".x,.hxx,.obj,.mtl,.stl,.glb,.gltf" multiple style="display:none">
                 <button class="nav-btn nav-btn-icon" id="btn-theme" data-tooltip="Switch to night mode" aria-label="Switch to night mode">
                     <i class="fas fa-moon"></i>
                 </button>
@@ -223,10 +223,10 @@
 
                 <!-- Bottom Controls Bar -->
                 <div class="viewer-controls-bar" id="viewer-controls-bar">
-                    <button class="cv-ctrl-btn" id="vt-open" title="Open .x file">
+                    <button class="cv-ctrl-btn" id="vt-open" title="Open 3D file (.x, .obj, .stl, .glb)">
                         <i class="fas fa-folder-open"></i> Open
                     </button>
-                    <button class="cv-ctrl-btn" id="vt-save" title="Save .x file">
+                    <button class="cv-ctrl-btn" id="vt-save" title="Save as .x file">
                         <i class="fas fa-save"></i> Save
                     </button>
                     <div class="cv-ctrl-divider"></div>
@@ -245,6 +245,9 @@
                             <i class="fas fa-download"></i> Export
                         </button>
                         <div class="export-dropdown" id="export-dropdown">
+                            <button class="export-option" data-format="x">
+                                <i class="fas fa-cube"></i> Export as .X
+                            </button>
                             <button class="export-option" data-format="obj">
                                 <i class="fas fa-cube"></i> Export as .OBJ
                             </button>
@@ -264,7 +267,7 @@
                 <div class="viewer-dropzone viewer-hidden" id="viewer-dropzone">
                     <div class="dropzone-content">
                         <i class="fas fa-file-import"></i>
-                        <span>Drop .x or .hxx file here</span>
+                        <span>Drop 3D file here (.x, .hxx, .obj, .stl, .glb, .gltf)</span>
                     </div>
                 </div>
 
@@ -1797,7 +1800,7 @@
                           fill="rgba(220,225,230,0.85)" fill-rule="evenodd"/>
                 </svg>
                 <div class="about-title">About 3D File Tools</div>
-                <div class="about-subtitle">3D File Tools for Direct3D</div>
+                <div class="about-subtitle">Universal 3D File Viewer &amp; Converter</div>
             </div>
             <div class="about-body">
                 <div class="about-info-row"><span class="about-label">Version</span><span class="about-value">1.0.0</span></div>
