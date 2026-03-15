@@ -4711,8 +4711,18 @@
         el.textContent = `pos  X: ${p.x.toFixed(2)}  Y: ${p.y.toFixed(2)}  Z: ${p.z.toFixed(2)}`;
     }
 
+    // Hardcoded EE Drawer position offset (mm)
+    const EE_DRAWER_OFFSET = { x: 7, y: -15, z: -39 };
+
     function snapshotEEBasePos() {
         if (vlState.drawerMesh) {
+            vlState._eeBasePos = vlState.drawerMesh.position.clone();
+            // Apply permanent offset
+            vlState.drawerMesh.position.set(
+                vlState._eeBasePos.x + EE_DRAWER_OFFSET.x,
+                vlState._eeBasePos.y + EE_DRAWER_OFFSET.y,
+                vlState._eeBasePos.z + EE_DRAWER_OFFSET.z
+            );
             vlState._eeBasePos = vlState.drawerMesh.position.clone();
         }
     }
