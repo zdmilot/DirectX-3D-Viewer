@@ -3241,11 +3241,18 @@
         vlState.hoveredTrack = null;
         showVLTrashZone(false);
 
-        // If dropped on trash zone, pulled off canvas, or dragged off deck surface → remove
-        if (trashHit || pulledOff || droppedOffDeck) {
+        // If dropped on trash zone → remove the carrier
+        if (trashHit) {
             carrier.mesh.visible = true;
             removeCarrier(carrier.id);
             showVLStatus('Carrier removed.');
+            return;
+        }
+
+        // If dragged off the deck or canvas but NOT on trash → snap back to original position
+        if (pulledOff || droppedOffDeck) {
+            carrier.mesh.visible = true;
+            showVLStatus(`${carrier.def.viewName} returned to track ${carrier.trackStart}.`);
             return;
         }
 
