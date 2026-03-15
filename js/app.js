@@ -1887,152 +1887,19 @@
     function exportViewerGLB() {
         const model = getViewerModel();
         if (!model) return;
-        model.updateMatrixWorld(true);
 
-        const meshes = [];
-        model.traverse(child => { if (child.isMesh) meshes.push(child); });
-        if (meshes.length === 0) return;
-
-        const bufferParts = [];
-        let totalBufSize = 0;
-        const accessors = [];
-        const bufferViews = [];
-        const gltfMeshes = [];
-        const gltfNodes = [];
-        const materials = [];
-
-        function padTo4(buf) {
-            const rem = buf.byteLength % 4;
-            if (rem === 0) return buf;
-            const padded = new ArrayBuffer(buf.byteLength + (4 - rem));
-            new Uint8Array(padded).set(new Uint8Array(buf));
-            return padded;
+        if (typeof THREE.GLTFExporter === 'undefined') {
+            alert('GLTFExporter library not loaded.');
+            return;
         }
 
-        meshes.forEach((child, mi) => {
-            const geom = child.geometry.clone();
-            geom.applyMatrix4(child.matrixWorld);
-            if (!geom.index) {
-                const idx = [];
-                for (let i = 0; i < geom.attributes.position.count; i++) idx.push(i);
-                geom.setIndex(idx);
-            }
-
-            const pos  = geom.attributes.position;
-            const norm = geom.attributes.normal;
-            const idx  = geom.index;
-
-            const srcMat = child.material || new THREE.MeshStandardMaterial();
-            const m = Array.isArray(srcMat) ? srcMat[0] : srcMat;
-            const matIdx = materials.length;
-            materials.push({
-                pbrMetallicRoughness: {
-                    baseColorFactor: [
-                        m.color ? m.color.r : 0.7,
-                        m.color ? m.color.g : 0.7,
-                        m.color ? m.color.b : 0.7,
-                        m.opacity !== undefined ? m.opacity : 1.0
-                    ],
-                    metallicFactor: m.metalness !== undefined ? m.metalness : 0.0,
-                    roughnessFactor: m.roughness !== undefined ? m.roughness : 0.8,
-                },
-                name: 'Material_' + mi,
-            });
-
-            // Indices
-            const idxArr = new Uint32Array(idx.count);
-            for (let i = 0; i < idx.count; i++) idxArr[i] = idx.getX(i);
-            const idxBuf = padTo4(idxArr.buffer);
-            const idxBvIdx = bufferViews.length;
-            bufferViews.push({ buffer: 0, byteOffset: totalBufSize, byteLength: idxArr.byteLength, target: 34963 });
-            accessors.push({ bufferView: idxBvIdx, componentType: 5125, count: idx.count, type: 'SCALAR', max: [pos.count - 1], min: [0] });
-            const idxAccIdx = accessors.length - 1;
-            bufferParts.push(idxBuf);
-            totalBufSize += idxBuf.byteLength;
-
-            // Positions
-            const posArr = new Float32Array(pos.count * 3);
-            let pMin = [Infinity, Infinity, Infinity], pMax = [-Infinity, -Infinity, -Infinity];
-            for (let i = 0; i < pos.count; i++) {
-                const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
-                posArr[i * 3] = x; posArr[i * 3 + 1] = y; posArr[i * 3 + 2] = z;
-                pMin[0] = Math.min(pMin[0], x); pMin[1] = Math.min(pMin[1], y); pMin[2] = Math.min(pMin[2], z);
-                pMax[0] = Math.max(pMax[0], x); pMax[1] = Math.max(pMax[1], y); pMax[2] = Math.max(pMax[2], z);
-            }
-            const posBuf = padTo4(posArr.buffer);
-            const posBvIdx = bufferViews.length;
-            bufferViews.push({ buffer: 0, byteOffset: totalBufSize, byteLength: posArr.byteLength, target: 34962, byteStride: 12 });
-            accessors.push({ bufferView: posBvIdx, componentType: 5126, count: pos.count, type: 'VEC3', min: pMin, max: pMax });
-            const posAccIdx = accessors.length - 1;
-            bufferParts.push(posBuf);
-            totalBufSize += posBuf.byteLength;
-
-            // Normals
-            let normAccIdx = undefined;
-            if (norm) {
-                const normArr = new Float32Array(norm.count * 3);
-                for (let i = 0; i < norm.count; i++) {
-                    normArr[i * 3] = norm.getX(i);
-                    normArr[i * 3 + 1] = norm.getY(i);
-                    normArr[i * 3 + 2] = norm.getZ(i);
-                }
-                const normBuf = padTo4(normArr.buffer);
-                const normBvIdx = bufferViews.length;
-                bufferViews.push({ buffer: 0, byteOffset: totalBufSize, byteLength: normArr.byteLength, target: 34962, byteStride: 12 });
-                accessors.push({ bufferView: normBvIdx, componentType: 5126, count: norm.count, type: 'VEC3' });
-                normAccIdx = accessors.length - 1;
-                bufferParts.push(normBuf);
-                totalBufSize += normBuf.byteLength;
-            }
-
-            const attributes = { POSITION: posAccIdx };
-            if (normAccIdx !== undefined) attributes.NORMAL = normAccIdx;
-
-            gltfMeshes.push({ primitives: [{ attributes: attributes, indices: idxAccIdx, material: matIdx }], name: 'Mesh_' + mi });
-            gltfNodes.push({ mesh: mi, name: 'Node_' + mi });
-            geom.dispose();
-        });
-
-        const gltfJson = {
-            asset: { version: '2.0', generator: 'Direct3D Tools Viewer' },
-            scene: 0,
-            scenes: [{ nodes: gltfNodes.map((_, i) => i) }],
-            nodes: gltfNodes,
-            meshes: gltfMeshes,
-            accessors: accessors,
-            bufferViews: bufferViews,
-            buffers: [{ byteLength: totalBufSize }],
-            materials: materials,
-        };
-
-        const jsonStr = JSON.stringify(gltfJson);
-        const jsonBuf = padTo4(new TextEncoder().encode(jsonStr).buffer);
-
-        const binBuf = new ArrayBuffer(totalBufSize);
-        const binView = new Uint8Array(binBuf);
-        let off = 0;
-        bufferParts.forEach(part => { binView.set(new Uint8Array(part), off); off += part.byteLength; });
-        const binPadded = padTo4(binBuf);
-
-        const glbLen = 12 + 8 + jsonBuf.byteLength + 8 + binPadded.byteLength;
-        const glb = new ArrayBuffer(glbLen);
-        const glbDV = new DataView(glb);
-
-        glbDV.setUint32(0, 0x46546C67, true);
-        glbDV.setUint32(4, 2, true);
-        glbDV.setUint32(8, glbLen, true);
-
-        let p = 12;
-        glbDV.setUint32(p, jsonBuf.byteLength, true); p += 4;
-        glbDV.setUint32(p, 0x4E4F534A, true); p += 4;
-        new Uint8Array(glb, p, jsonBuf.byteLength).set(new Uint8Array(jsonBuf));
-        p += jsonBuf.byteLength;
-
-        glbDV.setUint32(p, binPadded.byteLength, true); p += 4;
-        glbDV.setUint32(p, 0x004E4942, true); p += 4;
-        new Uint8Array(glb, p, binPadded.byteLength).set(new Uint8Array(binPadded));
-
-        downloadBlob(new Blob([glb], { type: 'model/gltf-binary' }), viewerFileName() + '.glb');
+        const exporter = new THREE.GLTFExporter();
+        exporter.parse(model, function (glb) {
+            downloadBlob(new Blob([glb], { type: 'model/gltf-binary' }), viewerFileName() + '.glb');
+        }, function (error) {
+            console.error('GLB export error:', error);
+            alert('GLB export error: ' + (error.message || error));
+        }, { binary: true });
     }
 
     // ── HXX ──────────────────────────────────────────────────────
