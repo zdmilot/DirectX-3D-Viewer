@@ -467,6 +467,21 @@
 
         // Auto-generated thumbnail cache: moduleKey → dataURL
         _thumbnailCache: {},
+
+        // ── Carrier metadata (for TML export) ──────────────────
+        carrierMeta: {
+            viewName: '',
+            description: '',
+            barcodeMask: '',
+            barcodeUnique: false,
+            categories: [],     // array of category ID strings
+            properties: [],     // array of {name, value}
+        },
+
+        // ── Per-slot labware assignment ─────────────────────────
+        // slotLabware[slotId] = { rackText, rackFileName, rackDef,
+        //                         ctrText, ctrFileName, ctrDef } | null
+        slotLabware: {},
     };
 
     const LIGHT_BG = 0xf0f0f0;
@@ -679,6 +694,8 @@
         updateTheme: updateMFXTheme,
         saveScreenshot: mfxSaveScreenshot,
         screenshotPreviewDataURL: mfxScreenshotPreviewDataURL,
+        exportTml: exportMfxTml,
+        exportPackageZip: exportMfxPackageZip,
     };
 
     // ================================================================
@@ -769,11 +786,15 @@
         wireMFXCanvas();
         wireMFXToolbar();
         wireMFXDragDrop();
+        wireCarrierMetadata();
+        wireLabwareAssignment();
+        wireRightPanelSections();
         populateCarrierSelector();
         populateModuleCatalog();
         makeModuleCardsDraggable();
         resolveAllMissingThumbnails();
         updateSlotList();
+        initCarrierMetaFromDef();
 
         // Apply initial reorder mode orbit restrictions
         applyReorderOrbitState();
@@ -824,6 +845,7 @@
 
         // Clear slot state
         mfxState.slotState = {};
+        mfxState.slotLabware = {};
         mfxState.selectedSlotId = null;
         mfxState.pendingModuleKey = null;
 

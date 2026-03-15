@@ -1544,29 +1544,104 @@
                     </div>
                 </div>
 
-                <!-- Right Panel: Slot list -->
+                <!-- Right Panel: Carrier metadata + Slot list + Labware -->
                 <div class="vl-right-panel" id="mfx-right-panel">
-                    <div class="vl-panel-header">
-                        <i class="fas fa-list-ol"></i> Carrier Slots
+
+                    <!-- Carrier Metadata Section (collapsible) -->
+                    <div class="mfx-rp-section">
+                        <div class="mfx-rp-section-header" id="mfx-meta-toggle">
+                            <i class="fas fa-id-card"></i> Carrier Details
+                            <i class="fas fa-chevron-down mfx-rp-chevron"></i>
+                        </div>
+                        <div class="mfx-rp-section-body" id="mfx-meta-body">
+                            <label class="mfx-form-label">Name
+                                <input type="text" id="mfx-car-name" class="mfx-form-input" placeholder="e.g. MFX_CAR_L5_MTP_A00" value="">
+                            </label>
+                            <label class="mfx-form-label">Description
+                                <input type="text" id="mfx-car-desc" class="mfx-form-input" placeholder="Carrier description" value="">
+                            </label>
+                            <div class="mfx-form-row">
+                                <label class="mfx-form-label mfx-form-half">Barcode Mask
+                                    <input type="text" id="mfx-car-barcode" class="mfx-form-input" placeholder="e.g. P04*****" value="">
+                                </label>
+                                <label class="mfx-form-label mfx-form-check">
+                                    <input type="checkbox" id="mfx-car-bc-unique"> Unique
+                                </label>
+                            </div>
+                            <label class="mfx-form-label">Categories
+                                <input type="text" id="mfx-car-categories" class="mfx-form-input" placeholder="e.g. 144 (comma-separated)" value="">
+                            </label>
+                            <div class="mfx-form-label">Properties
+                                <div id="mfx-car-props-list" class="mfx-props-list">
+                                    <!-- populated by JS -->
+                                </div>
+                                <button class="mfx-btn-sm" id="mfx-add-prop"><i class="fas fa-plus"></i> Add Property</button>
+                            </div>
+                        </div>
                     </div>
 
-                    <!-- Pending placement banner -->
-                    <div class="mfx-pending-banner" id="mfx-pending-banner" style="display:none">
-                        <i class="fas fa-hand-pointer"></i>
-                        Placing: <strong id="mfx-pending-name"></strong>
-                        <button class="mfx-pending-cancel" id="mfx-cancel-pending" title="Cancel placement">
-                            <i class="fas fa-times"></i>
-                        </button>
+                    <div class="vl-panel-divider"></div>
+
+                    <!-- Slot List Section -->
+                    <div class="mfx-rp-section">
+                        <div class="mfx-rp-section-header" id="mfx-slots-toggle">
+                            <i class="fas fa-list-ol"></i> Carrier Slots
+                            <i class="fas fa-chevron-down mfx-rp-chevron"></i>
+                        </div>
+                        <div class="mfx-rp-section-body" id="mfx-slots-body">
+                            <!-- Pending placement banner -->
+                            <div class="mfx-pending-banner" id="mfx-pending-banner" style="display:none">
+                                <i class="fas fa-hand-pointer"></i>
+                                Placing: <strong id="mfx-pending-name"></strong>
+                                <button class="mfx-pending-cancel" id="mfx-cancel-pending" title="Cancel placement">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+
+                            <div class="mfx-slot-list" id="mfx-slot-list">
+                                <!-- populated by JS -->
+                            </div>
+
+                            <div class="vl-site-actions">
+                                <button class="vl-danger-btn" id="mfx-clear-all">
+                                    <i class="fas fa-trash"></i> Clear All Slots
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="mfx-slot-list" id="mfx-slot-list">
-                        <!-- populated by JS -->
-                    </div>
+                    <div class="vl-panel-divider"></div>
 
-                    <div class="vl-site-actions">
-                        <button class="vl-danger-btn" id="mfx-clear-all">
-                            <i class="fas fa-trash"></i> Clear All Slots
-                        </button>
+                    <!-- Per-Slot Labware Assignment Section -->
+                    <div class="mfx-rp-section">
+                        <div class="mfx-rp-section-header" id="mfx-labware-toggle">
+                            <i class="fas fa-flask"></i> Labware Assignment
+                            <i class="fas fa-chevron-down mfx-rp-chevron"></i>
+                        </div>
+                        <div class="mfx-rp-section-body" id="mfx-labware-body">
+                            <div class="mfx-labware-hint" id="mfx-labware-hint">
+                                Select a slot above to assign labware.
+                            </div>
+                            <div id="mfx-labware-form" style="display:none">
+                                <div class="mfx-labware-slot-title" id="mfx-labware-slot-title">Slot 1</div>
+                                <label class="mfx-form-label">Rack (.rck)
+                                    <div class="mfx-file-row">
+                                        <input type="text" id="mfx-lw-rack-name" class="mfx-form-input" placeholder="Rack name" value="">
+                                        <button class="mfx-btn-sm mfx-btn-file" id="mfx-lw-rack-open" title="Load .rck file"><i class="fas fa-folder-open"></i></button>
+                                        <input type="file" id="mfx-lw-rack-input" accept=".rck" style="display:none">
+                                    </div>
+                                </label>
+                                <label class="mfx-form-label">Container (.ctr)
+                                    <div class="mfx-file-row">
+                                        <input type="text" id="mfx-lw-ctr-name" class="mfx-form-input" placeholder="Container name" value="">
+                                        <button class="mfx-btn-sm mfx-btn-file" id="mfx-lw-ctr-open" title="Load .ctr file"><i class="fas fa-folder-open"></i></button>
+                                        <input type="file" id="mfx-lw-ctr-input" accept=".ctr" style="display:none">
+                                    </div>
+                                </label>
+                                <div class="mfx-lw-summary" id="mfx-lw-summary"></div>
+                                <button class="mfx-btn-sm mfx-btn-danger" id="mfx-lw-clear"><i class="fas fa-times"></i> Clear Labware</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -1588,8 +1663,14 @@
                         </button>
                     </div>
                     <div class="cv-ctrl-divider"></div>
-                    <button class="cv-ctrl-btn cv-ctrl-btn-accent" id="mfx-export-btn" title="Export configuration">
-                        <i class="fas fa-download"></i> Export Config
+                    <button class="cv-ctrl-btn cv-ctrl-btn-accent" id="mfx-export-btn" title="Export configuration (.ini)">
+                        <i class="fas fa-file-alt"></i> Export Config
+                    </button>
+                    <button class="cv-ctrl-btn cv-ctrl-btn-accent" id="mfx-export-tml-btn" title="Export carrier template (.tml)">
+                        <i class="fas fa-file-export"></i> Export .tml
+                    </button>
+                    <button class="cv-ctrl-btn cv-ctrl-btn-accent" id="mfx-export-zip-btn" title="Export full Hamilton package (.zip)">
+                        <i class="fas fa-file-archive"></i> Export Package
                     </button>
                 </div>
 
@@ -1803,141 +1884,104 @@
 
             <!-- ====== Carrier Editor ====== -->
             <div class="view-panel" data-view-panel="carrier-editor" id="carrier-editor-host">
+                <canvas id="ce-canvas"></canvas>
 
-                <!-- Title Bar -->
-                <div class="lwe-mode-bar">
-                    <span class="lwe-mode-title"><i class="fas fa-pallet"></i> Carrier Editor</span>
-                    <div class="lwe-mode-spacer"></div>
-                    <div class="lwe-file-btns">
-                        <button id="ce-new-btn" class="lwe-btn" title="New"><i class="fas fa-file"></i></button>
-                        <button id="ce-open-btn" class="lwe-btn" title="Open .tml file"><i class="fas fa-folder-open"></i></button>
-                        <button id="ce-save-btn" class="lwe-btn" title="Save"><i class="fas fa-save"></i></button>
-                        <button id="ce-export-x-btn" class="lwe-btn" title="Export .x"><i class="fas fa-cube"></i></button>
-                        <input type="file" id="ce-file-input" accept=".tml" style="display:none">
+                <!-- Left Panel: Carrier Properties -->
+                <div class="vl-left-panel" id="ce-left-panel">
+                    <div class="vl-panel-header">
+                        <i class="fas fa-pallet"></i> Carrier Properties
+                        <div class="lwe-file-btns" style="margin-left:auto">
+                            <button id="ce-new-btn" class="lwe-btn" title="New"><i class="fas fa-file"></i></button>
+                            <button id="ce-open-btn" class="lwe-btn" title="Open .tml"><i class="fas fa-folder-open"></i></button>
+                            <button id="ce-save-btn" class="lwe-btn" title="Save"><i class="fas fa-save"></i></button>
+                            <button id="ce-export-x-btn" class="lwe-btn" title="Export .x"><i class="fas fa-cube"></i></button>
+                            <input type="file" id="ce-file-input" accept=".tml" style="display:none">
+                        </div>
+                    </div>
+
+                    <div class="ce-form-body">
+                        <label class="lwe-label">Name</label>
+                        <input type="text" id="ce-car-name" class="lwe-input" value="New Carrier">
+
+                        <label class="lwe-label">Description</label>
+                        <input type="text" id="ce-car-desc" class="lwe-input">
+
+                        <div class="lwe-field-row">
+                            <div class="lwe-field"><label class="lwe-label">Width (Dx)</label><input type="number" id="ce-car-dx" class="lwe-input" step="0.01" value="135.00"></div>
+                            <div class="lwe-field"><label class="lwe-label">Depth (Dy)</label><input type="number" id="ce-car-dy" class="lwe-input" step="0.01" value="497.00"></div>
+                            <div class="lwe-field"><label class="lwe-label">Height (Dz)</label><input type="number" id="ce-car-dz" class="lwe-input" step="0.01" value="130.00"></div>
+                        </div>
+
+                        <h4 class="lwe-subsection">Selected Site</h4>
+                        <div class="lwe-field-row">
+                            <div class="lwe-field"><label class="lwe-label">Site ID</label><input type="number" id="ce-site-id" class="lwe-input" min="1" value="1"></div>
+                        </div>
+                        <div class="lwe-field-row">
+                            <div class="lwe-field"><label class="lwe-label">X</label><input type="number" id="ce-site-x" class="lwe-input" step="0.01" value="4.00"></div>
+                            <div class="lwe-field"><label class="lwe-label">Y</label><input type="number" id="ce-site-y" class="lwe-input" step="0.01" value="8.50"></div>
+                            <div class="lwe-field"><label class="lwe-label">Z</label><input type="number" id="ce-site-z" class="lwe-input" step="0.01" value="112.00"></div>
+                        </div>
+                        <div class="lwe-field-row">
+                            <div class="lwe-field"><label class="lwe-label">Site Width</label><input type="number" id="ce-site-dx" class="lwe-input" step="0.01" value="127.00"></div>
+                            <div class="lwe-field"><label class="lwe-label">Site Depth</label><input type="number" id="ce-site-dy" class="lwe-input" step="0.01" value="86.00"></div>
+                        </div>
+                        <div class="lwe-field">
+                            <label class="lwe-label">Labware File</label>
+                            <input type="text" id="ce-site-labware" class="lwe-input" placeholder="path/to/labware.rck">
+                        </div>
+                        <div class="lwe-check-row">
+                            <label class="lwe-check-label"><input type="checkbox" id="ce-site-covered"> Covered</label>
+                            <label class="lwe-check-label"><input type="checkbox" id="ce-site-visible" checked> Visible</label>
+                            <label class="lwe-check-label"><input type="checkbox" id="ce-site-snap" checked> Snap Base</label>
+                        </div>
+                        <div class="lwe-check-row">
+                            <label class="lwe-check-label"><input type="checkbox" id="ce-site-stack"> Is Stack</label>
+                            <div class="lwe-field lwe-field-inline"><label class="lwe-label">Stack Size</label><input type="number" id="ce-site-stack-size" class="lwe-input" min="1" value="1"></div>
+                        </div>
+                        <div class="lwe-site-actions">
+                            <button id="ce-add-site" class="lwe-btn lwe-btn-sm"><i class="fas fa-plus"></i> Add Site</button>
+                            <button id="ce-del-site" class="lwe-btn lwe-btn-sm lwe-btn-danger"><i class="fas fa-trash"></i> Delete Site</button>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Main Layout: Left Panel + 3D Canvas + Right Panel -->
-                <div class="lwe-layout">
+                <!-- Right Panel: Site list -->
+                <div class="vl-right-panel" id="ce-right-panel">
+                    <div class="vl-panel-header"><i class="fas fa-list"></i> Sites</div>
+                    <div id="ce-site-list" class="mfx-slot-list"></div>
+                </div>
 
-                    <!-- Left Panel: Carrier Properties -->
-                    <div class="lwe-left-panel">
-                        <div id="ce-carrier-section" class="lwe-form-section">
-                            <h3 class="lwe-section-title"><i class="fas fa-pallet"></i> Carrier Properties</h3>
-
-                            <label class="lwe-label">Name</label>
-                            <input type="text" id="ce-car-name" class="lwe-input" value="New Carrier">
-
-                            <label class="lwe-label">Description</label>
-                            <input type="text" id="ce-car-desc" class="lwe-input">
-
-                            <div class="lwe-field-row">
-                                <div class="lwe-field"><label class="lwe-label">Width (Dx)</label><input type="number" id="ce-car-dx" class="lwe-input" step="0.01" value="135.00"></div>
-                                <div class="lwe-field"><label class="lwe-label">Depth (Dy)</label><input type="number" id="ce-car-dy" class="lwe-input" step="0.01" value="497.00"></div>
-                                <div class="lwe-field"><label class="lwe-label">Height (Dz)</label><input type="number" id="ce-car-dz" class="lwe-input" step="0.01" value="130.00"></div>
+                <!-- Floating 3D Toolbar (minimal, like MFX) -->
+                <div class="mfx-toolbar-anchor" id="ce-toolbar">
+                    <div class="vt-body mfx-anchored-vt-body" id="ce-vt-body">
+                        <button class="vt-toggle" id="ce-vt-toggle"><i class="fas fa-chevron-right"></i></button>
+                        <div class="vt-collapsible">
+                            <div class="vt-gizmo pp-gizmo-sm" id="ce-vt-gizmo">
+                                <canvas id="ce-gizmo-canvas" width="28" height="28"></canvas>
                             </div>
-
-                            <h4 class="lwe-subsection">Selected Site</h4>
-                            <div class="lwe-field-row">
-                                <div class="lwe-field"><label class="lwe-label">Site ID</label><input type="number" id="ce-site-id" class="lwe-input" min="1" value="1"></div>
-                            </div>
-                            <div class="lwe-field-row">
-                                <div class="lwe-field"><label class="lwe-label">X</label><input type="number" id="ce-site-x" class="lwe-input" step="0.01" value="4.00"></div>
-                                <div class="lwe-field"><label class="lwe-label">Y</label><input type="number" id="ce-site-y" class="lwe-input" step="0.01" value="8.50"></div>
-                                <div class="lwe-field"><label class="lwe-label">Z</label><input type="number" id="ce-site-z" class="lwe-input" step="0.01" value="112.00"></div>
-                            </div>
-                            <div class="lwe-field-row">
-                                <div class="lwe-field"><label class="lwe-label">Site Width</label><input type="number" id="ce-site-dx" class="lwe-input" step="0.01" value="127.00"></div>
-                                <div class="lwe-field"><label class="lwe-label">Site Depth</label><input type="number" id="ce-site-dy" class="lwe-input" step="0.01" value="86.00"></div>
-                            </div>
-                            <div class="lwe-field">
-                                <label class="lwe-label">Labware File</label>
-                                <input type="text" id="ce-site-labware" class="lwe-input" placeholder="path/to/labware.rck">
-                            </div>
-
-                            <div class="lwe-check-row">
-                                <label class="lwe-check-label"><input type="checkbox" id="ce-site-covered"> Covered</label>
-                                <label class="lwe-check-label"><input type="checkbox" id="ce-site-visible" checked> Visible</label>
-                                <label class="lwe-check-label"><input type="checkbox" id="ce-site-snap" checked> Snap Base</label>
-                            </div>
-                            <div class="lwe-check-row">
-                                <label class="lwe-check-label"><input type="checkbox" id="ce-site-stack"> Is Stack</label>
-                                <div class="lwe-field lwe-field-inline"><label class="lwe-label">Stack Size</label><input type="number" id="ce-site-stack-size" class="lwe-input" min="1" value="1"></div>
-                            </div>
-
-                            <div class="lwe-site-actions">
-                                <button id="ce-add-site" class="lwe-btn lwe-btn-sm"><i class="fas fa-plus"></i> Add Site</button>
-                                <button id="ce-del-site" class="lwe-btn lwe-btn-sm lwe-btn-danger"><i class="fas fa-trash"></i> Delete Site</button>
-                            </div>
+                            <button class="vt-btn" id="ce-vt-reset-cam" title="Reset camera"><i class="fas fa-video"></i></button>
+                            <button class="vt-btn" id="ce-vt-zoom-fit" title="Zoom to fit"><i class="fas fa-expand"></i></button>
+                            <button class="vt-btn" id="ce-vt-topdown" title="Top-down view"><i class="fas fa-arrow-down"></i></button>
+                            <button class="vt-btn" id="ce-vt-perspective" title="Toggle ortho/persp"><i class="fas fa-video"></i></button>
                         </div>
-                    </div>
-
-                    <!-- Center: 3D Preview -->
-                    <div class="ce-preview-col">
-                        <canvas id="ce-canvas"></canvas>
-
-                        <!-- Floating Toolbar -->
-                        <div class="viewer-toolbar ce-toolbar" id="ce-toolbar">
-                            <div class="vt-body" id="ce-vt-body">
-                                <button class="vt-toggle" id="ce-vt-toggle" title="Toggle toolbar">
-                                    <i class="fas fa-chevron-right"></i>
-                                </button>
-                                <div class="vt-collapsible">
-                                    <div class="vt-gizmo pp-gizmo-sm" id="ce-vt-gizmo">
-                                        <canvas id="ce-gizmo-canvas" width="28" height="28"></canvas>
-                                    </div>
-                                    <div class="vt-separator"></div>
-                                    <button class="vt-btn" id="ce-vt-grab-handle" title="Drag to reposition"><i class="fas fa-grip-vertical"></i></button>
-                                    <div class="vt-separator"></div>
-                                    <button class="vt-btn" id="ce-vt-reset-cam" title="Reset camera"><i class="fas fa-video"></i></button>
-                                    <button class="vt-btn" id="ce-vt-zoom-fit" title="Zoom to fit"><i class="fas fa-expand"></i></button>
-                                    <button class="vt-btn" id="ce-vt-topdown" title="Top-down view"><i class="fas fa-arrow-down"></i></button>
-                                    <div class="vt-separator"></div>
-                                    <button class="vt-btn" id="ce-vt-zoom-in" title="Zoom in"><i class="fas fa-search-plus"></i></button>
-                                    <button class="vt-btn" id="ce-vt-zoom-out" title="Zoom out"><i class="fas fa-search-minus"></i></button>
-                                    <button class="vt-btn" id="ce-vt-pan" title="Pan mode"><i class="fas fa-hand-paper"></i></button>
-                                    <div class="vt-separator"></div>
-                                    <button class="vt-btn" id="ce-vt-wireframe" title="Toggle wireframe"><i class="fas fa-border-none"></i></button>
-                                    <button class="vt-btn" id="ce-vt-perspective" title="Toggle ortho/persp"><i class="fas fa-video"></i></button>
-                                    <button class="vt-btn" id="ce-btn-grid" title="Toggle grid"><i class="fas fa-th"></i></button>
-                                    <div class="vt-separator"></div>
-                                    <button class="vt-btn" id="ce-vt-ruler" title="Ruler tool"><i class="fas fa-ruler"></i></button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Ruler readout -->
-                        <div class="viewer-ruler-readout" id="ce-ruler-readout" style="display:none"></div>
-
-                        <!-- Dimension display -->
-                        <div class="lwe-dim-overlay" id="ce-dim-display"></div>
-
-                        <!-- Camera display -->
-                        <div class="lwe-cam-overlay" id="ce-cam-display"></div>
-
-                        <!-- Dropzone -->
-                        <div class="viewer-dropzone viewer-hidden" id="ce-dropzone">
-                            <i class="fas fa-file-import"></i>
-                            <span>Drop .tml file</span>
-                        </div>
-                    </div>
-
-                    <!-- Right Panel: Site list -->
-                    <div class="lwe-right-panel">
-                        <h3 class="lwe-section-title"><i class="fas fa-list"></i> Sites</h3>
-                        <div id="ce-site-list" class="lwe-site-list"></div>
                     </div>
                 </div>
 
-                <!-- Status Bar -->
-                <div class="viewer-controls-bar">
-                    <span class="lwe-status" id="ce-status">Ready</span>
-                    <div class="cv-ctrl-spacer"></div>
-                    <div class="screenshot-group">
-                        <button class="cv-ctrl-btn cv-ctrl-btn-accent" id="ce-screenshot" title="Save screenshot">
-                            <i class="fas fa-camera"></i> Screenshot
-                        </button>
-                    </div>
+                <!-- Dropzone -->
+                <div class="viewer-dropzone viewer-hidden" id="ce-dropzone">
+                    <i class="fas fa-file-import"></i>
+                    <span>Drop .tml file</span>
+                </div>
+
+                <!-- Bottom Controls Bar -->
+                <div class="viewer-controls-bar" id="ce-controls-bar">
+                    <span class="vl-status-msg" id="ce-status">Ready</span>
+                    <button class="cv-ctrl-btn cv-ctrl-btn-accent" id="ce-screenshot" title="Save screenshot">
+                        <i class="fas fa-camera"></i> Screenshot
+                    </button>
+                    <button class="cv-ctrl-btn cv-ctrl-btn-accent" id="ce-export-btn" title="Export .x">
+                        <i class="fas fa-cube"></i> Export .x
+                    </button>
                 </div>
             </div>
 

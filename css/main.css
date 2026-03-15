@@ -4773,25 +4773,29 @@ body {
     border-radius: 4px;
 }
 
-/* ── Carrier Editor ──────────────────────────────────────── */
-#carrier-editor-host { flex-direction: column; }
-
-.ce-preview-col {
-    flex: 1;
+/* ── Carrier Editor (MFX-style) ──────────────────────────── */
+#carrier-editor-host {
+    display: flex;
+    flex-direction: column;
     position: relative;
-    min-width: 300px;
+    height: 100%;
     overflow: hidden;
 }
 #ce-canvas {
-    position: absolute;
-    top: 0; left: 0;
-    width: 100% !important;
-    height: 100% !important;
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    display: block;
 }
 
-.ce-toolbar {
-    top: 0;
-    right: 0;
+/* Left / Right panels — overlay on canvas, matching MFX style */
+#ce-left-panel,
+#ce-right-panel { z-index: 10; }
+
+.ce-form-body {
+    overflow-y: auto;
+    flex: 1;
+    padding: 10px;
 }
 
 #ce-gizmo-canvas {
