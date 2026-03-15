@@ -480,8 +480,15 @@
 
         // ── Per-slot labware assignment ─────────────────────────
         // slotLabware[slotId] = { rackText, rackFileName, rackDef,
-        //                         ctrText, ctrFileName, ctrDef } | null
+        //                         ctrText, ctrFileName, ctrDef,
+        //                         labwareMesh } | null
         slotLabware: {},
+
+        // ── Labware catalog (scanned from Hamilton dir) ─────────
+        labwareCatalog: [],       // [{name, displayName, description, path, categories:[]}]
+        labwareCategories: {},    // {id: {id, parentId, name}}
+        _labwareMeshCache: {},    // rckPath → THREE.Group template
+        _labwareScanned: false,
     };
 
     const LIGHT_BG = 0xf0f0f0;
@@ -788,12 +795,12 @@
         wireMFXDragDrop();
         wireCarrierMetadata();
         wireLabwareAssignment();
+        wireLabwareCatalog();
         wireRightPanelSections();
         populateCarrierSelector();
         populateModuleCatalog();
         makeModuleCardsDraggable();
         resolveAllMissingThumbnails();
-        updateSlotList();
         initCarrierMetaFromDef();
 
         // Apply initial reorder mode orbit restrictions
@@ -1933,22 +1940,8 @@
             });
         }
 
-        // Right panel toggle (start collapsed by default)
-        var rightToggle = $('#mfx-right-toggle');
-        var rightPanel  = $('#mfx-right-panel');
-        if (rightToggle && rightPanel && host) {
-            rightPanel.classList.add('is-collapsed');
-            host.classList.add('vl-right-collapsed');
-            var initIcon = document.querySelector('#mfx-right-toggle-icon');
-            if (initIcon) initIcon.className = 'fas fa-chevron-left';
-
-            rightToggle.addEventListener('click', function () {
-                var collapsed = rightPanel.classList.toggle('is-collapsed');
-                host.classList.toggle('vl-right-collapsed', collapsed);
-                var icon = document.querySelector('#mfx-right-toggle-icon');
-                if (icon) icon.className = collapsed ? 'fas fa-chevron-left' : 'fas fa-chevron-right';
-            });
-        }
+        // No right panel — start with right collapsed class
+        if (host) host.classList.add('vl-right-collapsed');
     }
 
     // ================================================================
@@ -2091,213 +2084,9 @@
     //  Update slot list panel
     // ================================================================
     function updateSlotList() {
-        var container = $('#mfx-slot-list');
-        if (!container) return;
-        var def = MFX_CARRIER_DEFS[mfxState.carrierKey];
-        if (!def) return;
-
-        container.innerHTML = '';
-
-        def.slots.forEach(function (slot) {
-            var entry = mfxState.slotState[slot.id];
-            if (!entry) return;
-            var moduleKey = entry.moduleKey;
-            var moduleDef = moduleKey ? _moduleByKey[moduleKey] : null;
-            var isSelected = mfxState.selectedSlotId === slot.id;
-
-            var row = document.createElement('div');
-            row.className = 'mfx-slot-row' + (isSelected ? ' is-selected' : '') + (moduleKey ? ' is-occupied' : '');
-            row.dataset.slotId = slot.id;
-
-            // Drag handle for reorder mode
-            if (mfxState.isReorderMode && moduleKey) {
-                row.setAttribute('draggable', 'true');
-                row.classList.add('mfx-reorderable');
-
-                var dragHandle = document.createElement('div');
-                dragHandle.className = 'mfx-slot-drag-handle';
-                dragHandle.innerHTML = '<i class="fas fa-grip-vertical"></i>';
-                dragHandle.title = 'Drag to reorder';
-                row.appendChild(dragHandle);
-
-                row.addEventListener('dragstart', function (e) {
-                    mfxState._reorderDragSlotId = slot.id;
-                    e.dataTransfer.setData('application/mfx-reorder', String(slot.id));
-                    e.dataTransfer.effectAllowed = 'move';
-                    row.classList.add('mfx-slot-dragging');
-                });
-                row.addEventListener('dragend', function () {
-                    mfxState._reorderDragSlotId = null;
-                    row.classList.remove('mfx-slot-dragging');
-                    // Remove all drop targets
-                    container.querySelectorAll('.mfx-slot-drop-target').forEach(function (r) {
-                        r.classList.remove('mfx-slot-drop-target');
-                    });
-                });
-                row.addEventListener('dragover', function (e) {
-                    // Only accept reorder drags (not catalog drags)
-                    if (mfxState._reorderDragSlotId === null) return;
-                    if (mfxState._reorderDragSlotId === slot.id) return;
-                    e.preventDefault();
-                    e.dataTransfer.dropEffect = 'move';
-                    // Highlight drop target
-                    container.querySelectorAll('.mfx-slot-drop-target').forEach(function (r) {
-                        r.classList.remove('mfx-slot-drop-target');
-                    });
-                    row.classList.add('mfx-slot-drop-target');
-                });
-                row.addEventListener('dragleave', function () {
-                    row.classList.remove('mfx-slot-drop-target');
-                });
-                row.addEventListener('drop', function (e) {
-                    e.preventDefault();
-                    row.classList.remove('mfx-slot-drop-target');
-                    var sourceSlotId = mfxState._reorderDragSlotId;
-                    if (sourceSlotId === null || sourceSlotId === slot.id) return;
-                    swapModulesBetweenSlots(sourceSlotId, slot.id);
-                    mfxState._reorderDragSlotId = null;
-                });
-            } else if (mfxState.isReorderMode) {
-                // Empty slots can be drop targets in reorder mode
-                row.addEventListener('dragover', function (e) {
-                    if (mfxState._reorderDragSlotId === null) return;
-                    e.preventDefault();
-                    e.dataTransfer.dropEffect = 'move';
-                    container.querySelectorAll('.mfx-slot-drop-target').forEach(function (r) {
-                        r.classList.remove('mfx-slot-drop-target');
-                    });
-                    row.classList.add('mfx-slot-drop-target');
-                });
-                row.addEventListener('dragleave', function () {
-                    row.classList.remove('mfx-slot-drop-target');
-                });
-                row.addEventListener('drop', function (e) {
-                    e.preventDefault();
-                    row.classList.remove('mfx-slot-drop-target');
-                    var sourceSlotId = mfxState._reorderDragSlotId;
-                    if (sourceSlotId === null || sourceSlotId === slot.id) return;
-                    swapModulesBetweenSlots(sourceSlotId, slot.id);
-                    mfxState._reorderDragSlotId = null;
-                });
-            }
-
-            // Check if this slot is blocked by an oversized neighbour
-            var blockedByLabel = _blockedBy(mfxState.carrierKey, slot.id, mfxState.slotState);
-            if (blockedByLabel && !moduleKey) {
-                row.classList.add('is-blocked');
-            }
-
-            var slotLabel = document.createElement('div');
-            slotLabel.className = 'mfx-slot-label';
-            slotLabel.textContent = slot.label;
-
-            var moduleInfo = document.createElement('div');
-            moduleInfo.className = 'mfx-slot-module';
-            if (blockedByLabel && !moduleKey) {
-                moduleInfo.innerHTML = '<span class="mfx-slot-blocked"><i class="fas fa-ban"></i> Blocked by ' + blockedByLabel + '</span>';
-            } else if (moduleDef) {
-                moduleInfo.textContent = moduleDef.label;
-            } else {
-                moduleInfo.innerHTML = '<span class="mfx-slot-empty">\u2014 empty \u2014</span>';
-            }
-
-            var actions = document.createElement('div');
-            actions.className = 'mfx-slot-actions';
-
-            if (moduleKey) {
-                var removeBtn = document.createElement('button');
-                removeBtn.className = 'mfx-slot-remove';
-                removeBtn.title = 'Remove module';
-                removeBtn.innerHTML = '<i class="fas fa-times"></i>';
-                removeBtn.addEventListener('click', function (e) {
-                    e.stopPropagation();
-                    removeModuleMeshFromSlot(slot.id);
-                    if (mfxState.selectedSlotId === slot.id) {
-                        setSlotHighlight(slot.id, true);
-                    } else {
-                        setSlotHighlight(slot.id, false);
-                    }
-                    updateSlotList();
-                    setMFXStatus('Removed module from ' + slot.label);
-                });
-                actions.appendChild(removeBtn);
-            } else {
-                var placeBtn = document.createElement('button');
-                placeBtn.className = 'mfx-slot-place';
-                placeBtn.title = 'Select slot';
-                placeBtn.innerHTML = '<i class="fas fa-plus"></i>';
-                placeBtn.addEventListener('click', function (e) {
-                    e.stopPropagation();
-                    selectSlot(slot.id);
-                });
-                actions.appendChild(placeBtn);
-            }
-
-            row.appendChild(slotLabel);
-            row.appendChild(moduleInfo);
-            row.appendChild(actions);
-
-            // ── Inline labware assignment (deck-layout style) ──
-            if (moduleKey) {
-                var lwRow = document.createElement('div');
-                lwRow.className = 'mfx-slot-labware-row';
-                var lw = mfxState.slotLabware[slot.id];
-                if (lw && lw.rackFileName) {
-                    var lwInfo = document.createElement('span');
-                    lwInfo.className = 'mfx-slot-lw-name';
-                    lwInfo.innerHTML = '<i class="fas fa-box"></i> ' + lw.rackFileName;
-                    lwInfo.title = lw.rackFileName + (lw.ctrFileName ? ' + ' + lw.ctrFileName : '');
-                    lwRow.appendChild(lwInfo);
-
-                    var lwRemove = document.createElement('button');
-                    lwRemove.className = 'vl-site-btn vl-site-btn-remove';
-                    lwRemove.title = 'Remove labware';
-                    lwRemove.innerHTML = '<i class="fas fa-times-circle"></i>';
-                    (function(sid) {
-                        lwRemove.addEventListener('click', function (e) {
-                            e.stopPropagation();
-                            delete mfxState.slotLabware[sid];
-                            updateSlotList();
-                            setMFXStatus('Cleared labware from ' + slot.label);
-                        });
-                    })(slot.id);
-                    lwRow.appendChild(lwRemove);
-                } else {
-                    var lwAssignRck = document.createElement('button');
-                    lwAssignRck.className = 'vl-site-btn vl-site-btn-rack';
-                    lwAssignRck.title = 'Assign rack (.rck)';
-                    lwAssignRck.innerHTML = '<i class="fas fa-box"></i> Rack';
-                    (function(sid) {
-                        lwAssignRck.addEventListener('click', function (e) {
-                            e.stopPropagation();
-                            mfxState._pendingLabwareSlot = sid;
-                            mfxState._pendingLabwareType = 'rck';
-                            var inp = document.getElementById('mfx-lw-rack-input');
-                            if (inp) inp.click();
-                        });
-                    })(slot.id);
-                    lwRow.appendChild(lwAssignRck);
-
-                    var lwAssignCtr = document.createElement('button');
-                    lwAssignCtr.className = 'vl-site-btn vl-site-btn-rack';
-                    lwAssignCtr.title = 'Assign container (.ctr)';
-                    lwAssignCtr.innerHTML = '<i class="fas fa-vial"></i> Ctr';
-                    (function(sid) {
-                        lwAssignCtr.addEventListener('click', function (e) {
-                            e.stopPropagation();
-                            mfxState._pendingLabwareSlot = sid;
-                            mfxState._pendingLabwareType = 'ctr';
-                            var inp = document.getElementById('mfx-lw-ctr-input');
-                            if (inp) inp.click();
-                        });
-                    })(slot.id);
-                    lwRow.appendChild(lwAssignCtr);
-                }
-                row.appendChild(lwRow);
-            }
-
-            row.addEventListener('click', function () {
-                selectSlot(slot.id);
+        // Right panel slot list was removed — this is now a no-op.
+        // Slot state is managed directly in mfxState.slotState / slotLabware.
+    }
             });
 
             container.appendChild(row);
@@ -2910,7 +2699,7 @@
             ['#mfx-meta-toggle',         '#mfx-meta-body'],
             ['#mfx-carrier-type-toggle',  '#mfx-carrier-type-body'],
             ['#mfx-catalog-toggle',       '#mfx-catalog-body'],
-            ['#mfx-slots-toggle',         '#mfx-slots-body'],
+            ['#mfx-labware-toggle',       '#mfx-labware-body'],
         ];
         pairs.forEach(function (p) {
             var header = $(p[0]);
@@ -2941,7 +2730,8 @@
         var bcEl    = $('#mfx-car-barcode');
         var bcuEl   = $('#mfx-car-bc-unique');
         var catEl   = $('#mfx-car-categories');
-        var addProp = $('#mfx-add-prop');
+        var propEl  = $('#mfx-car-properties');
+        var propPickerBtn = $('#mfx-car-prop-picker');
 
         function sync(el, field) {
             if (!el) return;
@@ -2979,57 +2769,156 @@
                 mfxState.carrierMeta.barcodeUnique = bcuEl.checked;
             });
         }
-        if (addProp) {
-            addProp.addEventListener('click', function () {
-                mfxState.carrierMeta.properties.push({ name: '', value: '' });
-                renderPropertiesList();
+        if (propPickerBtn && propEl) {
+            propPickerBtn.addEventListener('click', function () {
+                openPropertyPickerDialog(mfxState.carrierMeta.properties).then(function (result) {
+                    if (result !== null) {
+                        mfxState.carrierMeta.properties = result;
+                        updatePropertiesSummary();
+                    }
+                });
             });
         }
     }
 
-    function renderPropertiesList() {
-        var container = $('#mfx-car-props-list');
-        if (!container) return;
-        container.innerHTML = '';
-        mfxState.carrierMeta.properties.forEach(function (prop, idx) {
-            var row = document.createElement('div');
-            row.className = 'lwe-field-row';
-            row.style.gap = '4px';
-            row.style.marginBottom = '4px';
+    function updatePropertiesSummary() {
+        var el = $('#mfx-car-properties');
+        if (!el) return;
+        var props = mfxState.carrierMeta.properties;
+        if (!props || props.length === 0) {
+            el.value = '';
+        } else {
+            el.value = props.length + ' propert' + (props.length === 1 ? 'y' : 'ies');
+        }
+    }
 
-            var nameInp = document.createElement('input');
-            nameInp.type = 'text';
-            nameInp.className = 'lwe-input';
-            nameInp.placeholder = 'Name';
-            nameInp.value = prop.name;
-            nameInp.style.flex = '1';
-            nameInp.addEventListener('input', function () {
-                mfxState.carrierMeta.properties[idx].name = nameInp.value;
+    function openPropertyPickerDialog(currentProps) {
+        return new Promise(function (resolve) {
+            // Deep-copy working set
+            var working = [];
+            for (var i = 0; i < currentProps.length; i++) {
+                working.push({ name: currentProps[i].name, value: currentProps[i].value });
+            }
+
+            var overlay = document.createElement('div');
+            overlay.className = 'prop-picker-overlay';
+
+            var modal = document.createElement('div');
+            modal.className = 'prop-picker-modal';
+
+            var header = '<div class="prop-picker-header">';
+            header += '<i class="fas fa-list"></i> Edit Properties';
+            header += '<button class="prop-picker-close" title="Cancel">&times;</button>';
+            header += '</div>';
+
+            var body = '<div class="prop-picker-body">';
+            body += '<div class="prop-picker-list" id="prop-picker-list"></div>';
+            body += '</div>';
+
+            var footer = '<div class="prop-picker-footer">';
+            footer += '<button class="lwe-btn lwe-btn-sm" id="prop-picker-add"><i class="fas fa-plus"></i> Add</button>';
+            footer += '<span style="flex:1"></span>';
+            footer += '<span class="prop-picker-count" id="prop-picker-count">0 properties</span>';
+            footer += '<button class="lwe-btn" id="prop-picker-cancel">Cancel</button>';
+            footer += '<button class="lwe-btn lwe-btn-accent" id="prop-picker-ok">OK</button>';
+            footer += '</div>';
+
+            modal.innerHTML = header + body + footer;
+            overlay.appendChild(modal);
+            document.body.appendChild(overlay);
+
+            function renderList() {
+                var list = document.getElementById('prop-picker-list');
+                if (!list) return;
+                list.innerHTML = '';
+                if (working.length === 0) {
+                    list.innerHTML = '<div class="prop-picker-empty">No properties defined. Click <strong>Add</strong> to create one.</div>';
+                }
+                for (var j = 0; j < working.length; j++) {
+                    (function (idx) {
+                        var row = document.createElement('div');
+                        row.className = 'prop-picker-row';
+
+                        var nameInp = document.createElement('input');
+                        nameInp.type = 'text';
+                        nameInp.className = 'lwe-input';
+                        nameInp.placeholder = 'Name';
+                        nameInp.value = working[idx].name;
+                        nameInp.addEventListener('input', function () {
+                            working[idx].name = nameInp.value;
+                        });
+
+                        var valInp = document.createElement('input');
+                        valInp.type = 'text';
+                        valInp.className = 'lwe-input';
+                        valInp.placeholder = 'Value';
+                        valInp.value = working[idx].value;
+                        valInp.addEventListener('input', function () {
+                            working[idx].value = valInp.value;
+                        });
+
+                        var delBtn = document.createElement('button');
+                        delBtn.className = 'lwe-btn lwe-btn-sm lwe-btn-danger';
+                        delBtn.innerHTML = '<i class="fas fa-times"></i>';
+                        delBtn.title = 'Remove property';
+                        delBtn.addEventListener('click', function () {
+                            working.splice(idx, 1);
+                            renderList();
+                            updateCnt();
+                        });
+
+                        row.appendChild(nameInp);
+                        row.appendChild(valInp);
+                        row.appendChild(delBtn);
+                        list.appendChild(row);
+                    })(j);
+                }
+            }
+
+            function updateCnt() {
+                var cnt = document.getElementById('prop-picker-count');
+                if (cnt) cnt.textContent = working.length + ' propert' + (working.length === 1 ? 'y' : 'ies');
+            }
+
+            renderList();
+            updateCnt();
+
+            // Add button
+            document.getElementById('prop-picker-add').addEventListener('click', function () {
+                working.push({ name: '', value: '' });
+                renderList();
+                updateCnt();
+                // Focus the new name input
+                var list = document.getElementById('prop-picker-list');
+                var inputs = list.querySelectorAll('input[placeholder="Name"]');
+                if (inputs.length) inputs[inputs.length - 1].focus();
             });
 
-            var valInp = document.createElement('input');
-            valInp.type = 'text';
-            valInp.className = 'lwe-input';
-            valInp.placeholder = 'Value';
-            valInp.value = prop.value;
-            valInp.style.flex = '1';
-            valInp.addEventListener('input', function () {
-                mfxState.carrierMeta.properties[idx].value = valInp.value;
+            // OK
+            document.getElementById('prop-picker-ok').addEventListener('click', function () {
+                document.body.removeChild(overlay);
+                resolve(working);
             });
 
-            var delBtn = document.createElement('button');
-            delBtn.className = 'lwe-btn lwe-btn-sm lwe-btn-danger';
-            delBtn.innerHTML = '<i class="fas fa-times"></i>';
-            delBtn.title = 'Remove property';
-            delBtn.addEventListener('click', function () {
-                mfxState.carrierMeta.properties.splice(idx, 1);
-                renderPropertiesList();
+            // Cancel
+            document.getElementById('prop-picker-cancel').addEventListener('click', function () {
+                document.body.removeChild(overlay);
+                resolve(null);
             });
 
-            row.appendChild(nameInp);
-            row.appendChild(valInp);
-            row.appendChild(delBtn);
-            container.appendChild(row);
+            // Close X
+            overlay.querySelector('.prop-picker-close').addEventListener('click', function () {
+                document.body.removeChild(overlay);
+                resolve(null);
+            });
+
+            // Backdrop click
+            overlay.addEventListener('click', function (e) {
+                if (e.target === overlay) {
+                    document.body.removeChild(overlay);
+                    resolve(null);
+                }
+            });
         });
     }
 
@@ -3110,7 +2999,7 @@
         if (bcuEl)  bcuEl.checked = meta.barcodeUnique;
         if (catEl)  catEl.value  = meta.categories.join(', ');
 
-        renderPropertiesList();
+        updatePropertiesSummary();
     }
 
     // ================================================================

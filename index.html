@@ -1560,11 +1560,13 @@
                                     <button class="lwe-btn lwe-btn-sm" id="mfx-car-cat-picker" title="Choose categories"><i class="fas fa-sitemap"></i></button>
                                 </div>
                             </div>
-                            <h4 class="lwe-subsection">Properties</h4>
-                            <div id="mfx-car-props-list" class="mfx-props-list">
-                                <!-- populated by JS -->
+                            <div class="lwe-field">
+                                <label class="lwe-label">Properties</label>
+                                <div class="cated-field-row">
+                                    <input type="text" id="mfx-car-properties" class="lwe-input" placeholder="No properties defined" value="" readonly>
+                                    <button class="lwe-btn lwe-btn-sm" id="mfx-car-prop-picker" title="Edit properties"><i class="fas fa-list"></i></button>
+                                </div>
                             </div>
-                            <button class="lwe-btn lwe-btn-sm" id="mfx-add-prop"><i class="fas fa-plus"></i> Add Property</button>
                         </div>
                     </div>
 
@@ -1599,54 +1601,51 @@
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Right Panel: Slot list with inline labware -->
-                <div class="vl-right-panel" id="mfx-right-panel">
+                    <!-- Labware Catalog (collapsible) — racks from Hamilton dir -->
                     <div class="mfx-rp-section">
-                        <div class="mfx-rp-section-header" id="mfx-slots-toggle">
-                            <i class="fas fa-list-ol"></i> Carrier Slots
+                        <div class="mfx-rp-section-header" id="mfx-labware-toggle">
+                            <i class="fas fa-flask"></i> Labware Catalog
                             <i class="fas fa-chevron-down mfx-rp-chevron"></i>
                         </div>
-                        <div class="mfx-rp-section-body" id="mfx-slots-body">
-                            <!-- Pending placement banner -->
-                            <div class="mfx-pending-banner" id="mfx-pending-banner" style="display:none">
-                                <i class="fas fa-hand-pointer"></i>
-                                Placing: <strong id="mfx-pending-name"></strong>
-                                <button class="mfx-pending-cancel" id="mfx-cancel-pending" title="Cancel placement">
-                                    <i class="fas fa-times"></i>
-                                </button>
+                        <div class="mfx-rp-section-body mfx-catalog-section-body" id="mfx-labware-body">
+                            <button class="cv-ctrl-btn mfx-scan-btn" id="mfx-scan-labware">
+                                <i class="fas fa-sync-alt"></i> Scan Labware Directory
+                            </button>
+                            <div class="mfx-catalog-filters" id="mfx-labware-filters" style="display:none">
+                                <select class="mfx-cat-select" id="mfx-labware-cat-filter">
+                                    <option value="All">All Categories</option>
+                                </select>
+                                <input type="text" class="mfx-search-input" id="mfx-labware-search" placeholder="Search labware…">
                             </div>
-
-                            <div class="mfx-slot-list" id="mfx-slot-list">
-                                <!-- populated by JS — each slot row now includes inline labware buttons -->
-                            </div>
-
-                            <div class="vl-site-actions">
-                                <button class="vl-danger-btn" id="mfx-clear-all">
-                                    <i class="fas fa-trash"></i> Clear All Slots
-                                </button>
+                            <div class="mfx-module-list" id="mfx-labware-list">
+                                <!-- populated by JS after scanning -->
                             </div>
                         </div>
                     </div>
-
-                    <!-- Hidden file inputs for labware loading (shared, reused per-slot) -->
-                    <input type="file" id="mfx-lw-rack-input" accept=".rck" style="display:none">
-                    <input type="file" id="mfx-lw-ctr-input" accept=".ctr" style="display:none">
                 </div>
 
-                <!-- Panel collapse toggles -->
+                <!-- Panel collapse toggle (left only — right panel removed) -->
                 <button class="vl-panel-toggle vl-left-toggle" id="mfx-left-toggle" title="Show / hide left panel">
                     <i class="fas fa-chevron-left" id="mfx-left-toggle-icon"></i>
-                </button>
-                <button class="vl-panel-toggle vl-right-toggle" id="mfx-right-toggle" title="Show / hide right panel">
-                    <i class="fas fa-chevron-right" id="mfx-right-toggle-icon"></i>
                 </button>
 
                 <!-- Bottom Controls Bar -->
                 <div class="viewer-controls-bar" id="mfx-controls-bar">
+                    <!-- Pending placement banner (inline in status bar) -->
+                    <div class="mfx-pending-banner" id="mfx-pending-banner" style="display:none">
+                        <i class="fas fa-hand-pointer"></i>
+                        Placing: <strong id="mfx-pending-name"></strong>
+                        <button class="mfx-pending-cancel" id="mfx-cancel-pending" title="Cancel placement">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
                     <span class="vl-status-msg" id="mfx-status">Select a carrier type, then click a module to place it.</span>
                     <div class="cv-ctrl-spacer"></div>
+                    <button class="cv-ctrl-btn" id="mfx-clear-all" title="Clear all slots">
+                        <i class="fas fa-trash"></i> Clear All
+                    </button>
+                    <div class="cv-ctrl-divider"></div>
                     <div class="screenshot-group" id="mfx-screenshot-group">
                         <button class="cv-ctrl-btn cv-ctrl-btn-accent" id="mfx-screenshot" title="Save screenshot">
                             <i class="fas fa-camera"></i> Screenshot

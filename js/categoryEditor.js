@@ -909,9 +909,12 @@
                 st.controls.update();
             }
             if (callback) callback(true);
-        }, undefined, function() {
-            if (callback) callback(false);
-        });
+            }, undefined, function() {
+                if (callback) callback();
+            });
+        } else {
+            if (callback) callback();
+        }
     }
 
     // ================================================================
