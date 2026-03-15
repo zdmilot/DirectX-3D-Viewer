@@ -1,6 +1,0 @@
-function StringTable()
-{
-    Insert(VantageFirmwareHelper::parseFirmwareCommandFailed,        "Interpretation of firmware command result <%s1> failed. Parameter <%s2> not found");
-    Insert(VantageFirmwareHelper::firmwareCommandFailed,             "Firmware command <%s1> with parameter <%s2> failed! - return value <%s3>");
-}
-// $$author=ContainerAdministrator$$valid=1$$time=2025-09-09 20:46$$checksum=e37a771b$$length=099$$

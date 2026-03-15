@@ -256,7 +256,7 @@
         backShieldNodes: [[], [], [], []],  // per-section arrays of meshes
         backShieldVisible: [true, true, true, false],
 
-        // Fixture position debug state
+        // Waste unit debug state
         fixtureDebugMode: false,
         fixtureDebugTarget: 'body',   // 'body' | 'accessories' | 'group' | 'component'
         fixtureDebugComponent: '',    // child name when target === 'component'
@@ -603,7 +603,7 @@
                 const center = deckBox ? deckBox.getCenter(new THREE.Vector3()) : new THREE.Box3().setFromObject(model).getCenter(new THREE.Vector3());
                 // Align GLTF so its TOP surface sits at DECK.SURFACE_Z.
                 // Use PHYSICAL_TRACKS — the GLTF model only covers the original deck hardware.
-                const deckCenterX = DECK.FIRST_TRACK_X + (DECK.PHYSICAL_TRACKS * DECK.TRACK_SPACING) / 2;
+                const deckCenterX = DECK.FIRST_TRACK_X + ((DECK.PHYSICAL_TRACKS - 1) * DECK.TRACK_SPACING) / 2;
                 const deckCenterZ = DECK.TRACK_Y_START + DECK.TRACK_DEPTH / 2;
                 const yTop = deckBox ? deckBox.max.y : new THREE.Box3().setFromObject(model).max.y;
                 model.position.set(
@@ -613,6 +613,7 @@
                 );
 
                 vlState.gltfModel = model;
+                vlState._gltfOriginalBasePos = model.position.clone();
                 vlState._gltfBasePos = model.position.clone();
                 vlState.scene.add(model);
 
@@ -872,7 +873,7 @@
     }
 
     function addOrientationLabels() {
-        const centerX = DECK.FIRST_TRACK_X + (DECK.PHYSICAL_TRACKS * DECK.TRACK_SPACING) / 2;
+        const centerX = DECK.FIRST_TRACK_X + ((DECK.PHYSICAL_TRACKS - 1) * DECK.TRACK_SPACING) / 2;
         const centerZ = DECK.TRACK_Y_START + DECK.TRACK_DEPTH / 2;
         const labelY = DECK.SURFACE_Z + 20;
         const scale = 18;
@@ -885,7 +886,7 @@
         addOrientationLabel('FRONT', centerX, labelY, DECK.TRACK_Y_START + DECK.TRACK_DEPTH + padFB, scale);
         addOrientationLabel('BACK', centerX, labelY, DECK.TRACK_Y_START - padFB, scale);
         addOrientationLabel('LEFT', DECK.FIRST_TRACK_X - padLR, labelY, centerZ, scale);
-        addOrientationLabel('RIGHT', DECK.FIRST_TRACK_X + DECK.PHYSICAL_TRACKS * DECK.TRACK_SPACING + padLR, labelY, centerZ, scale);
+        addOrientationLabel('RIGHT', DECK.FIRST_TRACK_X + (DECK.PHYSICAL_TRACKS - 1) * DECK.TRACK_SPACING + padLR, labelY, centerZ, scale);
     }
 
     function toggleOrientationLabels() {
@@ -2182,6 +2183,11 @@
                     }
                 }
             });
+
+            // Fine-tune from debug: group { x: -14, y: -16, z: 8 }
+            group.position.x += -14.0;
+            group.position.y += -16.0;
+            group.position.z += 8.0;
         }
         return group;
     }
@@ -2228,6 +2234,11 @@
             vlState.wasteMesh = mesh;
             vlState.scene.add(mesh);
             snapshotFixtureBasePositions(mesh);
+            restoreFixtureDebugOffsets();
+            // Apply saved deck debug offsets so fixture stays aligned with deck
+            applySavedDeckOffsetsToMesh(mesh);
+            mesh.userData._deckBasePos = mesh.position.clone();
+            applyDebugDeckOffset();
             if (vlState.fixtureDebugMode) refreshFixtureDebugReadout();
         }
 
@@ -2321,7 +2332,12 @@
             vlState.drawerMesh = mesh;
             vlState.scene.add(mesh);
             snapshotFixtureBasePositions(mesh);
+            restoreFixtureDebugOffsets();
             snapshotEEBasePos();
+            // Apply saved deck debug offsets so fixture stays aligned with deck
+            applySavedDeckOffsetsToMesh(mesh);
+            mesh.userData._deckBasePos = mesh.position.clone();
+            applyDebugDeckOffset();
             restoreEEDebugOffsets();
             if (vlState.fixtureDebugMode) refreshFixtureDebugReadout();
             if (vlState.eeDebugMode) refreshEEDebugReadout();
@@ -2377,7 +2393,11 @@
             vlState.drawerMesh = mesh;
             vlState.scene.add(mesh);
             snapshotFixtureBasePositions(mesh);
+            restoreFixtureDebugOffsets();
             snapshotEEBasePos();
+            applySavedDeckOffsetsToMesh(mesh);
+            mesh.userData._deckBasePos = mesh.position.clone();
+            applyDebugDeckOffset();
             restoreEEDebugOffsets();
             if (vlState.fixtureDebugMode) refreshFixtureDebugReadout();
             if (vlState.eeDebugMode) refreshEEDebugReadout();
@@ -2438,6 +2458,10 @@
             vlState.wasteMesh = mesh;
             vlState.scene.add(mesh);
             snapshotFixtureBasePositions(mesh);
+            restoreFixtureDebugOffsets();
+            applySavedDeckOffsetsToMesh(mesh);
+            mesh.userData._deckBasePos = mesh.position.clone();
+            applyDebugDeckOffset();
             if (vlState.fixtureDebugMode) refreshFixtureDebugReadout();
         }
     }
@@ -3989,6 +4013,9 @@
                 } catch (_) { /* ignore */ }
                 // Bake current position as new base
                 vlState._gltfBasePos = model.position.clone();
+                // Also bake waste/drawer base positions
+                if (vlState.wasteMesh) vlState.wasteMesh.userData._deckBasePos = vlState.wasteMesh.position.clone();
+                if (vlState.drawerMesh) vlState.drawerMesh.userData._deckBasePos = vlState.drawerMesh.position.clone();
                 // Reset debug inputs to 0
                 ['x', 'y', 'z'].forEach(a => {
                     const inp = document.getElementById(`vl-dbg-${a}`);
@@ -4012,6 +4039,21 @@
         }
     }
 
+    /** Apply previously-baked deck debug offsets to a newly-created fixture mesh
+     *  so it starts aligned with the deck model (which already has these offsets baked in). */
+    function applySavedDeckOffsetsToMesh(mesh) {
+        try {
+            var saved = JSON.parse(localStorage.getItem('vl-deck-debug-offsets'));
+            if (saved && (saved.x || saved.y || saved.z)) {
+                mesh.position.x += saved.x || 0;
+                mesh.position.y += saved.y || 0;
+                mesh.position.z += saved.z || 0;
+                // Re-snapshot fixture base positions with the offset applied
+                snapshotFixtureBasePositions(mesh);
+            }
+        } catch (_) { /* ignore */ }
+    }
+
     function applyDebugDeckOffset() {
         const model = vlState.gltfModel;
         if (!model) { showVLStatus('No GLTF deck model loaded yet.', 'error'); return; }
@@ -4031,6 +4073,33 @@
             vlState._gltfBasePos.y + dy,
             vlState._gltfBasePos.z + dz
         );
+
+        // Move waste and drawer meshes by the same delta so everything stays as a single unit
+        if (vlState.wasteMesh && vlState.wasteMesh.userData._deckBasePos) {
+            var wBase = vlState.wasteMesh.userData._deckBasePos;
+            vlState.wasteMesh.position.set(wBase.x + dx, wBase.y + dy, wBase.z + dz);
+            // Update fixture debug base positions so fixture offsets layer on top
+            snapshotFixtureBasePositions(vlState.wasteMesh);
+            if (vlState.fixtureDebugMode) {
+                applyFixtureDebugOffsets();
+                refreshFixtureDebugReadout();
+            }
+        }
+        if (vlState.drawerMesh && vlState.drawerMesh.userData._deckBasePos) {
+            var dBase = vlState.drawerMesh.userData._deckBasePos;
+            vlState.drawerMesh.position.set(dBase.x + dx, dBase.y + dy, dBase.z + dz);
+            // Update fixture and EE debug base positions so their offsets layer on top
+            snapshotFixtureBasePositions(vlState.drawerMesh);
+            vlState._eeBasePos = vlState.drawerMesh.position.clone();
+            if (vlState.fixtureDebugMode) {
+                applyFixtureDebugOffsets();
+                refreshFixtureDebugReadout();
+            }
+            if (vlState.eeDebugMode) {
+                applyEEDebugOffset();
+            }
+        }
+
         refreshDeckDebugReadout();
     }
 
@@ -4062,19 +4131,24 @@
         covers.sort(function (a, b) { return a.name.localeCompare(b.name); });
         vlState.deckCoverNodes = covers;
 
-        // Dynamically compute cutout track positions from cover panel world bounding boxes.
-        // This accounts for the GLTF model.position offset applied during loading.
+        // Compute cutout track positions from cover panel bounding boxes.
+        // Subtract any debug offset so the computation uses the original
+        // (un-shifted) model coordinates — prevents wrong tracks after reload.
         vlState.gltfModel.updateMatrixWorld(true);
+        var debugOffsetX = vlState.gltfModel.position.x - (vlState._gltfOriginalBasePos ? vlState._gltfOriginalBasePos.x : vlState.gltfModel.position.x);
         covers.forEach(function (node, i) {
             if (i >= DECK_CUTOUTS.length) return;
             var bb = new THREE.Box3().setFromObject(node);
-            var tStart = Math.round((bb.min.x - DECK.FIRST_TRACK_X) / DECK.TRACK_SPACING) + 1;
-            var tEnd   = Math.round((bb.max.x - DECK.FIRST_TRACK_X) / DECK.TRACK_SPACING) + 1;
+            // Remove debug offset so track calc matches logical deck coordinates
+            var minX = bb.min.x - debugOffsetX;
+            var maxX = bb.max.x - debugOffsetX;
+            var tStart = Math.round((minX - DECK.FIRST_TRACK_X) / DECK.TRACK_SPACING) + 1;
+            var tEnd   = Math.round((maxX - DECK.FIRST_TRACK_X) / DECK.TRACK_SPACING) + 1;
             DECK_CUTOUTS[i].trackStart = tStart;
             DECK_CUTOUTS[i].trackSpan  = tEnd - tStart;
             console.log('[VantageLayout] Cutout', i, ': tracks', tStart, '-',
                 (tStart + tEnd - tStart - 1),
-                '(world X:', bb.min.x.toFixed(1), 'to', bb.max.x.toFixed(1), ')');
+                '(local X:', minX.toFixed(1), 'to', maxX.toFixed(1), ')');
         });
 
         console.log('[VantageLayout] deck cover nodes:', covers.map(function (n) { return n.name; }));
@@ -4134,7 +4208,7 @@
     }
 
     // ================================================================
-    //  Fixture Position Debug (body vs accessories independent movement)
+    //  Waste Unit Debug (body vs accessories independent movement)
     // ================================================================
 
     /**
@@ -4383,7 +4457,7 @@
                 var off = vlState.fixtureDebugOffsets;
                 var compOff = vlState.fixtureDebugComponentOffsets;
                 var fmt = function (o) { return '{ x: ' + o.x.toFixed(1) + ', y: ' + o.y.toFixed(1) + ', z: ' + o.z.toFixed(1) + ' }'; };
-                var text = 'Fixture Debug Offsets:\n'
+                var text = 'Waste Unit Debug Offsets:\n'
                     + '  body:        ' + fmt(off.body) + '\n'
                     + '  accessories: ' + fmt(off.accessories) + '\n'
                     + '  group:       ' + fmt(off.group);
@@ -4395,10 +4469,92 @@
                     });
                 }
                 navigator.clipboard.writeText(text).then(function () {
-                    showVLStatus('Fixture offsets copied to clipboard', '');
+                    showVLStatus('Waste unit offsets copied to clipboard', '');
                 });
             });
         }
+
+        // Set (Apply) button – bake current debug offsets into localStorage
+        var applyBtn = document.getElementById('vl-fix-apply');
+        if (applyBtn) {
+            applyBtn.addEventListener('click', function () {
+                var fix = getActiveFixtureMesh();
+                if (!fix) {
+                    showVLStatus('No fixture installed yet.', 'error');
+                    return;
+                }
+                var off = vlState.fixtureDebugOffsets;
+                var compOff = vlState.fixtureDebugComponentOffsets;
+                // Save cumulative offsets to localStorage
+                try {
+                    var prev = JSON.parse(localStorage.getItem('vl-fixture-debug-offsets')) || {
+                        body: { x: 0, y: 0, z: 0 },
+                        accessories: { x: 0, y: 0, z: 0 },
+                        group: { x: 0, y: 0, z: 0 }
+                    };
+                    var cumulative = {
+                        body: { x: (prev.body.x || 0) + off.body.x, y: (prev.body.y || 0) + off.body.y, z: (prev.body.z || 0) + off.body.z },
+                        accessories: { x: (prev.accessories.x || 0) + off.accessories.x, y: (prev.accessories.y || 0) + off.accessories.y, z: (prev.accessories.z || 0) + off.accessories.z },
+                        group: { x: (prev.group.x || 0) + off.group.x, y: (prev.group.y || 0) + off.group.y, z: (prev.group.z || 0) + off.group.z }
+                    };
+                    // Also accumulate per-component offsets
+                    var prevComp = JSON.parse(localStorage.getItem('vl-fixture-debug-comp-offsets')) || {};
+                    Object.keys(compOff).forEach(function (k) {
+                        var pc = prevComp[k] || { x: 0, y: 0, z: 0 };
+                        prevComp[k] = {
+                            x: (pc.x || 0) + (compOff[k].x || 0),
+                            y: (pc.y || 0) + (compOff[k].y || 0),
+                            z: (pc.z || 0) + (compOff[k].z || 0)
+                        };
+                    });
+                    localStorage.setItem('vl-fixture-debug-offsets', JSON.stringify(cumulative));
+                    localStorage.setItem('vl-fixture-debug-comp-offsets', JSON.stringify(prevComp));
+                } catch (_) { /* ignore */ }
+                // Bake current positions as new base
+                snapshotFixtureBasePositions(fix.mesh);
+                // Reset debug offsets to 0
+                vlState.fixtureDebugOffsets = {
+                    body: { x: 0, y: 0, z: 0 },
+                    accessories: { x: 0, y: 0, z: 0 },
+                    group: { x: 0, y: 0, z: 0 }
+                };
+                vlState.fixtureDebugComponentOffsets = {};
+                syncFixtureDebugInputs();
+                refreshFixtureDebugReadout();
+                showVLStatus('Waste unit offsets applied and saved', 'ok');
+            });
+        }
+    }
+
+    /** Restore saved fixture debug offsets from localStorage. */
+    function restoreFixtureDebugOffsets() {
+        var fix = getActiveFixtureMesh();
+        if (!fix) return;
+        try {
+            var saved = JSON.parse(localStorage.getItem('vl-fixture-debug-offsets'));
+            var savedComp = JSON.parse(localStorage.getItem('vl-fixture-debug-comp-offsets'));
+            if (saved) {
+                vlState.fixtureDebugOffsets = {
+                    body: saved.body || { x: 0, y: 0, z: 0 },
+                    accessories: saved.accessories || { x: 0, y: 0, z: 0 },
+                    group: saved.group || { x: 0, y: 0, z: 0 }
+                };
+            }
+            if (savedComp) {
+                vlState.fixtureDebugComponentOffsets = savedComp;
+            }
+            if (saved || savedComp) {
+                applyFixtureDebugOffsets();
+                snapshotFixtureBasePositions(fix.mesh);
+                // Reset in-memory offsets back to 0 since they are now baked in
+                vlState.fixtureDebugOffsets = {
+                    body: { x: 0, y: 0, z: 0 },
+                    accessories: { x: 0, y: 0, z: 0 },
+                    group: { x: 0, y: 0, z: 0 }
+                };
+                vlState.fixtureDebugComponentOffsets = {};
+            }
+        } catch (_) { /* ignore */ }
     }
 
     // ================================================================
@@ -4639,7 +4795,7 @@
             });
         }
 
-        // ── Fixture Position Debug toggle ────────────────────────────
+        // ── Waste Unit Debug toggle ──────────────────────────────────
         const fixtureDebugToggle = document.getElementById('settings-fixture-debug-toggle');
         if (fixtureDebugToggle) {
             fixtureDebugToggle.checked = vlState.fixtureDebugMode;
