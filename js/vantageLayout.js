@@ -521,7 +521,7 @@
         // Track number labels (sprite-based text above every track)
         for (let i = 1; i <= DECK.TRACK_COUNT; i++) {
             const x = DECK.FIRST_TRACK_X + (i - 1) * DECK.TRACK_SPACING;
-            const color = (i === 4) ? '#ee2222' : (i > MAX_USABLE_TRACK) ? '#aa4444' : undefined;
+            const color = (i === 4) ? '#ee2222' : undefined;
             addTrackLabel(String(i), x, isDark, color);
         }
 
@@ -2799,9 +2799,9 @@
         const def = CARRIER_LIBRARY[carrierType];
         if (!def) return null;
 
-        // Validate track range — placement allowed from track 4 to MAX_USABLE_TRACK
-        if (trackStart < 4 || trackStart + def.tWidth - 1 > MAX_USABLE_TRACK) {
-            showVLStatus('Cannot place: track out of range (tracks 4–60).', 'error');
+        // Validate track range
+        if (trackStart < 4 || trackStart + def.tWidth - 1 > DECK.TRACK_COUNT) {
+            showVLStatus('Cannot place: track out of range.', 'error');
             return null;
         }
 
@@ -2893,19 +2893,14 @@
         const newRange = new Set();
         for (let t = trackStart; t < trackStart + tWidth; t++) newRange.add(t);
 
-        // Check against waste chute position
-        if (vlState.wasteCutoutIdx >= 0 && vlState.wasteCutoutIdx < DECK_CUTOUTS.length) {
-            const slot = DECK_CUTOUTS[vlState.wasteCutoutIdx];
-            for (let t = slot.trackStart; t < slot.trackStart + slot.trackSpan; t++) {
-                if (newRange.has(t)) return 'waste:' + slot.label;
-            }
-        }
-
-        // Check against entry/exit drawer position
-        if (vlState.drawerCutoutIdx >= 0 && vlState.drawerCutoutIdx < DECK_CUTOUTS.length) {
-            const slot = DECK_CUTOUTS[vlState.drawerCutoutIdx];
-            for (let t = slot.trackStart; t < slot.trackStart + slot.trackSpan; t++) {
-                if (newRange.has(t)) return 'drawer:' + slot.label;
+        // Check against waste/EE area (tracks 61+)
+        // The waste chute and entry/exit drawer physically sit past track 60
+        if (vlState.wasteCutoutIdx >= 0 || vlState.drawerCutoutIdx >= 0) {
+            for (let t of newRange) {
+                if (t > MAX_USABLE_TRACK) {
+                    if (vlState.wasteCutoutIdx >= 0) return 'waste';
+                    return 'drawer';
+                }
             }
         }
 
@@ -2922,8 +2917,8 @@
     function collisionReason(collision) {
         if (typeof collision !== 'string') return 'Position blocked';
         if (collision.startsWith('carrier:')) return 'Blocked by ' + collision.slice(8);
-        if (collision.startsWith('waste:'))   return 'Blocked by Waste Chute (' + collision.slice(6) + ')';
-        if (collision.startsWith('drawer:'))  return 'Blocked by Entry/Exit Drawer (' + collision.slice(7) + ')';
+        if (collision === 'waste')   return 'Blocked by Waste Chute';
+        if (collision === 'drawer')  return 'Blocked by Entry/Exit Drawer';
         return 'Position blocked';
     }
 
@@ -4295,11 +4290,12 @@
             var maxX = bb.max.x - debugOffsetX;
             var tStart = Math.round((minX - DECK.FIRST_TRACK_X) / DECK.TRACK_SPACING) + 1;
             var tEnd   = Math.round((maxX - DECK.FIRST_TRACK_X) / DECK.TRACK_SPACING) + 1;
-            DECK_CUTOUTS[i].trackStart = tStart;
-            DECK_CUTOUTS[i].trackSpan  = tEnd - tStart;
-            console.log('[VantageLayout] Cutout', i, ': tracks', tStart, '-',
-                (tStart + tEnd - tStart - 1),
-                '(local X:', minX.toFixed(1), 'to', maxX.toFixed(1), ')');
+            // Log GLTF-computed ranges but keep authoritative hardcoded DECK_CUTOUTS values
+            console.log('[VantageLayout] Cutout', i, '(GLTF):', 'tracks', tStart, '-',
+                tEnd - 1,
+                '(local X:', minX.toFixed(1), 'to', maxX.toFixed(1), ')',
+                '| using hardcoded: tracks', DECK_CUTOUTS[i].trackStart, '-',
+                (DECK_CUTOUTS[i].trackStart + DECK_CUTOUTS[i].trackSpan - 1));
         });
 
         console.log('[VantageLayout] deck cover nodes:', covers.map(function (n) { return n.name; }));
