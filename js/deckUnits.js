@@ -38,7 +38,7 @@ window.DeckUnits = (function () {
         TRACK_DEPTH:    497.0,     // mm  front-to-back rail length
         TRACK_Y_START:   63.0,     // mm  Y of first track front edge
         FIRST_TRACK_X:  100.25,    // mm  X centre of Track 1
-        TRACK_COUNT:     80,       // total placeable tracks (extended deck)
+        TRACK_COUNT:     83,       // total placeable tracks (extended deck)
         PHYSICAL_TRACKS: 54,       // tracks on the physical GLTF deck
         SURFACE_Z:      100.0,     // mm  deck surface height
         CANVAS_W:       2200,      // mm  full canvas width  (extended)

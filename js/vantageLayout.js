@@ -17,9 +17,30 @@
     // ================================================================
     //  Track Placement Limits
     // ================================================================
-    // Carriers can be placed from track 4 through track 60.
-    // Tracks 61-80 are reserved for waste chute and entry/exit drawer.
+    // Standard carrier placement range.
+    // Tracks 61-80 remain reserved, but compact carriers (<=2T) may use 81-83.
     const MAX_USABLE_TRACK = 60;
+    const SMALL_CARRIER_MAX_WIDTH = 2;
+    const SMALL_CARRIER_TRACK_START = 81;
+    const SMALL_CARRIER_TRACK_END = 83;
+
+    function isTrackWindowAllowed(trackStart, tWidth) {
+        const endTrack = trackStart + tWidth - 1;
+        if (trackStart < 4 || endTrack > DECK.TRACK_COUNT) return false;
+
+        if (endTrack <= MAX_USABLE_TRACK) return true;
+
+        return tWidth <= SMALL_CARRIER_MAX_WIDTH
+            && trackStart >= SMALL_CARRIER_TRACK_START
+            && endTrack <= SMALL_CARRIER_TRACK_END;
+    }
+
+    function getTrackInputMax(tWidth) {
+        if (tWidth <= SMALL_CARRIER_MAX_WIDTH) {
+            return Math.min(DECK.TRACK_COUNT - tWidth + 1, SMALL_CARRIER_TRACK_END - tWidth + 1);
+        }
+        return Math.min(DECK.TRACK_COUNT - tWidth + 1, MAX_USABLE_TRACK - tWidth + 1);
+    }
 
     // ================================================================
     //  Waste Cutout Positions  (4 removable deck panels)
@@ -499,13 +520,13 @@
         surfaceMesh.name = '__decksurf__';
         scene.add(surfaceMesh);
 
-        // Track slots (80 tracks — tracks 61-80 shown as blocked)
+        // Track slots (tracks 61-80 shown as blocked)
         const trackColor = isDark ? 0x151f2a : 0xb0bfcf;
         const blockedTrackColor = isDark ? 0x2a1515 : 0xc09090;
         for (let i = 1; i <= DECK.TRACK_COUNT; i++) {
             const x = DECK.FIRST_TRACK_X + (i - 1) * DECK.TRACK_SPACING;
             const isLabeled = DECK.LABELED_TRACKS.has(i);
-            const isBlocked = i > MAX_USABLE_TRACK;
+            const isBlocked = i > MAX_USABLE_TRACK && i < SMALL_CARRIER_TRACK_START;
             const geo = new THREE.BoxGeometry(DECK.TRACK_WIDTH, 2.5, DECK.TRACK_DEPTH);
             const baseColor = isBlocked ? blockedTrackColor
                 : isLabeled ? (isDark ? 0x2a3d55 : 0x8fa8c0)
@@ -2800,7 +2821,7 @@
         if (!def) return null;
 
         // Validate track range
-        if (trackStart < 4 || trackStart + def.tWidth - 1 > DECK.TRACK_COUNT) {
+        if (!isTrackWindowAllowed(trackStart, def.tWidth)) {
             showVLStatus('Cannot place: track out of range.', 'error');
             return null;
         }
@@ -2893,11 +2914,12 @@
         const newRange = new Set();
         for (let t = trackStart; t < trackStart + tWidth; t++) newRange.add(t);
 
-        // Check against waste/EE area (tracks 61+)
-        // The waste chute and entry/exit drawer physically sit past track 60
+        if (!isTrackWindowAllowed(trackStart, tWidth)) return 'reserved';
+
+        // Check against waste/EE area (reserved tracks 61-80)
         if (vlState.wasteCutoutIdx >= 0 || vlState.drawerCutoutIdx >= 0) {
             for (let t of newRange) {
-                if (t > MAX_USABLE_TRACK) {
+                if (t > MAX_USABLE_TRACK && t < SMALL_CARRIER_TRACK_START) {
                     if (vlState.wasteCutoutIdx >= 0) return 'waste';
                     return 'drawer';
                 }
@@ -2919,6 +2941,7 @@
         if (collision.startsWith('carrier:')) return 'Blocked by ' + collision.slice(8);
         if (collision === 'waste')   return 'Blocked by Waste Chute';
         if (collision === 'drawer')  return 'Blocked by Entry/Exit Drawer';
+        if (collision === 'reserved') return 'Tracks 61-80 are reserved (81-83 allow carriers up to 2T)';
         return 'Position blocked';
     }
 
@@ -3563,7 +3586,7 @@
         const track = findNextFreeTrack(def.tWidth);
         $('#vl-pd-track').value = track;
         $('#vl-pd-track').min = '4';
-        $('#vl-pd-track').max = String(DECK.TRACK_COUNT - def.tWidth + 1);
+        $('#vl-pd-track').max = String(getTrackInputMax(def.tWidth));
 
         dialog.dataset.carrierType = carrierType;
         dialog.classList.add('is-visible');
