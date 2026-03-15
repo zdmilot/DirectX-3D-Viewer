@@ -184,17 +184,24 @@
             const group = new THREE.Group();
             group.name = '__plate__';
 
+            let plateBodyIdx = 0, plateBodyMax = 0;
+            for (let bi = 0; bi < object.models.length; bi++) {
+                const p = object.models[bi].geometry && object.models[bi].geometry.attributes.position;
+                const c = p ? p.count : 0;
+                if (c > plateBodyMax) { plateBodyMax = c; plateBodyIdx = bi; }
+            }
+
             for (let i = 0; i < object.models.length; i++) {
                 const model = object.models[i];
                 model.renderOrder = i + 100; // offset to avoid z-fighting with main model
                 if (model.material) {
                     const applyOffset = (m, meshIdx) => {
-                        if (meshIdx === 0) {
+                        if (meshIdx === plateBodyIdx) {
                             m.polygonOffset = true;
                             m.polygonOffsetFactor = 1;
                             m.polygonOffsetUnits  = 1;
                         } else {
-                            const capped = Math.min(meshIdx, 10);
+                            const capped = Math.min(meshIdx + 1, 10);
                             m.polygonOffset = true;
                             m.polygonOffsetFactor = -capped;
                             m.polygonOffsetUnits  = -capped * 4;
@@ -327,17 +334,24 @@
             const group = new THREE.Group();
             group.name = '__ppmodel__';
 
+            let ppBodyIdx = 0, ppBodyMax = 0;
+            for (let bi = 0; bi < object.models.length; bi++) {
+                const p = object.models[bi].geometry && object.models[bi].geometry.attributes.position;
+                const c = p ? p.count : 0;
+                if (c > ppBodyMax) { ppBodyMax = c; ppBodyIdx = bi; }
+            }
+
             for (let i = 0; i < object.models.length; i++) {
                 const model = object.models[i];
                 model.renderOrder = i;
                 if (model.material) {
                     const applyOffset = (m, meshIdx) => {
-                        if (meshIdx === 0) {
+                        if (meshIdx === ppBodyIdx) {
                             m.polygonOffset = true;
                             m.polygonOffsetFactor = 1;
                             m.polygonOffsetUnits  = 1;
                         } else {
-                            const capped = Math.min(meshIdx, 10);
+                            const capped = Math.min(meshIdx + 1, 10);
                             m.polygonOffset = true;
                             m.polygonOffsetFactor = -capped;
                             m.polygonOffsetUnits  = -capped * 4;

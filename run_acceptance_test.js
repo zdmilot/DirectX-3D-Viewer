@@ -26,7 +26,7 @@ const puppeteer = require('puppeteer');
     });
 
     // Navigate to the test page
-    await page.goto('http://localhost:5500/test_label_visibility.html', {
+    await page.goto('http://localhost:8765/test_label_visibility.html', {
         waitUntil: 'networkidle0',
         timeout: 30000,
     });

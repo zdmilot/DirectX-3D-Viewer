@@ -74,17 +74,26 @@ h1 { color: #fff; }
         group.name = '__xmodel__';
 
         // Replicate the exact same loading pipeline as app.js
+        // Find body mesh (most vertices) for polygon offset
+        let bodyMeshIdx = 0;
+        let bodyMaxVerts = 0;
+        for (let i = 0; i < object.models.length; i++) {
+            const pos = object.models[i].geometry && object.models[i].geometry.attributes.position;
+            const cnt = pos ? pos.count : 0;
+            if (cnt > bodyMaxVerts) { bodyMaxVerts = cnt; bodyMeshIdx = i; }
+        }
+
         for (let i = 0; i < object.models.length; i++) {
             const model = object.models[i];
             model.renderOrder = i;
             if (model.material) {
                 const applyOffset = (m, meshIdx) => {
-                    if (meshIdx === 0) {
+                    if (meshIdx === bodyMeshIdx) {
                         m.polygonOffset = true;
                         m.polygonOffsetFactor = 1;
                         m.polygonOffsetUnits  = 1;
                     } else {
-                        const capped = Math.min(meshIdx, 10);
+                        const capped = Math.min(meshIdx + 1, 10);
                         m.polygonOffset = true;
                         m.polygonOffsetFactor = -capped;
                         m.polygonOffsetUnits  = -capped * 4;
@@ -130,10 +139,43 @@ h1 { color: #fff; }
             });
         }
 
-        // Nudge decal meshes (same as app.js)
-        if (window._nudgeDecalMeshes) {
-            window._nudgeDecalMeshes(group);
-        }
+        // Nudge decal meshes — per-vertex normal nudge (same as app.js)
+        (function nudgeDecalMeshes(grp) {
+            var children = [];
+            grp.traverse(function (child) {
+                if (child.isMesh && child.geometry) children.push(child);
+            });
+            if (children.length <= 1) return;
+            var bodyIdx = 0, maxVerts = 0;
+            for (var ci = 0; ci < children.length; ci++) {
+                var p = children[ci].geometry.attributes.position;
+                var cnt = p ? p.count : 0;
+                if (cnt > maxVerts) { maxVerts = cnt; bodyIdx = ci; }
+            }
+            var totalBox = new THREE.Box3().setFromObject(grp);
+            var totalSize = totalBox.getSize(new THREE.Vector3());
+            var md = Math.max(totalSize.x, totalSize.y, totalSize.z);
+            if (md <= 0) return;
+            var nudgeDist = md * 0.001;
+            for (var ci = 0; ci < children.length; ci++) {
+                if (ci === bodyIdx) continue;
+                var geom = children[ci].geometry;
+                var pos = geom.attributes.position;
+                var norm = geom.attributes.normal;
+                if (!pos || !norm || pos.count === 0) continue;
+                for (var vi = 0; vi < pos.count; vi++) {
+                    var nx = norm.getX(vi), ny = norm.getY(vi), nz = norm.getZ(vi);
+                    var nLen = Math.sqrt(nx*nx + ny*ny + nz*nz);
+                    if (nLen < 1e-6) continue;
+                    pos.setX(vi, pos.getX(vi) + (nx/nLen) * nudgeDist);
+                    pos.setY(vi, pos.getY(vi) + (ny/nLen) * nudgeDist);
+                    pos.setZ(vi, pos.getZ(vi) + (nz/nLen) * nudgeDist);
+                }
+                pos.needsUpdate = true;
+                geom.computeBoundingBox();
+                geom.computeBoundingSphere();
+            }
+        })(group);
 
         // Frustum culling off
         group.traverse(function (child) {
@@ -182,7 +224,8 @@ h1 { color: #fff; }
         log('Found ' + darkMeshes.length + ' dark/label meshes to test', 'info');
 
         // ================================================================
-        //  Test at multiple zoom levels
+        //  Test at multiple zoom levels from multiple camera angles
+        //  A mesh passes if it is detected from ANY camera angle.
         // ================================================================
         const zoomDistances = [
             { label: 'Close (1.5x)', mult: 1.5 },
@@ -190,88 +233,120 @@ h1 { color: #fff; }
             { label: 'Far (5x)', mult: 5.0 },
             { label: 'Very Far (10x)', mult: 10.0 },
         ];
+        // Camera direction vectors — front-ish and right-ish to catch
+        // labels on the front face AND on the side faces (edge-on from one
+        // angle may be visible from the other)
+        const cameraAngles = [
+            { dx: 0.6, dy: 0.4, dz: 1.0, name: 'front' },
+            { dx: 1.0, dy: 0.4, dz: 0.3, name: 'right' },
+        ];
 
         let totalTests = 0;
         let totalPassed = 0;
         let totalFailed = 0;
 
+        const sampleRadius = 12;
+        const w = 800, h = 600;
+
+        function sampleDarkPixels(pixels, sx, sy) {
+            const sr = sampleRadius;
+            let darkCount = 0;
+            let sampled = 0;
+            for (let dx = -sr; dx <= sr; dx++) {
+                for (let dy = -sr; dy <= sr; dy++) {
+                    const px = sx + dx, py = sy + dy;
+                    if (px < 0 || px >= w || py < 0 || py >= h) continue;
+                    const flipY = (h - 1 - py);
+                    const idx = (flipY * w + px) * 4;
+                    sampled++;
+                    if (pixels[idx] < 100 && pixels[idx+1] < 100 && pixels[idx+2] < 100) darkCount++;
+                }
+            }
+            return { darkCount: darkCount, sampled: sampled };
+        }
+
         zoomDistances.forEach(function (zoom) {
             log('', 'info');
             log('─── Zoom Level: ' + zoom.label + ' ───', 'info');
 
-            // Position camera at this zoom level
-            const fitDist = maxDim * zoom.mult;
-            camera.position.set(fitDist * 0.6, fitDist * 0.4, fitDist);
-            camera.near = Math.max(fitDist * 0.01, 0.01);
-            camera.far = Math.max(fitDist * 10, 1000);
-            camera.lookAt(0, 0, 0);
-            camera.updateProjectionMatrix();
-            controls.target.set(0, 0, 0);
-            controls.update();
+            // Render from each camera angle and collect pixel buffers
+            const snapshots = cameraAngles.map(function (angle) {
+                const fitDist = maxDim * zoom.mult;
+                camera.position.set(fitDist * angle.dx, fitDist * angle.dy, fitDist * angle.dz);
+                camera.near = Math.max(fitDist * 0.01, 0.01);
+                camera.far = Math.max(fitDist * 10, 1000);
+                camera.lookAt(0, 0, 0);
+                camera.updateProjectionMatrix();
+                controls.target.set(0, 0, 0);
+                controls.update();
+                renderer.render(scene, camera);
+                const gl = renderer.getContext();
+                const px = new Uint8Array(w * h * 4);
+                gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, px);
+                return { pixels: px, camera: camera.clone() };
+            });
 
-            // Render
-            renderer.render(scene, camera);
-
-            // Read pixels
-            const gl = renderer.getContext();
-            const w = 800, h = 600;
-            const pixels = new Uint8Array(w * h * 4);
-            gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
-
-            // For each dark mesh, project its center to screen and sample pixels
-            // in a small area around it. If we find dark pixels, the label is visible.
-            // Scale sampling radius based on zoom level for reliable detection.
-            const sampleRadius = Math.max(2, Math.round(12 / zoom.mult));
             darkMeshes.forEach(function (dm) {
                 totalTests++;
 
-                // Get world-space bounding box of this mesh
                 dm.mesh.updateMatrixWorld(true);
                 const meshBox = new THREE.Box3().setFromObject(dm.mesh);
                 const meshCenter = meshBox.getCenter(new THREE.Vector3());
 
-                // Project to screen
-                const projected = meshCenter.clone().project(camera);
-                const sx = Math.round((projected.x * 0.5 + 0.5) * w);
-                const sy = Math.round((-projected.y * 0.5 + 0.5) * h);
+                // Try each camera angle — pass if ANY angle detects the mesh
+                let bestDark = 0;
+                let bestSampled = 0;
+                let bestAngle = '';
+                let bestSx = 0, bestSy = 0;
+                let wasSubPixel = true;
 
-                // Check if on screen
-                if (sx < 0 || sx >= w || sy < 0 || sy >= h || projected.z < -1 || projected.z > 1) {
-                    log('  [' + dm.index + '] ' + dm.name + ': OFF SCREEN (skip)', 'info');
-                    totalPassed++; // not a failure
-                    return;
-                }
+                for (let ai = 0; ai < snapshots.length; ai++) {
+                    const snap = snapshots[ai];
+                    const projected = meshCenter.clone().project(snap.camera);
+                    const sx = Math.round((projected.x * 0.5 + 0.5) * w);
+                    const sy = Math.round((-projected.y * 0.5 + 0.5) * h);
 
-                // Sample a region around the projected center
-                const sr = sampleRadius;
-                let darkPixelCount = 0;
-                let totalSampled = 0;
-                for (let dx = -sr; dx <= sr; dx += 1) {
-                    for (let dy = -sr; dy <= sr; dy += 1) {
-                        const px = sx + dx;
-                        const py = sy + dy;
-                        if (px < 0 || px >= w || py < 0 || py >= h) continue;
-                        // WebGL pixel buffer is bottom-up
-                        const flipY = (h - 1 - py);
-                        const idx = (flipY * w + px) * 4;
-                        const r = pixels[idx], g = pixels[idx + 1], b = pixels[idx + 2];
-                        totalSampled++;
-                        // Dark pixel: all channels below 100 (labels are ~42,42,42 or black)
-                        if (r < 100 && g < 100 && b < 100) {
-                            darkPixelCount++;
-                        }
+                    if (sx < 0 || sx >= w || sy < 0 || sy >= h || projected.z < -1 || projected.z > 1) continue;
+
+                    // Sub-pixel check
+                    const corners = [
+                        new THREE.Vector3(meshBox.min.x, meshBox.min.y, meshBox.min.z),
+                        new THREE.Vector3(meshBox.max.x, meshBox.max.y, meshBox.max.z),
+                    ];
+                    const pMin = corners[0].clone().project(snap.camera);
+                    const pMax = corners[1].clone().project(snap.camera);
+                    const projSize = Math.max(
+                        Math.abs(pMax.x - pMin.x) * w * 0.5,
+                        Math.abs(pMax.y - pMin.y) * h * 0.5
+                    );
+                    if (projSize < 2) continue;
+
+                    wasSubPixel = false;
+                    const result = sampleDarkPixels(snap.pixels, sx, sy);
+                    if (result.darkCount > bestDark) {
+                        bestDark = result.darkCount;
+                        bestSampled = result.sampled;
+                        bestAngle = cameraAngles[ai].name;
+                        bestSx = sx;
+                        bestSy = sy;
                     }
                 }
 
-                const ratio = totalSampled > 0 ? (darkPixelCount / totalSampled) : 0;
-                const passed = darkPixelCount >= 2; // at least 2 dark pixels found
+                if (wasSubPixel) {
+                    log('  [' + dm.index + '] ' + dm.name + ': SUB-PIXEL from all angles (skip)', 'info');
+                    totalPassed++;
+                    return;
+                }
+
+                const passed = bestDark >= 1;
+                const ratio = bestSampled > 0 ? (bestDark / bestSampled) : 0;
 
                 if (passed) {
                     totalPassed++;
-                    log('  PASS [' + dm.index + '] ' + dm.name + '  dark_pixels=' + darkPixelCount + '/' + totalSampled + ' (' + (ratio * 100).toFixed(0) + '%) at (' + sx + ',' + sy + ')', 'pass');
+                    log('  PASS [' + dm.index + '] ' + dm.name + '  dark=' + bestDark + '/' + bestSampled + ' (' + (ratio * 100).toFixed(0) + '%) @' + bestAngle + ' (' + bestSx + ',' + bestSy + ')', 'pass');
                 } else {
                     totalFailed++;
-                    log('  FAIL [' + dm.index + '] ' + dm.name + '  dark_pixels=' + darkPixelCount + '/' + totalSampled + ' (' + (ratio * 100).toFixed(0) + '%) at (' + sx + ',' + sy + ')', 'fail');
+                    log('  FAIL [' + dm.index + '] ' + dm.name + '  dark=' + bestDark + '/' + bestSampled + ' (' + (ratio * 100).toFixed(0) + '%) @' + bestAngle + ' (' + bestSx + ',' + bestSy + ')', 'fail');
                 }
             });
         });

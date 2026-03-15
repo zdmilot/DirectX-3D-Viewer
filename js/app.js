@@ -237,24 +237,15 @@
             var norm = geom.attributes.normal;
             if (!pos || !norm || pos.count === 0) continue;
 
-            // Compute average normal direction for this mesh
-            var avgNx = 0, avgNy = 0, avgNz = 0;
-            for (var i = 0; i < norm.count; i++) {
-                avgNx += norm.getX(i);
-                avgNy += norm.getY(i);
-                avgNz += norm.getZ(i);
-            }
-            var len = Math.sqrt(avgNx * avgNx + avgNy * avgNy + avgNz * avgNz);
-            if (len < 0.001) continue; // degenerate
-            avgNx /= len;
-            avgNy /= len;
-            avgNz /= len;
-
-            // Offset every vertex along the average normal
+            // Nudge each vertex along its own normal — handles text that
+            // wraps around corners where an average normal would cancel out
             for (var i = 0; i < pos.count; i++) {
-                pos.setX(i, pos.getX(i) + avgNx * nudgeDist);
-                pos.setY(i, pos.getY(i) + avgNy * nudgeDist);
-                pos.setZ(i, pos.getZ(i) + avgNz * nudgeDist);
+                var nx = norm.getX(i), ny = norm.getY(i), nz = norm.getZ(i);
+                var nLen = Math.sqrt(nx * nx + ny * ny + nz * nz);
+                if (nLen < 1e-6) continue;
+                pos.setX(i, pos.getX(i) + (nx / nLen) * nudgeDist);
+                pos.setY(i, pos.getY(i) + (ny / nLen) * nudgeDist);
+                pos.setZ(i, pos.getZ(i) + (nz / nLen) * nudgeDist);
             }
             pos.needsUpdate = true;
             geom.computeBoundingBox();
@@ -638,6 +629,15 @@
             const group = new THREE.Group();
             group.name = '__xmodel__';
 
+            // Find body mesh (most vertices) for polygon offset
+            let bodyMeshIdx = 0;
+            let bodyMaxVerts = 0;
+            for (let bi = 0; bi < object.models.length; bi++) {
+                const pos = object.models[bi].geometry && object.models[bi].geometry.attributes.position;
+                const cnt = pos ? pos.count : 0;
+                if (cnt > bodyMaxVerts) { bodyMaxVerts = cnt; bodyMeshIdx = bi; }
+            }
+
             for (let i = 0; i < object.models.length; i++) {
                 const model = object.models[i];
                 // Assign unique renderOrder per mesh to eliminate z-fighting
@@ -645,20 +645,19 @@
                 model.renderOrder = i;
 
                 // Apply polygon offset to prevent z-fighting between
-                // overlapping meshes.  Mesh 0 (outer shell / body) is
-                // pushed slightly back; later meshes (labels, decals,
-                // text, barcodes) are pulled toward the camera so they
-                // always win the depth test against coplanar surfaces.
+                // overlapping meshes.  The body (most vertices) is
+                // pushed slightly back; label meshes are pulled toward
+                // the camera so they always win the depth test.
                 if (model.material) {
                     const applyOffset = (m, meshIdx) => {
-                        if (meshIdx === 0) {
+                        if (meshIdx === bodyMeshIdx) {
                             // Push the body/shell slightly back
                             m.polygonOffset = true;
                             m.polygonOffsetFactor = 1;
                             m.polygonOffsetUnits  = 1;
                         } else {
                             // Pull labels/decals toward camera
-                            const capped = Math.min(meshIdx, 10);
+                            const capped = Math.min(meshIdx + 1, 10);
                             m.polygonOffset = true;
                             m.polygonOffsetFactor = -capped;
                             m.polygonOffsetUnits  = -capped * 4;
