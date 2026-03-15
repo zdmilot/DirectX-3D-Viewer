@@ -1,6 +1,7 @@
 /* ============================================================
-   MFX Carrier Creator — Build and visualize Hamilton Multiplex
-   (MFX) carrier configurations with 3D module placement.
+   Carrier Editor — Build and visualize Hamilton carrier
+   configurations with 3D module and labware placement.
+   Supports MFX (Multiplex) and standard (Blank) carriers.
    ============================================================ */
 
 (function () {
@@ -84,6 +85,21 @@
                 { id: 3, label: 'Pos 3', x: 15.25, y: 200.5, z: 75.5, dx: 127, dy: 86 },
                 { id: 4, label: 'Pos 2', x: 15.25, y: 296.5, z: 75.5, dx: 127, dy: 86 },
                 { id: 5, label: 'Pos 1', x: 15.25, y: 392.5, z: 75.5, dx: 127, dy: 86 },
+            ],
+        },
+        BLANK: {
+            key: 'BLANK',
+            label: 'Blank Carrier',
+            description: 'Blank carrier — custom dimensions, no pre-defined modules',
+            dx: 135, dy: 497, dz: 100,
+            color: 0x808080,
+            modelFile: null,
+            slots: [
+                { id: 1, label: 'Pos 5', x: 4, y:   8.5, z: 80, dx: 127, dy: 86 },
+                { id: 2, label: 'Pos 4', x: 4, y: 104.5, z: 80, dx: 127, dy: 86 },
+                { id: 3, label: 'Pos 3', x: 4, y: 200.5, z: 80, dx: 127, dy: 86 },
+                { id: 4, label: 'Pos 2', x: 4, y: 296.5, z: 80, dx: 127, dy: 86 },
+                { id: 5, label: 'Pos 1', x: 4, y: 392.5, z: 80, dx: 127, dy: 86 },
             ],
         },
     };
@@ -207,6 +223,26 @@
             4: ['HeatCool', 'HeatCoolShaker', 'Standard', 'StandardShaker'],
             5: ['TurnTable', 'LidParkBack', 'LidParkBackShaker', 'Standard', 'StandardShaker'],
         },
+        BLANK: {
+            1: ['Standard', 'StandardShaker', 'StandardPortrait', 'HeatCool', 'HeatCoolShaker', 'LidPark', 'LidParkBack', 'TurnTable'],
+            2: ['Standard', 'StandardShaker', 'StandardPortrait', 'HeatCool', 'HeatCoolShaker'],
+            3: ['Standard', 'StandardShaker', 'StandardPortrait', 'HeatCool', 'HeatCoolShaker'],
+            4: ['Standard', 'StandardShaker', 'StandardPortrait', 'HeatCool', 'HeatCoolShaker'],
+            5: ['Standard', 'StandardShaker', 'StandardPortrait', 'HeatCool', 'HeatCoolShaker', 'LidParkBack', 'TurnTable'],
+        },
+    };
+
+    // ================================================================
+    //  Labware acceptance rules per module
+    //  pcr:       only accepts plates with well volume < 500 µL  and non-flat bottom
+    //  maxVolume: maximum well volume (µL) the module accepts
+    //  nestInside: if true labware sits lower (drops into drilled holes)
+    //  nestDepthMm: mm to lower the labware below the module top
+    // ================================================================
+    const MFX_LABWARE_RULES = {
+        'PCR96Module':   { pcr: true, maxVolume: 500, nestInside: true, nestDepthMm: 15 },
+        'PCR384Module':  { pcr: true, maxVolume: 500, nestInside: true, nestDepthMm: 12 },
+        'HHSPCR96ABI':   { pcr: true, maxVolume: 500, nestInside: true, nestDepthMm: 15 },
     };
 
     // ================================================================
@@ -1152,6 +1188,8 @@
     function removeModuleMeshFromSlot(slotId) {
         var entry = mfxState.slotState[slotId];
         if (!entry) return;
+        // Also remove any labware on this slot
+        removeLabwareMeshFromSlot(slotId);
         if (entry.moduleMesh && mfxState.carrierGroup) {
             mfxState.carrierGroup.remove(entry.moduleMesh);
             disposeGroup(entry.moduleMesh);
@@ -1428,6 +1466,17 @@
             var slotId = pickSlotAt(e);
             if (slotId !== null) {
                 selectSlot(slotId);
+            }
+        });
+
+        // --- DBLCLICK: remove labware from slot ---
+        canvas.addEventListener('dblclick', function (e) {
+            var slotId = pickSlotAt(e);
+            if (slotId === null) return;
+            var lw = mfxState.slotLabware[slotId];
+            if (lw && lw.rackFileName) {
+                removeLabwareMeshFromSlot(slotId);
+                setMFXStatus('Removed labware from slot ' + slotId);
             }
         });
 
@@ -3248,6 +3297,107 @@
     }
 
     // ================================================================
+    //  Labware validation — footprint, rotation, PCR constraints
+    // ================================================================
+
+    /**
+     * Determine if a slot's module orientation is portrait.
+     * Portrait = slot.dx < slot.dy (width less than depth).
+     */
+    function isSlotPortrait(slot) {
+        return slot && slot.dx < slot.dy;
+    }
+
+    /**
+     * Check whether a parsed rack definition can be placed on a slot.
+     * Returns { allowed: true } or { allowed: false, reason: '...' }.
+     *
+     * Checks:
+     *  1. Slot must be occupied (has a module).
+     *  2. Slot must not already have labware.
+     *  3. Rack footprint must fit inside the slot (with rotation matching).
+     *  4. PCR module constraints — volume < 500 µL, non-flat bottom.
+     */
+    function canPlaceLabware(slotId, rck) {
+        var entry = mfxState.slotState[slotId];
+        if (!entry) return { allowed: false, reason: 'Slot not found.' };
+        if (!entry.moduleKey) return { allowed: false, reason: 'Place a module first.' };
+        if (mfxState.slotLabware[slotId] && mfxState.slotLabware[slotId].rackFileName) {
+            return { allowed: false, reason: 'Slot already has labware \u2014 remove it first.' };
+        }
+
+        var slot = entry.slot;
+        if (!slot) return { allowed: false, reason: 'Slot geometry not found.' };
+
+        // Footprint check — rack must fit inside the slot
+        // Try both orientations: normal and rotated 90°
+        var rackDx = rck.dimDx || 127;
+        var rackDy = rck.dimDy || 86;
+        var tolerance = 2; // mm tolerance for fit
+        var fitNormal  = rackDx <= slot.dx + tolerance && rackDy <= slot.dy + tolerance;
+        var fitRotated = rackDy <= slot.dx + tolerance && rackDx <= slot.dy + tolerance;
+
+        if (!fitNormal && !fitRotated) {
+            return { allowed: false, reason: 'Labware footprint (' + rackDx.toFixed(1) + ' \u00d7 ' + rackDy.toFixed(1) + ' mm) does not fit the slot (' + slot.dx + ' \u00d7 ' + slot.dy + ' mm).' };
+        }
+
+        // Decide rotation: labware should match module orientation
+        // Portrait slot (dx < dy) vs landscape slot (dx >= dy)
+        var slotIsPortrait = isSlotPortrait(slot);
+        var rackIsPortrait = rackDx < rackDy;
+        // If slot is portrait, rotate labware to portrait orientation (and vice versa)
+        // rotateLabware flag: true if we need to rotate 90° to match
+        var needsRotation = slotIsPortrait !== rackIsPortrait;
+        if (needsRotation && !fitRotated) {
+            return { allowed: false, reason: 'Labware must be rotated to match module, but would not fit.' };
+        }
+        if (!needsRotation && !fitNormal) {
+            // Try the rotated fit instead
+            if (fitRotated) {
+                needsRotation = true;
+            } else {
+                return { allowed: false, reason: 'Labware does not fit in this slot.' };
+            }
+        }
+
+        // PCR module constraint
+        var moduleKey = entry.moduleKey;
+        var lwRules = MFX_LABWARE_RULES[moduleKey];
+        if (lwRules && lwRules.pcr) {
+            // Check well volume — estimate from rack dimensions
+            // RCK files store well depth in container's Dim.Dz / Hole.Z
+            var wellVolume = estimateWellVolume(rck);
+            if (wellVolume >= lwRules.maxVolume) {
+                return { allowed: false, reason: 'PCR module only accepts plates under ' + lwRules.maxVolume + ' \u00b5L (estimated: ' + wellVolume.toFixed(0) + ' \u00b5L).' };
+            }
+            // Check bottom shape — flat bottom plates (shape 0, holeShape 1 with no taper) are rejected
+            if (rck.shape === 1 && rck.dimDz > 20) {
+                return { allowed: false, reason: 'PCR module does not accept flat-bottom plates.' };
+            }
+        }
+
+        return { allowed: true, rotate: needsRotation };
+    }
+
+    /**
+     * Estimate well volume in µL from rack definition.
+     * Simple cylinder or box approximation.
+     */
+    function estimateWellVolume(rck) {
+        var wellDx = rck.holeX || rck.dx || 7;
+        var wellDy = rck.holeY || rck.dy || 7;
+        var wellDz = rck.holeZ || (rck.dimDz * 0.6) || 10;
+        // 1 µL = 1 mm³
+        if (rck.holeShape === 0) {
+            // Circular wells: π * r² * h
+            var r = wellDx / 2;
+            return Math.PI * r * r * wellDz;
+        }
+        // Square wells
+        return wellDx * wellDy * wellDz;
+    }
+
+    // ================================================================
     //  Labware Catalog — scan Hamilton directory for racks
     // ================================================================
 
@@ -3533,7 +3683,7 @@
 
             var entry = mfxState.slotState[slotId];
             if (!entry || !entry.moduleKey) {
-                setMFXStatus('Slot is empty — place a module first');
+                setMFXStatus('Slot is empty \u2014 place a module first');
                 return;
             }
 
@@ -3547,8 +3697,21 @@
             }
             if (!lwEntry) return;
 
-            // Load the .rck file, parse it, load/generate 3D model
+            // Load the .rck file, parse it, validate, then load/generate 3D model
             loadAndPlaceLabware(slotId, lwEntry);
+        });
+
+        // Drag-off-canvas to remove labware: detect dragging labware mesh out
+        canvas.addEventListener('mousedown', function (e) {
+            // Right-click on a slot with labware → start labware drag-off
+            if (e.button !== 0) return;
+            var slotId = getSlotIdUnderMouse(e);
+            if (slotId === null) return;
+            if (!mfxState.slotLabware[slotId] || !mfxState.slotLabware[slotId].rackFileName) return;
+            mfxState._labwareDragOffSlot = slotId;
+        });
+        document.addEventListener('mouseup', function () {
+            mfxState._labwareDragOffSlot = null;
         });
 
         // Clean up on drag end
@@ -3558,16 +3721,30 @@
     }
 
     /**
-     * Load a .rck file, optionally its .ctr, and place 3D labware on the slot.
+     * Load a .rck file, validate fit, and place 3D labware on the slot.
      */
     function loadAndPlaceLabware(slotId, lwEntry) {
         var entry = mfxState.slotState[slotId];
         if (!entry) return;
 
-        setMFXStatus('Loading labware: ' + lwEntry.displayName + '…');
+        // Quick check: slot must have a module and not already have labware
+        if (!entry.moduleKey) {
+            setMFXStatus('Place a module first');
+            return;
+        }
+        if (mfxState.slotLabware[slotId] && mfxState.slotLabware[slotId].rackFileName) {
+            setMFXStatus('Slot already has labware \u2014 remove it first');
+            return;
+        }
 
-        // Remove existing labware from this slot
-        removeLabwareMeshFromSlot(slotId);
+        setMFXStatus('Loading labware: ' + lwEntry.displayName + '\u2026');
+
+        // Check if we already have a cached parsed rck for this relPath
+        var cachedRck = mfxState._parsedRckCache && mfxState._parsedRckCache[lwEntry.relPath];
+        if (cachedRck) {
+            _validateAndPlace(slotId, lwEntry, cachedRck.rck, cachedRck.rckText);
+            return;
+        }
 
         fetch(lwEntry.fullPath)
             .then(function (r) {
@@ -3578,18 +3755,11 @@
                 var rck = LabwareGenModule.parseRckFile(rckText);
                 LabwareGenModule.parseRckSegments(rckText, rck);
 
-                // Store rack info
-                mfxState.slotLabware[slotId] = {
-                    rackText: rckText,
-                    rackFileName: lwEntry.filename,
-                    rackDef: rck,
-                    displayName: lwEntry.displayName,
-                    relPath: lwEntry.relPath,
-                };
+                // Cache the parsed rack for performance
+                if (!mfxState._parsedRckCache) mfxState._parsedRckCache = {};
+                mfxState._parsedRckCache[lwEntry.relPath] = { rck: rck, rckText: rckText };
 
-                // Try to load companion .x model first
-                var xPath = lwEntry.fullPath.replace(/\.rck$/i, '.x');
-                tryLoadLabwareXFile(slotId, xPath, rck, rckText, lwEntry);
+                _validateAndPlace(slotId, lwEntry, rck, rckText);
             })
             .catch(function (err) {
                 console.error('[MFXCarrier] Failed to load labware:', err);
@@ -3598,31 +3768,77 @@
     }
 
     /**
+     * Validate rack fit on slot and then place it.
+     */
+    function _validateAndPlace(slotId, lwEntry, rck, rckText) {
+        var check = canPlaceLabware(slotId, rck);
+        if (!check.allowed) {
+            setMFXStatus('\u26A0 ' + check.reason);
+            return;
+        }
+
+        // Store rack info (before removing any existing mesh)
+        removeLabwareMeshFromSlot(slotId);
+        mfxState.slotLabware[slotId] = {
+            rackText: rckText,
+            rackFileName: lwEntry.filename,
+            rackDef: rck,
+            displayName: lwEntry.displayName,
+            relPath: lwEntry.relPath,
+            rotated: !!check.rotate,
+        };
+
+        // Try to load companion .x model first (performance: use cached clone)
+        var cacheKey = 'lw_' + lwEntry.relPath;
+        if (mfxState.xModelCache[cacheKey]) {
+            var clone = mfxState.xModelCache[cacheKey].clone(true);
+            cloneMaterials(clone);
+            placeLabwareMeshOnSlot(slotId, clone, !!check.rotate);
+            setMFXStatus('Placed ' + lwEntry.displayName);
+            return;
+        }
+
+        var xPath = lwEntry.fullPath.replace(/\.rck$/i, '.x');
+        tryLoadLabwareXFile(slotId, xPath, rck, rckText, lwEntry, !!check.rotate);
+    }
+
+    /**
      * Try loading a companion .x file for the rack. If it fails,
      * fall back to generating a 3D model from the rack definition.
      */
-    function tryLoadLabwareXFile(slotId, xPath, rck, rckText, lwEntry) {
+    function tryLoadLabwareXFile(slotId, xPath, rck, rckText, lwEntry, rotate) {
         loadXModelFromServer(xPath, 'lw_' + lwEntry.relPath, function (xGroup) {
-            // Successfully loaded .x model
-            placeLabwareMeshOnSlot(slotId, xGroup.clone(true));
-            setMFXStatus('Placed ' + lwEntry.displayName + ' (3D model)');
+            var clone = xGroup.clone(true);
+            cloneMaterials(clone);
+            placeLabwareMeshOnSlot(slotId, clone, rotate);
+            setMFXStatus('Placed ' + lwEntry.displayName);
         }, function () {
-            // .x file not found — try to load .ctr and generate model
-            generateLabwareForSlot(slotId, rck, rckText, lwEntry);
+            // .x file not found — try to generate from .ctr
+            generateLabwareForSlot(slotId, rck, rckText, lwEntry, rotate);
         });
     }
 
     /**
      * Generate a 3D labware model from the .rck definition.
-     * If the rack references a .ctr file, load it first.
+     * Caches generated models for reuse across slots.
      */
-    function generateLabwareForSlot(slotId, rck, rckText, lwEntry) {
+    function generateLabwareForSlot(slotId, rck, rckText, lwEntry, rotate) {
+        // Check generated model cache
+        var genCacheKey = 'lwgen_' + lwEntry.relPath;
+        if (mfxState._labwareMeshCache['__template__' + genCacheKey]) {
+            var cached = mfxState._labwareMeshCache['__template__' + genCacheKey].clone(true);
+            placeLabwareMeshOnSlot(slotId, cached, rotate);
+            setMFXStatus('Placed ' + lwEntry.displayName + ' (generated)');
+            return;
+        }
+
         var ctrFile = rck.ctrFile;
         if (!ctrFile) {
-            // No container reference — generate plate-only model
-            var def = LabwareGenModule.hamiltonToDefinition(rck, { shape: 0, depth: 10, dimDx: 7, dimDy: 7, segments: [{ dx: 7, dy: 7, dz: 7 }], numSegments: 1 }, lwEntry.filename, '');
+            var def = LabwareGenModule.hamiltonToDefinition(rck, _dummyCtr(), lwEntry.filename, '');
             var model = LabwareGenModule.generatePlateModel(def);
-            placeLabwareMeshOnSlot(slotId, model);
+            _simplifyLabwareMesh(model);
+            mfxState._labwareMeshCache['__template__' + genCacheKey] = model.clone(true);
+            placeLabwareMeshOnSlot(slotId, model, rotate);
             setMFXStatus('Placed ' + lwEntry.displayName + ' (generated)');
             return;
         }
@@ -3640,9 +3856,10 @@
                 var ctr = LabwareGenModule.parseCtrFile(ctrText);
                 var def = LabwareGenModule.hamiltonToDefinition(rck, ctr, lwEntry.filename, ctrFile);
                 var model = LabwareGenModule.generatePlateModel(def);
-                placeLabwareMeshOnSlot(slotId, model);
+                _simplifyLabwareMesh(model);
+                mfxState._labwareMeshCache['__template__' + genCacheKey] = model.clone(true);
+                placeLabwareMeshOnSlot(slotId, model, rotate);
 
-                // Store ctr info
                 if (mfxState.slotLabware[slotId]) {
                     mfxState.slotLabware[slotId].ctrText = ctrText;
                     mfxState.slotLabware[slotId].ctrFileName = ctrFile;
@@ -3652,24 +3869,62 @@
             })
             .catch(function (err) {
                 console.warn('[MFXCarrier] Could not load .ctr, generating without:', err);
-                var def = LabwareGenModule.hamiltonToDefinition(rck, { shape: 0, depth: 10, dimDx: 7, dimDy: 7, segments: [{ dx: 7, dy: 7, dz: 7 }], numSegments: 1 }, lwEntry.filename, '');
+                var def = LabwareGenModule.hamiltonToDefinition(rck, _dummyCtr(), lwEntry.filename, '');
                 var model = LabwareGenModule.generatePlateModel(def);
-                placeLabwareMeshOnSlot(slotId, model);
+                _simplifyLabwareMesh(model);
+                mfxState._labwareMeshCache['__template__' + genCacheKey] = model.clone(true);
+                placeLabwareMeshOnSlot(slotId, model, rotate);
                 setMFXStatus('Placed ' + lwEntry.displayName + ' (generated, no container)');
             });
     }
 
+    /** Dummy CTR for plates without a container reference */
+    function _dummyCtr() {
+        return { shape: 0, depth: 10, dimDx: 7, dimDy: 7, segments: [{ dx: 7, dy: 7, dz: 7, max: 0, min: 0, shape: 0 }], numSegments: 1 };
+    }
+
+    /**
+     * Simplify a generated labware mesh for performance:
+     * merge geometries where possible and reduce material copies.
+     */
+    function _simplifyLabwareMesh(group) {
+        // Reduce draw calls: share materials across children with same properties
+        var sharedMats = {};
+        group.traverse(function (child) {
+            if (!child.isMesh || !child.material) return;
+            var mats = Array.isArray(child.material) ? child.material : [child.material];
+            mats.forEach(function (m, idx) {
+                var key = (m.color ? m.color.getHex() : 0) + '_' + (m.opacity || 1);
+                if (sharedMats[key]) {
+                    if (Array.isArray(child.material)) {
+                        child.material[idx] = sharedMats[key];
+                    } else {
+                        child.material = sharedMats[key];
+                    }
+                } else {
+                    sharedMats[key] = m;
+                }
+            });
+        });
+    }
+
     /**
      * Position and add a labware mesh on a slot, sitting on top of the module.
+     * @param {number} slotId
+     * @param {THREE.Group} meshGroup
+     * @param {boolean} rotate - if true, rotate 90° to match slot orientation
      */
-    function placeLabwareMeshOnSlot(slotId, meshGroup) {
+    function placeLabwareMeshOnSlot(slotId, meshGroup, rotate) {
         var entry = mfxState.slotState[slotId];
         if (!entry || !entry.slot) return;
 
         meshGroup.name = '__labware_' + slotId + '__';
 
-        // Convert from mm to scene units (same as modules — 1:1 mm)
-        // Position: center on the slot, sitting on top of the module
+        // Apply rotation if needed to match module orientation
+        if (rotate) {
+            meshGroup.rotation.y = Math.PI / 2;
+        }
+
         var slot = entry.slot;
         var moduleMesh = entry.moduleMesh;
 
@@ -3680,7 +3935,16 @@
             moduleTopY = mBox.max.y;
         }
 
+        // Check if this module has PCR nesting (labware drops into holes)
+        var moduleKey = entry.moduleKey;
+        var lwRules = MFX_LABWARE_RULES[moduleKey];
+        if (lwRules && lwRules.nestInside) {
+            moduleTopY -= (lwRules.nestDepthMm || 0);
+        }
+
         // Center the labware on the slot
+        // Need to compute bounding box AFTER rotation is applied
+        meshGroup.updateMatrixWorld(true);
         var lwBox = new THREE.Box3().setFromObject(meshGroup);
         var lwCenter = lwBox.getCenter(new THREE.Vector3());
         meshGroup.position.set(

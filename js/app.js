@@ -999,8 +999,6 @@
         if (window.MFXCarrierModule) window.MFXCarrierModule.updateTheme();
         // Also update labware editor theme
         if (window.LabwareEditorModule) window.LabwareEditorModule.updateTheme();
-        // Also update carrier editor theme
-        if (window.CarrierEditorModule) window.CarrierEditorModule.updateTheme();
 
     }
 
@@ -1052,7 +1050,7 @@
             setTimeout(() => window.VantageLayoutModule.init(), 50);
         }
 
-        // Initialize MFX carrier on first switch
+        // Initialize MFX carrier (now "Carrier Editor") on first switch
         if (viewName === 'mfx' && window.MFXCarrierModule) {
             setTimeout(() => window.MFXCarrierModule.init(), 50);
         }
@@ -1062,9 +1060,10 @@
             setTimeout(() => window.LabwareEditorModule.init(), 50);
         }
 
-        // Initialize carrier editor on first switch
-        if (viewName === 'carrier-editor' && window.CarrierEditorModule) {
-            setTimeout(() => window.CarrierEditorModule.init(), 50);
+        // Legacy carrier-editor view → redirect to unified carrier editor (mfx)
+        if (viewName === 'carrier-editor') {
+            switchView('mfx');
+            return;
         }
 
         // Initialize category editor on first switch
@@ -1840,8 +1839,6 @@
             img.src = window.MFXCarrierModule.screenshotPreviewDataURL(opts);
         } else if (ssModalSource === 'labware-editor' && window.LabwareEditorModule && window.LabwareEditorModule.screenshotPreviewDataURL) {
             img.src = window.LabwareEditorModule.screenshotPreviewDataURL(opts);
-        } else if (ssModalSource === 'carrier-editor' && window.CarrierEditorModule && window.CarrierEditorModule.screenshotPreviewDataURL) {
-            img.src = window.CarrierEditorModule.screenshotPreviewDataURL(opts);
         } else {
             img.src = screenshotPreviewDataURL(opts);
         }
@@ -1869,8 +1866,6 @@
             window.MFXCarrierModule.saveScreenshot(format, opts);
         } else if (ssModalSource === 'labware-editor' && window.LabwareEditorModule && window.LabwareEditorModule.saveScreenshot) {
             window.LabwareEditorModule.saveScreenshot(format, opts);
-        } else if (ssModalSource === 'carrier-editor' && window.CarrierEditorModule && window.CarrierEditorModule.saveScreenshot) {
-            window.CarrierEditorModule.saveScreenshot(format, opts);
         } else {
             saveScreenshot(format, opts);
         }
