@@ -15,6 +15,13 @@
     const DECK = DeckUnits.DECK;
 
     // ================================================================
+    //  Track Placement Limits
+    // ================================================================
+    // Carriers can be placed from track 4 through track 60.
+    // Tracks 61-80 are reserved for waste chute and entry/exit drawer.
+    const MAX_USABLE_TRACK = 60;
+
+    // ================================================================
     //  Waste Cutout Positions  (4 removable deck panels)
     // ================================================================
     // Each cutout spans ~9 tracks (≈201mm) matching the physical GLTF
@@ -491,15 +498,18 @@
         surfaceMesh.name = '__decksurf__';
         scene.add(surfaceMesh);
 
-        // Track slots (54 tracks)
+        // Track slots (80 tracks — tracks 61-80 shown as blocked)
         const trackColor = isDark ? 0x151f2a : 0xb0bfcf;
+        const blockedTrackColor = isDark ? 0x2a1515 : 0xc09090;
         for (let i = 1; i <= DECK.TRACK_COUNT; i++) {
             const x = DECK.FIRST_TRACK_X + (i - 1) * DECK.TRACK_SPACING;
             const isLabeled = DECK.LABELED_TRACKS.has(i);
+            const isBlocked = i > MAX_USABLE_TRACK;
             const geo = new THREE.BoxGeometry(DECK.TRACK_WIDTH, 2.5, DECK.TRACK_DEPTH);
-            const mat = new THREE.MeshLambertMaterial({
-                color: isLabeled ? (isDark ? 0x2a3d55 : 0x8fa8c0) : trackColor,
-            });
+            const baseColor = isBlocked ? blockedTrackColor
+                : isLabeled ? (isDark ? 0x2a3d55 : 0x8fa8c0)
+                : trackColor;
+            const mat = new THREE.MeshLambertMaterial({ color: baseColor });
             const mesh = new THREE.Mesh(geo, mat);
             mesh.position.set(x, DECK.SURFACE_Z + 1.25, DECK.TRACK_Y_START + DECK.TRACK_DEPTH / 2);
             mesh.name = `__track_${i}__`;
@@ -510,7 +520,7 @@
         // Track number labels (sprite-based text above every track)
         for (let i = 1; i <= DECK.TRACK_COUNT; i++) {
             const x = DECK.FIRST_TRACK_X + (i - 1) * DECK.TRACK_SPACING;
-            const color = (i === 4) ? '#ee2222' : undefined; // track 4 in red
+            const color = (i === 4) ? '#ee2222' : (i > MAX_USABLE_TRACK) ? '#aa4444' : undefined;
             addTrackLabel(String(i), x, isDark, color);
         }
 
@@ -530,7 +540,24 @@
         backMesh.name = '__rail_back__';
         scene.add(backMesh);
 
-        // (Waste block area indicator removed — no restricted tracks from 5 onward)
+        // Blocked zone indicator for tracks 61-80 (waste / entry-exit area)
+        const blockedStartX = DECK.FIRST_TRACK_X + (MAX_USABLE_TRACK) * DECK.TRACK_SPACING;
+        const blockedEndX   = DECK.FIRST_TRACK_X + (DECK.TRACK_COUNT - 1) * DECK.TRACK_SPACING + DECK.TRACK_WIDTH / 2;
+        const blockedWidth  = blockedEndX - blockedStartX;
+        const blockedGeo = new THREE.BoxGeometry(blockedWidth, 3, DECK.TRACK_DEPTH);
+        const blockedMat = new THREE.MeshLambertMaterial({
+            color: isDark ? 0x442222 : 0xffcccc,
+            transparent: true,
+            opacity: 0.45,
+        });
+        const blockedMesh = new THREE.Mesh(blockedGeo, blockedMat);
+        blockedMesh.position.set(
+            blockedStartX + blockedWidth / 2,
+            DECK.SURFACE_Z + 3,
+            DECK.TRACK_Y_START + DECK.TRACK_DEPTH / 2
+        );
+        blockedMesh.name = '__blocked_zone__';
+        scene.add(blockedMesh);
 
         // Grid overlay on deck surface (mm-based via DeckUnits)
         const gridColor = isDark ? DARK_GRID : LIGHT_GRID;
@@ -2815,9 +2842,9 @@
         const def = CARRIER_LIBRARY[carrierType];
         if (!def) return null;
 
-        // Validate track range — placement allowed from track 4 onward
-        if (trackStart < 4 || trackStart + def.tWidth - 1 > DECK.TRACK_COUNT) {
-            showVLStatus('Cannot place: track out of range (min track 4).', 'error');
+        // Validate track range — placement allowed from track 4 to MAX_USABLE_TRACK
+        if (trackStart < 4 || trackStart + def.tWidth - 1 > MAX_USABLE_TRACK) {
+            showVLStatus('Cannot place: track out of range (tracks 4–60).', 'error');
             return null;
         }
 
@@ -2909,6 +2936,11 @@
         const newRange = new Set();
         for (let t = trackStart; t < trackStart + tWidth; t++) newRange.add(t);
 
+        // Block tracks beyond usable range (61-80 reserved for waste/entry-exit)
+        for (let t of newRange) {
+            if (t > MAX_USABLE_TRACK) return true;
+        }
+
         // Check waste-occupied tracks
         var wasteTracks = getWasteOccupiedTracks();
         for (let t of newRange) {
@@ -2999,6 +3031,29 @@
     // ================================================================
     //  Canvas Mouse Events (click to select, drag placed carrier to move)
     // ================================================================
+
+    // ---- VL Trash drop-zone helpers ----
+    function _getVLTrashEl() {
+        return document.getElementById('vl-trash-zone');
+    }
+    function showVLTrashZone(show) {
+        const el = _getVLTrashEl();
+        if (!el) return;
+        el.classList.toggle('visible', !!show);
+    }
+    function updateVLTrashHover(e) {
+        const el = _getVLTrashEl();
+        if (!el) return;
+        el.classList.toggle('hover', isVLTrashHit(e));
+    }
+    function isVLTrashHit(e) {
+        const el = _getVLTrashEl();
+        if (!el || !el.classList.contains('visible')) return false;
+        const r = el.getBoundingClientRect();
+        return e.clientX >= r.left && e.clientX <= r.right &&
+               e.clientY >= r.top  && e.clientY <= r.bottom;
+    }
+
     function wireCanvasEvents() {
         const canvas = vlState.canvas;
         if (!canvas) return;
@@ -3098,7 +3153,7 @@
 
         const { carrier } = vlState.canvasCarrierDrag;
         const trackNum    = snapToTrack(hits[0].point.x);
-        const clamped     = Math.max(4, Math.min(DECK.TRACK_COUNT - carrier.def.tWidth + 1, trackNum));
+        const clamped     = Math.max(4, Math.min(MAX_USABLE_TRACK - carrier.def.tWidth + 1, trackNum));
         const snappedX    = DECK.FIRST_TRACK_X + (clamped - 1) * DECK.TRACK_SPACING;
 
         if (vlState.ghostMesh) {
@@ -3340,7 +3395,7 @@
         const point = hits[0].point;
         const def   = vlState.paletteDrag.def;
         const trackNum    = snapToTrack(point.x);
-        const clampedTrack = Math.max(4, Math.min(DECK.TRACK_COUNT - def.tWidth + 1, trackNum));
+        const clampedTrack = Math.max(4, Math.min(MAX_USABLE_TRACK - def.tWidth + 1, trackNum));
         const snappedX     = DECK.FIRST_TRACK_X + (clampedTrack - 1) * DECK.TRACK_SPACING;
 
         if (vlState.ghostMesh) {
@@ -3417,14 +3472,14 @@
         const track = findNextFreeTrack(def.tWidth);
         $('#vl-pd-track').value = track;
         $('#vl-pd-track').min = '4';
-        $('#vl-pd-track').max = String(DECK.TRACK_COUNT - def.tWidth + 1);
+        $('#vl-pd-track').max = String(MAX_USABLE_TRACK - def.tWidth + 1);
 
         dialog.dataset.carrierType = carrierType;
         dialog.classList.add('is-visible');
     }
 
     function findNextFreeTrack(tWidth) {
-        for (let t = 4; t <= DECK.TRACK_COUNT - tWidth + 1; t++) {
+        for (let t = 4; t <= MAX_USABLE_TRACK - tWidth + 1; t++) {
             if (!checkCarrierCollision(t, tWidth, -1)) return t;
         }
         return 4;
