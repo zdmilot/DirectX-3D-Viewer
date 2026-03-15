@@ -519,8 +519,9 @@
         }
 
         // Track number labels (sprite-based text above every track)
+        // Labels are shifted right by half a track spacing so they sit between the almond slots
         for (let i = 1; i <= DECK.TRACK_COUNT; i++) {
-            const x = DECK.FIRST_TRACK_X + (i - 1) * DECK.TRACK_SPACING;
+            const x = DECK.FIRST_TRACK_X + (i - 1) * DECK.TRACK_SPACING + DECK.TRACK_SPACING / 2;
             const color = (i === 4) ? '#ee2222' : (i > MAX_USABLE_TRACK) ? '#aa4444' : undefined;
             addTrackLabel(String(i), x, isDark, color);
         }
