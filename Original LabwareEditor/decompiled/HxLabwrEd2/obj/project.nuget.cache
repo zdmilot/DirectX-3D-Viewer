@@ -1,8 +1,11 @@
 {
   "version": 2,
-  "dgSpecHash": "p9suYu3nV44=",
+  "dgSpecHash": "JcUWSNSR+mc=",
   "success": true,
-  "projectFilePath": "C:\\Users\\admin\\Desktop\\X-File-Test-in-JS-App\\Original LabwareEditor\\decompiled\\HxLabwrEd2\\HxLabwrEd2.csproj",
-  "expectedPackageFiles": [],
+  "projectFilePath": "/Users/zdmilot/X File Test in JS App/Original LabwareEditor/decompiled/HxLabwrEd2/HxLabwrEd2.csproj",
+  "expectedPackageFiles": [
+    "/Users/zdmilot/.nuget/packages/microsoft.netframework.referenceassemblies/1.0.3/microsoft.netframework.referenceassemblies.1.0.3.nupkg.sha512",
+    "/Users/zdmilot/.nuget/packages/microsoft.netframework.referenceassemblies.net48/1.0.3/microsoft.netframework.referenceassemblies.net48.1.0.3.nupkg.sha512"
+  ],
   "logs": []
 }

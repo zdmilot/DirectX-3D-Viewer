@@ -80,7 +80,8 @@
         lgState.renderer = new THREE.WebGLRenderer({
             canvas: canvas,
             antialias: true,
-            preserveDrawingBuffer: true
+            preserveDrawingBuffer: true,
+            logarithmicDepthBuffer: true,
         });
         lgState.renderer.setPixelRatio(window.devicePixelRatio);
         lgState.renderer.setSize(w, h);
@@ -122,6 +123,15 @@
         function tick() {
             lgState.animId = requestAnimationFrame(tick);
             lgState.controls.update();
+            // Dynamic near/far for depth precision
+            if (lgState.camera.isPerspectiveCamera) {
+                var dist = lgState.camera.position.distanceTo(lgState.controls.target);
+                if (dist > 0) {
+                    lgState.camera.near = Math.max(dist * 0.01, 0.01);
+                    lgState.camera.far  = Math.max(dist * 10, 1000);
+                    lgState.camera.updateProjectionMatrix();
+                }
+            }
             lgState.renderer.render(lgState.scene, lgState.camera);
             drawLgGizmo();
             updateLgCamDisplay();
@@ -499,10 +509,38 @@
             depthWrite: false,
             shininess: 90,
             specular: 0x444444,
+            polygonOffset: true,
+            polygonOffsetFactor: 1,
+            polygonOffsetUnits: 1,
         });
-        const wellMat  = glassMat;
+        // Separate material for wells/rims — pulled toward camera to avoid z-fighting
+        const wellMat = new THREE.MeshPhongMaterial({
+            color: glassColor,
+            transparent: true,
+            opacity: 0.32,
+            side: THREE.DoubleSide,
+            depthWrite: false,
+            shininess: 90,
+            specular: 0x444444,
+            polygonOffset: true,
+            polygonOffsetFactor: -1,
+            polygonOffsetUnits: -4,
+        });
         const flangeMat = glassMat;
         const bodyMat = glassMat;
+        // Label material — pulled strongly toward camera
+        const labelMat = new THREE.MeshPhongMaterial({
+            color: glassColor,
+            transparent: true,
+            opacity: 0.32,
+            side: THREE.DoubleSide,
+            depthWrite: false,
+            shininess: 90,
+            specular: 0x444444,
+            polygonOffset: true,
+            polygonOffsetFactor: -4,
+            polygonOffsetUnits: -16,
+        });
 
         // ─── Skirt / flange at the BOTTOM (Y = 0 → flangeH) ──────
         // Four flange strips that sit at the bottom and overhang outward
@@ -530,12 +568,14 @@
         group.add(flangeRight);
 
         // ─── Solid base slab (Y = flangeH → wellFloorY) ──────────
-        // This is what the well bottoms rest on
-        const slabH = wellFloorY - flangeH;
+        // This is what the well bottoms rest on.
+        // Inset slightly (eps) so faces don't exactly coincide with flanges/walls.
+        const eps = 0.02;
+        const slabH = wellFloorY - flangeH - eps * 2;
         if (slabH > 0.01) {
-            const slabGeo = new THREE.BoxGeometry(L, slabH, W);
+            const slabGeo = new THREE.BoxGeometry(L - eps * 2, slabH, W - eps * 2);
             const slabMesh = new THREE.Mesh(slabGeo, bodyMat);
-            slabMesh.position.set(L / 2, flangeH + slabH / 2, W / 2);
+            slabMesh.position.set(L / 2, flangeH + eps + slabH / 2, W / 2);
             group.add(slabMesh);
         }
 
@@ -614,11 +654,12 @@
                         group.add(cylMesh);
                     }
 
-                    // Top rim ring at Y = H
+                    // Top rim ring at Y = H — offset above top surface to avoid z-fighting
                     const rimGeo = new THREE.RingGeometry(wellTopR, wellTopR + 0.3, WELL_SEGMENTS);
-                    const rimMesh = new THREE.Mesh(rimGeo, glassMat);
+                    const rimMesh = new THREE.Mesh(rimGeo, wellMat);
                     rimMesh.rotation.x = -Math.PI / 2;
-                    rimMesh.position.set(cx, H, cz);
+                    rimMesh.position.set(cx, H + 0.03, cz);
+                    rimMesh.renderOrder = 2;
                     group.add(rimMesh);
 
                     // ── Bottom cap ──
@@ -638,7 +679,8 @@
                         }
                         var bowlGeo = new THREE.LatheGeometry(bowlPts, WELL_SEGMENTS);
                         var bowlMesh = new THREE.Mesh(bowlGeo, wellMat);
-                        bowlMesh.position.set(cx, wellFloorY, cz);
+                        bowlMesh.position.set(cx, wellFloorY + 0.03, cz);
+                        bowlMesh.renderOrder = 1;
                         group.add(bowlMesh);
                     } else if (isVBottom) {
                         // Cone with point at bottom, base at top (closed surface)
@@ -647,14 +689,16 @@
                             wellBotR, 0, vDepth, WELL_SEGMENTS, 1, false
                         );
                         var coneMesh = new THREE.Mesh(coneGeo, wellMat);
-                        coneMesh.position.set(cx, wellFloorY + vDepth / 2, cz);
+                        coneMesh.position.set(cx, wellFloorY + 0.03 + vDepth / 2, cz);
+                        coneMesh.renderOrder = 1;
                         group.add(coneMesh);
                     } else {
-                        // Flat bottom disk
+                        // Flat bottom disk — offset above slab to avoid z-fighting
                         const diskGeo = new THREE.CircleGeometry(wellBotR, WELL_SEGMENTS);
                         const diskMesh = new THREE.Mesh(diskGeo, wellMat);
                         diskMesh.rotation.x = -Math.PI / 2;
-                        diskMesh.position.set(cx, wellFloorY, cz);
+                        diskMesh.position.set(cx, wellFloorY + 0.03, cz);
+                        diskMesh.renderOrder = 1;
                         group.add(diskMesh);
                     }
                 } else {
@@ -683,7 +727,7 @@
                         group.add(rwR);
                     }
 
-                    // Bottom shape
+                    // Bottom shape — flat bottoms offset above slab to avoid z-fighting
                     if (isRoundBottom) {
                         // Concave bowl at the bottom of a rectangular well.
                         // Uses the same LatheGeometry approach — a round bowl that
@@ -700,7 +744,8 @@
                         }
                         var rBowlGeo = new THREE.LatheGeometry(rBowlPts, WELL_SEGMENTS);
                         var rBowlMesh = new THREE.Mesh(rBowlGeo, wellMat);
-                        rBowlMesh.position.set(cx, wellFloorY, cz);
+                        rBowlMesh.position.set(cx, wellFloorY + 0.03, cz);
+                        rBowlMesh.renderOrder = 1;
                         group.add(rBowlMesh);
                     } else if (isVBottom) {
                         // 4-sided pyramid: apex at bottom, base rectangle at top
@@ -726,14 +771,16 @@
                             new THREE.BufferAttribute(pyrVerts, 3));
                         pyrGeo.computeVertexNormals();
                         var pyrMesh = new THREE.Mesh(pyrGeo, wellMat);
-                        pyrMesh.position.set(cx, wellFloorY, cz);
+                        pyrMesh.position.set(cx, wellFloorY + 0.03, cz);
+                        pyrMesh.renderOrder = 1;
                         group.add(pyrMesh);
                     } else {
-                        // Flat bottom
+                        // Flat bottom — offset above slab to avoid z-fighting
                         var btmGeo = new THREE.PlaneGeometry(wLen, wSize);
                         var btmMesh = new THREE.Mesh(btmGeo, wellMat);
                         btmMesh.rotation.x = -Math.PI / 2;
-                        btmMesh.position.set(cx, wellFloorY, cz);
+                        btmMesh.position.set(cx, wellFloorY + 0.03, cz);
+                        btmMesh.renderOrder = 1;
                         group.add(btmMesh);
                     }
                 }
@@ -778,6 +825,7 @@
         // ShapeGeometry is in XY plane — rotate +PI/2 around X so shape-Y maps to +world-Z
         topMesh.rotation.x = Math.PI / 2;
         topMesh.position.set(0, topSurfaceY, 0);
+        topMesh.renderOrder = 0;
         group.add(topMesh);
 
         // ─── 3D recessed alphanumeric labels in top surface ───────
@@ -829,7 +877,7 @@
             geo.attributes.position.needsUpdate = true;
             geo.computeVertexNormals();
 
-            var mesh = new THREE.Mesh(geo, glassMat);
+            var mesh = new THREE.Mesh(geo, labelMat);
             mesh.frustumCulled = false;
             return mesh;
         }
@@ -846,7 +894,8 @@
             var rz = firstZ + r * gapZ;
             var lbl = makeRecessedLabel(letter, rowLabelSz, rowLabelSz);
             lbl.rotation.x = -Math.PI / 2;
-            lbl.position.set(rowLabelX, H + 0.01, rz);
+            lbl.position.set(rowLabelX, H + 0.08, rz);
+            lbl.renderOrder = 3;
             group.add(lbl);
         }
 
@@ -858,7 +907,8 @@
             var cx2 = firstX + c * gapX;
             var lbl2 = makeRecessedLabel(numStr, colLabelSz, colLabelSz);
             lbl2.rotation.x = -Math.PI / 2;
-            lbl2.position.set(cx2, H + 0.01, colLabelZ);
+            lbl2.position.set(cx2, H + 0.08, colLabelZ);
+            lbl2.renderOrder = 3;
             group.add(lbl2);
         }
 
