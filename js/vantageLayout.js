@@ -2979,8 +2979,6 @@
         if (carrier) {
             setCarrierHighlight(carrier.mesh, true);
             updateSitePanel(carrier);
-            // Auto-open the sites panel when a carrier is selected
-            if (!vlState.sitesPanelOpen) setSitesPanelOpen(true);
         } else {
             updateSitePanel(null);
         }
@@ -3012,6 +3010,26 @@
     // ================================================================
     //  Canvas Mouse Events (click to select, drag placed carrier to move)
     // ================================================================
+
+    // ---- VL Trash drop-zone helpers ----
+    function showVLTrashZone(show) {
+        var el = document.getElementById('vl-trash-zone');
+        if (!el) return;
+        el.classList.toggle('visible', !!show);
+    }
+    function updateVLTrashHover(e) {
+        var el = document.getElementById('vl-trash-zone');
+        if (!el) return;
+        el.classList.toggle('hover', isVLTrashHit(e));
+    }
+    function isVLTrashHit(e) {
+        var el = document.getElementById('vl-trash-zone');
+        if (!el || !el.classList.contains('visible')) return false;
+        var r = el.getBoundingClientRect();
+        return e.clientX >= r.left && e.clientX <= r.right &&
+               e.clientY >= r.top  && e.clientY <= r.bottom;
+    }
+
     function wireCanvasEvents() {
         const canvas = vlState.canvas;
         if (!canvas) return;
@@ -3103,6 +3121,10 @@
     function onCanvasCarrierDragMove(e) {
         if (!vlState.canvasCarrierDrag || !vlState._deckPlane) return;
 
+        // Always check trash zone hover (even when cursor is off-canvas)
+        const overTrash = isVLTrashHit(e);
+        updateVLTrashHover(e);
+
         const canvas = vlState.canvas;
         const rect = canvas.getBoundingClientRect();
         vlState._mouse.x =  ((e.clientX - rect.left)  / rect.width)  * 2 - 1;
@@ -3110,7 +3132,19 @@
         vlState._raycaster.setFromCamera(vlState._mouse, vlState.camera);
 
         const hits = vlState._raycaster.intersectObject(vlState._deckPlane, false);
-        if (!hits.length) return;
+        if (!hits.length) {
+            // Off-canvas: tint ghost red if over trash, hide otherwise
+            if (vlState.ghostMesh) {
+                if (overTrash) {
+                    vlState.ghostMesh.traverse(child => {
+                        if (child.isMesh) child.material.color.set(0xdd3c3c);
+                    });
+                } else {
+                    vlState.ghostMesh.visible = false;
+                }
+            }
+            return;
+        }
 
         const { carrier } = vlState.canvasCarrierDrag;
         const trackNum    = snapToTrack(hits[0].point.x);
@@ -3127,9 +3161,7 @@
         }
         vlState.hoveredTrack = clamped;
 
-        // Check if hovering over trash zone — tint ghost red
-        const overTrash = isVLTrashHit(e);
-        updateVLTrashHover(e);
+        // If hovering over trash zone, tint ghost red
         if (overTrash && vlState.ghostMesh) {
             vlState.ghostMesh.traverse(child => {
                 if (child.isMesh) child.material.color.set(0xdd3c3c);

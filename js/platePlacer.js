@@ -162,6 +162,8 @@
 
             for (let i = 0; i < object.models.length; i++) {
                 const model = object.models[i];
+                // Disable frustum culling so meshes remain visible at all zoom levels
+                model.traverse(ch => { ch.frustumCulled = false; });
                 model.renderOrder = i + 100; // offset to avoid z-fighting with main model
                 if (model.material) {
                     const applyOffset = (m, idx) => {
@@ -268,6 +270,8 @@
 
             for (let i = 0; i < object.models.length; i++) {
                 const model = object.models[i];
+                // Disable frustum culling so small meshes remain visible at all zoom levels
+                model.traverse(ch => { ch.frustumCulled = false; });
                 model.renderOrder = i;
                 if (model.material) {
                     const applyOffset = (m, idx) => {
@@ -625,7 +629,20 @@
         if (resetCam) {
             resetCam.addEventListener('click', () => {
                 if (!ppState.camera || !ppState.controls) return;
-                DeckUnits.fitCamera(ppState.camera, ppState.controls, 200, { fitMultiplier: 1.0 });
+                const mdl = ppState.scene ? ppState.scene.getObjectByName('__ppmodel__') : null;
+                if (mdl) {
+                    const box = new THREE.Box3().setFromObject(mdl);
+                    const size = box.getSize(new THREE.Vector3());
+                    const maxDim = Math.max(size.x, size.y, size.z);
+                    DeckUnits.fitCamera(ppState.camera, ppState.controls, maxDim, { fitMultiplier: 1.8 });
+                } else {
+                    ppState.camera.position.set(120, 100, 200);
+                    ppState.camera.near = 0.01;
+                    ppState.camera.far  = 100000;
+                    ppState.camera.updateProjectionMatrix();
+                    ppState.controls.target.set(0, 0, 0);
+                    ppState.controls.update();
+                }
             });
         }
 
@@ -674,8 +691,18 @@
                 const pos = ppState.camera.position.clone();
                 const target = ppState.controls.target.clone();
 
+                // Compute model-aware near/far to prevent clipping
+                let nearPlane = 0.01, farPlane = 100000;
+                const mdl = ppState.scene ? ppState.scene.getObjectByName('__ppmodel__') : null;
+                if (mdl) {
+                    const mdlBox = new THREE.Box3().setFromObject(mdl);
+                    const mdlSize = mdlBox.getSize(new THREE.Vector3());
+                    const mdlMax = Math.max(mdlSize.x, mdlSize.y, mdlSize.z);
+                    if (mdlMax > 0) { nearPlane = mdlMax * 0.001; farPlane = mdlMax * 100; }
+                }
+
                 if (ppState.isPerspective) {
-                    ppState.camera = new THREE.PerspectiveCamera(45, w / h, 0.1, 10000);
+                    ppState.camera = new THREE.PerspectiveCamera(45, w / h, nearPlane, farPlane);
                     perspBtn.querySelector('i').className = 'fas fa-cube';
                 } else {
                     const dist = pos.distanceTo(target);
@@ -683,7 +710,7 @@
                     ppState.camera = new THREE.OrthographicCamera(
                         -frustumSize * (w / h), frustumSize * (w / h),
                         frustumSize, -frustumSize,
-                        0.1, 10000
+                        nearPlane, farPlane
                     );
                     perspBtn.querySelector('i').className = 'fas fa-vector-square';
                 }
