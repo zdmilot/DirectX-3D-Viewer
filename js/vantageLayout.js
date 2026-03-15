@@ -254,7 +254,7 @@
 
         // Back shield references (lighter panels on back side)
         backShieldNodes: [[], [], [], []],  // per-section arrays of meshes
-        backShieldVisible: [true, true, true, true],
+        backShieldVisible: [true, true, true, false],
 
         // Fixture position debug state
         fixtureDebugMode: false,
@@ -501,7 +501,7 @@
                 color: isLabeled ? (isDark ? 0x2a3d55 : 0x8fa8c0) : trackColor,
             });
             const mesh = new THREE.Mesh(geo, mat);
-            mesh.position.set(x + DECK.TRACK_WIDTH / 2, DECK.SURFACE_Z + 1.25, DECK.TRACK_Y_START + DECK.TRACK_DEPTH / 2);
+            mesh.position.set(x, DECK.SURFACE_Z + 1.25, DECK.TRACK_Y_START + DECK.TRACK_DEPTH / 2);
             mesh.name = `__track_${i}__`;
             mesh.userData.trackNum = i;
             scene.add(mesh);
@@ -4077,7 +4077,9 @@
         vlState.backShieldNodes = backCutouts.map(function (node) {
             return node ? [node] : [];
         });
-        vlState.backShieldVisible = [true, true, true, true];
+        vlState.backShieldVisible = [true, true, true, false];
+        // Hide shield 4 by default
+        if (backCutouts[3]) backCutouts[3].visible = false;
         console.log('[VantageLayout] back cutouts:',
             backCutouts.map(function (n) { return n ? n.name : '(missing)'; }).join(', '));
     }
