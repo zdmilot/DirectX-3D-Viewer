@@ -518,6 +518,7 @@
         const surfaceMesh = new THREE.Mesh(surfaceGeo, surfaceMat);
         surfaceMesh.position.set(deckW / 2 + (-80), DECK.SURFACE_Z - 2, DECK.CANVAS_D / 2 + 51);
         surfaceMesh.name = '__decksurf__';
+        surfaceMesh.visible = false;
         scene.add(surfaceMesh);
 
         // Track slots (tracks 61-80 shown as blocked)
@@ -536,6 +537,7 @@
             mesh.position.set(x, DECK.SURFACE_Z + 1.25, DECK.TRACK_Y_START + DECK.TRACK_DEPTH / 2);
             mesh.name = `__track_${i}__`;
             mesh.userData.trackNum = i;
+            mesh.visible = false;
             scene.add(mesh);
         }
 
@@ -554,12 +556,14 @@
         const frontMesh = new THREE.Mesh(frontGeo, railMat);
         frontMesh.position.set(deckW / 2 + (-80), DECK.SURFACE_Z + 4, DECK.TRACK_Y_START - 4);
         frontMesh.name = '__rail_front__';
+        frontMesh.visible = false;
         scene.add(frontMesh);
         // Back rail
         const backGeo = new THREE.BoxGeometry(deckW, 8, 6);
         const backMesh = new THREE.Mesh(backGeo, railMat.clone());
         backMesh.position.set(deckW / 2 + (-80), DECK.SURFACE_Z + 4, DECK.TRACK_Y_START + DECK.TRACK_DEPTH + 4);
         backMesh.name = '__rail_back__';
+        backMesh.visible = false;
         scene.add(backMesh);
 
         // Grid overlay on deck surface (mm-based via DeckUnits)
@@ -666,16 +670,8 @@
                 // Apply any pre-set settings (cutout visibility)
                 applyCutoutVisibility();
 
-                // Hide procedural geometry — GLTF provides authentic deck visuals
-                const procNames = ['__decksurf__', '__rail_front__', '__rail_back__', '__wastearea__'];
-                procNames.forEach(n => {
-                    const o = vlState.scene.getObjectByName(n);
-                    if (o) o.visible = false;
-                });
-                for (let i = 1; i <= DECK.TRACK_COUNT; i++) {
-                    const o = vlState.scene.getObjectByName(`__track_${i}__`);
-                    if (o) o.visible = false;
-                }
+                // Procedural geometry already starts hidden;
+                // GLTF loaded successfully so it stays hidden.
 
                 // Reposition orientation labels to sit outside the actual GLTF bounds
                 repositionOrientationLabels(model);
@@ -685,7 +681,16 @@
             undefined,
             function (err) {
                 console.warn('VantageLayout: GLTF load failed', err);
-                // Procedural geometry remains visible as fallback
+                // Show procedural geometry as fallback since GLTF failed
+                var procNames = ['__decksurf__', '__rail_front__', '__rail_back__'];
+                procNames.forEach(function (n) {
+                    var o = vlState.scene.getObjectByName(n);
+                    if (o) o.visible = true;
+                });
+                for (var i = 1; i <= DECK.TRACK_COUNT; i++) {
+                    var o = vlState.scene.getObjectByName('__track_' + i + '__');
+                    if (o) o.visible = true;
+                }
             }
         );
     }

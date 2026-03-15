@@ -2236,6 +2236,65 @@
             row.appendChild(moduleInfo);
             row.appendChild(actions);
 
+            // ── Inline labware assignment (deck-layout style) ──
+            if (moduleKey) {
+                var lwRow = document.createElement('div');
+                lwRow.className = 'mfx-slot-labware-row';
+                var lw = mfxState.slotLabware[slot.id];
+                if (lw && lw.rackFileName) {
+                    var lwInfo = document.createElement('span');
+                    lwInfo.className = 'mfx-slot-lw-name';
+                    lwInfo.innerHTML = '<i class="fas fa-box"></i> ' + lw.rackFileName;
+                    lwInfo.title = lw.rackFileName + (lw.ctrFileName ? ' + ' + lw.ctrFileName : '');
+                    lwRow.appendChild(lwInfo);
+
+                    var lwRemove = document.createElement('button');
+                    lwRemove.className = 'vl-site-btn vl-site-btn-remove';
+                    lwRemove.title = 'Remove labware';
+                    lwRemove.innerHTML = '<i class="fas fa-times-circle"></i>';
+                    (function(sid) {
+                        lwRemove.addEventListener('click', function (e) {
+                            e.stopPropagation();
+                            delete mfxState.slotLabware[sid];
+                            updateSlotList();
+                            setMFXStatus('Cleared labware from ' + slot.label);
+                        });
+                    })(slot.id);
+                    lwRow.appendChild(lwRemove);
+                } else {
+                    var lwAssignRck = document.createElement('button');
+                    lwAssignRck.className = 'vl-site-btn vl-site-btn-rack';
+                    lwAssignRck.title = 'Assign rack (.rck)';
+                    lwAssignRck.innerHTML = '<i class="fas fa-box"></i> Rack';
+                    (function(sid) {
+                        lwAssignRck.addEventListener('click', function (e) {
+                            e.stopPropagation();
+                            mfxState._pendingLabwareSlot = sid;
+                            mfxState._pendingLabwareType = 'rck';
+                            var inp = document.getElementById('mfx-lw-rack-input');
+                            if (inp) inp.click();
+                        });
+                    })(slot.id);
+                    lwRow.appendChild(lwAssignRck);
+
+                    var lwAssignCtr = document.createElement('button');
+                    lwAssignCtr.className = 'vl-site-btn vl-site-btn-rack';
+                    lwAssignCtr.title = 'Assign container (.ctr)';
+                    lwAssignCtr.innerHTML = '<i class="fas fa-vial"></i> Ctr';
+                    (function(sid) {
+                        lwAssignCtr.addEventListener('click', function (e) {
+                            e.stopPropagation();
+                            mfxState._pendingLabwareSlot = sid;
+                            mfxState._pendingLabwareType = 'ctr';
+                            var inp = document.getElementById('mfx-lw-ctr-input');
+                            if (inp) inp.click();
+                        });
+                    })(slot.id);
+                    lwRow.appendChild(lwAssignCtr);
+                }
+                row.appendChild(lwRow);
+            }
+
             row.addEventListener('click', function () {
                 selectSlot(slot.id);
             });

@@ -1520,37 +1520,10 @@
                     </div>
                 </div>
 
-                <!-- Left Panel: Carrier selector + Module catalog -->
+                <!-- Left Panel: Carrier Details + Carrier Type + Module Catalog -->
                 <div class="vl-left-panel" id="mfx-left-panel">
-                    <div class="vl-panel-section">
-                        <div class="vl-panel-header">
-                            <i class="fas fa-th-large"></i> Carrier Type
-                        </div>
-                        <div class="mfx-carrier-tabs" id="mfx-carrier-tabs">
-                            <!-- populated by JS -->
-                        </div>
-                    </div>
-                    <div class="vl-panel-divider"></div>
-                    <div class="vl-panel-section">
-                        <div class="vl-panel-header">
-                            <i class="fas fa-puzzle-piece"></i> Module Catalog
-                        </div>
-                        <div class="mfx-catalog-filters">
-                            <select class="mfx-cat-select" id="mfx-cat-filter">
-                                <option value="All">All Categories</option>
-                            </select>
-                            <input type="text" class="mfx-search-input" id="mfx-module-search" placeholder="Search modules…">
-                        </div>
-                        <div class="mfx-module-list" id="mfx-module-list">
-                            <!-- populated by JS -->
-                        </div>
-                    </div>
-                </div>
 
-                <!-- Right Panel: Carrier metadata + Slot list + Labware -->
-                <div class="vl-right-panel" id="mfx-right-panel">
-
-                    <!-- Carrier Metadata Section (collapsible) -->
+                    <!-- Carrier Details (collapsible) -->
                     <div class="mfx-rp-section">
                         <div class="mfx-rp-section-header" id="mfx-meta-toggle">
                             <i class="fas fa-id-card"></i> Carrier Details
@@ -1588,9 +1561,41 @@
                         </div>
                     </div>
 
-                    <div class="vl-panel-divider"></div>
+                    <!-- Carrier Type (collapsible) -->
+                    <div class="mfx-rp-section">
+                        <div class="mfx-rp-section-header" id="mfx-carrier-type-toggle">
+                            <i class="fas fa-th-large"></i> Carrier Type
+                            <i class="fas fa-chevron-down mfx-rp-chevron"></i>
+                        </div>
+                        <div class="mfx-rp-section-body" id="mfx-carrier-type-body">
+                            <div class="mfx-carrier-tabs" id="mfx-carrier-tabs">
+                                <!-- populated by JS -->
+                            </div>
+                        </div>
+                    </div>
 
-                    <!-- Slot List Section -->
+                    <!-- Module Catalog (collapsible) -->
+                    <div class="mfx-rp-section">
+                        <div class="mfx-rp-section-header" id="mfx-catalog-toggle">
+                            <i class="fas fa-puzzle-piece"></i> Module Catalog
+                            <i class="fas fa-chevron-down mfx-rp-chevron"></i>
+                        </div>
+                        <div class="mfx-rp-section-body mfx-catalog-section-body" id="mfx-catalog-body">
+                            <div class="mfx-catalog-filters">
+                                <select class="mfx-cat-select" id="mfx-cat-filter">
+                                    <option value="All">All Categories</option>
+                                </select>
+                                <input type="text" class="mfx-search-input" id="mfx-module-search" placeholder="Search modules…">
+                            </div>
+                            <div class="mfx-module-list" id="mfx-module-list">
+                                <!-- populated by JS -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Panel: Slot list with inline labware -->
+                <div class="vl-right-panel" id="mfx-right-panel">
                     <div class="mfx-rp-section">
                         <div class="mfx-rp-section-header" id="mfx-slots-toggle">
                             <i class="fas fa-list-ol"></i> Carrier Slots
@@ -1607,7 +1612,7 @@
                             </div>
 
                             <div class="mfx-slot-list" id="mfx-slot-list">
-                                <!-- populated by JS -->
+                                <!-- populated by JS — each slot row now includes inline labware buttons -->
                             </div>
 
                             <div class="vl-site-actions">
@@ -1618,47 +1623,9 @@
                         </div>
                     </div>
 
-                    <div class="vl-panel-divider"></div>
-
-                    <!-- Per-Slot Labware Assignment Section -->
-                    <div class="mfx-rp-section">
-                        <div class="mfx-rp-section-header" id="mfx-labware-toggle">
-                            <i class="fas fa-flask"></i> Labware Assignment
-                            <i class="fas fa-chevron-down mfx-rp-chevron"></i>
-                        </div>
-                        <div class="mfx-rp-section-body" id="mfx-labware-body">
-                            <div class="mfx-labware-hint" id="mfx-labware-hint">
-                                Select a slot above to assign labware.
-                            </div>
-                            <div id="mfx-labware-form" style="display:none">
-                                <h4 class="lwe-subsection" id="mfx-labware-slot-title">Slot 1</h4>
-                                <div class="lwe-field">
-                                    <label class="lwe-label">Rack (.rck)</label>
-                                    <div class="lwe-field-row" style="margin-bottom:0">
-                                        <div class="lwe-field">
-                                            <input type="text" id="mfx-lw-rack-name" class="lwe-input" placeholder="Rack file name" readonly value="">
-                                        </div>
-                                        <button class="lwe-btn lwe-btn-sm" id="mfx-lw-rack-open" title="Load .rck file" style="margin-top:0;align-self:flex-end"><i class="fas fa-folder-open"></i></button>
-                                        <input type="file" id="mfx-lw-rack-input" accept=".rck" style="display:none">
-                                    </div>
-                                </div>
-                                <div class="lwe-field">
-                                    <label class="lwe-label">Container (.ctr)</label>
-                                    <div class="lwe-field-row" style="margin-bottom:0">
-                                        <div class="lwe-field">
-                                            <input type="text" id="mfx-lw-ctr-name" class="lwe-input" placeholder="Container file name" readonly value="">
-                                        </div>
-                                        <button class="lwe-btn lwe-btn-sm" id="mfx-lw-ctr-open" title="Load .ctr file" style="margin-top:0;align-self:flex-end"><i class="fas fa-folder-open"></i></button>
-                                        <input type="file" id="mfx-lw-ctr-input" accept=".ctr" style="display:none">
-                                    </div>
-                                </div>
-                                <div class="mfx-lw-summary" id="mfx-lw-summary"></div>
-                                <div class="lwe-site-actions">
-                                    <button class="lwe-btn lwe-btn-sm lwe-btn-danger" id="mfx-lw-clear"><i class="fas fa-times"></i> Clear Labware</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <!-- Hidden file inputs for labware loading (shared, reused per-slot) -->
+                    <input type="file" id="mfx-lw-rack-input" accept=".rck" style="display:none">
+                    <input type="file" id="mfx-lw-ctr-input" accept=".ctr" style="display:none">
                 </div>
 
                 <!-- Panel collapse toggles -->

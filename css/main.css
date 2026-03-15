@@ -4044,6 +4044,7 @@ body {
     flex-direction: column;
     gap: 3px;
     overflow-y: auto;
+    overflow-x: hidden;
     flex: 1;
     min-height: 0;
 }
@@ -4051,12 +4052,15 @@ body {
 .mfx-slot-row {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 6px;
     padding: 6px 9px;
     border-radius: 5px;
     cursor: pointer;
     border: 1px solid transparent;
     transition: background 0.15s, border-color 0.15s;
+    overflow: hidden;
+    min-width: 0;
 }
 .mfx-slot-row:hover {
     background: rgba(95, 151, 197, 0.10);
@@ -4467,22 +4471,28 @@ body {
     display: flex;
     align-items: center;
     gap: 6px;
-    padding: 8px 10px;
-    font-size: 12px;
+    padding: 8px 12px;
+    font-size: 11px;
     font-weight: 700;
-    color: #444;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary);
+    background: rgba(0,0,0,0.03);
+    border-bottom: 1px solid var(--card-border);
     cursor: pointer;
     user-select: none;
+    flex-shrink: 0;
     transition: background .15s;
 }
 .mfx-rp-section-header:hover {
-    background: rgba(0,0,0,.04);
+    background: rgba(2,117,216,0.06);
 }
 [data-theme="dark"] .mfx-rp-section-header {
-    color: #b0c4d4;
+    background: rgba(255,255,255,0.03);
+    color: var(--text-secondary);
 }
 [data-theme="dark"] .mfx-rp-section-header:hover {
-    background: rgba(255,255,255,.04);
+    background: rgba(255,255,255,.06);
 }
 .mfx-rp-chevron {
     margin-left: auto;
@@ -4494,7 +4504,8 @@ body {
     transform: rotate(-90deg);
 }
 .mfx-rp-section-body {
-    padding: 6px 10px 10px;
+    padding: 8px 12px 10px;
+    overflow-x: hidden;
 }
 .mfx-rp-section-body.is-hidden {
     display: none;
