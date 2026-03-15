@@ -706,8 +706,8 @@
         if (window.LabwareGenModule) window.LabwareGenModule.updateTheme();
         // Also update hamilton import theme
         if (window.HamiltonImportModule) window.HamiltonImportModule.updateTheme();
-        // Also update vantage layout theme
-        if (window.VantageLayoutModule) window.VantageLayoutModule.updateTheme();
+        // Also update deck layout theme
+        if (window.DeckLayoutModule) window.DeckLayoutModule.updateTheme();
         // Also update MFX carrier theme
         if (window.MFXCarrierModule) window.MFXCarrierModule.updateTheme();
 
@@ -730,9 +730,9 @@
             panel.classList.toggle('is-active', panel.dataset.viewPanel === viewName);
         });
 
-        // Show settings button only for vantage layout applet
+        // Show settings button only for deck layout applet
         if (dom.btnSettings) {
-            dom.btnSettings.style.display = viewName === 'vantage' ? '' : 'none';
+            dom.btnSettings.style.display = viewName === 'deck' ? '' : 'none';
         }
 
         // Initialize converter on first switch
@@ -756,9 +756,9 @@
             setTimeout(() => window.HamiltonImportModule.init(), 50);
         }
 
-        // Initialize vantage layout on first switch
-        if (viewName === 'vantage' && window.VantageLayoutModule) {
-            setTimeout(() => window.VantageLayoutModule.init(), 50);
+        // Initialize deck layout on first switch
+        if (viewName === 'deck' && window.DeckLayoutModule) {
+            setTimeout(() => window.DeckLayoutModule.init(), 50);
         }
 
         // Initialize MFX carrier on first switch
@@ -1528,8 +1528,8 @@
             img.src = window.LabwareGenModule.screenshotPreviewDataURL(opts);
         } else if (ssModalSource === 'hamilton' && window.HamiltonImportModule && window.HamiltonImportModule.screenshotPreviewDataURL) {
             img.src = window.HamiltonImportModule.screenshotPreviewDataURL(opts);
-        } else if (ssModalSource === 'vantage' && window.VantageLayoutModule && window.VantageLayoutModule.screenshotPreviewDataURL) {
-            img.src = window.VantageLayoutModule.screenshotPreviewDataURL(opts);
+        } else if (ssModalSource === 'deck' && window.DeckLayoutModule && window.DeckLayoutModule.screenshotPreviewDataURL) {
+            img.src = window.DeckLayoutModule.screenshotPreviewDataURL(opts);
         } else if (ssModalSource === 'mfx' && window.MFXCarrierModule && window.MFXCarrierModule.screenshotPreviewDataURL) {
             img.src = window.MFXCarrierModule.screenshotPreviewDataURL(opts);
         } else {
@@ -1553,8 +1553,8 @@
             window.LabwareGenModule.saveScreenshot(format, opts);
         } else if (ssModalSource === 'hamilton' && window.HamiltonImportModule && window.HamiltonImportModule.saveScreenshot) {
             window.HamiltonImportModule.saveScreenshot(format, opts);
-        } else if (ssModalSource === 'vantage' && window.VantageLayoutModule && window.VantageLayoutModule.saveScreenshot) {
-            window.VantageLayoutModule.saveScreenshot(format, opts);
+        } else if (ssModalSource === 'deck' && window.DeckLayoutModule && window.DeckLayoutModule.saveScreenshot) {
+            window.DeckLayoutModule.saveScreenshot(format, opts);
         } else if (ssModalSource === 'mfx' && window.MFXCarrierModule && window.MFXCarrierModule.saveScreenshot) {
             window.MFXCarrierModule.saveScreenshot(format, opts);
         } else {
@@ -2382,11 +2382,11 @@
             });
         }
 
-        // Vantage layout screenshot button
-        const vlSsBtn = $('#vl-screenshot');
-        if (vlSsBtn) {
-            vlSsBtn.addEventListener('click', () => {
-                openScreenshotModal('vantage');
+        // Deck layout screenshot button
+        const dlSsBtn = $('#dl-screenshot');
+        if (dlSsBtn) {
+            dlSsBtn.addEventListener('click', () => {
+                openScreenshotModal('deck');
             });
         }
 
