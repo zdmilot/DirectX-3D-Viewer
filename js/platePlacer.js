@@ -124,6 +124,21 @@
         function tick() {
             ppState.animId = requestAnimationFrame(tick);
             ppState.controls.update();
+
+            // Dynamically tighten near/far planes based on camera distance.
+            // This keeps depth buffer precision high at every zoom level,
+            // preventing labels from z-fighting with the body on zoom-out.
+            if (ppState.camera.isPerspectiveCamera) {
+                var dist = ppState.camera.position.distanceTo(ppState.controls.target);
+                if (dist > 0) {
+                    var newNear = Math.max(dist * 0.01, 0.01);
+                    var newFar  = Math.max(dist * 100, 1000);
+                    ppState.camera.near = newNear;
+                    ppState.camera.far  = newFar;
+                    ppState.camera.updateProjectionMatrix();
+                }
+            }
+
             ppState.renderer.render(ppState.scene, ppState.camera);
             drawPlacerGizmo();
             updatePlacerCamDisplay();
