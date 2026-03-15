@@ -1,5 +1,5 @@
 /* ============================================================
-   Vantage Deck Layout — Place carriers on the Hamilton Vantage
+   Deck Layout — Place carriers on the Hamilton Vantage
    deck using .tml metadata, track-snapping, and SBS plate
    auto-placement.
    ============================================================ */
@@ -539,25 +539,6 @@
         backMesh.position.set(deckW / 2 + (-80), DECK.SURFACE_Z + 4, DECK.TRACK_Y_START + DECK.TRACK_DEPTH + 4);
         backMesh.name = '__rail_back__';
         scene.add(backMesh);
-
-        // Blocked zone indicator for tracks 61-80 (waste / entry-exit area)
-        const blockedStartX = DECK.FIRST_TRACK_X + (MAX_USABLE_TRACK) * DECK.TRACK_SPACING;
-        const blockedEndX   = DECK.FIRST_TRACK_X + (DECK.TRACK_COUNT - 1) * DECK.TRACK_SPACING + DECK.TRACK_WIDTH / 2;
-        const blockedWidth  = blockedEndX - blockedStartX;
-        const blockedGeo = new THREE.BoxGeometry(blockedWidth, 3, DECK.TRACK_DEPTH);
-        const blockedMat = new THREE.MeshLambertMaterial({
-            color: isDark ? 0x442222 : 0xffcccc,
-            transparent: true,
-            opacity: 0.45,
-        });
-        const blockedMesh = new THREE.Mesh(blockedGeo, blockedMat);
-        blockedMesh.position.set(
-            blockedStartX + blockedWidth / 2,
-            DECK.SURFACE_Z + 3,
-            DECK.TRACK_Y_START + DECK.TRACK_DEPTH / 2
-        );
-        blockedMesh.name = '__blocked_zone__';
-        scene.add(blockedMesh);
 
         // Grid overlay on deck surface (mm-based via DeckUnits)
         const gridColor = isDark ? DARK_GRID : LIGHT_GRID;
@@ -3031,29 +3012,6 @@
     // ================================================================
     //  Canvas Mouse Events (click to select, drag placed carrier to move)
     // ================================================================
-
-    // ---- VL Trash drop-zone helpers ----
-    function _getVLTrashEl() {
-        return document.getElementById('vl-trash-zone');
-    }
-    function showVLTrashZone(show) {
-        const el = _getVLTrashEl();
-        if (!el) return;
-        el.classList.toggle('visible', !!show);
-    }
-    function updateVLTrashHover(e) {
-        const el = _getVLTrashEl();
-        if (!el) return;
-        el.classList.toggle('hover', isVLTrashHit(e));
-    }
-    function isVLTrashHit(e) {
-        const el = _getVLTrashEl();
-        if (!el || !el.classList.contains('visible')) return false;
-        const r = el.getBoundingClientRect();
-        return e.clientX >= r.left && e.clientX <= r.right &&
-               e.clientY >= r.top  && e.clientY <= r.bottom;
-    }
-
     function wireCanvasEvents() {
         const canvas = vlState.canvas;
         if (!canvas) return;
@@ -3135,6 +3093,9 @@
         // Hide the real carrier mesh while dragging
         carrier.mesh.visible = false;
 
+        // Show trash drop zone
+        showVLTrashZone(true);
+
         document.addEventListener('mousemove', onCanvasCarrierDragMove);
         document.addEventListener('mouseup',   onCanvasCarrierDragEnd);
     }
@@ -3165,6 +3126,15 @@
             });
         }
         vlState.hoveredTrack = clamped;
+
+        // Check if hovering over trash zone — tint ghost red
+        const overTrash = isVLTrashHit(e);
+        updateVLTrashHover(e);
+        if (overTrash && vlState.ghostMesh) {
+            vlState.ghostMesh.traverse(child => {
+                if (child.isMesh) child.material.color.set(0xdd3c3c);
+            });
+        }
     }
 
     function onCanvasCarrierDragEnd(e) {
@@ -3173,6 +3143,10 @@
 
         if (!vlState.canvasCarrierDrag) return;
         const { carrier } = vlState.canvasCarrierDrag;
+
+        // Check trash zone hit BEFORE hiding it
+        const trashHit = e && isVLTrashHit(e);
+
         vlState.canvasCarrierDrag = null;
 
         // Re-enable orbit controls
@@ -3181,6 +3155,15 @@
         const newTrack = vlState.hoveredTrack;
         destroyGhostMesh();
         vlState.hoveredTrack = null;
+        showVLTrashZone(false);
+
+        // If dropped on trash zone, remove the carrier
+        if (trashHit) {
+            carrier.mesh.visible = true;
+            removeCarrier(carrier.id);
+            showVLStatus('Carrier removed.');
+            return;
+        }
 
         // Restore carrier mesh visibility
         carrier.mesh.visible = true;
