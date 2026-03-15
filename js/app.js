@@ -435,7 +435,8 @@
             canvas: canvas,
             antialias: true,
             alpha: true,
-            preserveDrawingBuffer: true
+            preserveDrawingBuffer: true,
+            logarithmicDepthBuffer: true
         });
         renderer.setPixelRatio(window.devicePixelRatio);
         renderer.setSize(w, h);
@@ -483,6 +484,18 @@
             // Update animation mixers if any
             animMixers.forEach(m => m.update(dt / 1000));
             controls.update();
+
+            // Dynamically tighten near/far planes based on camera distance
+            // to maintain depth precision for labels at every zoom level.
+            if (camera.isPerspectiveCamera) {
+                var dist = camera.position.distanceTo(controls.target);
+                if (dist > 0) {
+                    camera.near = Math.max(dist * 0.001, 0.01);
+                    camera.far  = Math.max(dist * 100, 1000);
+                    camera.updateProjectionMatrix();
+                }
+            }
+
             renderer.render(scene, camera);
             // Update orientation gizmo
             drawGizmo();

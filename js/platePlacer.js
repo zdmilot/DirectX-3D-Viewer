@@ -80,7 +80,8 @@
             canvas: canvas,
             antialias: true,
             alpha: true,
-            preserveDrawingBuffer: true
+            preserveDrawingBuffer: true,
+            logarithmicDepthBuffer: true
         });
         ppState.renderer.setPixelRatio(window.devicePixelRatio);
         ppState.renderer.setSize(w, h);
