@@ -2224,19 +2224,6 @@
         vlState.deckCutouts[cutoutIdx] = false;
         applyCutoutVisibility();
 
-        // Evict any carriers that overlap the waste tracks
-        var wasteTracks = getWasteOccupiedTracks();
-        var toRemove = [];
-        vlState.placedCarriers.forEach(function (carrier) {
-            for (var t = carrier.trackStart; t < carrier.trackStart + carrier.def.tWidth; t++) {
-                if (wasteTracks.has(t)) {
-                    toRemove.push(carrier.id);
-                    break;
-                }
-            }
-        });
-        toRemove.forEach(function (id) { removeCarrier(id); });
-
         // Build and add the waste mesh
         var mesh = buildWasteMesh(cutoutIdx);
         if (mesh) {
@@ -2323,18 +2310,6 @@
 
         vlState.deckCutouts[cutoutIdx] = false;
         applyCutoutVisibility();
-
-        var drawerTracks = getDrawerOccupiedTracks();
-        var toRemove = [];
-        vlState.placedCarriers.forEach(function (carrier) {
-            for (var t = carrier.trackStart; t < carrier.trackStart + carrier.def.tWidth; t++) {
-                if (drawerTracks.has(t)) {
-                    toRemove.push(carrier.id);
-                    break;
-                }
-            }
-        });
-        toRemove.forEach(function (id) { removeCarrier(id); });
 
         var mesh = buildDrawerMesh(cutoutIdx);
         if (mesh) {
@@ -2923,18 +2898,7 @@
             if (t > MAX_USABLE_TRACK) return 'out_of_range';
         }
 
-        // Check waste-occupied tracks
-        var wasteTracks = getWasteOccupiedTracks();
-        for (let t of newRange) {
-            if (wasteTracks.has(t)) return 'waste';
-        }
-
-        // Check drawer-occupied tracks
-        var drawerTracks = getDrawerOccupiedTracks();
-        for (let t of newRange) {
-            if (drawerTracks.has(t)) return 'drawer';
-        }
-
+        // Only check against other placed carriers (tracks 4-60 are fully open)
         for (const carrier of vlState.placedCarriers) {
             if (carrier.id === excludeId) continue;
             for (let t = carrier.trackStart; t < carrier.trackStart + carrier.def.tWidth; t++) {
@@ -3199,9 +3163,8 @@
             // Show collision reason in status bar
             if (collision) {
                 const reason = typeof collision === 'string' && collision.startsWith('carrier:')
-                    ? 'Blocked by ' + collision.slice(8) : collision === 'waste'
-                    ? 'Blocked by waste chute' : collision === 'drawer'
-                    ? 'Blocked by entry/exit drawer' : 'Out of track range';
+                    ? 'Blocked by ' + collision.slice(8)
+                    : 'Tracks 61-80 reserved (waste / entry-exit)';
                 showVLStatus('Track ' + clamped + ': ' + reason, 'error');
             } else {
                 showVLStatus('Track ' + clamped + ' — free');
@@ -3470,9 +3433,8 @@
             // Show collision reason in status bar
             if (collision) {
                 const reason = typeof collision === 'string' && collision.startsWith('carrier:')
-                    ? 'Blocked by ' + collision.slice(8) : collision === 'waste'
-                    ? 'Blocked by waste chute' : collision === 'drawer'
-                    ? 'Blocked by entry/exit drawer' : 'Out of track range';
+                    ? 'Blocked by ' + collision.slice(8)
+                    : 'Tracks 61-80 reserved (waste / entry-exit)';
                 showVLStatus('Track ' + clampedTrack + ': ' + reason, 'error');
             } else {
                 showVLStatus('Track ' + clampedTrack + ' — free');
