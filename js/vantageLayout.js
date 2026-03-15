@@ -503,43 +503,11 @@
     }
 
     // ================================================================
-    //  Build Deck Geometry (procedural — no external file needed)
+    //  Build Deck Geometry (labels, grid, orientation — no procedural deck/tracks)
     // ================================================================
     function buildDeckGeometry() {
         const scene = vlState.scene;
         const isDark = vlState.isDark;
-
-        // Deck surface base
-        const deckColor = isDark ? 0x1a2530 : 0xd0dce8;
-        const deckW = DECK.CANVAS_W;
-        const deckD = DECK.CANVAS_D;
-        const surfaceGeo = new THREE.BoxGeometry(deckW, 4, deckD);
-        const surfaceMat = new THREE.MeshLambertMaterial({ color: deckColor });
-        const surfaceMesh = new THREE.Mesh(surfaceGeo, surfaceMat);
-        surfaceMesh.position.set(deckW / 2 + (-80), DECK.SURFACE_Z - 2, DECK.CANVAS_D / 2 + 51);
-        surfaceMesh.name = '__decksurf__';
-        surfaceMesh.visible = false;
-        scene.add(surfaceMesh);
-
-        // Track slots (tracks 61-80 shown as blocked)
-        const trackColor = isDark ? 0x151f2a : 0xb0bfcf;
-        const blockedTrackColor = isDark ? 0x2a1515 : 0xc09090;
-        for (let i = 1; i <= DECK.TRACK_COUNT; i++) {
-            const x = DECK.FIRST_TRACK_X + (i - 1) * DECK.TRACK_SPACING;
-            const isLabeled = DECK.LABELED_TRACKS.has(i);
-            const isBlocked = i > MAX_USABLE_TRACK && i < SMALL_CARRIER_TRACK_START;
-            const geo = new THREE.BoxGeometry(DECK.TRACK_WIDTH, 2.5, DECK.TRACK_DEPTH);
-            const baseColor = isBlocked ? blockedTrackColor
-                : isLabeled ? (isDark ? 0x2a3d55 : 0x8fa8c0)
-                : trackColor;
-            const mat = new THREE.MeshLambertMaterial({ color: baseColor });
-            const mesh = new THREE.Mesh(geo, mat);
-            mesh.position.set(x, DECK.SURFACE_Z + 1.25, DECK.TRACK_Y_START + DECK.TRACK_DEPTH / 2);
-            mesh.name = `__track_${i}__`;
-            mesh.userData.trackNum = i;
-            mesh.visible = false;
-            scene.add(mesh);
-        }
 
         // Track number labels (sprite-based text above every track)
         for (let i = 1; i <= DECK.TRACK_COUNT; i++) {
@@ -547,24 +515,6 @@
             const color = (i === 4) ? '#ee2222' : undefined;
             addTrackLabel(String(i), x, isDark, color);
         }
-
-        // Deck frame walls (side rails)
-        const railColor = isDark ? 0x202d3a : 0xa0aec0;
-        const railMat = new THREE.MeshLambertMaterial({ color: railColor });
-        // Front rail
-        const frontGeo = new THREE.BoxGeometry(deckW, 8, 6);
-        const frontMesh = new THREE.Mesh(frontGeo, railMat);
-        frontMesh.position.set(deckW / 2 + (-80), DECK.SURFACE_Z + 4, DECK.TRACK_Y_START - 4);
-        frontMesh.name = '__rail_front__';
-        frontMesh.visible = false;
-        scene.add(frontMesh);
-        // Back rail
-        const backGeo = new THREE.BoxGeometry(deckW, 8, 6);
-        const backMesh = new THREE.Mesh(backGeo, railMat.clone());
-        backMesh.position.set(deckW / 2 + (-80), DECK.SURFACE_Z + 4, DECK.TRACK_Y_START + DECK.TRACK_DEPTH + 4);
-        backMesh.name = '__rail_back__';
-        backMesh.visible = false;
-        scene.add(backMesh);
 
         // Grid overlay on deck surface (mm-based via DeckUnits)
         const gridColor = isDark ? DARK_GRID : LIGHT_GRID;
@@ -670,9 +620,6 @@
                 // Apply any pre-set settings (cutout visibility)
                 applyCutoutVisibility();
 
-                // Procedural geometry already starts hidden;
-                // GLTF loaded successfully so it stays hidden.
-
                 // Reposition orientation labels to sit outside the actual GLTF bounds
                 repositionOrientationLabels(model);
 
@@ -680,17 +627,8 @@
             },
             undefined,
             function (err) {
-                console.warn('VantageLayout: GLTF load failed', err);
-                // Show procedural geometry as fallback since GLTF failed
-                var procNames = ['__decksurf__', '__rail_front__', '__rail_back__'];
-                procNames.forEach(function (n) {
-                    var o = vlState.scene.getObjectByName(n);
-                    if (o) o.visible = true;
-                });
-                for (var i = 1; i <= DECK.TRACK_COUNT; i++) {
-                    var o = vlState.scene.getObjectByName('__track_' + i + '__');
-                    if (o) o.visible = true;
-                }
+                console.warn('VantageLayout: GLTF load failed — deck 3D model is required', err);
+                showVLStatus('Deck 3D model failed to load', 'error');
             }
         );
     }
