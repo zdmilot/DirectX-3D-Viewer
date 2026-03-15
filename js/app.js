@@ -993,6 +993,8 @@
         if (window.MFXCarrierModule) window.MFXCarrierModule.updateTheme();
         // Also update labware editor theme
         if (window.LabwareEditorModule) window.LabwareEditorModule.updateTheme();
+        // Also update carrier editor theme
+        if (window.CarrierEditorModule) window.CarrierEditorModule.updateTheme();
 
     }
 
@@ -1052,6 +1054,11 @@
         // Initialize labware editor on first switch
         if (viewName === 'labware-editor' && window.LabwareEditorModule) {
             setTimeout(() => window.LabwareEditorModule.init(), 50);
+        }
+
+        // Initialize carrier editor on first switch
+        if (viewName === 'carrier-editor' && window.CarrierEditorModule) {
+            setTimeout(() => window.CarrierEditorModule.init(), 50);
         }
 
         // Auto-collapse sidebar after navigation
@@ -1822,6 +1829,8 @@
             img.src = window.MFXCarrierModule.screenshotPreviewDataURL(opts);
         } else if (ssModalSource === 'labware-editor' && window.LabwareEditorModule && window.LabwareEditorModule.screenshotPreviewDataURL) {
             img.src = window.LabwareEditorModule.screenshotPreviewDataURL(opts);
+        } else if (ssModalSource === 'carrier-editor' && window.CarrierEditorModule && window.CarrierEditorModule.screenshotPreviewDataURL) {
+            img.src = window.CarrierEditorModule.screenshotPreviewDataURL(opts);
         } else {
             img.src = screenshotPreviewDataURL(opts);
         }
@@ -1849,6 +1858,8 @@
             window.MFXCarrierModule.saveScreenshot(format, opts);
         } else if (ssModalSource === 'labware-editor' && window.LabwareEditorModule && window.LabwareEditorModule.saveScreenshot) {
             window.LabwareEditorModule.saveScreenshot(format, opts);
+        } else if (ssModalSource === 'carrier-editor' && window.CarrierEditorModule && window.CarrierEditorModule.saveScreenshot) {
+            window.CarrierEditorModule.saveScreenshot(format, opts);
         } else {
             saveScreenshot(format, opts);
         }

@@ -4772,3 +4772,41 @@ body {
     height: 28px;
     border-radius: 4px;
 }
+
+/* ── Carrier Editor ──────────────────────────────────────── */
+#carrier-editor-host { flex-direction: column; }
+
+.ce-preview-col {
+    flex: 1;
+    position: relative;
+    min-width: 300px;
+    overflow: hidden;
+}
+#ce-canvas {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.ce-toolbar {
+    top: 0;
+    right: 0;
+}
+
+#ce-gizmo-canvas {
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
+}
+
+.lwe-mode-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #333;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 4px;
+}
+[data-theme="dark"] .lwe-mode-title { color: #ccdde8; }

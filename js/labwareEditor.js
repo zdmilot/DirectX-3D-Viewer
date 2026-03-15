@@ -1,8 +1,8 @@
 /* ============================================================
    Labware Editor — Create, edit and modify Hamilton labware
-   definitions (racks, containers, carriers) with 3D preview,
-   snap regions, and full file I/O.
-   Supports: .rck, .ctr, .tml file formats
+   definitions (racks, containers) with 3D preview and full
+   file I/O.
+   Supports: .rck, .ctr file formats
    ============================================================ */
 (function () {
     'use strict';
@@ -18,13 +18,8 @@
     const LIGHT_GRID = 0xcccccc;
     const DARK_GRID  = 0x2a3a4a;
 
-    const SNAP_COLOR    = 0x4488ff;
-    const SNAP_HOVER    = 0x66aaff;
-    const SNAP_ACTIVE   = 0x22cc66;
-    const SITE_COLORS   = [0x5588cc, 0x55aa77, 0xcc8855, 0xaa5577, 0x7766aa, 0x88aa55];
     const WELL_COLOR    = 0x3399dd;
     const PLATE_COLOR   = 0xc0c8d0;
-    const CARRIER_COLOR = 0x607080;
 
     // Container shape enums (match Hamilton's encoding)
     const SHAPE = {
@@ -64,20 +59,13 @@
         toolbarCollapsed: false,
         animId: null,
 
-        // Editor mode: 'rack', 'container', 'carrier'
+        // Editor mode: 'rack', 'container'
         mode: 'rack',
         dirty: false,
 
         // Current labware data
         rack: null,
         container: null,
-        carrier: null,
-
-        // Snap/selection
-        selectedSiteIdx: -1,
-        hoveredSiteIdx: -1,
-        snapHelpers: [],
-        siteBoxes: [],
 
         // Ruler state
         rulerActive: false,
@@ -166,40 +154,6 @@
                     height: 10.0,
                     minHeight: 0,
                     maxHeight: 10.0,
-                },
-            ],
-        };
-    }
-
-    function defaultCarrier() {
-        return {
-            viewName: 'New Carrier',
-            description: '',
-            dimDx: 135.0,
-            dimDy: 497.0,
-            dimDz: 130.0,
-            backgroundColor: '#607080',
-            bitmap: '',
-            image3D: '',
-            model3D: '',
-            readOnly: false,
-            categories: [],
-            properties: [],
-            sites: [
-                {
-                    id: 1,
-                    label: '1',
-                    x: 4.0,
-                    y: 8.5,
-                    z: 112.0,
-                    dx: 127.0,
-                    dy: 86.0,
-                    labwareFile: '',
-                    isCovered: false,
-                    visible: true,
-                    snapBase: true,
-                    isStack: false,
-                    stackSize: 1,
                 },
             ],
         };
@@ -296,16 +250,13 @@
         // -- Initialize default state --
         st.rack = defaultRack();
         st.container = defaultContainer();
-        st.carrier = defaultCarrier();
 
         // -- Wire UI --
         wireModeTabs();
         wireRackForm();
         wireContainerForm();
-        wireCarrierForm();
         wireToolbar();
         wireFileControls();
-        wireSiteInteraction();
         wireScreenshotButton();
 
         // Load initial mode
@@ -327,7 +278,7 @@
     }
 
     // ================================================================
-    //  Mode Switching (rack / container / carrier)
+    //  Mode Switching (rack / container)
     // ================================================================
     function switchMode(mode) {
         st.mode = mode;
@@ -340,11 +291,9 @@
         // Toggle form sections
         const rackForm = $('#lwe-rack-section');
         const ctrForm  = $('#lwe-container-section');
-        const carForm  = $('#lwe-carrier-section');
 
         if (rackForm) rackForm.style.display = mode === 'rack' ? '' : 'none';
         if (ctrForm)  ctrForm.style.display  = mode === 'container' ? '' : 'none';
-        if (carForm)  carForm.style.display  = mode === 'carrier' ? '' : 'none';
 
         // Update status
         setStatus('Editing ' + mode);
@@ -360,7 +309,7 @@
     }
 
     // ================================================================
-    //  HxCfgFile Parser (text format — handles .rck, .ctr, .tml)
+    //  HxCfgFile Parser (text format — handles .rck, .ctr)
     // ================================================================
     function parseHxCfg(text) {
         const map = {};
@@ -509,54 +458,6 @@
         return ctr;
     }
 
-    /** Parse .tml carrier template file → carrier definition */
-    function parseTmlFile(text) {
-        const cfg = parseHxCfg(text);
-        const car = defaultCarrier();
-
-        car.viewName    = cfg['ViewName'] || 'Imported Carrier';
-        car.description = cfg['Description'] || '';
-        car.dimDx       = parseFloat(cfg['Dim.Dx']) || 135;
-        car.dimDy       = parseFloat(cfg['Dim.Dy']) || 497;
-        car.dimDz       = parseFloat(cfg['Dim.Dz']) || 130;
-        car.bitmap      = cfg['Bitmap'] || '';
-        car.image3D     = cfg['Image3D'] || '';
-        car.model3D     = cfg['3DModel'] || '';
-        car.backgroundColor = intToColor(parseInt(cfg['BackgrndClr']) || 6324096);
-        car.readOnly    = cfg['ReadOnly'] === '1';
-
-        // Properties
-        var propCnt = parseInt(cfg['PropertyCnt']) || 0;
-        for (let i = 1; i <= propCnt; i++) {
-            var propName = cfg['Property.' + i];
-            var propVal  = cfg['PropertyValue.' + i];
-            if (propName) car.properties.push({ name: propName, value: propVal || '' });
-        }
-
-        // Parse sites
-        var siteCnt = parseInt(cfg['Site.Cnt']) || 0;
-        car.sites = [];
-        for (let i = 1; i <= siteCnt; i++) {
-            car.sites.push({
-                id: parseInt(cfg['Site.' + i + '.Id']) || i,
-                label: cfg['Site.' + i + '.Label'] || String(i),
-                x: parseFloat(cfg['Site.' + i + '.X']) || 0,
-                y: parseFloat(cfg['Site.' + i + '.Y']) || 0,
-                z: parseFloat(cfg['Site.' + i + '.Z']) || 0,
-                dx: parseFloat(cfg['Site.' + i + '.Dx']) || 127,
-                dy: parseFloat(cfg['Site.' + i + '.Dy']) || 86,
-                labwareFile: cfg['Site.' + i + '.LabwareFile'] || '',
-                isCovered: cfg['Site.' + i + '.IsCovered'] === '1',
-                visible: cfg['Site.' + i + '.Visible'] !== '0',
-                snapBase: cfg['Site.' + i + '.SnapBase'] === '1',
-                isStack: cfg['Site.' + i + '.Stack'] === '1',
-                stackSize: parseInt(cfg['Site.' + i + '.StackSize']) || 1,
-            });
-        }
-
-        return car;
-    }
-
     // ================================================================
     //  File Writers — generate HxCfgFile text output
     // ================================================================
@@ -699,71 +600,6 @@
         return lines.join('\r\n') + '\r\n';
     }
 
-    /** Write .tml file text from carrier definition */
-    function writeTmlFile(car) {
-        var lines = [];
-        lines.push('HxCfgFile,3;');
-        lines.push('');
-        lines.push('ConfigIsValid,Y;');
-        lines.push('');
-        lines.push('DataDef,TEMPLATE,1,default,');
-        lines.push('{');
-
-        function w(key, val) { lines.push(key + ', "' + val + '",'); }
-
-        w('BackgrndClr', colorToInt(car.backgroundColor));
-        w('Barcode.Value', '');
-        w('Bitmap', car.bitmap || '');
-        w('CategoryCnt', String(car.categories.length));
-        for (let i = 0; i < car.categories.length; i++) {
-            w('Category.' + i + '.Id', car.categories[i]);
-        }
-        w('Description', car.description);
-        w('Dim.Dx', round3(car.dimDx));
-        w('Dim.Dy', round3(car.dimDy));
-        w('Dim.Dz', round3(car.dimDz));
-
-        // Properties
-        w('PropertyCnt', String(car.properties.length));
-        for (let i = 0; i < car.properties.length; i++) {
-            w('Property.' + (i + 1), car.properties[i].name);
-            w('PropertyValue.' + (i + 1), car.properties[i].value);
-        }
-
-        w('ReadOnly', car.readOnly ? '1' : '0');
-
-        // Sites
-        for (let i = 0; i < car.sites.length; i++) {
-            var site = car.sites[i];
-            var idx = i + 1;
-            w('Site.' + idx + '.Dx', round3(site.dx));
-            w('Site.' + idx + '.Dy', round3(site.dy));
-            w('Site.' + idx + '.Id', String(site.id));
-            w('Site.' + idx + '.IsCovered', site.isCovered ? '1' : '0');
-            w('Site.' + idx + '.Label', site.label || String(idx));
-            w('Site.' + idx + '.LabwareFile', site.labwareFile || '');
-            w('Site.' + idx + '.SnapBase', site.snapBase ? '1' : '0');
-            w('Site.' + idx + '.Stack', site.isStack ? '1' : '0');
-            w('Site.' + idx + '.StackSize', String(site.stackSize));
-            w('Site.' + idx + '.Visible', site.visible ? '1' : '0');
-            w('Site.' + idx + '.X', round3(site.x));
-            w('Site.' + idx + '.Y', round3(site.y));
-            w('Site.' + idx + '.Z', round3(site.z));
-        }
-        w('Site.Cnt', String(car.sites.length));
-
-        w('UseBndry', '0');
-        w('ViewName', car.viewName);
-        w('Visible', '0');
-
-        if (car.model3D) w('3DModel', car.model3D);
-
-        lines.push('};');
-        lines.push('');
-        lines.push(generateFooter());
-        return lines.join('\r\n') + '\r\n';
-    }
-
     function generateFooter() {
         var now = new Date();
         var time = now.getFullYear() + '-' +
@@ -794,14 +630,6 @@
             });
             st.scene.remove(old);
         }
-        // Clear snap helpers
-        st.snapHelpers.forEach(h => {
-            st.scene.remove(h);
-            if (h.geometry) h.geometry.dispose();
-            if (h.material) h.material.dispose();
-        });
-        st.snapHelpers = [];
-        st.siteBoxes = [];
         st.model = null;
     }
 
@@ -831,8 +659,6 @@
             generateRack3D(st.rack, st.container);
         } else if (st.mode === 'container') {
             generateContainer3D(st.container);
-        } else if (st.mode === 'carrier') {
-            generateCarrier3D(st.carrier);
         }
     }
 
@@ -854,8 +680,13 @@
             transparent: true,
             opacity: 0.6,
             side: THREE.DoubleSide,
+            depthWrite: false,
+            polygonOffset: true,
+            polygonOffsetFactor: 1,
+            polygonOffsetUnits: 1,
         });
         var plateMesh = new THREE.Mesh(plateGeo, plateMat);
+        plateMesh.renderOrder = 1;
         plateMesh.position.set(plateW / 2, plateH / 2, plateD / 2);
         group.add(plateMesh);
 
@@ -885,6 +716,7 @@
                         color: WELL_COLOR,
                         transparent: true,
                         opacity: 0.5,
+                        depthWrite: false,
                     }));
                 } else {
                     var wGeo = new THREE.CylinderGeometry(
@@ -894,9 +726,11 @@
                         color: WELL_COLOR,
                         transparent: true,
                         opacity: 0.5,
+                        depthWrite: false,
                     }));
                 }
 
+                wellMesh.renderOrder = 2;
                 wellMesh.position.set(wx, plateH - wellDepth / 2, wz);
                 group.add(wellMesh);
             }
@@ -947,13 +781,13 @@
                         // Hemispherical bottom
                         var sphereGeo = new THREE.SphereGeometry(topR, 16, 16, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2);
                         segMesh = new THREE.Mesh(sphereGeo, new THREE.MeshPhongMaterial({
-                            color: segColor, transparent: true, opacity: 0.6, side: THREE.DoubleSide,
+                            color: segColor, transparent: true, opacity: 0.6, side: THREE.DoubleSide, depthWrite: false,
                         }));
                         segMesh.position.set(0, yOff, 0);
                     } else {
                         var cylGeo = new THREE.CylinderGeometry(topR, botR, h * scale, 24);
                         segMesh = new THREE.Mesh(cylGeo, new THREE.MeshPhongMaterial({
-                            color: segColor, transparent: true, opacity: 0.6, side: THREE.DoubleSide,
+                            color: segColor, transparent: true, opacity: 0.6, side: THREE.DoubleSide, depthWrite: false,
                         }));
                         segMesh.position.set(0, yOff + h * scale / 2, 0);
                     }
@@ -965,7 +799,7 @@
                     var rh = h * scale;
                     var boxGeo = new THREE.BoxGeometry(rw, rh, rd);
                     segMesh = new THREE.Mesh(boxGeo, new THREE.MeshPhongMaterial({
-                        color: segColor, transparent: true, opacity: 0.6, side: THREE.DoubleSide,
+                        color: segColor, transparent: true, opacity: 0.6, side: THREE.DoubleSide, depthWrite: false,
                     }));
                     segMesh.position.set(0, yOff + rh / 2, 0);
                     break;
@@ -975,7 +809,7 @@
                     topR = (seg.dz || seg.dx) / 2 * scale;
                     var coneGeo = new THREE.ConeGeometry(topR, h * scale, 16);
                     segMesh = new THREE.Mesh(coneGeo, new THREE.MeshPhongMaterial({
-                        color: segColor, transparent: true, opacity: 0.6, side: THREE.DoubleSide,
+                        color: segColor, transparent: true, opacity: 0.6, side: THREE.DoubleSide, depthWrite: false,
                     }));
                     segMesh.position.set(0, yOff + h * scale / 2, 0);
                     break;
@@ -984,7 +818,7 @@
                     topR = (seg.dz || seg.dx) / 2 * scale;
                     var iconeGeo = new THREE.ConeGeometry(topR, h * scale, 16);
                     segMesh = new THREE.Mesh(iconeGeo, new THREE.MeshPhongMaterial({
-                        color: segColor, transparent: true, opacity: 0.6, side: THREE.DoubleSide,
+                        color: segColor, transparent: true, opacity: 0.6, side: THREE.DoubleSide, depthWrite: false,
                     }));
                     segMesh.rotation.x = Math.PI;
                     segMesh.position.set(0, yOff + h * scale / 2, 0);
@@ -994,7 +828,7 @@
                     topR = (seg.dz || seg.dx) / 2 * scale;
                     var discGeo = new THREE.CylinderGeometry(topR, topR, 1, 24);
                     segMesh = new THREE.Mesh(discGeo, new THREE.MeshPhongMaterial({
-                        color: segColor, transparent: true, opacity: 0.6, side: THREE.DoubleSide,
+                        color: segColor, transparent: true, opacity: 0.6, side: THREE.DoubleSide, depthWrite: false,
                     }));
                     segMesh.position.set(0, yOff + 0.5, 0);
                     break;
@@ -1014,6 +848,7 @@
             opacity: 0.15,
             side: THREE.DoubleSide,
             wireframe: true,
+            depthWrite: false,
         });
         var shell = new THREE.Mesh(shellGeo, shellMat);
         shell.position.set(0, outerH / 2, 0);
@@ -1021,145 +856,6 @@
 
         displayModel(group);
         updateDimensionDisplay('container');
-    }
-
-    // ================================================================
-    //  Carrier 3D Generation with Snap Regions
-    // ================================================================
-    function generateCarrier3D(car) {
-        var group = new THREE.Group();
-        group.name = '__lwe_model__';
-
-        // -- Carrier body --
-        var carW = car.dimDx;
-        var carD = car.dimDy;
-        var carH = car.dimDz;
-
-        // Main carrier body — slightly darker
-        var bodyGeo = new THREE.BoxGeometry(carW, carH, carD);
-        var bodyMat = new THREE.MeshPhongMaterial({
-            color: CARRIER_COLOR,
-            transparent: true,
-            opacity: 0.3,
-            side: THREE.DoubleSide,
-        });
-        var bodyMesh = new THREE.Mesh(bodyGeo, bodyMat);
-        bodyMesh.position.set(carW / 2, carH / 2, carD / 2);
-        group.add(bodyMesh);
-
-        // Carrier body edges
-        var bodyEdges = new THREE.EdgesGeometry(bodyGeo);
-        var bodyEdgeMat = new THREE.LineBasicMaterial({ color: 0x444444 });
-        var bodyEdgeMesh = new THREE.LineSegments(bodyEdges, bodyEdgeMat);
-        bodyEdgeMesh.position.copy(bodyMesh.position);
-        group.add(bodyEdgeMesh);
-
-        // -- Snap Region Sites --
-        st.siteBoxes = [];
-        for (var i = 0; i < car.sites.length; i++) {
-            var site = car.sites[i];
-            if (!site.visible) continue;
-
-            var siteW = site.dx;
-            var siteD = site.dy;
-            var siteH = 5; // Visual indicator height
-
-            var siteColor = SITE_COLORS[i % SITE_COLORS.length];
-            var isSelected = i === st.selectedSiteIdx;
-            var isHovered  = i === st.hoveredSiteIdx;
-
-            if (isSelected) siteColor = SNAP_ACTIVE;
-            else if (isHovered) siteColor = SNAP_HOVER;
-
-            // Site platform
-            var siteGeo = new THREE.BoxGeometry(siteW, siteH, siteD);
-            var siteMat = new THREE.MeshPhongMaterial({
-                color: siteColor,
-                transparent: true,
-                opacity: isSelected ? 0.7 : 0.45,
-                side: THREE.DoubleSide,
-            });
-            var siteMesh = new THREE.Mesh(siteGeo, siteMat);
-            siteMesh.position.set(
-                site.x + siteW / 2,
-                site.z + siteH / 2,
-                site.y + siteD / 2
-            );
-            siteMesh.userData = { siteIdx: i };
-            group.add(siteMesh);
-            st.siteBoxes.push(siteMesh);
-
-            // Site edges
-            var siteEdges = new THREE.EdgesGeometry(siteGeo);
-            var siteEdgeMat = new THREE.LineBasicMaterial({
-                color: isSelected ? 0x00ff00 : 0x333333,
-                linewidth: isSelected ? 2 : 1,
-            });
-            var siteEdgeMesh = new THREE.LineSegments(siteEdges, siteEdgeMat);
-            siteEdgeMesh.position.copy(siteMesh.position);
-            group.add(siteEdgeMesh);
-
-            // Site label
-            var labelCanvas = createLabelCanvas(
-                'Site ' + site.id,
-                isSelected ? '#22cc66' : '#ffffff'
-            );
-            var labelTex = new THREE.CanvasTexture(labelCanvas);
-            var labelGeo = new THREE.PlaneGeometry(
-                labelCanvas.width / 8, labelCanvas.height / 8
-            );
-            var labelMat = new THREE.MeshBasicMaterial({
-                map: labelTex,
-                transparent: true,
-                depthTest: false,
-            });
-            var labelMesh = new THREE.Mesh(labelGeo, labelMat);
-            labelMesh.position.set(
-                site.x + siteW / 2,
-                site.z + siteH + 8,
-                site.y + siteD / 2
-            );
-            labelMesh.renderOrder = 100;
-            group.add(labelMesh);
-
-            // Snap indicators (corner dots)
-            addSnapIndicators(group, site, siteColor);
-        }
-
-        displayModel(group);
-        updateDimensionDisplay('carrier');
-        updateSiteList();
-    }
-
-    function addSnapIndicators(group, site, color) {
-        var corners = [
-            [site.x, site.z, site.y],
-            [site.x + site.dx, site.z, site.y],
-            [site.x, site.z, site.y + site.dy],
-            [site.x + site.dx, site.z, site.y + site.dy],
-        ];
-        corners.forEach(function(c) {
-            var dotGeo = new THREE.SphereGeometry(1.5, 8, 8);
-            var dotMat = new THREE.MeshBasicMaterial({ color: color, depthTest: false });
-            var dot = new THREE.Mesh(dotGeo, dotMat);
-            dot.position.set(c[0], c[1], c[2]);
-            dot.renderOrder = 50;
-            group.add(dot);
-            st.snapHelpers.push(dot);
-        });
-    }
-
-    function createLabelCanvas(text, color) {
-        var canvas = document.createElement('canvas');
-        var ctx = canvas.getContext('2d');
-        ctx.font = 'bold 24px sans-serif';
-        var metrics = ctx.measureText(text);
-        canvas.width = Math.ceil(metrics.width) + 16;
-        canvas.height = 32;
-        ctx.font = 'bold 24px sans-serif';
-        ctx.fillStyle = color || '#ffffff';
-        ctx.fillText(text, 8, 24);
-        return canvas;
     }
 
     // ================================================================
@@ -1181,85 +877,7 @@
                 'Aperture: ' + c.dimDx.toFixed(1) + ' × ' + c.dimDy.toFixed(1) + ' mm<br>' +
                 'Depth: ' + c.depth.toFixed(1) + ' mm<br>' +
                 c.segments.length + ' segment(s)';
-        } else if (mode === 'carrier') {
-            var cr = st.carrier;
-            el.innerHTML =
-                '<b>' + cr.viewName + '</b><br>' +
-                cr.dimDx.toFixed(1) + ' × ' + cr.dimDy.toFixed(1) + ' × ' + cr.dimDz.toFixed(1) + ' mm<br>' +
-                cr.sites.length + ' site(s)';
         }
-    }
-
-    // ================================================================
-    //  Site List (Carrier mode)
-    // ================================================================
-    function updateSiteList() {
-        var list = $('#lwe-site-list');
-        if (!list) return;
-        list.innerHTML = '';
-
-        var car = st.carrier;
-        for (var i = 0; i < car.sites.length; i++) {
-            var site = car.sites[i];
-            var item = document.createElement('div');
-            item.className = 'lwe-site-item' + (i === st.selectedSiteIdx ? ' is-selected' : '');
-            item.dataset.idx = i;
-            item.innerHTML =
-                '<div class="lwe-site-item-header">' +
-                '<span class="lwe-site-color" style="background:' +
-                '#' + (SITE_COLORS[i % SITE_COLORS.length]).toString(16).padStart(6, '0') + '"></span>' +
-                '<strong>Site ' + site.id + '</strong>' +
-                '<span class="lwe-site-dims">' +
-                site.dx.toFixed(0) + '×' + site.dy.toFixed(0) + 'mm' +
-                '</span>' +
-                '</div>' +
-                '<div class="lwe-site-item-detail">' +
-                'Position: X=' + site.x.toFixed(1) + ' Y=' + site.y.toFixed(1) + ' Z=' + site.z.toFixed(1) +
-                '</div>';
-
-            (function(idx) {
-                item.addEventListener('click', function() {
-                    selectSite(idx);
-                });
-            })(i);
-
-            list.appendChild(item);
-        }
-    }
-
-    function selectSite(idx) {
-        st.selectedSiteIdx = idx;
-        populateCarrierSiteForm(idx);
-        regeneratePreview();
-    }
-
-    function populateCarrierSiteForm(idx) {
-        if (idx < 0 || idx >= st.carrier.sites.length) return;
-        var site = st.carrier.sites[idx];
-
-        valById('lwe-site-id', site.id);
-        valById('lwe-site-x', site.x.toFixed(2));
-        valById('lwe-site-y', site.y.toFixed(2));
-        valById('lwe-site-z', site.z.toFixed(2));
-        valById('lwe-site-dx', site.dx.toFixed(2));
-        valById('lwe-site-dy', site.dy.toFixed(2));
-
-        var labwareEl = $('#lwe-site-labware');
-        if (labwareEl) labwareEl.value = site.labwareFile || '';
-
-        var coveredEl = $('#lwe-site-covered');
-        if (coveredEl) coveredEl.checked = site.isCovered;
-
-        var visibleEl = $('#lwe-site-visible');
-        if (visibleEl) visibleEl.checked = site.visible;
-
-        var snapEl = $('#lwe-site-snap');
-        if (snapEl) snapEl.checked = site.snapBase;
-
-        var stackEl = $('#lwe-site-stack');
-        if (stackEl) stackEl.checked = site.isStack;
-
-        valById('lwe-site-stack-size', site.stackSize);
     }
 
     // ================================================================
@@ -1305,31 +923,6 @@
         st.container.segments[0].dz = parseFloat(valById('lwe-ctr-seg-dz')) || st.container.dimDx;
         st.container.segments[0].height = st.container.depth;
         st.container.segments[0].maxHeight = st.container.depth;
-    }
-
-    function readCarrierForm() {
-        st.carrier.viewName   = valById('lwe-car-name') || 'New Carrier';
-        st.carrier.description = valById('lwe-car-desc') || '';
-        st.carrier.dimDx      = parseFloat(valById('lwe-car-dx')) || 135;
-        st.carrier.dimDy      = parseFloat(valById('lwe-car-dy')) || 497;
-        st.carrier.dimDz      = parseFloat(valById('lwe-car-dz')) || 130;
-
-        // Update selected site from site form
-        if (st.selectedSiteIdx >= 0 && st.selectedSiteIdx < st.carrier.sites.length) {
-            var site = st.carrier.sites[st.selectedSiteIdx];
-            site.id = parseInt(valById('lwe-site-id')) || site.id;
-            site.x  = parseFloat(valById('lwe-site-x')) || 0;
-            site.y  = parseFloat(valById('lwe-site-y')) || 0;
-            site.z  = parseFloat(valById('lwe-site-z')) || 0;
-            site.dx = parseFloat(valById('lwe-site-dx')) || 127;
-            site.dy = parseFloat(valById('lwe-site-dy')) || 86;
-            site.labwareFile = valById('lwe-site-labware') || '';
-            site.isCovered = !!$('#lwe-site-covered')?.checked;
-            site.visible   = !!$('#lwe-site-visible')?.checked;
-            site.snapBase  = !!$('#lwe-site-snap')?.checked;
-            site.isStack   = !!$('#lwe-site-stack')?.checked;
-            site.stackSize = parseInt(valById('lwe-site-stack-size')) || 1;
-        }
     }
 
     // ================================================================
@@ -1385,15 +978,6 @@
 
         // Volume
         updateVolumeDisplay();
-    }
-
-    function populateCarrierForm() {
-        var cr = st.carrier;
-        valById('lwe-car-name', cr.viewName);
-        valById('lwe-car-desc', cr.description);
-        valById('lwe-car-dx', cr.dimDx.toFixed(2));
-        valById('lwe-car-dy', cr.dimDy.toFixed(2));
-        valById('lwe-car-dz', cr.dimDz.toFixed(2));
     }
 
     // ================================================================
@@ -1549,129 +1133,6 @@
         });
     }
 
-    function wireCarrierForm() {
-        var fields = [
-            'lwe-car-name', 'lwe-car-desc', 'lwe-car-dx', 'lwe-car-dy', 'lwe-car-dz',
-        ];
-        fields.forEach(function(id) {
-            var el = document.getElementById(id);
-            if (el) el.addEventListener('change', function() {
-                readCarrierForm();
-                regeneratePreview();
-                st.dirty = true;
-            });
-        });
-
-        // Site form fields
-        var siteFields = [
-            'lwe-site-id', 'lwe-site-x', 'lwe-site-y', 'lwe-site-z',
-            'lwe-site-dx', 'lwe-site-dy', 'lwe-site-labware',
-            'lwe-site-stack-size',
-        ];
-        siteFields.forEach(function(id) {
-            var el = document.getElementById(id);
-            if (el) el.addEventListener('change', function() {
-                readCarrierForm();
-                regeneratePreview();
-                st.dirty = true;
-            });
-        });
-
-        // Site checkboxes
-        ['lwe-site-covered', 'lwe-site-visible', 'lwe-site-snap', 'lwe-site-stack'].forEach(function(id) {
-            var el = document.getElementById(id);
-            if (el) el.addEventListener('change', function() {
-                readCarrierForm();
-                regeneratePreview();
-                st.dirty = true;
-            });
-        });
-
-        // Add site
-        bindClick('#lwe-add-site', function() {
-            var nextId = st.carrier.sites.length + 1;
-            var lastSite = st.carrier.sites[st.carrier.sites.length - 1] || { x: 4, y: 0, z: 112, dx: 127, dy: 86 };
-            st.carrier.sites.push({
-                id: nextId,
-                label: String(nextId),
-                x: lastSite.x,
-                y: lastSite.y + lastSite.dy + 10,
-                z: lastSite.z,
-                dx: lastSite.dx,
-                dy: lastSite.dy,
-                labwareFile: '',
-                isCovered: false,
-                visible: true,
-                snapBase: true,
-                isStack: false,
-                stackSize: 1,
-            });
-            st.selectedSiteIdx = st.carrier.sites.length - 1;
-            populateCarrierSiteForm(st.selectedSiteIdx);
-            regeneratePreview();
-            st.dirty = true;
-        });
-
-        // Delete selected site
-        bindClick('#lwe-del-site', function() {
-            if (st.selectedSiteIdx >= 0 && st.carrier.sites.length > 1) {
-                st.carrier.sites.splice(st.selectedSiteIdx, 1);
-                st.selectedSiteIdx = Math.min(st.selectedSiteIdx, st.carrier.sites.length - 1);
-                populateCarrierSiteForm(st.selectedSiteIdx);
-                regeneratePreview();
-                st.dirty = true;
-            }
-        });
-    }
-
-    // ================================================================
-    //  Site Interaction (Click to select in 3D)
-    // ================================================================
-    function wireSiteInteraction() {
-        var canvas = $('#lwe-canvas');
-        if (!canvas) return;
-
-        canvas.addEventListener('click', function(e) {
-            if (st.mode !== 'carrier' || st.rulerActive) return;
-            if (st.siteBoxes.length === 0) return;
-
-            var rect = canvas.getBoundingClientRect();
-            var mouse = new THREE.Vector2(
-                ((e.clientX - rect.left) / rect.width) * 2 - 1,
-                -((e.clientY - rect.top) / rect.height) * 2 + 1
-            );
-
-            var raycaster = new THREE.Raycaster();
-            raycaster.setFromCamera(mouse, st.camera);
-            var hits = raycaster.intersectObjects(st.siteBoxes, false);
-            if (hits.length > 0 && hits[0].object.userData.siteIdx !== undefined) {
-                selectSite(hits[0].object.userData.siteIdx);
-            }
-        });
-
-        // Hover effect
-        canvas.addEventListener('mousemove', function(e) {
-            if (st.mode !== 'carrier') return;
-            if (st.siteBoxes.length === 0) return;
-
-            var rect = canvas.getBoundingClientRect();
-            var mouse = new THREE.Vector2(
-                ((e.clientX - rect.left) / rect.width) * 2 - 1,
-                -((e.clientY - rect.top) / rect.height) * 2 + 1
-            );
-
-            var raycaster = new THREE.Raycaster();
-            raycaster.setFromCamera(mouse, st.camera);
-            var hits = raycaster.intersectObjects(st.siteBoxes, false);
-            var newHovered = hits.length > 0 ? hits[0].object.userData.siteIdx : -1;
-            if (newHovered !== st.hoveredSiteIdx) {
-                st.hoveredSiteIdx = newHovered;
-                canvas.style.cursor = newHovered >= 0 ? 'pointer' : '';
-                regeneratePreview();
-            }
-        });
-    }
-
     // ================================================================
     //  File Controls (New, Open, Save, Export)
     // ================================================================
@@ -1685,11 +1146,6 @@
             } else if (mode === 'container') {
                 st.container = defaultContainer();
                 populateContainerForm();
-            } else if (mode === 'carrier') {
-                st.carrier = defaultCarrier();
-                st.selectedSiteIdx = 0;
-                populateCarrierForm();
-                populateCarrierSiteForm(0);
             }
             st.fileName = '';
             st.dirty = false;
@@ -1787,13 +1243,6 @@
             switchMode('container');
             populateContainerForm();
             setStatus('Loaded container: ' + originalName);
-        } else if (nameLower.endsWith('.tml')) {
-            st.carrier = parseTmlFile(text);
-            st.selectedSiteIdx = st.carrier.sites.length > 0 ? 0 : -1;
-            switchMode('carrier');
-            populateCarrierForm();
-            if (st.selectedSiteIdx >= 0) populateCarrierSiteForm(0);
-            setStatus('Loaded carrier: ' + originalName);
         } else {
             setStatus('Unsupported file type: ' + originalName, true);
             return;
@@ -1816,11 +1265,6 @@
             content = writeCtrFile(st.container);
             ext = '.ctr';
             defaultName = 'container';
-        } else if (st.mode === 'carrier') {
-            readCarrierForm();
-            content = writeTmlFile(st.carrier);
-            ext = '.tml';
-            defaultName = (st.carrier.viewName || 'carrier').replace(/[^a-zA-Z0-9_ -]/g, '_');
         } else {
             return;
         }
@@ -1839,8 +1283,7 @@
 
         var LGM = window.LabwareGenModule;
         if (LGM && LGM.exportToXFile) {
-            var name = st.mode === 'rack' ? st.rack.viewName :
-                       st.mode === 'carrier' ? st.carrier.viewName : 'container';
+            var name = st.mode === 'rack' ? st.rack.viewName : 'container';
             var xContent = LGM.exportToXFile(st.model, name);
             if (xContent) {
                 var safeName = (name || 'labware').replace(/[^a-zA-Z0-9_ -]/g, '_');
@@ -1857,8 +1300,7 @@
     function exportModelToX() {
         if (!st.model) return;
 
-        var name = st.mode === 'rack' ? st.rack.viewName :
-                   st.mode === 'carrier' ? st.carrier.viewName : 'container';
+        var name = st.mode === 'rack' ? st.rack.viewName : 'container';
         var safeName = (name || 'labware').replace(/[^a-zA-Z0-9_ -]/g, '_');
 
         var meshes = [];
@@ -2264,8 +1706,7 @@
 
         st.renderer.render(st.scene, st.camera);
         var canvas = st.renderer.domElement;
-        var name = st.mode === 'rack' ? st.rack.viewName :
-                   st.mode === 'carrier' ? st.carrier.viewName : 'container';
+        var name = st.mode === 'rack' ? st.rack.viewName : 'container';
         var fileName = (name || 'labware_screenshot').replace(/[^a-zA-Z0-9_ -]/g, '_');
 
         if (format === 'jpg') {
