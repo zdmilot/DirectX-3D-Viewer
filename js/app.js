@@ -435,8 +435,7 @@
             canvas: canvas,
             antialias: true,
             alpha: true,
-            preserveDrawingBuffer: true,
-            logarithmicDepthBuffer: true
+            preserveDrawingBuffer: true
         });
         renderer.setPixelRatio(window.devicePixelRatio);
         renderer.setSize(w, h);
@@ -487,11 +486,13 @@
 
             // Dynamically tighten near/far planes based on camera distance
             // to maintain depth precision for labels at every zoom level.
+            // Tight 1:1000 ratio ensures polygon offset resolves coplanar
+            // label meshes (text, barcodes) against the body at any distance.
             if (camera.isPerspectiveCamera) {
                 var dist = camera.position.distanceTo(controls.target);
                 if (dist > 0) {
-                    camera.near = Math.max(dist * 0.001, 0.01);
-                    camera.far  = Math.max(dist * 100, 1000);
+                    camera.near = Math.max(dist * 0.01, 0.01);
+                    camera.far  = Math.max(dist * 10, 1000);
                     camera.updateProjectionMatrix();
                 }
             }

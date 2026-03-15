@@ -80,8 +80,7 @@
             canvas: canvas,
             antialias: true,
             alpha: true,
-            preserveDrawingBuffer: true,
-            logarithmicDepthBuffer: true
+            preserveDrawingBuffer: true
         });
         ppState.renderer.setPixelRatio(window.devicePixelRatio);
         ppState.renderer.setSize(w, h);
@@ -127,13 +126,13 @@
             ppState.controls.update();
 
             // Dynamically tighten near/far planes based on camera distance.
-            // This keeps depth buffer precision high at every zoom level,
-            // preventing labels from z-fighting with the body on zoom-out.
+            // Tight 1:1000 ratio ensures polygon offset resolves coplanar
+            // label meshes (text, barcodes) against the body at any distance.
             if (ppState.camera.isPerspectiveCamera) {
                 var dist = ppState.camera.position.distanceTo(ppState.controls.target);
                 if (dist > 0) {
                     var newNear = Math.max(dist * 0.01, 0.01);
-                    var newFar  = Math.max(dist * 100, 1000);
+                    var newFar  = Math.max(dist * 10, 1000);
                     ppState.camera.near = newNear;
                     ppState.camera.far  = newFar;
                     ppState.camera.updateProjectionMatrix();
