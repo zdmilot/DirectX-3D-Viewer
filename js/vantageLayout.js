@@ -2893,12 +2893,26 @@
         const newRange = new Set();
         for (let t = trackStart; t < trackStart + tWidth; t++) newRange.add(t);
 
-        // Block tracks beyond usable range (61-80 reserved for waste/entry-exit)
+        // Block tracks beyond usable range (61+ reserved)
         for (let t of newRange) {
             if (t > MAX_USABLE_TRACK) return 'out_of_range';
         }
 
-        // Only check against other placed carriers (tracks 4-60 are fully open)
+        // Block removed deck cover panels (toggled off, or waste/drawer installed)
+        for (let i = 0; i < DECK_CUTOUTS.length; i++) {
+            if (vlState.deckCutouts[i] === false) {
+                const slot = DECK_CUTOUTS[i];
+                for (let t = slot.trackStart; t < slot.trackStart + slot.trackSpan; t++) {
+                    if (newRange.has(t)) {
+                        if (vlState.wasteCutoutIdx === i) return 'waste:' + slot.label;
+                        if (vlState.drawerCutoutIdx === i) return 'drawer:' + slot.label;
+                        return 'panel:' + slot.label;
+                    }
+                }
+            }
+        }
+
+        // Check against other placed carriers
         for (const carrier of vlState.placedCarriers) {
             if (carrier.id === excludeId) continue;
             for (let t = carrier.trackStart; t < carrier.trackStart + carrier.def.tWidth; t++) {
@@ -2906,6 +2920,16 @@
             }
         }
         return false;
+    }
+
+    function collisionReason(collision) {
+        if (typeof collision !== 'string') return 'Position blocked';
+        if (collision.startsWith('carrier:')) return 'Blocked by ' + collision.slice(8);
+        if (collision.startsWith('waste:'))   return 'Blocked by Waste Chute (' + collision.slice(6) + ')';
+        if (collision.startsWith('drawer:'))  return 'Blocked by Entry/Exit Drawer (' + collision.slice(7) + ')';
+        if (collision.startsWith('panel:'))   return 'Deck cover removed (' + collision.slice(6) + ')';
+        if (collision === 'out_of_range')     return 'Tracks 61+ reserved';
+        return 'Position blocked';
     }
 
     function snapToTrack(worldX) {
@@ -3189,10 +3213,7 @@
             });
             // Show collision reason in status bar
             if (collision) {
-                const reason = typeof collision === 'string' && collision.startsWith('carrier:')
-                    ? 'Blocked by ' + collision.slice(8)
-                    : 'Tracks 61-80 reserved (waste / entry-exit)';
-                showVLStatus('Track ' + clamped + ': ' + reason, 'error');
+                showVLStatus('Track ' + clamped + ': ' + collisionReason(collision), 'error');
             } else {
                 showVLStatus('Track ' + clamped + ' — free');
             }
@@ -3484,10 +3505,7 @@
             });
             // Show collision reason in status bar
             if (collision) {
-                const reason = typeof collision === 'string' && collision.startsWith('carrier:')
-                    ? 'Blocked by ' + collision.slice(8)
-                    : 'Tracks 61-80 reserved (waste / entry-exit)';
-                showVLStatus('Track ' + clampedTrack + ': ' + reason, 'error');
+                showVLStatus('Track ' + clampedTrack + ': ' + collisionReason(collision), 'error');
             } else {
                 showVLStatus('Track ' + clampedTrack + ' — free');
             }
