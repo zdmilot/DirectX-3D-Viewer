@@ -295,8 +295,8 @@
             footprintLength: rck.dimDx,
             footprintWidth:  rck.dimDy,
             height:          height,
-            rowCount:        rck.rows,
-            colCount:        rck.columns,
+            rowCount:        rck.columns,
+            colCount:        rck.rows,
             rowGap:          rck.dy,
             colGap:          rck.dx,
             wellDepth:       ctr.depth,
@@ -309,7 +309,7 @@
             angle:           0,
             nominalVolume:   0,
             firstHolePos:    { x: firstX, y: firstY },
-            wellCount:       rck.rows * rck.columns,
+            wellCount:       rck.columns * rck.rows,
         };
     }
 
