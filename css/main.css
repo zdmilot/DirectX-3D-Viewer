@@ -4761,8 +4761,14 @@ body {
 /* Host panel column direction */
 #labware-editor-host { flex-direction: column; }
 
-/* Toolbar position override */
+/* Toolbar position override – dock to right edge (flush with right-panel) */
 .lwe-toolbar {
-    top: 10px;
-    right: 10px;
+    top: 0;
+    right: 0;
+}
+
+#lwe-gizmo-canvas {
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
 }

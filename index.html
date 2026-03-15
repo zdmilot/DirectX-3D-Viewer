@@ -1792,27 +1792,32 @@
                         <!-- Floating Toolbar -->
                         <div class="viewer-toolbar lwe-toolbar" id="lwe-toolbar">
                             <div class="vt-body" id="lwe-vt-body">
-                                <button class="vt-toggle" id="lwe-vt-toggle" title="Toggle toolbar"></button>
-                                <button class="vt-btn" id="lwe-vt-grab-handle" title="Drag to reposition"><i class="fas fa-grip-vertical"></i></button>
-                                <div class="vt-sep"></div>
-                                <button class="vt-btn" id="lwe-vt-reset-cam" title="Reset camera"><i class="fas fa-undo"></i></button>
-                                <button class="vt-btn" id="lwe-vt-zoom-fit" title="Zoom to fit"><i class="fas fa-expand"></i></button>
-                                <button class="vt-btn" id="lwe-vt-topdown" title="Top-down view"><i class="fas fa-arrow-down"></i></button>
-                                <div class="vt-sep"></div>
-                                <button class="vt-btn" id="lwe-vt-zoom-in" title="Zoom in"><i class="fas fa-search-plus"></i></button>
-                                <button class="vt-btn" id="lwe-vt-zoom-out" title="Zoom out"><i class="fas fa-search-minus"></i></button>
-                                <button class="vt-btn" id="lwe-vt-pan" title="Pan mode"><i class="fas fa-hand-paper"></i></button>
-                                <div class="vt-sep"></div>
-                                <button class="vt-btn" id="lwe-vt-wireframe" title="Toggle wireframe"><i class="fas fa-border-none"></i></button>
-                                <button class="vt-btn" id="lwe-vt-perspective" title="Toggle ortho/persp"><i class="fas fa-video"></i></button>
-                                <button class="vt-btn" id="lwe-btn-grid" title="Toggle grid"><i class="fas fa-th"></i></button>
-                                <div class="vt-sep"></div>
-                                <button class="vt-btn" id="lwe-vt-ruler" title="Ruler tool"><i class="fas fa-ruler"></i></button>
+                                <button class="vt-toggle" id="lwe-vt-toggle" title="Toggle toolbar">
+                                    <i class="fas fa-chevron-right"></i>
+                                </button>
+                                <div class="vt-collapsible">
+                                    <div class="vt-gizmo pp-gizmo-sm" id="lwe-vt-gizmo">
+                                        <canvas id="lwe-gizmo-canvas" width="28" height="28"></canvas>
+                                    </div>
+                                    <div class="vt-separator"></div>
+                                    <button class="vt-btn" id="lwe-vt-grab-handle" title="Drag to reposition"><i class="fas fa-grip-vertical"></i></button>
+                                    <div class="vt-separator"></div>
+                                    <button class="vt-btn" id="lwe-vt-reset-cam" title="Reset camera"><i class="fas fa-video"></i></button>
+                                    <button class="vt-btn" id="lwe-vt-zoom-fit" title="Zoom to fit"><i class="fas fa-expand"></i></button>
+                                    <button class="vt-btn" id="lwe-vt-topdown" title="Top-down view"><i class="fas fa-arrow-down"></i></button>
+                                    <div class="vt-separator"></div>
+                                    <button class="vt-btn" id="lwe-vt-zoom-in" title="Zoom in"><i class="fas fa-search-plus"></i></button>
+                                    <button class="vt-btn" id="lwe-vt-zoom-out" title="Zoom out"><i class="fas fa-search-minus"></i></button>
+                                    <button class="vt-btn" id="lwe-vt-pan" title="Pan mode"><i class="fas fa-hand-paper"></i></button>
+                                    <div class="vt-separator"></div>
+                                    <button class="vt-btn" id="lwe-vt-wireframe" title="Toggle wireframe"><i class="fas fa-border-none"></i></button>
+                                    <button class="vt-btn" id="lwe-vt-perspective" title="Toggle ortho/persp"><i class="fas fa-video"></i></button>
+                                    <button class="vt-btn" id="lwe-btn-grid" title="Toggle grid"><i class="fas fa-th"></i></button>
+                                    <div class="vt-separator"></div>
+                                    <button class="vt-btn" id="lwe-vt-ruler" title="Ruler tool"><i class="fas fa-ruler"></i></button>
+                                </div>
                             </div>
                         </div>
-
-                        <!-- Gizmo -->
-                        <canvas id="lwe-gizmo-canvas" class="viewer-gizmo" width="80" height="80"></canvas>
 
                         <!-- Ruler readout -->
                         <div class="viewer-ruler-readout" id="lwe-ruler-readout" style="display:none"></div>
