@@ -118,6 +118,10 @@
                         <i class="fas fa-th-large"></i>
                         <span>MFX Carrier</span>
                     </button>
+                    <button class="sidebar-nav-item" data-view="labware-editor">
+                        <i class="fas fa-edit"></i>
+                        <span>Labware Editor</span>
+                    </button>
                 </div>
             </aside>
 
@@ -1592,6 +1596,259 @@
                 </div>
             </div>
 
+            <!-- ====== Labware Editor ====== -->
+            <div class="view-panel" data-view-panel="labware-editor" id="labware-editor-host">
+
+                <!-- Mode Tabs -->
+                <div class="lwe-mode-bar">
+                    <button class="lwe-mode-tab is-active" data-mode="rack"><i class="fas fa-grip-horizontal"></i> Rack</button>
+                    <button class="lwe-mode-tab" data-mode="container"><i class="fas fa-vial"></i> Container</button>
+                    <button class="lwe-mode-tab" data-mode="carrier"><i class="fas fa-pallet"></i> Carrier</button>
+                    <div class="lwe-mode-spacer"></div>
+                    <div class="lwe-file-btns">
+                        <button id="lwe-new-btn" class="lwe-btn" title="New"><i class="fas fa-file"></i></button>
+                        <button id="lwe-open-btn" class="lwe-btn" title="Open file"><i class="fas fa-folder-open"></i></button>
+                        <button id="lwe-save-btn" class="lwe-btn" title="Save"><i class="fas fa-save"></i></button>
+                        <button id="lwe-export-x-btn" class="lwe-btn" title="Export .x"><i class="fas fa-cube"></i></button>
+                        <input type="file" id="lwe-file-input" accept=".rck,.ctr,.tml,.crk" style="display:none">
+                    </div>
+                </div>
+
+                <!-- Main Layout: Left Panel + 3D Canvas + Right Panel -->
+                <div class="lwe-layout">
+
+                    <!-- Left Panel: Property Forms -->
+                    <div class="lwe-left-panel">
+
+                        <!-- === RACK FORM === -->
+                        <div id="lwe-rack-section" class="lwe-form-section">
+                            <h3 class="lwe-section-title"><i class="fas fa-grip-horizontal"></i> Rack Properties</h3>
+
+                            <label class="lwe-label">Name</label>
+                            <input type="text" id="lwe-rack-name" class="lwe-input" value="New Rack">
+
+                            <label class="lwe-label">Description</label>
+                            <input type="text" id="lwe-rack-desc" class="lwe-input">
+
+                            <div class="lwe-field-row">
+                                <div class="lwe-field"><label class="lwe-label">Width (Dx)</label><input type="number" id="lwe-rack-dx" class="lwe-input" step="0.01" value="127.76"></div>
+                                <div class="lwe-field"><label class="lwe-label">Depth (Dy)</label><input type="number" id="lwe-rack-dy" class="lwe-input" step="0.01" value="85.48"></div>
+                                <div class="lwe-field"><label class="lwe-label">Height (Dz)</label><input type="number" id="lwe-rack-dz" class="lwe-input" step="0.01" value="14.00"></div>
+                            </div>
+
+                            <h4 class="lwe-subsection">Well Layout</h4>
+                            <div class="lwe-field-row">
+                                <div class="lwe-field"><label class="lwe-label">Rows</label><input type="number" id="lwe-rack-rows" class="lwe-input" min="1" max="384" value="8"></div>
+                                <div class="lwe-field"><label class="lwe-label">Columns</label><input type="number" id="lwe-rack-cols" class="lwe-input" min="1" max="384" value="12"></div>
+                            </div>
+                            <div class="lwe-well-count" id="lwe-rack-well-count">96 wells (8×12)</div>
+                            <div class="lwe-field-row">
+                                <div class="lwe-field"><label class="lwe-label">Col Spacing</label><input type="number" id="lwe-rack-col-spacing" class="lwe-input" step="0.01" value="9.00"></div>
+                                <div class="lwe-field"><label class="lwe-label">Row Spacing</label><input type="number" id="lwe-rack-row-spacing" class="lwe-input" step="0.01" value="9.00"></div>
+                            </div>
+                            <div class="lwe-field-row">
+                                <div class="lwe-field"><label class="lwe-label">Boundary X</label><input type="number" id="lwe-rack-bndry-x" class="lwe-input" step="0.01" value="14.38"></div>
+                                <div class="lwe-field"><label class="lwe-label">Boundary Y</label><input type="number" id="lwe-rack-bndry-y" class="lwe-input" step="0.01" value="11.24"></div>
+                            </div>
+
+                            <h4 class="lwe-subsection">Well Geometry</h4>
+                            <div class="lwe-field-row">
+                                <div class="lwe-field">
+                                    <label class="lwe-label">Hole Shape</label>
+                                    <select id="lwe-rack-hole-shape" class="lwe-input">
+                                        <option value="0">Cylinder</option>
+                                        <option value="1">Rectangle</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="lwe-field-row">
+                                <div class="lwe-field"><label class="lwe-label">Hole X</label><input type="number" id="lwe-rack-hole-x" class="lwe-input" step="0.01" value="7.00"></div>
+                                <div class="lwe-field"><label class="lwe-label">Hole Y</label><input type="number" id="lwe-rack-hole-y" class="lwe-input" step="0.01" value="7.00"></div>
+                                <div class="lwe-field"><label class="lwe-label">Hole Z</label><input type="number" id="lwe-rack-hole-z" class="lwe-input" step="0.01" value="7.00"></div>
+                            </div>
+
+                            <h4 class="lwe-subsection">Stacking</h4>
+                            <div class="lwe-field">
+                                <label class="lwe-label">Stack Height</label>
+                                <input type="number" id="lwe-rack-stack-ht" class="lwe-input" step="0.01" value="0">
+                            </div>
+                        </div>
+
+                        <!-- === CONTAINER FORM === -->
+                        <div id="lwe-container-section" class="lwe-form-section" style="display:none">
+                            <h3 class="lwe-section-title"><i class="fas fa-vial"></i> Container Properties</h3>
+
+                            <div class="lwe-field-row">
+                                <div class="lwe-field">
+                                    <label class="lwe-label">Top Shape</label>
+                                    <select id="lwe-ctr-shape" class="lwe-input">
+                                        <option value="0">Cylinder</option>
+                                        <option value="1">Rectangle</option>
+                                    </select>
+                                </div>
+                                <div class="lwe-field"><label class="lwe-label">Depth</label><input type="number" id="lwe-ctr-depth" class="lwe-input" step="0.01" value="10.00"></div>
+                            </div>
+                            <div class="lwe-field-row">
+                                <div class="lwe-field"><label class="lwe-label">Aperture DX</label><input type="number" id="lwe-ctr-dx" class="lwe-input" step="0.01" value="7.00"></div>
+                                <div class="lwe-field"><label class="lwe-label">Aperture DY</label><input type="number" id="lwe-ctr-dy" class="lwe-input" step="0.01" value="7.00"></div>
+                            </div>
+                            <div class="lwe-field">
+                                <label class="lwe-label">Base Thickness (mm)</label>
+                                <input type="number" id="lwe-ctr-base-thick" class="lwe-input" step="0.01" value="0.50">
+                            </div>
+
+                            <h4 class="lwe-subsection">Liquid Level Detection</h4>
+                            <label class="lwe-check-label"><input type="checkbox" id="lwe-ctr-lld-enable"> Enable LLD</label>
+                            <div class="lwe-field">
+                                <label class="lwe-label">LLD Seek Height</label>
+                                <input type="number" id="lwe-ctr-lld-height" class="lwe-input" step="0.01" value="0">
+                            </div>
+
+                            <h4 class="lwe-subsection">Segments</h4>
+                            <div id="lwe-seg-list" class="lwe-seg-list"></div>
+                            <button id="lwe-add-segment" class="lwe-btn lwe-btn-sm"><i class="fas fa-plus"></i> Add Segment</button>
+
+                            <h4 class="lwe-subsection">First Segment</h4>
+                            <div class="lwe-field-row">
+                                <div class="lwe-field">
+                                    <label class="lwe-label">Shape</label>
+                                    <select id="lwe-ctr-seg-shape" class="lwe-input">
+                                        <option value="0">Cylinder</option>
+                                        <option value="1">Rectangle</option>
+                                        <option value="2">Inverted V-Cone</option>
+                                        <option value="3">V-Cone</option>
+                                        <option value="4">Round Base</option>
+                                        <option value="5">V-Cone Base</option>
+                                        <option value="6">Flat Base</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="lwe-field-row">
+                                <div class="lwe-field"><label class="lwe-label">DX</label><input type="number" id="lwe-ctr-seg-dx" class="lwe-input" step="0.01" value="7.00"></div>
+                                <div class="lwe-field"><label class="lwe-label">DY</label><input type="number" id="lwe-ctr-seg-dy" class="lwe-input" step="0.01" value="7.00"></div>
+                                <div class="lwe-field"><label class="lwe-label">DZ</label><input type="number" id="lwe-ctr-seg-dz" class="lwe-input" step="0.01" value="7.00"></div>
+                            </div>
+
+                            <h4 class="lwe-subsection">Volume</h4>
+                            <div class="lwe-volume-display">Total: <span id="lwe-ctr-volume">0.00 µL</span></div>
+                        </div>
+
+                        <!-- === CARRIER FORM === -->
+                        <div id="lwe-carrier-section" class="lwe-form-section" style="display:none">
+                            <h3 class="lwe-section-title"><i class="fas fa-pallet"></i> Carrier Properties</h3>
+
+                            <label class="lwe-label">Name</label>
+                            <input type="text" id="lwe-car-name" class="lwe-input" value="New Carrier">
+
+                            <label class="lwe-label">Description</label>
+                            <input type="text" id="lwe-car-desc" class="lwe-input">
+
+                            <div class="lwe-field-row">
+                                <div class="lwe-field"><label class="lwe-label">Width (Dx)</label><input type="number" id="lwe-car-dx" class="lwe-input" step="0.01" value="135.00"></div>
+                                <div class="lwe-field"><label class="lwe-label">Depth (Dy)</label><input type="number" id="lwe-car-dy" class="lwe-input" step="0.01" value="497.00"></div>
+                                <div class="lwe-field"><label class="lwe-label">Height (Dz)</label><input type="number" id="lwe-car-dz" class="lwe-input" step="0.01" value="130.00"></div>
+                            </div>
+
+                            <h4 class="lwe-subsection">Selected Site</h4>
+                            <div class="lwe-field-row">
+                                <div class="lwe-field"><label class="lwe-label">Site ID</label><input type="number" id="lwe-site-id" class="lwe-input" min="1" value="1"></div>
+                            </div>
+                            <div class="lwe-field-row">
+                                <div class="lwe-field"><label class="lwe-label">X</label><input type="number" id="lwe-site-x" class="lwe-input" step="0.01" value="4.00"></div>
+                                <div class="lwe-field"><label class="lwe-label">Y</label><input type="number" id="lwe-site-y" class="lwe-input" step="0.01" value="8.50"></div>
+                                <div class="lwe-field"><label class="lwe-label">Z</label><input type="number" id="lwe-site-z" class="lwe-input" step="0.01" value="112.00"></div>
+                            </div>
+                            <div class="lwe-field-row">
+                                <div class="lwe-field"><label class="lwe-label">Site Width</label><input type="number" id="lwe-site-dx" class="lwe-input" step="0.01" value="127.00"></div>
+                                <div class="lwe-field"><label class="lwe-label">Site Depth</label><input type="number" id="lwe-site-dy" class="lwe-input" step="0.01" value="86.00"></div>
+                            </div>
+                            <div class="lwe-field">
+                                <label class="lwe-label">Labware File</label>
+                                <input type="text" id="lwe-site-labware" class="lwe-input" placeholder="path/to/labware.rck">
+                            </div>
+
+                            <div class="lwe-check-row">
+                                <label class="lwe-check-label"><input type="checkbox" id="lwe-site-covered"> Covered</label>
+                                <label class="lwe-check-label"><input type="checkbox" id="lwe-site-visible" checked> Visible</label>
+                                <label class="lwe-check-label"><input type="checkbox" id="lwe-site-snap" checked> Snap Base</label>
+                            </div>
+                            <div class="lwe-check-row">
+                                <label class="lwe-check-label"><input type="checkbox" id="lwe-site-stack"> Is Stack</label>
+                                <div class="lwe-field lwe-field-inline"><label class="lwe-label">Stack Size</label><input type="number" id="lwe-site-stack-size" class="lwe-input" min="1" value="1"></div>
+                            </div>
+
+                            <div class="lwe-site-actions">
+                                <button id="lwe-add-site" class="lwe-btn lwe-btn-sm"><i class="fas fa-plus"></i> Add Site</button>
+                                <button id="lwe-del-site" class="lwe-btn lwe-btn-sm lwe-btn-danger"><i class="fas fa-trash"></i> Delete Site</button>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Center: 3D Preview -->
+                    <div class="lwe-preview-col">
+                        <canvas id="lwe-canvas"></canvas>
+
+                        <!-- Floating Toolbar -->
+                        <div class="viewer-toolbar lwe-toolbar" id="lwe-toolbar">
+                            <div class="vt-body" id="lwe-vt-body">
+                                <button class="vt-toggle" id="lwe-vt-toggle" title="Toggle toolbar"></button>
+                                <button class="vt-btn" id="lwe-vt-grab-handle" title="Drag to reposition"><i class="fas fa-grip-vertical"></i></button>
+                                <div class="vt-sep"></div>
+                                <button class="vt-btn" id="lwe-vt-reset-cam" title="Reset camera"><i class="fas fa-undo"></i></button>
+                                <button class="vt-btn" id="lwe-vt-zoom-fit" title="Zoom to fit"><i class="fas fa-expand"></i></button>
+                                <button class="vt-btn" id="lwe-vt-topdown" title="Top-down view"><i class="fas fa-arrow-down"></i></button>
+                                <div class="vt-sep"></div>
+                                <button class="vt-btn" id="lwe-vt-zoom-in" title="Zoom in"><i class="fas fa-search-plus"></i></button>
+                                <button class="vt-btn" id="lwe-vt-zoom-out" title="Zoom out"><i class="fas fa-search-minus"></i></button>
+                                <button class="vt-btn" id="lwe-vt-pan" title="Pan mode"><i class="fas fa-hand-paper"></i></button>
+                                <div class="vt-sep"></div>
+                                <button class="vt-btn" id="lwe-vt-wireframe" title="Toggle wireframe"><i class="fas fa-border-none"></i></button>
+                                <button class="vt-btn" id="lwe-vt-perspective" title="Toggle ortho/persp"><i class="fas fa-video"></i></button>
+                                <button class="vt-btn" id="lwe-btn-grid" title="Toggle grid"><i class="fas fa-th"></i></button>
+                                <div class="vt-sep"></div>
+                                <button class="vt-btn" id="lwe-vt-ruler" title="Ruler tool"><i class="fas fa-ruler"></i></button>
+                            </div>
+                        </div>
+
+                        <!-- Gizmo -->
+                        <canvas id="lwe-gizmo-canvas" class="viewer-gizmo" width="80" height="80"></canvas>
+
+                        <!-- Ruler readout -->
+                        <div class="viewer-ruler-readout" id="lwe-ruler-readout" style="display:none"></div>
+
+                        <!-- Dimension display -->
+                        <div class="lwe-dim-overlay" id="lwe-dim-display"></div>
+
+                        <!-- Camera display -->
+                        <div class="lwe-cam-overlay" id="lwe-cam-display"></div>
+
+                        <!-- Dropzone -->
+                        <div class="viewer-dropzone viewer-hidden" id="lwe-dropzone">
+                            <i class="fas fa-file-import"></i>
+                            <span>Drop .rck, .ctr, or .tml file</span>
+                        </div>
+                    </div>
+
+                    <!-- Right Panel: Site list (Carrier mode) -->
+                    <div class="lwe-right-panel">
+                        <h3 class="lwe-section-title"><i class="fas fa-list"></i> Sites</h3>
+                        <div id="lwe-site-list" class="lwe-site-list"></div>
+                    </div>
+                </div>
+
+                <!-- Status Bar -->
+                <div class="viewer-controls-bar">
+                    <span class="lwe-status" id="lwe-status">Ready</span>
+                    <div class="cv-ctrl-spacer"></div>
+                    <div class="screenshot-group">
+                        <button class="cv-ctrl-btn cv-ctrl-btn-accent" id="lwe-screenshot" title="Save screenshot">
+                            <i class="fas fa-camera"></i> Screenshot
+                        </button>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
 
@@ -1858,6 +2115,7 @@
     <script src="js/labwareGenerator.js?v=20260308a"></script>
     <script src="js/hamiltonImport.js?v=20260309a"></script>
     <script src="js/mfxCarrier.js?v=20260310i"></script>
+    <script src="js/labwareEditor.js?v=20260315a"></script>
     <script src="js/app.js?v=20260310b"></script>
 </body>
 </html>

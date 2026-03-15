@@ -991,6 +991,8 @@
         if (window.VantageLayoutModule) window.VantageLayoutModule.updateTheme();
         // Also update MFX carrier theme
         if (window.MFXCarrierModule) window.MFXCarrierModule.updateTheme();
+        // Also update labware editor theme
+        if (window.LabwareEditorModule) window.LabwareEditorModule.updateTheme();
 
     }
 
@@ -1045,6 +1047,11 @@
         // Initialize MFX carrier on first switch
         if (viewName === 'mfx' && window.MFXCarrierModule) {
             setTimeout(() => window.MFXCarrierModule.init(), 50);
+        }
+
+        // Initialize labware editor on first switch
+        if (viewName === 'labware-editor' && window.LabwareEditorModule) {
+            setTimeout(() => window.LabwareEditorModule.init(), 50);
         }
 
         // Auto-collapse sidebar after navigation
@@ -1813,6 +1820,8 @@
             img.src = window.VantageLayoutModule.screenshotPreviewDataURL(opts);
         } else if (ssModalSource === 'mfx' && window.MFXCarrierModule && window.MFXCarrierModule.screenshotPreviewDataURL) {
             img.src = window.MFXCarrierModule.screenshotPreviewDataURL(opts);
+        } else if (ssModalSource === 'labware-editor' && window.LabwareEditorModule && window.LabwareEditorModule.screenshotPreviewDataURL) {
+            img.src = window.LabwareEditorModule.screenshotPreviewDataURL(opts);
         } else {
             img.src = screenshotPreviewDataURL(opts);
         }
@@ -1838,6 +1847,8 @@
             window.VantageLayoutModule.saveScreenshot(format, opts);
         } else if (ssModalSource === 'mfx' && window.MFXCarrierModule && window.MFXCarrierModule.saveScreenshot) {
             window.MFXCarrierModule.saveScreenshot(format, opts);
+        } else if (ssModalSource === 'labware-editor' && window.LabwareEditorModule && window.LabwareEditorModule.saveScreenshot) {
+            window.LabwareEditorModule.saveScreenshot(format, opts);
         } else {
             saveScreenshot(format, opts);
         }
