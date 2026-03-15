@@ -150,6 +150,14 @@
     function loadPlateModel() {
         const url = PLATE_X_FILENAME + '?_ts=' + Date.now();
         const manager = new THREE.LoadingManager();
+        // Resolve texture paths relative to the model location (match main viewer)
+        const basePath = PLATE_X_FILENAME.substring(0, PLATE_X_FILENAME.lastIndexOf('/') + 1);
+        manager.setURLModifier(function (texUrl) {
+            if (/\.(png|jpg|jpeg|bmp|tga)$/i.test(texUrl)) {
+                return basePath + texUrl.split('/').pop();
+            }
+            return texUrl;
+        });
         const loader = new THREE.XFileLoader(manager);
 
         loader.load(url, function (object) {
@@ -186,27 +194,50 @@
                 group.add(model);
             }
 
-            // Center the plate
+            // ── Add to scene FIRST (matches main viewer order) ──
+            ppState.scene.add(group);
+
+            // ── Left-handed → right-handed coordinate fix ──
+            if (window._fixLeftHandedCoords) window._fixLeftHandedCoords(group);
+
+            // ── Disable frustum culling & handle blue-dominant transparency ──
+            group.traverse(function (child) {
+                if (!child.isMesh) return;
+                child.frustumCulled = false;
+                var mats = Array.isArray(child.material) ? child.material : [child.material];
+                var isTransparent = false;
+                mats.forEach(function (m) {
+                    if (!m || !m.color) return;
+                    var r = m.color.r, g = m.color.g, b = m.color.b;
+                    if (b > r * 1.5 && b > 0.1) {
+                        m.transparent = true;
+                        if (m.opacity >= 1.0) m.opacity = 0.4;
+                        m.depthWrite = false;
+                        m.side = THREE.DoubleSide;
+                        isTransparent = true;
+                    }
+                });
+                if (isTransparent) {
+                    child.renderOrder = 999;
+                }
+            });
+
+            // ── Compute bounding box AFTER coord fix (matches main viewer) ──
             const box = new THREE.Box3().setFromObject(group);
             const center = box.getCenter(new THREE.Vector3());
+            const size = box.getSize(new THREE.Vector3());
+
+            ppState.plate = group;
+            ppState._plateCenter = center.clone();
+            ppState._plateNativeSize = size.clone();
+
+            // Center the plate
             group.position.sub(center);
 
             // Apply stored plate offset
             group.position.x += ppState.platePos.x;
             group.position.y += ppState.platePos.y;
             group.position.z += ppState.platePos.z;
-
-            ppState.plate = group;
-            ppState._plateCenter = center.clone();
-            ppState._plateNativeSize = box.getSize(new THREE.Vector3()).clone();
-            if (window._fixLeftHandedCoords) window._fixLeftHandedCoords(group);
-
-            // Disable frustum culling on plate meshes
-            group.traverse(function (child) {
-                if (child.isMesh) child.frustumCulled = false;
-            });
-
-            ppState.scene.add(group);
 
             // Auto-scale plate to match model if model is already loaded
             autoScalePlateToModel();
