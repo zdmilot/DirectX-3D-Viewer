@@ -90,17 +90,12 @@
         BLANK: {
             key: 'BLANK',
             label: 'Blank Carrier',
-            description: 'Blank carrier — custom dimensions, no pre-defined modules',
-            dx: 135, dy: 497, dz: 100,
-            color: 0x808080,
+            description: 'Blank carrier — custom dimensions, direct labware placement',
+            dx: 135, dy: 497, dz: 20,
+            color: 0x9090a0,
             modelFile: null,
-            slots: [
-                { id: 1, label: 'Pos 5', x: 4, y:   8.5, z: 80, dx: 127, dy: 86 },
-                { id: 2, label: 'Pos 4', x: 4, y: 104.5, z: 80, dx: 127, dy: 86 },
-                { id: 3, label: 'Pos 3', x: 4, y: 200.5, z: 80, dx: 127, dy: 86 },
-                { id: 4, label: 'Pos 2', x: 4, y: 296.5, z: 80, dx: 127, dy: 86 },
-                { id: 5, label: 'Pos 1', x: 4, y: 392.5, z: 80, dx: 127, dy: 86 },
-            ],
+            isBlank: true,
+            slots: [],   // dynamic — managed via mfxState.blankSites
         },
     };
 
@@ -223,13 +218,7 @@
             4: ['HeatCool', 'HeatCoolShaker', 'Standard', 'StandardShaker'],
             5: ['TurnTable', 'LidParkBack', 'LidParkBackShaker', 'Standard', 'StandardShaker'],
         },
-        BLANK: {
-            1: ['Standard', 'StandardShaker', 'StandardPortrait', 'HeatCool', 'HeatCoolShaker', 'LidPark', 'LidParkBack', 'TurnTable'],
-            2: ['Standard', 'StandardShaker', 'StandardPortrait', 'HeatCool', 'HeatCoolShaker'],
-            3: ['Standard', 'StandardShaker', 'StandardPortrait', 'HeatCool', 'HeatCoolShaker'],
-            4: ['Standard', 'StandardShaker', 'StandardPortrait', 'HeatCool', 'HeatCoolShaker'],
-            5: ['Standard', 'StandardShaker', 'StandardPortrait', 'HeatCool', 'HeatCoolShaker', 'LidParkBack', 'TurnTable'],
-        },
+        // BLANK has no module rules — labware placed directly on sites
     };
 
     // ================================================================

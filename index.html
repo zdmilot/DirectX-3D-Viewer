@@ -1186,52 +1186,69 @@
 
                 <!-- Left Panel: Carrier Palette + TML Import -->
                 <div class="vl-left-panel" id="vl-left-panel">
-                    <div class="vl-panel-section">
-                        <div class="vl-panel-header">
+
+                    <!-- Carrier Palette (collapsible) -->
+                    <div class="vl-lp-section">
+                        <div class="vl-lp-section-header" id="vl-sec-palette-toggle">
                             <i class="fas fa-th-large"></i> Carrier Palette
+                            <i class="fas fa-chevron-down vl-lp-chevron"></i>
                         </div>
-                        <div class="vl-palette-list" id="vl-palette-list">
-                            <!-- populated by JS -->
+                        <div class="vl-lp-section-body" id="vl-sec-palette-body">
+                            <div class="vl-palette-list" id="vl-palette-list">
+                                <!-- populated by JS -->
+                            </div>
                         </div>
                     </div>
-                    <div class="vl-panel-divider"></div>
-                    <div class="vl-panel-section">
-                        <div class="vl-panel-header">
+
+                    <!-- Import .tml (collapsible) -->
+                    <div class="vl-lp-section">
+                        <div class="vl-lp-section-header" id="vl-sec-tml-toggle">
                             <i class="fas fa-file-import"></i> Import .tml
+                            <i class="fas fa-chevron-down vl-lp-chevron"></i>
                         </div>
-                        <input type="file" id="vl-tml-input" accept=".tml,.x" multiple style="display:none">
-                        <div class="vl-tml-drop" id="vl-tml-drop">
-                            <i class="fas fa-file-upload"></i>
-                            <span>Drop .tml (+ .x model) here or</span>
-                            <button class="vl-tml-browse" id="vl-tml-open">Browse</button>
+                        <div class="vl-lp-section-body" id="vl-sec-tml-body">
+                            <input type="file" id="vl-tml-input" accept=".tml,.x" multiple style="display:none">
+                            <div class="vl-tml-drop" id="vl-tml-drop">
+                                <i class="fas fa-file-upload"></i>
+                                <span>Drop .tml (+ .x model) here or</span>
+                                <button class="vl-tml-browse" id="vl-tml-open">Browse</button>
+                            </div>
                         </div>
                     </div>
-                    <div class="vl-panel-divider"></div>
-                    <div class="vl-panel-section">
-                        <div class="vl-panel-header">
+
+                    <!-- Rack / Container Library (collapsible) -->
+                    <div class="vl-lp-section">
+                        <div class="vl-lp-section-header" id="vl-sec-rack-toggle">
                             <i class="fas fa-box"></i> Rack / Container Library
+                            <i class="fas fa-chevron-down vl-lp-chevron"></i>
                         </div>
-                        <input type="file" id="vl-rack-input" accept=".rck,.x,.hxx" multiple style="display:none">
-                        <div class="vl-tml-drop" id="vl-rack-drop">
-                            <i class="fas fa-file-upload"></i>
-                            <span>Drop .rck (+ .x model) here or</span>
-                            <button class="vl-tml-browse" id="vl-rack-open">Browse</button>
-                        </div>
-                        <div class="vl-rack-list" id="vl-rack-list">
-                            <div class="vl-empty-hint">No racks imported yet.</div>
+                        <div class="vl-lp-section-body" id="vl-sec-rack-body">
+                            <input type="file" id="vl-rack-input" accept=".rck,.x,.hxx" multiple style="display:none">
+                            <div class="vl-tml-drop" id="vl-rack-drop">
+                                <i class="fas fa-file-upload"></i>
+                                <span>Drop .rck (+ .x model) here or</span>
+                                <button class="vl-tml-browse" id="vl-rack-open">Browse</button>
+                            </div>
+                            <div class="vl-rack-list" id="vl-rack-list">
+                                <div class="vl-empty-hint">No racks imported yet.</div>
+                            </div>
                         </div>
                     </div>
-                    <div class="vl-panel-divider"></div>
-                    <div class="vl-panel-section vl-placed-section">
-                        <div class="vl-panel-header">
+
+                    <!-- Placed Carriers (collapsible) -->
+                    <div class="vl-lp-section vl-lp-section-flex">
+                        <div class="vl-lp-section-header" id="vl-sec-placed-toggle">
                             <i class="fas fa-list"></i> Placed Carriers
+                            <i class="fas fa-chevron-down vl-lp-chevron"></i>
                         </div>
-                        <div class="vl-carrier-list" id="vl-carrier-list">
-                            <div class="vl-empty-hint">No carriers placed yet.<br>Select a carrier above and click Place.</div>
+                        <div class="vl-lp-section-body vl-lp-section-body-flex" id="vl-sec-placed-body">
+                            <div class="vl-carrier-list" id="vl-carrier-list">
+                                <div class="vl-empty-hint">No carriers placed yet.<br>Select a carrier above and click Place.</div>
+                            </div>
+                            <button class="vl-danger-btn" id="vl-clear-deck">
+                                <i class="fas fa-trash"></i> Clear Deck
+                            </button>
                         </div>
-                        <button class="vl-danger-btn" id="vl-clear-deck">
-                            <i class="fas fa-trash"></i> Clear Deck
-                        </button>
                     </div>
                 </div>
 
@@ -1454,6 +1471,14 @@
 
                 <!-- Bottom Controls Bar -->
                 <div class="viewer-controls-bar" id="vl-controls-bar">
+                    <!-- Pending rack placement banner -->
+                    <div class="vl-pending-banner" id="vl-pending-rack-banner" style="display:none">
+                        <i class="fas fa-hand-pointer"></i>
+                        Placing: <strong id="vl-pending-rack-name"></strong> — click a carrier site
+                        <button class="vl-pending-cancel" id="vl-cancel-pending-rack" title="Cancel placement">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
                     <span class="vl-status-msg" id="vl-status">Ready</span>
                     <div class="cv-ctrl-spacer"></div>
                     <div class="screenshot-group" id="vl-screenshot-group">

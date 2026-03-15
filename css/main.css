@@ -3121,6 +3121,98 @@ body {
     flex-shrink: 0;
 }
 
+/* ── VL Left Panel Collapsible Sections ──────────────────── */
+.vl-lp-section {
+    border-bottom: 1px solid var(--card-border);
+    flex-shrink: 0;
+}
+
+.vl-lp-section-flex {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.vl-lp-section-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary);
+    background: rgba(0,0,0,0.03);
+    border-bottom: 1px solid var(--card-border);
+    cursor: pointer;
+    user-select: none;
+    flex-shrink: 0;
+    transition: background .15s;
+}
+.vl-lp-section-header:hover {
+    background: rgba(2,117,216,0.06);
+}
+[data-theme="dark"] .vl-lp-section-header {
+    background: rgba(255,255,255,0.03);
+}
+[data-theme="dark"] .vl-lp-section-header:hover {
+    background: rgba(255,255,255,.06);
+}
+
+.vl-lp-chevron {
+    margin-left: auto;
+    font-size: 10px;
+    opacity: .5;
+    transition: transform .2s;
+}
+
+.vl-lp-section-body {
+    padding: 4px 0;
+    overflow-x: hidden;
+}
+.vl-lp-section-body.is-hidden {
+    display: none;
+}
+.vl-lp-section-body-flex {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ── VL Pending Rack Banner ──────────────────────────────── */
+.vl-pending-banner {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    background: rgba(2,117,216,0.12);
+    border-radius: 4px;
+    font-size: 11px;
+    color: var(--accent);
+    white-space: nowrap;
+    margin-right: 8px;
+}
+[data-theme="dark"] .vl-pending-banner {
+    background: rgba(100,180,255,0.15);
+}
+.vl-pending-cancel {
+    background: none;
+    border: none;
+    color: var(--accent);
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-size: 11px;
+    line-height: 1;
+}
+.vl-pending-cancel:hover {
+    background: rgba(2,117,216,0.15);
+}
+
 /* Palette list */
 .vl-palette-list {
     overflow-y: auto;
@@ -3453,7 +3545,20 @@ body {
     padding: 5px 10px;
     border-bottom: 1px solid var(--card-border);
     font-size: 11px;
-    cursor: default;
+    cursor: pointer;
+    transition: background .15s;
+}
+
+.vl-rack-item:hover {
+    background: rgba(2,117,216,0.05);
+}
+
+.vl-rack-item.is-pending {
+    background: rgba(2,117,216,0.12);
+    border-left: 3px solid var(--accent);
+}
+[data-theme="dark"] .vl-rack-item.is-pending {
+    background: rgba(100,180,255,0.15);
 }
 
 .vl-rack-item.drag-over {

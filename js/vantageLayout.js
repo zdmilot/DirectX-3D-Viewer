@@ -301,6 +301,8 @@
 
         // Settings: deck repositioning offset (applied on top of auto-calculated base pos)
 
+        // Pending rack for click-to-place
+        pendingRackKey: null,
     };
 
     const LIGHT_BG   = 0xf0f0f0;
@@ -497,6 +499,8 @@
         // Enable drag-to-place by default
         setDragToPlace(true);
         wireVLPanelToggles();
+        wireVLLeftPanelSections();
+        wirePendingRackBanner();
         populateCarrierPalette();
         populateRackPalette();
         resetVLCamera();
@@ -1597,6 +1601,35 @@
     //  Rack Palette UI
     // ================================================================
 
+    /**
+     * Handle click on a rack palette item — MFX-style click-to-place.
+     * If a carrier with a site is already selected, place immediately.
+     * Otherwise, set as pending and wait for user to click a carrier site.
+     */
+    function onRackItemClick(rackKey) {
+        if (vlState.selectedCarrierId != null) {
+            // A carrier is selected — check if there are available sites
+            var carrier = vlState.placedCarriers.find(function (c) { return c.id === vlState.selectedCarrierId; });
+            if (carrier && carrier.def.sites.length > 0) {
+                // Find first empty site (no plate and no container)
+                var emptySite = carrier.def.sites.find(function (site) {
+                    var hasPlate = carrier.plateMeshes.some(function (p) { return p.siteId === site.id; });
+                    var hasContainer = carrier.siteContainers && carrier.siteContainers[site.id];
+                    return !hasPlate && !hasContainer;
+                });
+                if (emptySite) {
+                    assignRackToSite(carrier.id, emptySite.id, rackKey);
+                    vlState.pendingRackKey = null;
+                    updatePendingRackBanner();
+                    updateRackPaletteSelection();
+                    return;
+                }
+            }
+        }
+        // No carrier selected or no empty site — set as pending
+        setPendingRack(rackKey);
+    }
+
     function populateRackPalette() {
         var list = document.getElementById('vl-rack-list');
         if (!list) return;
@@ -1641,12 +1674,39 @@
                 showVLStatus('Removed rack: ' + key);
             });
 
-            // Drag rack onto carrier sites
-            item.addEventListener('mousedown', function (e) {
-                if (e.button !== 0) return;
-                e.preventDefault();
-                startRackDrag(e, key);
-            });
+            // Combined click-to-select + drag-to-place via deferred drag start
+            (function (rackKey) {
+                var _downX = 0, _downY = 0, _dragStarted = false;
+
+                function onMouseMove(e) {
+                    var dx = e.clientX - _downX;
+                    var dy = e.clientY - _downY;
+                    if (!_dragStarted && Math.sqrt(dx * dx + dy * dy) > 5) {
+                        _dragStarted = true;
+                        startRackDrag(e, rackKey);
+                    }
+                }
+                function onMouseUp(e) {
+                    document.removeEventListener('mousemove', onMouseMove);
+                    document.removeEventListener('mouseup', onMouseUp);
+                    if (!_dragStarted) {
+                        // Treat as click — select rack for pending placement
+                        if (!e.target.closest('.vl-rack-del')) {
+                            onRackItemClick(rackKey);
+                        }
+                    }
+                }
+
+                item.addEventListener('mousedown', function (e) {
+                    if (e.button !== 0) return;
+                    e.preventDefault();
+                    _downX = e.clientX;
+                    _downY = e.clientY;
+                    _dragStarted = false;
+                    document.addEventListener('mousemove', onMouseMove);
+                    document.addEventListener('mouseup', onMouseUp);
+                });
+            })(key);
 
             list.appendChild(item);
         });
@@ -3288,6 +3348,19 @@
 
     function onDeckClick(e) {
         if (!vlState.scene || !vlState.camera) return;
+
+        // If a pending rack is selected, check for site click first
+        if (vlState.pendingRackKey) {
+            var siteHit = hitTestSites(e);
+            if (siteHit) {
+                assignRackToSite(siteHit.carrier.id, siteHit.site.id, vlState.pendingRackKey);
+                // Keep pending rack selected for placing on multiple sites
+                // User can cancel via banner button or Escape
+                selectCarrier(siteHit.carrier.id);
+                return;
+            }
+        }
+
         const hit = hitTestCarriers(e);
         if (hit) {
             selectCarrier(hit.carrier.id);
@@ -3298,8 +3371,14 @@
         updateSitePanel(null);
     }
 
-    // Keyboard: Backspace / Delete removes the selected carrier
+    // Keyboard: Backspace / Delete removes the selected carrier; Escape cancels pending rack
     document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') {
+            if (vlState.pendingRackKey) {
+                cancelPendingRack();
+                return;
+            }
+        }
         if (e.key === 'Backspace' || e.key === 'Delete') {
             // Don't intercept when typing in an input/textarea
             const tag = e.target.tagName;
@@ -5063,6 +5142,86 @@
             host.classList.add('vl-left-collapsed');
             const icon = $('#vl-left-toggle-icon');
             if (icon) icon.className = 'fas fa-chevron-right';
+        }
+    }
+
+    // ================================================================
+    //  Wire collapsible left panel sections (accordion-style)
+    // ================================================================
+    function wireVLLeftPanelSections() {
+        var pairs = [
+            ['#vl-sec-palette-toggle',  '#vl-sec-palette-body'],
+            ['#vl-sec-tml-toggle',      '#vl-sec-tml-body'],
+            ['#vl-sec-rack-toggle',     '#vl-sec-rack-body'],
+            ['#vl-sec-placed-toggle',   '#vl-sec-placed-body'],
+        ];
+        pairs.forEach(function (p) {
+            var header = $(p[0]);
+            var body   = $(p[1]);
+            if (!header || !body) return;
+            header.addEventListener('click', function () {
+                body.classList.toggle('is-hidden');
+                var chevron = header.querySelector('.vl-lp-chevron');
+                if (chevron) {
+                    if (body.classList.contains('is-hidden')) {
+                        chevron.classList.remove('fa-chevron-down');
+                        chevron.classList.add('fa-chevron-right');
+                    } else {
+                        chevron.classList.remove('fa-chevron-right');
+                        chevron.classList.add('fa-chevron-down');
+                    }
+                }
+            });
+        });
+    }
+
+    // ================================================================
+    //  Pending Rack Click-to-Place (MFX-style)
+    // ================================================================
+    function setPendingRack(rackKey) {
+        vlState.pendingRackKey = rackKey;
+        updatePendingRackBanner();
+        updateRackPaletteSelection();
+        if (rackKey) {
+            var def = vlState.rackLibrary[rackKey];
+            showVLStatus('Rack selected: ' + (def ? def.name : rackKey) + ' — click a carrier site to place it');
+        }
+    }
+
+    function cancelPendingRack() {
+        vlState.pendingRackKey = null;
+        updatePendingRackBanner();
+        updateRackPaletteSelection();
+        showVLStatus('Placement cancelled.');
+    }
+
+    function updatePendingRackBanner() {
+        var banner = document.getElementById('vl-pending-rack-banner');
+        if (!banner) return;
+        if (vlState.pendingRackKey) {
+            var def = vlState.rackLibrary[vlState.pendingRackKey];
+            banner.style.display = '';
+            var nameEl = document.getElementById('vl-pending-rack-name');
+            if (nameEl) nameEl.textContent = def ? def.name : vlState.pendingRackKey;
+        } else {
+            banner.style.display = 'none';
+        }
+    }
+
+    function updateRackPaletteSelection() {
+        var items = document.querySelectorAll('#vl-rack-list .vl-rack-item');
+        items.forEach(function (item) {
+            var isPending = item.dataset.rackKey === vlState.pendingRackKey;
+            item.classList.toggle('is-pending', isPending);
+        });
+    }
+
+    function wirePendingRackBanner() {
+        var cancelBtn = document.getElementById('vl-cancel-pending-rack');
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', function () {
+                cancelPendingRack();
+            });
         }
     }
 
