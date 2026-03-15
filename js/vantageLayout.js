@@ -571,17 +571,44 @@
                 });
 
                 // Compute world-space bounds with model at origin (before placing in scene)
-                const box = new THREE.Box3().setFromObject(model);
-                const center = box.getCenter(new THREE.Vector3());
-
+                // --- Robust deck alignment: use geometry, not mesh name/color ---
+                model.updateMatrixWorld(true);
+                let deckSurf = null;
+                let maxArea = 0;
+                let deckBox = null;
+                model.traverse(function(child) {
+                    if (!child.isMesh) return;
+                    const b = new THREE.Box3().setFromObject(child);
+                    const size = new THREE.Vector3();
+                    b.getSize(size);
+                    // Look for the largest flat mesh (biggest X*Z, minimal Y thickness)
+                    const area = size.x * size.z;
+                    const flatness = size.y;
+                    if (area > maxArea && flatness < 30 && size.x > 1000 && size.z > 400) {
+                        maxArea = area;
+                        deckSurf = child;
+                        deckBox = b;
+                    }
+                });
+                if (!deckBox) {
+                    // fallback: use widest mesh
+                    model.traverse(function(child) {
+                        if (!child.isMesh) return;
+                        const b = new THREE.Box3().setFromObject(child);
+                        const size = new THREE.Vector3();
+                        b.getSize(size);
+                        if (size.x > maxArea) { maxArea = size.x; deckSurf = child; deckBox = b; }
+                    });
+                }
+                const center = deckBox ? deckBox.getCenter(new THREE.Vector3()) : new THREE.Box3().setFromObject(model).getCenter(new THREE.Vector3());
                 // Align GLTF so its TOP surface sits at DECK.SURFACE_Z.
                 // Use PHYSICAL_TRACKS — the GLTF model only covers the original deck hardware.
                 const deckCenterX = DECK.FIRST_TRACK_X + (DECK.PHYSICAL_TRACKS * DECK.TRACK_SPACING) / 2;
                 const deckCenterZ = DECK.TRACK_Y_START + DECK.TRACK_DEPTH / 2;
-
+                const yTop = deckBox ? deckBox.max.y : new THREE.Box3().setFromObject(model).max.y;
                 model.position.set(
                     deckCenterX - center.x,
-                    DECK.SURFACE_Z - box.max.y,   // top of GLTF = deck surface level
+                    DECK.SURFACE_Z - yTop,
                     deckCenterZ - center.z
                 );
 
