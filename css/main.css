@@ -4456,6 +4456,90 @@ body {
     color: rgba(160, 180, 200, 0.4);
 }
 
+/* ── MFX Right Panel Collapsible Sections ────────────────── */
+.mfx-rp-section {
+    border-bottom: 1px solid #ddd;
+}
+[data-theme="dark"] .mfx-rp-section {
+    border-bottom-color: #2a3a4a;
+}
+.mfx-rp-section-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 10px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #444;
+    cursor: pointer;
+    user-select: none;
+    transition: background .15s;
+}
+.mfx-rp-section-header:hover {
+    background: rgba(0,0,0,.04);
+}
+[data-theme="dark"] .mfx-rp-section-header {
+    color: #b0c4d4;
+}
+[data-theme="dark"] .mfx-rp-section-header:hover {
+    background: rgba(255,255,255,.04);
+}
+.mfx-rp-chevron {
+    margin-left: auto;
+    font-size: 10px;
+    opacity: .5;
+    transition: transform .2s;
+}
+.mfx-rp-section-header.is-collapsed .mfx-rp-chevron {
+    transform: rotate(-90deg);
+}
+.mfx-rp-section-body {
+    padding: 6px 10px 10px;
+}
+.mfx-rp-section-body.is-hidden {
+    display: none;
+}
+
+/* ── MFX Properties List ─────────────────────────────────── */
+.mfx-props-list {
+    margin-bottom: 4px;
+}
+.mfx-prop-row {
+    display: flex;
+    gap: 4px;
+    align-items: flex-end;
+    margin-bottom: 3px;
+}
+.mfx-prop-row .lwe-field { flex: 1; min-width: 0; }
+.mfx-prop-row .lwe-input { margin-bottom: 0; }
+.mfx-prop-remove {
+    flex-shrink: 0;
+    background: none;
+    border: none;
+    color: #d44;
+    cursor: pointer;
+    font-size: 11px;
+    padding: 4px;
+    opacity: .6;
+    transition: opacity .15s;
+}
+.mfx-prop-remove:hover { opacity: 1; }
+
+/* ── MFX Labware Summary ─────────────────────────────────── */
+.mfx-labware-hint {
+    font-size: 11px;
+    color: #888;
+    padding: 6px 0;
+}
+[data-theme="dark"] .mfx-labware-hint { color: #6688aa; }
+.mfx-lw-summary {
+    font-size: 11px;
+    color: #555;
+    margin: 6px 0;
+    line-height: 1.5;
+}
+[data-theme="dark"] .mfx-lw-summary { color: #99aabb; }
+
 /* ============================================================
    Labware Editor
    ============================================================ */
