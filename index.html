@@ -76,8 +76,11 @@
                 <button class="nav-btn nav-btn-icon" id="btn-theme" data-tooltip="Switch to night mode" aria-label="Switch to night mode">
                     <i class="fas fa-moon"></i>
                 </button>
-                <button class="nav-btn nav-btn-icon" id="btn-settings" data-tooltip="Vantage Settings" aria-label="Vantage Settings" style="display:none">
+                <button class="nav-btn nav-btn-icon" id="btn-global-settings" data-tooltip="Global Settings" aria-label="Global Settings">
                     <i class="fas fa-cog"></i>
+                </button>
+                <button class="nav-btn nav-btn-icon" id="btn-settings" data-tooltip="Vantage Settings" aria-label="Vantage Settings" style="display:none">
+                    <i class="fas fa-sliders-h"></i>
                 </button>
                 <button class="nav-btn nav-btn-icon" id="btn-about" title="About" aria-label="About">
                     <i class="fas fa-info-circle"></i>
@@ -2015,6 +2018,30 @@
                 <button class="ss-save-btn" data-format="png"><i class="fas fa-file-image"></i> Save .PNG</button>
                 <button class="ss-save-btn" data-format="jpg"><i class="fas fa-file-image"></i> Save .JPG</button>
                 <button class="ss-save-btn" data-format="svg"><i class="fas fa-file-code"></i> Save .SVG</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Global Settings Modal -->
+    <div class="settings-overlay" id="global-settings-overlay">
+        <div class="settings-modal" style="width:520px">
+            <div class="settings-header">
+                <i class="fas fa-cog settings-header-icon"></i>
+                <div class="settings-title">Global Settings</div>
+                <div class="settings-subtitle">Application-wide Configuration</div>
+            </div>
+            <div class="settings-body">
+                <div class="settings-section-title"><i class="fas fa-folder-open"></i> Hamilton Installation Directory</div>
+                <p class="settings-hint">Set the root Hamilton directory so applets can locate configuration files, labware categories, and other resources. This is typically <code>C:\Program Files (x86)\HAMILTON</code>.</p>
+                <div class="global-settings-dir-row">
+                    <input type="text" id="global-hamilton-dir" class="global-settings-dir-input" placeholder="e.g. C:\Program Files (x86)\HAMILTON" spellcheck="false" autocomplete="off">
+                    <button class="global-settings-browse-btn" id="global-hamilton-browse" title="Browse…"><i class="fas fa-folder"></i></button>
+                </div>
+                <input type="file" id="global-hamilton-dir-picker" webkitdirectory style="display:none">
+                <p class="settings-hint" style="margin-top:8px;font-size:0.72rem;opacity:0.7">This value is saved in your browser and will persist across sessions.</p>
+            </div>
+            <div class="settings-footer">
+                <button class="settings-close-btn" id="global-settings-close">Close</button>
             </div>
         </div>
     </div>

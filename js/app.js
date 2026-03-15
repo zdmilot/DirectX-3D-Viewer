@@ -16,6 +16,12 @@
         btnSettings: $('#btn-settings'),
         settingsOverlay: $('#settings-overlay'),
         settingsClose: $('#settings-close'),
+        btnGlobalSettings: $('#btn-global-settings'),
+        globalSettingsOverlay: $('#global-settings-overlay'),
+        globalSettingsClose: $('#global-settings-close'),
+        globalHamiltonDir: $('#global-hamilton-dir'),
+        globalHamiltonBrowse: $('#global-hamilton-browse'),
+        globalHamiltonDirPicker: $('#global-hamilton-dir-picker'),
         btnGrid: $('#btn-grid'),
         fileInput: $('#file-input'),
         btnSidebarToggle: $('#btn-sidebar-toggle'),
@@ -2459,7 +2465,41 @@
             }
         });
 
-        // Settings modal
+        // Global settings modal
+        if (dom.btnGlobalSettings) dom.btnGlobalSettings.addEventListener('click', () => {
+            if (dom.globalSettingsOverlay) dom.globalSettingsOverlay.classList.add('is-open');
+        });
+        if (dom.globalSettingsClose) dom.globalSettingsClose.addEventListener('click', () => {
+            if (dom.globalSettingsOverlay) dom.globalSettingsOverlay.classList.remove('is-open');
+        });
+        if (dom.globalSettingsOverlay) dom.globalSettingsOverlay.addEventListener('click', (e) => {
+            if (e.target === dom.globalSettingsOverlay) dom.globalSettingsOverlay.classList.remove('is-open');
+        });
+        // Hamilton directory persistence
+        if (dom.globalHamiltonDir) {
+            var savedDir = '';
+            try { savedDir = localStorage.getItem('hamilton-install-dir') || ''; } catch(e) {}
+            dom.globalHamiltonDir.value = savedDir;
+            dom.globalHamiltonDir.addEventListener('input', () => {
+                try { localStorage.setItem('hamilton-install-dir', dom.globalHamiltonDir.value); } catch(e) {}
+            });
+        }
+        if (dom.globalHamiltonBrowse && dom.globalHamiltonDirPicker) {
+            dom.globalHamiltonBrowse.addEventListener('click', () => dom.globalHamiltonDirPicker.click());
+            dom.globalHamiltonDirPicker.addEventListener('change', (e) => {
+                var files = e.target.files;
+                if (files && files.length > 0) {
+                    // Extract the common root directory from the webkitRelativePath
+                    var first = files[0].webkitRelativePath || files[0].name;
+                    var root = first.split('/')[0] || first;
+                    dom.globalHamiltonDir.value = root;
+                    try { localStorage.setItem('hamilton-install-dir', root); } catch(ex) {}
+                }
+                dom.globalHamiltonDirPicker.value = '';
+            });
+        }
+
+        // Settings modal (Vantage-specific)
         if (dom.btnSettings) dom.btnSettings.addEventListener('click', () => {
             if (dom.settingsOverlay) dom.settingsOverlay.classList.add('is-open');
         });
@@ -2597,6 +2637,13 @@
         initSplash();
         initDraggablePanels();
     }
+
+    // ================================================================
+    //  Global Settings Accessor — available to all applets
+    // ================================================================
+    window.getHamiltonDir = function () {
+        try { return localStorage.getItem('hamilton-install-dir') || ''; } catch(e) { return ''; }
+    };
 
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);
