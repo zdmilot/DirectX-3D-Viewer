@@ -2087,11 +2087,6 @@
         // Right panel slot list was removed — this is now a no-op.
         // Slot state is managed directly in mfxState.slotState / slotLabware.
     }
-            });
-
-            container.appendChild(row);
-        });
-    }
 
     // ================================================================
     //  Swap modules between two slots (reorder)
@@ -3250,6 +3245,468 @@
             crc = table[(crc ^ data[i]) & 0xFF] ^ (crc >>> 8);
         }
         return (crc ^ 0xFFFFFFFF) >>> 0;
+    }
+
+    // ================================================================
+    //  Labware Catalog — scan Hamilton directory for racks
+    // ================================================================
+
+    /**
+     * Wire the labware catalog UI: scan button, category filter, search,
+     * and drag-drop from labware cards onto carrier slots.
+     */
+    function wireLabwareCatalog() {
+        var scanBtn   = $('#mfx-scan-labware');
+        var catFilter = $('#mfx-labware-cat-filter');
+        var searchInp = $('#mfx-labware-search');
+
+        if (scanBtn) {
+            scanBtn.addEventListener('click', function () {
+                scanLabwareCatalog();
+            });
+        }
+        if (catFilter) {
+            catFilter.addEventListener('change', function () {
+                populateLabwareCatalog();
+            });
+        }
+        if (searchInp) {
+            searchInp.addEventListener('input', function () {
+                populateLabwareCatalog();
+            });
+        }
+
+        // Drag-drop labware cards onto 3D canvas
+        wireLabwareDragDrop();
+    }
+
+    /**
+     * Scan the Hamilton labware directory for Index.dat and Category.dat,
+     * then parse all referenced .rck files to build the catalog.
+     */
+    function scanLabwareCatalog() {
+        if (mfxState._labwareScanned) {
+            // Already scanned — just re-populate
+            populateLabwareCatalog();
+            return;
+        }
+
+        var hamDir = (typeof window.getHamiltonDir === 'function'
+            ? window.getHamiltonDir() : '') || 'Base Hamilton Files';
+        var labwareDir = hamDir + '/Labware';
+
+        var statusEl = $('#mfx-labware-list');
+        if (statusEl) statusEl.innerHTML = '<div class="mfx-empty-hint"><i class="fas fa-spinner fa-spin"></i> Scanning labware directory…</div>';
+
+        var scanBtn = $('#mfx-scan-labware');
+        if (scanBtn) scanBtn.disabled = true;
+
+        // Load Category.dat and Index.dat in parallel
+        var catPromise = fetch(labwareDir + '/Category.dat')
+            .then(function (r) { return r.ok ? r.text() : ''; })
+            .catch(function () { return ''; });
+
+        var idxPromise = fetch(labwareDir + '/Index.dat')
+            .then(function (r) { return r.ok ? r.text() : ''; })
+            .catch(function () { return ''; });
+
+        Promise.all([catPromise, idxPromise]).then(function (results) {
+            var catText = results[0];
+            var idxText = results[1];
+
+            // Parse categories
+            var categories = {};
+            if (catText) {
+                catText.split('\n').forEach(function (line) {
+                    line = line.trim();
+                    if (!line || /^[0-9]+$/.test(line) || line.indexOf('VersionGUID') === 0) return;
+                    var parts = line.split(',');
+                    if (parts.length >= 3) {
+                        var id       = parts[0].trim();
+                        var parentId = parts[1].trim();
+                        var name     = parts[2].trim();
+                        categories[id] = { id: id, parentId: parentId, name: name };
+                    }
+                });
+            }
+            mfxState.labwareCategories = categories;
+
+            // Parse Index.dat — build unique rack entries
+            var rackMap = {};  // keyed by relativePath to deduplicate
+            if (idxText) {
+                idxText.split('\n').forEach(function (line) {
+                    line = line.trim();
+                    if (!line) return;
+                    var parts = line.split(',');
+                    if (parts.length < 5) return;
+                    var catId       = parts[0].trim();
+                    var displayName = parts[1].trim();
+                    var description = parts[2].trim();
+                    var filename    = parts[3].trim();
+                    var relPath     = parts[4].trim().replace(/\\\\/g, '/').replace(/\\/g, '/');
+
+                    if (!filename || !relPath) return;
+
+                    if (!rackMap[relPath]) {
+                        rackMap[relPath] = {
+                            filename:    filename,
+                            displayName: displayName || filename.replace(/\.rck$/i, ''),
+                            description: description,
+                            relPath:     relPath,
+                            fullPath:    labwareDir + '/' + relPath,
+                            categoryIds: [],
+                        };
+                    }
+                    if (rackMap[relPath].categoryIds.indexOf(catId) === -1) {
+                        rackMap[relPath].categoryIds.push(catId);
+                    }
+                    // Prefer non-empty displayName / description
+                    if (displayName && !rackMap[relPath].displayName) {
+                        rackMap[relPath].displayName = displayName;
+                    }
+                    if (description && !rackMap[relPath].description) {
+                        rackMap[relPath].description = description;
+                    }
+                });
+            }
+
+            mfxState.labwareCatalog = Object.keys(rackMap).map(function (k) { return rackMap[k]; });
+            mfxState._labwareScanned = true;
+
+            // Show filters now that we have data
+            var filtersEl = $('#mfx-labware-filters');
+            if (filtersEl) filtersEl.style.display = '';
+
+            populateLabwareCategoryFilter();
+            populateLabwareCatalog();
+
+            if (scanBtn) scanBtn.disabled = false;
+            setMFXStatus('Found ' + mfxState.labwareCatalog.length + ' labware items');
+        }).catch(function (err) {
+            console.error('[MFXCarrier] Labware scan failed:', err);
+            if (statusEl) statusEl.innerHTML = '<div class="mfx-empty-hint"><i class="fas fa-exclamation-triangle"></i> Scan failed — check Hamilton directory in settings.</div>';
+            if (scanBtn) scanBtn.disabled = false;
+        });
+    }
+
+    /**
+     * Populate the category dropdown from parsed categories.
+     */
+    function populateLabwareCategoryFilter() {
+        var sel = $('#mfx-labware-cat-filter');
+        if (!sel) return;
+
+        // Clear and add "All"
+        sel.innerHTML = '';
+        var allOpt = document.createElement('option');
+        allOpt.value = 'All';
+        allOpt.textContent = 'All Categories';
+        sel.appendChild(allOpt);
+
+        // Build sorted category list (only categories that appear in catalog)
+        var usedCats = {};
+        mfxState.labwareCatalog.forEach(function (entry) {
+            entry.categoryIds.forEach(function (cid) {
+                usedCats[cid] = true;
+            });
+        });
+
+        var catList = [];
+        Object.keys(mfxState.labwareCategories).forEach(function (id) {
+            if (usedCats[id]) {
+                catList.push(mfxState.labwareCategories[id]);
+            }
+        });
+        catList.sort(function (a, b) { return a.name.localeCompare(b.name); });
+
+        catList.forEach(function (cat) {
+            var opt = document.createElement('option');
+            opt.value = cat.id;
+            opt.textContent = cat.name;
+            sel.appendChild(opt);
+        });
+    }
+
+    /**
+     * Populate the labware list from the scanned catalog,
+     * applying category and search filters.
+     */
+    function populateLabwareCatalog() {
+        var container = $('#mfx-labware-list');
+        if (!container) return;
+
+        var catFilter  = ($('#mfx-labware-cat-filter') || {}).value || 'All';
+        var searchText = (($('#mfx-labware-search') || {}).value || '').toLowerCase();
+
+        if (mfxState.labwareCatalog.length === 0) {
+            container.innerHTML = '<div class="mfx-empty-hint">No labware scanned. Click "Scan Labware Directory" above.</div>';
+            return;
+        }
+
+        var filtered = mfxState.labwareCatalog.filter(function (entry) {
+            var catOk = catFilter === 'All' || entry.categoryIds.indexOf(catFilter) !== -1;
+            var searchOk = !searchText ||
+                entry.displayName.toLowerCase().indexOf(searchText) !== -1 ||
+                entry.filename.toLowerCase().indexOf(searchText) !== -1 ||
+                (entry.description && entry.description.toLowerCase().indexOf(searchText) !== -1);
+            return catOk && searchOk;
+        });
+
+        container.innerHTML = '';
+
+        if (filtered.length === 0) {
+            container.innerHTML = '<div class="mfx-empty-hint">No labware matches filter.</div>';
+            return;
+        }
+
+        // Show count
+        var countEl = document.createElement('div');
+        countEl.className = 'mfx-lw-count';
+        countEl.textContent = filtered.length + ' item' + (filtered.length !== 1 ? 's' : '');
+        container.appendChild(countEl);
+
+        filtered.forEach(function (entry) {
+            var card = document.createElement('div');
+            card.className = 'mfx-lw-card';
+            card.setAttribute('draggable', 'true');
+            card.dataset.lwPath = entry.fullPath;
+            card.dataset.lwRelPath = entry.relPath;
+            card.title = entry.description || entry.displayName;
+
+            var icon = document.createElement('div');
+            icon.className = 'mfx-lw-card-icon';
+            icon.innerHTML = '<i class="fas fa-th"></i>';
+
+            var info = document.createElement('div');
+            info.className = 'mfx-lw-card-info';
+
+            var nameEl = document.createElement('div');
+            nameEl.className = 'mfx-lw-card-name';
+            nameEl.textContent = entry.displayName;
+
+            var fileEl = document.createElement('div');
+            fileEl.className = 'mfx-lw-card-file';
+            fileEl.textContent = entry.filename;
+
+            info.appendChild(nameEl);
+            info.appendChild(fileEl);
+
+            card.appendChild(icon);
+            card.appendChild(info);
+            container.appendChild(card);
+        });
+    }
+
+    /**
+     * Wire drag-drop from labware cards onto the 3D canvas.
+     * Dropping a labware card on an occupied slot places the rack on that module.
+     */
+    function wireLabwareDragDrop() {
+        var canvas = mfxState.canvas;
+        if (!canvas) return;
+
+        // Drag start: set data transfer with rack path
+        document.addEventListener('dragstart', function (e) {
+            var card = e.target.closest && e.target.closest('.mfx-lw-card');
+            if (!card) return;
+            var lwPath = card.dataset.lwPath;
+            if (!lwPath) return;
+            e.dataTransfer.setData('application/mfx-labware', lwPath);
+            e.dataTransfer.setData('text/mfx-lw-relpath', card.dataset.lwRelPath || '');
+            e.dataTransfer.effectAllowed = 'copy';
+            mfxState._dragLabwarePath = lwPath;
+        });
+
+        // Drop on canvas: find slot under cursor and place labware
+        canvas.addEventListener('drop', function (e) {
+            var lwPath = e.dataTransfer.getData('application/mfx-labware');
+            if (!lwPath) return; // Not a labware drag — let module drag handler handle it
+
+            e.preventDefault();
+            mfxState._dragLabwarePath = null;
+
+            var slotId = getSlotIdUnderMouse(e);
+            if (slotId === null) {
+                setMFXStatus('Drop labware on an occupied slot');
+                return;
+            }
+
+            var entry = mfxState.slotState[slotId];
+            if (!entry || !entry.moduleKey) {
+                setMFXStatus('Slot is empty — place a module first');
+                return;
+            }
+
+            // Find the catalog entry
+            var lwEntry = null;
+            for (var i = 0; i < mfxState.labwareCatalog.length; i++) {
+                if (mfxState.labwareCatalog[i].fullPath === lwPath) {
+                    lwEntry = mfxState.labwareCatalog[i];
+                    break;
+                }
+            }
+            if (!lwEntry) return;
+
+            // Load the .rck file, parse it, load/generate 3D model
+            loadAndPlaceLabware(slotId, lwEntry);
+        });
+
+        // Clean up on drag end
+        document.addEventListener('dragend', function () {
+            mfxState._dragLabwarePath = null;
+        });
+    }
+
+    /**
+     * Load a .rck file, optionally its .ctr, and place 3D labware on the slot.
+     */
+    function loadAndPlaceLabware(slotId, lwEntry) {
+        var entry = mfxState.slotState[slotId];
+        if (!entry) return;
+
+        setMFXStatus('Loading labware: ' + lwEntry.displayName + '…');
+
+        // Remove existing labware from this slot
+        removeLabwareMeshFromSlot(slotId);
+
+        fetch(lwEntry.fullPath)
+            .then(function (r) {
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                return r.text();
+            })
+            .then(function (rckText) {
+                var rck = LabwareGenModule.parseRckFile(rckText);
+                LabwareGenModule.parseRckSegments(rckText, rck);
+
+                // Store rack info
+                mfxState.slotLabware[slotId] = {
+                    rackText: rckText,
+                    rackFileName: lwEntry.filename,
+                    rackDef: rck,
+                    displayName: lwEntry.displayName,
+                    relPath: lwEntry.relPath,
+                };
+
+                // Try to load companion .x model first
+                var xPath = lwEntry.fullPath.replace(/\.rck$/i, '.x');
+                tryLoadLabwareXFile(slotId, xPath, rck, rckText, lwEntry);
+            })
+            .catch(function (err) {
+                console.error('[MFXCarrier] Failed to load labware:', err);
+                setMFXStatus('Failed to load ' + lwEntry.filename);
+            });
+    }
+
+    /**
+     * Try loading a companion .x file for the rack. If it fails,
+     * fall back to generating a 3D model from the rack definition.
+     */
+    function tryLoadLabwareXFile(slotId, xPath, rck, rckText, lwEntry) {
+        loadXModelFromServer(xPath, 'lw_' + lwEntry.relPath, function (xGroup) {
+            // Successfully loaded .x model
+            placeLabwareMeshOnSlot(slotId, xGroup.clone(true));
+            setMFXStatus('Placed ' + lwEntry.displayName + ' (3D model)');
+        }, function () {
+            // .x file not found — try to load .ctr and generate model
+            generateLabwareForSlot(slotId, rck, rckText, lwEntry);
+        });
+    }
+
+    /**
+     * Generate a 3D labware model from the .rck definition.
+     * If the rack references a .ctr file, load it first.
+     */
+    function generateLabwareForSlot(slotId, rck, rckText, lwEntry) {
+        var ctrFile = rck.ctrFile;
+        if (!ctrFile) {
+            // No container reference — generate plate-only model
+            var def = LabwareGenModule.hamiltonToDefinition(rck, { shape: 0, depth: 10, dimDx: 7, dimDy: 7, segments: [{ dx: 7, dy: 7, dz: 7 }], numSegments: 1 }, lwEntry.filename, '');
+            var model = LabwareGenModule.generatePlateModel(def);
+            placeLabwareMeshOnSlot(slotId, model);
+            setMFXStatus('Placed ' + lwEntry.displayName + ' (generated)');
+            return;
+        }
+
+        // Resolve .ctr path relative to the .rck directory
+        var rckDir = lwEntry.fullPath.substring(0, lwEntry.fullPath.lastIndexOf('/') + 1);
+        var ctrPath = rckDir + ctrFile.replace(/\\\\/g, '/').replace(/\\/g, '/');
+
+        fetch(ctrPath)
+            .then(function (r) {
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                return r.text();
+            })
+            .then(function (ctrText) {
+                var ctr = LabwareGenModule.parseCtrFile(ctrText);
+                var def = LabwareGenModule.hamiltonToDefinition(rck, ctr, lwEntry.filename, ctrFile);
+                var model = LabwareGenModule.generatePlateModel(def);
+                placeLabwareMeshOnSlot(slotId, model);
+
+                // Store ctr info
+                if (mfxState.slotLabware[slotId]) {
+                    mfxState.slotLabware[slotId].ctrText = ctrText;
+                    mfxState.slotLabware[slotId].ctrFileName = ctrFile;
+                    mfxState.slotLabware[slotId].ctrDef = ctr;
+                }
+                setMFXStatus('Placed ' + lwEntry.displayName + ' (generated)');
+            })
+            .catch(function (err) {
+                console.warn('[MFXCarrier] Could not load .ctr, generating without:', err);
+                var def = LabwareGenModule.hamiltonToDefinition(rck, { shape: 0, depth: 10, dimDx: 7, dimDy: 7, segments: [{ dx: 7, dy: 7, dz: 7 }], numSegments: 1 }, lwEntry.filename, '');
+                var model = LabwareGenModule.generatePlateModel(def);
+                placeLabwareMeshOnSlot(slotId, model);
+                setMFXStatus('Placed ' + lwEntry.displayName + ' (generated, no container)');
+            });
+    }
+
+    /**
+     * Position and add a labware mesh on a slot, sitting on top of the module.
+     */
+    function placeLabwareMeshOnSlot(slotId, meshGroup) {
+        var entry = mfxState.slotState[slotId];
+        if (!entry || !entry.slot) return;
+
+        meshGroup.name = '__labware_' + slotId + '__';
+
+        // Convert from mm to scene units (same as modules — 1:1 mm)
+        // Position: center on the slot, sitting on top of the module
+        var slot = entry.slot;
+        var moduleMesh = entry.moduleMesh;
+
+        // Get the height of the module mesh to place labware on top
+        var moduleTopY = getNestingY();
+        if (moduleMesh) {
+            var mBox = new THREE.Box3().setFromObject(moduleMesh);
+            moduleTopY = mBox.max.y;
+        }
+
+        // Center the labware on the slot
+        var lwBox = new THREE.Box3().setFromObject(meshGroup);
+        var lwCenter = lwBox.getCenter(new THREE.Vector3());
+        meshGroup.position.set(
+            slot.x + slot.dx / 2 - lwCenter.x + meshGroup.position.x,
+            moduleTopY - lwBox.min.y + meshGroup.position.y,
+            slot.y + slot.dy / 2 - lwCenter.z + meshGroup.position.z
+        );
+
+        // Store and add to scene
+        mfxState._labwareMeshCache[slotId] = meshGroup;
+        if (mfxState.carrierGroup) {
+            mfxState.carrierGroup.add(meshGroup);
+        }
+    }
+
+    /**
+     * Remove labware mesh from a slot.
+     */
+    function removeLabwareMeshFromSlot(slotId) {
+        var mesh = mfxState._labwareMeshCache[slotId];
+        if (mesh && mfxState.carrierGroup) {
+            mfxState.carrierGroup.remove(mesh);
+            disposeGroup(mesh);
+        }
+        delete mfxState._labwareMeshCache[slotId];
+        delete mfxState.slotLabware[slotId];
     }
 
 }());

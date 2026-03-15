@@ -4551,6 +4551,77 @@ body {
 }
 [data-theme="dark"] .mfx-lw-summary { color: #99aabb; }
 
+/* ── Labware Catalog Cards ── */
+.mfx-scan-btn {
+    width: 100%;
+    margin: 4px 0 6px;
+}
+.mfx-lw-count {
+    font-size: 10px;
+    color: var(--text-secondary, #8ea8bf);
+    padding: 2px 0 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.mfx-lw-card {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 8px;
+    border-radius: 5px;
+    cursor: grab;
+    border: 1px solid transparent;
+    transition: background 0.15s, border-color 0.15s;
+    user-select: none;
+}
+.mfx-lw-card:hover {
+    background: rgba(95, 151, 197, 0.10);
+    border-color: rgba(95, 151, 197, 0.20);
+}
+.mfx-lw-card:active {
+    cursor: grabbing;
+}
+[data-theme="dark"] .mfx-lw-card:hover {
+    background: rgba(95, 151, 197, 0.14);
+    border-color: rgba(95, 151, 197, 0.25);
+}
+.mfx-lw-card-icon {
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+    border-radius: 4px;
+    background: rgba(128,128,128,0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    color: var(--accent, #0275d8);
+}
+[data-theme="dark"] .mfx-lw-card-icon {
+    background: rgba(128,160,200,0.10);
+}
+.mfx-lw-card-info {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+}
+.mfx-lw-card-name {
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.3;
+    color: inherit;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.mfx-lw-card-file {
+    font-size: 10px;
+    color: var(--text-secondary, #8ea8bf);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 /* ============================================================
    Labware Editor
    ============================================================ */
