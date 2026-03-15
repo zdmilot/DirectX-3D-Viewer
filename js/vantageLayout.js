@@ -3135,6 +3135,10 @@
                         child.material.opacity = fadeAlpha;
                     }
                 });
+                // Follow cursor in 3D — project onto deck plane so ghost moves with mouse
+                if (hits.length) {
+                    vlState.ghostMesh.position.set(hits[0].point.x, DECK.SURFACE_Z, hits[0].point.z);
+                }
             }
             return;
         }
@@ -3146,7 +3150,30 @@
         }
 
         const { carrier } = vlState.canvasCarrierDrag;
-        const trackNum    = snapToTrack(hits[0].point.x);
+        const hitPoint = hits[0].point;
+
+        // Check if the cursor is within the deck's physical depth bounds (front-to-back)
+        const deckFront = DECK.TRACK_Y_START;
+        const deckBack  = DECK.TRACK_Y_START + DECK.TRACK_DEPTH;
+        const onDeck = hitPoint.z >= deckFront - 30 && hitPoint.z <= deckBack + 30;
+
+        if (!onDeck) {
+            // Cursor is off the deck vertically — let ghost follow cursor freely (unsnapped)
+            if (vlState.ghostMesh) {
+                vlState.ghostMesh.visible = true;
+                vlState.ghostMesh.position.set(hitPoint.x, DECK.SURFACE_Z, hitPoint.z);
+                vlState.ghostMesh.traverse(child => {
+                    if (child.isMesh) {
+                        child.material.color.set(0xdd8844);
+                        child.material.opacity = 0.35;
+                    }
+                });
+            }
+            showVLStatus('Drag off deck to remove carrier', 'warn');
+            return;
+        }
+
+        const trackNum    = snapToTrack(hitPoint.x);
         const clamped     = Math.max(4, Math.min(MAX_USABLE_TRACK - carrier.def.tWidth + 1, trackNum));
         const snappedX    = DECK.FIRST_TRACK_X + (clamped - 1) * DECK.TRACK_SPACING;
 
@@ -3185,6 +3212,24 @@
         // Check "pulled off deck" state (cursor was far enough from canvas)
         const pulledOff = vlState._carrierDragOffDeck;
 
+        // Also check if cursor is off the 3D deck surface (dragged below/above deck)
+        let droppedOffDeck = false;
+        if (!pulledOff && !trashHit && e) {
+            const rect = vlState.canvas.getBoundingClientRect();
+            vlState._mouse.x =  ((e.clientX - rect.left)  / rect.width)  * 2 - 1;
+            vlState._mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+            vlState._raycaster.setFromCamera(vlState._mouse, vlState.camera);
+            const hits = vlState._raycaster.intersectObject(vlState._deckPlane, false);
+            if (hits.length) {
+                const z = hits[0].point.z;
+                const deckFront = DECK.TRACK_Y_START;
+                const deckBack  = DECK.TRACK_Y_START + DECK.TRACK_DEPTH;
+                if (z < deckFront - 30 || z > deckBack + 30) {
+                    droppedOffDeck = true;
+                }
+            }
+        }
+
         vlState.canvasCarrierDrag = null;
         vlState._carrierDragOffDeck = false;
 
@@ -3196,8 +3241,8 @@
         vlState.hoveredTrack = null;
         showVLTrashZone(false);
 
-        // If dropped on trash zone OR pulled off the deck, remove the carrier
-        if (trashHit || pulledOff) {
+        // If dropped on trash zone, pulled off canvas, or dragged off deck surface → remove
+        if (trashHit || pulledOff || droppedOffDeck) {
             carrier.mesh.visible = true;
             removeCarrier(carrier.id);
             showVLStatus('Carrier removed.');
