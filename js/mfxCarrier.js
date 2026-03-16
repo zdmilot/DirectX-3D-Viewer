@@ -2338,14 +2338,6 @@
             setMFXStatus('All slots cleared');
         });
 
-        // Export button
-        var exportBtn = $('#mfx-export-btn');
-        if (exportBtn) exportBtn.addEventListener('click', exportConfiguration);
-
-        // Export .tml button
-        var tmlBtn = $('#mfx-export-tml-btn');
-        if (tmlBtn) tmlBtn.addEventListener('click', exportMfxTml);
-
         // Export package (.zip) button
         var zipBtn = $('#mfx-export-zip-btn');
         if (zipBtn) zipBtn.addEventListener('click', exportMfxPackageZip);
