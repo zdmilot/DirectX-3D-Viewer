@@ -2990,8 +2990,7 @@ body {
     border-right: 1px solid var(--card-border);
     display: flex;
     flex-direction: column;
-    overflow-y: auto;
-    overflow-x: hidden;
+    overflow: hidden;
     z-index: 20;
     box-shadow: var(--shadow-md);
     transition: transform 0.25s ease;
@@ -4728,59 +4727,33 @@ body {
     text-overflow: ellipsis;
 }
 
-/* ── Blank carrier site list ────────────────────────────────── */
-.mfx-blank-site-list {
+.mfx-lw-card-gen {
+    flex-shrink: 0;
+    width: 26px;
+    height: 26px;
+    border: 1px solid var(--card-border, #d0d8e0);
+    border-radius: 4px;
+    background: rgba(2,117,216,0.06);
+    color: var(--accent, #0275d8);
+    font-size: 11px;
+    cursor: pointer;
     display: flex;
-    flex-direction: column;
-    gap: 2px;
-    max-height: 240px;
-    overflow-y: auto;
-}
-.mfx-blank-site-row {
-    display: flex;
-    justify-content: space-between;
     align-items: center;
-    padding: 5px 8px;
-    border-radius: 4px;
-    background: rgba(255,255,255,0.06);
-    cursor: pointer;
-    font-size: 12px;
-    transition: background 0.15s;
+    justify-content: center;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+    padding: 0;
 }
-.mfx-blank-site-row:hover {
-    background: rgba(34, 136, 255, 0.15);
+.mfx-lw-card-gen:hover {
+    background: rgba(2,117,216,0.16);
+    border-color: var(--accent, #0275d8);
+    color: var(--accent, #0275d8);
 }
-.mfx-blank-site-row.is-active {
-    background: rgba(34, 136, 255, 0.3);
-    outline: 1px solid #2288ff;
+[data-theme="dark"] .mfx-lw-card-gen {
+    background: rgba(100,180,255,0.10);
+    border-color: rgba(100,180,255,0.2);
 }
-.mfx-blank-site-label {
-    font-weight: 500;
-}
-.mfx-blank-site-dims {
-    font-size: 10px;
-    color: var(--text-secondary, #8ea8bf);
-}
-[data-theme="dark"] .mfx-blank-site-row {
-    background: rgba(255,255,255,0.05);
-}
-[data-theme="dark"] .mfx-blank-site-row:hover {
-    background: rgba(34, 136, 255, 0.2);
-}
-
-/* ── Site remove button ─────────────────────────────────────── */
-.mfx-site-remove-btn {
-    background: #c0392b;
-    color: #fff;
-    border: none;
-    border-radius: 4px;
-    padding: 5px 10px;
-    font-size: 12px;
-    cursor: pointer;
-    margin-top: 4px;
-}
-.mfx-site-remove-btn:hover {
-    background: #e74c3c;
+[data-theme="dark"] .mfx-lw-card-gen:hover {
+    background: rgba(100,180,255,0.22);
 }
 
 /* ============================================================

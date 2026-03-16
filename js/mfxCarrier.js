@@ -4043,8 +4043,30 @@
             info.appendChild(nameEl);
             info.appendChild(fileEl);
 
+            // "Generate .x" button — upgrades placeholder to real 3D model
+            var genBtn = document.createElement('button');
+            genBtn.className = 'mfx-lw-card-gen';
+            genBtn.title = 'Generate 3D model for placed labware';
+            genBtn.innerHTML = '<i class="fas fa-cube"></i>';
+            genBtn.addEventListener('click', function (ev) {
+                ev.stopPropagation();
+                // Find slots that have this labware placed as placeholder
+                var upgraded = 0;
+                Object.keys(mfxState.slotLabware).forEach(function (sid) {
+                    var sl = mfxState.slotLabware[sid];
+                    if (sl && sl.relPath === entry.relPath && !sl.hasRealModel) {
+                        upgradeLabwareToXModel(parseInt(sid, 10));
+                        upgraded++;
+                    }
+                });
+                if (upgraded === 0) {
+                    setMFXStatus('Place this labware on a slot first');
+                }
+            });
+
             card.appendChild(icon);
             card.appendChild(info);
+            card.appendChild(genBtn);
             container.appendChild(card);
         });
     }
@@ -4171,6 +4193,8 @@
 
     /**
      * Validate rack fit on slot and then place it.
+     * Uses a placeholder box by default — call upgradeLabwareToXModel()
+     * to load or generate the full 3D model.
      */
     function _validateAndPlace(slotId, lwEntry, rck, rckText) {
         var check = canPlaceLabware(slotId, rck);
@@ -4188,20 +4212,130 @@
             displayName: lwEntry.displayName,
             relPath: lwEntry.relPath,
             rotated: !!check.rotate,
+            hasRealModel: false,
         };
 
-        // Try to load companion .x model first (performance: use cached clone)
+        // If a real .x model is already cached, use it directly
         var cacheKey = 'lw_' + lwEntry.relPath;
         if (mfxState.xModelCache[cacheKey]) {
             var clone = mfxState.xModelCache[cacheKey].clone(true);
             cloneMaterials(clone);
             placeLabwareMeshOnSlot(slotId, clone, !!check.rotate);
+            mfxState.slotLabware[slotId].hasRealModel = true;
             setMFXStatus('Placed ' + lwEntry.displayName);
             return;
         }
 
+        // Place a lightweight placeholder box (no .x generation)
+        var placeholder = buildLabwarePlaceholder(rck, lwEntry.displayName);
+        placeLabwareMeshOnSlot(slotId, placeholder, !!check.rotate);
+        setMFXStatus('Placed ' + lwEntry.displayName + ' (placeholder)');
+    }
+
+    /**
+     * Build a simple placeholder box for labware using RCK dimensions.
+     * The box is semi-transparent with a name label sprite on top.
+     */
+    function buildLabwarePlaceholder(rck, displayName) {
+        var dx = rck.dimDx || 127;
+        var dy = rck.dimDy || 86;
+        var dz = rck.dimDz || 14;
+
+        var group = new THREE.Group();
+        group.name = '__labware_placeholder__';
+
+        // Solid box
+        var geo = new THREE.BoxGeometry(dx, dz, dy);
+        var mat = new THREE.MeshLambertMaterial({
+            color: 0x7799bb,
+            transparent: true,
+            opacity: 0.65,
+            depthWrite: true,
+            polygonOffset: true,
+            polygonOffsetFactor: -2,
+            polygonOffsetUnits: -2,
+        });
+        var box = new THREE.Mesh(geo, mat);
+        box.renderOrder = 100;
+        box.position.set(0, dz / 2, 0);
+        group.add(box);
+
+        // Wireframe overlay
+        var wfMat = new THREE.MeshBasicMaterial({ color: 0xaaddff, wireframe: true });
+        var wfMesh = new THREE.Mesh(geo.clone(), wfMat);
+        wfMesh.position.copy(box.position);
+        group.add(wfMesh);
+
+        // Label sprite on top
+        if (displayName) {
+            var labelCv = document.createElement('canvas');
+            labelCv.width = 256; labelCv.height = 64;
+            var ctx = labelCv.getContext('2d');
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 18px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(displayName.substring(0, 24), 128, 32);
+            var tex = new THREE.CanvasTexture(labelCv);
+            var spriteMat = new THREE.SpriteMaterial({ map: tex, transparent: true });
+            var sprite = new THREE.Sprite(spriteMat);
+            sprite.scale.set(dx * 0.8, dx * 0.2, 1);
+            sprite.position.set(0, dz + 5, 0);
+            group.add(sprite);
+        }
+
+        return group;
+    }
+
+    /**
+     * Upgrade a placed labware placeholder to a real .x / generated 3D model.
+     * Called when the user clicks "Generate .x" on a labware card.
+     */
+    function upgradeLabwareToXModel(slotId) {
+        var lw = mfxState.slotLabware[slotId];
+        if (!lw) {
+            setMFXStatus('No labware on this slot');
+            return;
+        }
+        if (lw.hasRealModel) {
+            setMFXStatus(lw.displayName + ' already has a 3D model');
+            return;
+        }
+
+        // Find the catalog entry
+        var lwEntry = null;
+        for (var i = 0; i < mfxState.labwareCatalog.length; i++) {
+            if (mfxState.labwareCatalog[i].relPath === lw.relPath) {
+                lwEntry = mfxState.labwareCatalog[i];
+                break;
+            }
+        }
+        if (!lwEntry) {
+            // Build a minimal entry from stored info
+            lwEntry = { fullPath: '', relPath: lw.relPath, filename: lw.rackFileName, displayName: lw.displayName };
+            // Try to resolve path from cache
+            var cached = mfxState._parsedRckCache && mfxState._parsedRckCache[lw.relPath];
+            if (cached) {
+                // Re-derive fullPath from relPath
+                var hamDir = (typeof window.getHamiltonDir === 'function' && window.getHamiltonDir()) || 'Base Hamilton Files';
+                lwEntry.fullPath = hamDir + '/Labware/' + lw.relPath.replace(/\\/g, '/').replace(/\\/g, '/');
+            }
+        }
+
+        setMFXStatus('Generating 3D model for ' + lw.displayName + '\u2026');
+
+        // Remove existing placeholder mesh
+        var existingMesh = mfxState._labwareMeshCache[slotId];
+        if (existingMesh && mfxState.carrierGroup) {
+            mfxState.carrierGroup.remove(existingMesh);
+            disposeGroup(existingMesh);
+        }
+        delete mfxState._labwareMeshCache[slotId];
+
+        // Try loading .x file, falling back to generation
         var xPath = lwEntry.fullPath.replace(/\.rck$/i, '.x');
-        tryLoadLabwareXFile(slotId, xPath, rck, rckText, lwEntry, !!check.rotate);
+        tryLoadLabwareXFile(slotId, xPath, lw.rackDef, lw.rackText, lwEntry, lw.rotated);
+        lw.hasRealModel = true;
     }
 
     /**

@@ -1674,39 +1674,29 @@
                 showVLStatus('Removed rack: ' + key);
             });
 
-            // Combined click-to-select + drag-to-place via deferred drag start
-            (function (rackKey) {
-                var _downX = 0, _downY = 0, _dragStarted = false;
-
-                function onMouseMove(e) {
-                    var dx = e.clientX - _downX;
-                    var dy = e.clientY - _downY;
-                    if (!_dragStarted && Math.sqrt(dx * dx + dy * dy) > 5) {
-                        _dragStarted = true;
-                        startRackDrag(e, rackKey);
-                    }
+            // Click to select rack for pending click-to-place mode
+            var _rackMouseDownX = 0, _rackMouseDownY = 0;
+            item.addEventListener('mousedown', function (e) {
+                if (e.button !== 0) return;
+                _rackMouseDownX = e.clientX;
+                _rackMouseDownY = e.clientY;
+            });
+            item.addEventListener('click', function (e) {
+                if (e.target.closest('.vl-rack-del')) return;
+                // Only treat as click if mouse didn't drag
+                var dx = e.clientX - _rackMouseDownX;
+                var dy = e.clientY - _rackMouseDownY;
+                if (Math.sqrt(dx * dx + dy * dy) < 6) {
+                    onRackItemClick(key);
                 }
-                function onMouseUp(e) {
-                    document.removeEventListener('mousemove', onMouseMove);
-                    document.removeEventListener('mouseup', onMouseUp);
-                    if (!_dragStarted) {
-                        // Treat as click — select rack for pending placement
-                        if (!e.target.closest('.vl-rack-del')) {
-                            onRackItemClick(rackKey);
-                        }
-                    }
-                }
+            });
 
-                item.addEventListener('mousedown', function (e) {
-                    if (e.button !== 0) return;
-                    e.preventDefault();
-                    _downX = e.clientX;
-                    _downY = e.clientY;
-                    _dragStarted = false;
-                    document.addEventListener('mousemove', onMouseMove);
-                    document.addEventListener('mouseup', onMouseUp);
-                });
-            })(key);
+            // Drag rack onto carrier sites
+            item.addEventListener('mousedown', function (e) {
+                if (e.button !== 0) return;
+                e.preventDefault();
+                startRackDrag(e, key);
+            });
 
             list.appendChild(item);
         });
