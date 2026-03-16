@@ -2990,7 +2990,8 @@ body {
     border-right: 1px solid var(--card-border);
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
     z-index: 20;
     box-shadow: var(--shadow-md);
     transition: transform 0.25s ease;
