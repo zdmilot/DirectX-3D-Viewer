@@ -1,0 +1,69 @@
+HxCfgFile,2;
+
+ConfigIsValid,Y;
+
+DataDef,CONTAINER,3,default,
+{
+1.DX, "3.5",
+1.DY, "3.5",
+1.DZ, "0",
+1.EqnOfVol, "h*12.2500",
+1.Max, "11.56",
+1.Min, "0",
+1.Shape, "1",
+Barcode.Value, "",
+BaseMM, "1",
+CategoryCnt, "0",
+Clearance, "13",
+Depth, "11.56",
+Description, "",
+Dim.Dx, "3.5",
+Dim.Dy, "3.5",
+Dim.Dz, "0",
+LS, "1",
+LSHt, "12",
+MaxDepth, "0",
+ReadOnly, "1",
+Segments, "1",
+Shape, "1",
+TchBack, "1.2",
+TchBase, "0",
+TchFront, "1.2",
+TchHt, "9",
+TchLeft, "1.2",
+TchOff, "1",
+TchRight, "1.2",
+UseBndry, "0",
+ViewName, "",
+Visible, "0",
+cLLD, "1"
+};
+
+DataDef,HxPars,2,AuditTrailData,
+{
+1.K, "1",
+1.T, "0",
+1.V.1.K, "-532742140",
+1.V.1.T, "3",
+1.V.1.V, "2",
+1.V.2.K, "-532742141",
+1.V.2.T, "1",
+1.V.2.V, "- Clearance height set to 13mm (old:16mm)\r\n- Liquid seeking height set to 12mm (old: 14mm)",
+1.V.3.K, "-532742142",
+1.V.3.T, "1",
+1.V.3.V, "fbrehm",
+1.V.4.K, "-532742143",
+1.V.4.T, "5",
+1.V.4.V, "37851.5991898",
+1.V.5.K, "-532742138",
+1.V.5.T, "1",
+1.V.5.V, "1",
+1.V.6.K, "-532742139",
+1.V.6.T, "1",
+1.V.6.V, "1",
+1.V.C, "6",
+C, "1",
+ReadOnly, "1"
+};
+
+* $$author=ContainerAdministrator$$valid=1$$time=2025-06-21 16:41$$checksum=e16b51b0$$length=098$$

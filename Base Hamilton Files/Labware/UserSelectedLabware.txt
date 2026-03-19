@@ -1,0 +1,2138 @@
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\DECK-ADAPTOR-TEMPLATES\PLT_DAT_L10_960_A01.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\DECK-ADAPTOR-TEMPLATES\PLT_DAT_L10AC_A01.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\DECK-ADAPTOR-TEMPLATES\PLT_DAT_L10AC_A01.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\DECK-ADAPTOR-TEMPLATES\PLT_DAT_L10MD_A01.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\DECK-ADAPTOR-TEMPLATES\PLT_DAT_L10MD_A01.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\DECK-ADAPTOR-TEMPLATES\PLT_DAT_P6AC_A01.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\DECK-ADAPTOR-TEMPLATES\PLT_DAT_P6AC_A01.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Puncher\PuncherModule.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Base - 3 Position (Portrait).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Base - 4 Position (Shaker).PNG
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Base - 4 Position (Shaker).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Base - 4 Position.PNG
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Base - 4 Position.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Base - 5 Position.PNG
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Base - 5 Position.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Container - ABI Tube 5ml.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Container - Byonoy Cover.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Container - Downholder.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Container - Eppendorf Tube 1.5ml.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Container - Eppendorf Tube 2ml.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Container - FluorEye Mobile.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Container - Gravity Waste.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Container - Heating, Cooling, and Lid Park Modules.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Container - Matrix 1.4mL DH.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Container - RGT 8 Refill.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Container - RGT 96 Refill.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Container - RGT.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Base - 3 Position (Portrait).PNG
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Base HP Tabbed (Brackets).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Base HP Tabbed (Brackets).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Base HP Tabbed (Portrait).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Base HP Tabbed (Portrait).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Base HP Tabbed.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Base HP Tabbed.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Base HP Tabbed.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Byonoy Park (Brackets).png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Byonoy Park (Brackets).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Byonoy Park (Brackets).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Byonoy Reader (Brackets).png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Byonoy Reader (Brackets).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Byonoy Reader (Brackets).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Cooling Module (Brackets).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Cooling Module (Brackets).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Cooling Module.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Cooling Module.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Cooling Module.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - CPAC 2mL (Brackets).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - CPAC 2mL (Brackets).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - CPAC 2mL.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - CPAC 2mL.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - CPAC 2mL.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - CPAC Flat (Brackets).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - CPAC Flat (Brackets).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - CPAC Flat.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - CPAC Flat.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - CPAC Flat.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - DWP (Brackets).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - DWP (Brackets).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - DWP (Portrait).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - DWP (Portrait).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - DWP HP Flat (Brackets).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - DWP HP Flat (Brackets).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - DWP HP Flat (Portrait).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - DWP HP Flat (Portrait).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - DWP HP Flat Sloped (Brackets).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - DWP HP Flat Sloped (Brackets).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - DWP HP Flat Sloped (Portrait).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - DWP HP Flat Sloped (Portrait).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - DWP HP Flat Sloped.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - DWP HP Flat Sloped.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - DWP HP Flat Sloped.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - DWP HP Flat.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - DWP HP Flat.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - DWP HP Flat.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - DWP HP Raised (Brackets).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - DWP HP Raised (Brackets).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - DWP HP Raised (Portrait).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - DWP HP Raised (Portrait).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - DWP HP Raised.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - DWP HP Raised.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - DWP HP Raised.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - DWP HP Tabbed (Brackets).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - DWP HP Tabbed (Brackets).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - DWP HP Tabbed (Portrait).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - DWP HP Tabbed (Portrait).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - DWP HP Tabbed Old (Brackets).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - DWP HP Tabbed Old (Brackets).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - DWP HP Tabbed Old (Portrait).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - DWP HP Tabbed Old (Portrait).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - DWP HP Tabbed Old.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - DWP HP Tabbed Old.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - DWP HP Tabbed Old.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - DWP HP Tabbed.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - DWP HP Tabbed.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - DWP HP Tabbed.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - DWP Nest Container Based (Brackets).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - DWP Nest Container Based (Brackets).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - DWP Nest Container Based (Portrait).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - DWP Nest Container Based (Portrait).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - DWP Nest Container Based.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - DWP Nest Container Based.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - DWP Nest Container Based.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - DWP Nest Rack Based (Brackets).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - DWP Nest Rack Based (Brackets).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - DWP Nest Rack Based (Portrait).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - DWP Nest Rack Based (Portrait).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - DWP Nest Rack Based.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - DWP Nest Rack Based.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - DWP Nest Rack Based.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - DWP XL Nest Rack Based.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - DWP XL Nest Rack Based.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - DWP XL Nest Rack Based.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - DWP.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - DWP.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - DWP.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - FluorEye Balcony.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - FluorEye Balcony.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - FluorEye Balcony.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - FluorEye Base.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - FluorEye Base.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - FluorEye Base.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Gravity Waste (Brackets).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Gravity Waste (Brackets).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Gravity Waste (Portrait).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Gravity Waste (Portrait).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Gravity Waste.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Gravity Waste.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Gravity Waste.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Heating Module.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Heating Module (Brackets).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Heating Module (Brackets).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Heating Module.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Heating Module.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - HHC.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - HHC.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - HHC.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - HHS 1.5mm Nunc DWP.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - HHS 1.5mm Sarst.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - HHS 1.5mm Sarst.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - HHS 1.5mm Sarst.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - HHS 2mm Flat DWP.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - HHS 2mm Flat MTP.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - HHS 2mm Nunc DWP.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - HHS 3mm Flat DWP.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - HHS 3mm Flat MTP.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - HHS 3mm Nunc DWP.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - HHS Flat DWP.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - HHS Flat DWP.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - HHS Flat MTP.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - HHS Flat MTP.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - HHS Nunc DWP.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - HHS Nunc DWP.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - HHS PCR96 ABI.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - HHS PCR96 ABI.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - HHS PCR96 ABI.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Lid Park Module (Back, Brackets).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Lid Park Module (Back).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Lid Park Module (Brackets).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Lid Park Module (Brackets).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Lid Park Module.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Lid Park Module.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Lid Park Module.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Matrix 1.4mL DH (Brackets).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Matrix 1.4mL DH (Brackets).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Matrix 1.4mL DH (Portrait).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Matrix 1.4mL DH (Portrait).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Matrix 1.4mL DH.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Matrix 1.4mL DH.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Matrix 1.4mL DH.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MIDI HP Flat (Brackets).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MIDI HP Flat (Brackets).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MIDI HP Flat (Portrait).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MIDI HP Flat (Portrait).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MIDI HP Flat.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MIDI HP Flat.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MIDI HP Flat.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MIDI HP Tabbed (Brackets).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MIDI HP Tabbed (Brackets).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MIDI HP Tabbed (Portrait).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MIDI HP Tabbed (Portrait).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MIDI HP Tabbed.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MIDI HP Tabbed.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MIDI HP Tabbed.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MIDI Raised (Brackets).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MIDI Raised (Brackets).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MIDI Raised (Portrait).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MIDI Raised (Portrait).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MIDI Raised.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MIDI Raised.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MIDI Raised.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MTP (Brackets).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MTP (Brackets).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MTP (Portrait).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MTP (Portrait).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MTP HP Flat (Brackets).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MTP HP Flat (Brackets).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MTP HP Flat (Portrait).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MTP HP Flat (Portrait).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MTP HP Flat Sloped (Brackets).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MTP HP Flat Sloped (Brackets).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MTP HP Flat Sloped (Portrait).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MTP HP Flat Sloped (Portrait).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MTP HP Flat Sloped.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MTP HP Flat Sloped.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MTP HP Flat Sloped.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MTP HP Flat.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MTP HP Flat.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MTP HP Flat.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MTP HP Raised (Brackets).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MTP HP Raised (Brackets).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MTP HP Raised (Portrait).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MTP HP Raised (Portrait).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MTP HP Raised.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MTP HP Raised.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MTP HP Raised.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MTP HP Tabbed (Brackets).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MTP HP Tabbed (Brackets).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MTP HP Tabbed (Portrait).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MTP HP Tabbed (Portrait).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MTP HP Tabbed Old (Brackets).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MTP HP Tabbed Old (Brackets).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MTP HP Tabbed Old (Portrait).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MTP HP Tabbed Old (Portrait).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MTP HP Tabbed Old.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MTP HP Tabbed Old.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MTP HP Tabbed Old.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MTP HP Tabbed.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MTP HP Tabbed.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MTP HP Tabbed.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MTP Nest Container Based (Brackets).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MTP Nest Container Based (Brackets).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MTP Nest Container Based (Portrait).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MTP Nest Container Based (Portrait).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MTP Nest Container Based.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MTP Nest Container Based.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MTP Nest Container Based.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MTP Nest Rack Based (Brackets).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MTP Nest Rack Based (Brackets).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MTP Nest Rack Based (Portrait).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MTP Nest Rack Based (Portrait).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MTP Nest Rack Based.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MTP Nest Rack Based.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MTP Nest Rack Based.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MTP.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MTP.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - MTP.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - NTR1 (Brackets).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - NTR1 (Brackets).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - NTR1 (Portrait).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - NTR1 (Portrait).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - NTR1 384 (Brackets).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - NTR1 384 (Brackets).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - NTR1 384.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - NTR1 384.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - NTR1 384.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - NTR1.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - NTR1.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - NTR1.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - NTR4 (Brackets).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - NTR4 (Brackets).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - NTR4 (Portrait).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - NTR4 (Portrait).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - NTR4.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - NTR4.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - NTR4.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - PCR 384 (Brackets).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - PCR 384 (Brackets).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - PCR 384 (Portrait).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - PCR 384 (Portrait).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - PCR 384.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - PCR 384.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - PCR 384.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - PCR 96 (Brackets).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - PCR 96 (Brackets).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - PCR 96 (Portrait).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - PCR 96 (Portrait).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - PCR 96 ABI (Brackets).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - PCR 96 ABI (Brackets).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - PCR 96 ABI (Portrait).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - PCR 96 ABI (Portrait).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - PCR 96 ABI.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - PCR 96 ABI.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - PCR 96 ABI.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - PCR 96.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - PCR 96.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - PCR 96.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - QCG Mount.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - QCG Mount.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - QCG Mount.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - RGT (Brackets).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - RGT (Brackets).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - RGT 20mL Lid Parking.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - RGT 20mL Lid Parking.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - RGT 20mL Lid Parking.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - RGT 8 Refill (Brackets).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - RGT 8 Refill (Brackets).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - RGT 8 Refill.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - RGT 8 Refill.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - RGT 8 Refill.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - RGT 96 Refill (Brackets).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - RGT 96 Refill (Brackets).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - RGT 96 Refill.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - RGT 96 Refill.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - RGT 96 Refill.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - RGT.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - RGT.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - RGT.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Stacker Module (Brackets).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Stacker Module (Brackets).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Stacker Module (Portrait).png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Stacker Module (Portrait).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Stacker Module (Portrait).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Stacker Module.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Stacker Module.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Stacker Module.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Tall HP Flat (Brackets).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Tall HP Flat (Brackets).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Tall HP Flat (Portrait).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Tall HP Flat (Portrait).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Tall HP Flat.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Tall HP Flat.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Tall HP Flat.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Teleshake 95 DWP.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Teleshake 95 DWP.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Teleshake 95 DWP.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Teleshake 95 MTP.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Teleshake 95 MTP.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Teleshake 95 MTP.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Teleshake DWP.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Teleshake DWP.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Teleshake DWP.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Teleshake MTP.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Teleshake MTP.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Teleshake MTP.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Tilt Module (Brackets).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Tilt Module (Brackets).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Tilt Module (Portrait).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Tilt Module (Portrait).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Tilt Module 2G (SAP).png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Tilt Module 2G (SAP).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Tilt Module 2G (SAP).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Tilt Module 2G.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Tilt Module 2G.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Tilt Module 2G.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Tilt Module.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Tilt Module.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Tilt Module.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Tip Isolator (Brackets).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Tip Isolator (Brackets).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Tip Isolator (Portrait).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Tip Isolator (Portrait).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Tip Isolator.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Tip Isolator.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Tip Isolator.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Tip Module (Brackets).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Tip Module (Brackets).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Tip Module (Portrait).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Tip Module (Portrait).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Tip Module BC (Brackets).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Tip Module BC (Brackets).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Tip Module BC (Portrait).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Tip Module BC (Portrait).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Tip Module BC.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Tip Module BC.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Tip Module BC.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Tip Module.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Tip Module.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Tip Module.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Tip Park Module 6T.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Tip Park Module 6T.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Tip Park Module 6T.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Tip Park Module.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Tip Park Module.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Tip Park Module.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Tip Stack Low (Brackets).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Tip Stack Low (Brackets).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Tip Stack Low.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Tip Stack Low.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Tip Stack Low.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Tip Stack Standard (Brackets).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Tip Stack Standard (Brackets).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Tip Stack Standard.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Tip Stack Standard.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Tip Stack Standard.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Tube Module (Brackets).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Tube Module (Brackets).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Tube Module Mixed (Brackets).tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Tube Module Mixed (Brackets).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Tube Module Mixed.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Tube Module Mixed.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Tube Module Mixed.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Tube Module.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Tube Module.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Tube Module.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Turn Table Module.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Turn Table Module.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Pedestal - Turn Table Module.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Rack - Byonoy Cover.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Rack - Byonoy Cover.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Rack - Cooling Module Lid.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Rack - CPAC 2mL.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Rack - CPAC 2mL.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Rack - Downholder (Portrait).rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Rack - Downholder (Portrait).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Rack - Downholder.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Rack - Downholder.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Rack - FluorEye Mobile.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Rack - FluorEye Mobile.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Rack - Gravity Waste (Portrait).rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Rack - Gravity Waste (Portrait).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Rack - Gravity Waste.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Rack - Gravity Waste.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Rack - Heating Module Lid.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Rack - Lid Park Module Lid.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Rack - Matrix 1.4mL DH (Portrait).rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Rack - Matrix 1.4mL DH.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Rack - RGT 8 Refill.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Rack - RGT 96 Refill.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Rack - RGT.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Rack - RGT.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Rack - Tube Module Mixed.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Rack - Tube Module Mixed.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Rack - Tube Module.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\Rack - Tube Module.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\MFXCreation\transparent.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Pedestals\PedestalFTR_1ml_ISLN.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Pedestals\PedestalFTR_300ul_ISLN.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Pedestals\61050-01_P.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Pedestals\61050-01.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Pedestals\61051-01.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Pedestals\61052-01.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Pedestals\61053-01.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Pedestals\61054-01.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Pedestals\61055-01.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Pedestals\66508-01_STACKER_FRONT.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Pedestals\66508-01_STACKER_LEFT.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Pedestals\66508-01_STACKER_RIGHT.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Pedestals\66508-01_stacker.jpg
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\95331-01.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\95332-01.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\96890-01.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\97013-01.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\97015-01.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\Base - Combination (95343-02).x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\Base - CPAC Random Access (99297-01).png
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\Base - Dual HHS (95341-02).png
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\Base - Dual HHS (95341-02).x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\Base - HHS or CPAC Random Access (99297-01).x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\Base - HHS Random Access (99297-01).png
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\Base - Single HHS (95341-01).png
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\Base - Single HHS (95341-01).x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\Base - Stack (95343-01).png
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\Base - Stack (95343-01).x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\Base - Stack Random Access (99398-01).png
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\Base - Stack Random Access (99398-01).x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\Base - Standard (95342-01).png
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\Base - Standard (95342-01).x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\Base - Standard Random Access (99296-01).png
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\Base - Standard Random Access (99296-01).x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Pedestals\Channel_waste.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\Container - RGTx6 (95356-01).ctr
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Pedestals\PedestalDWP_NTR.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Pedestals\PedestalDWP.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Pedestals\DWP.png
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Pedestals\PedestalFTR.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Pedestals\FTR.png
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Pedestals\HHS.PNG
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Pedestals\PedestalHHS_1.5.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Pedestals\PedestalHHC.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Pedestals\HHS.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Pedestals\PedestalMPE.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Pedestals\PedestalMTP-STACK.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Pedestals\PedestalMTP-STACKwithInsert.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Pedestals\PedestalMTP-STD.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Pedestals\PedestalMTP-1536.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Pedestals\MTP.png
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\Base - Combination (95343-02).png
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Pedestals\PedestalNTR.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Pedestals\Pedestal-ExtSTACK-NTR.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Pedestals\NTR.png
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Pedestals\Pedestal-ExtSTACK.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Pedestals\Pedestal-ExtSTACK_Right.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Pedestals\Pedestal-ExtSTACK_Left.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Pedestals\PedestalPCR-384.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Pedestals\PedestalPCR-96.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Pedestals\PCR384_59402-02.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Pedestals\PCR384.png
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Pedestals\PCR96_59402-01.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Pedestals\PCR96.png
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\Pedestal - CPAC (59146-03).png
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\Pedestal - CPAC (59146-03).tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\Pedestal - CPAC (59146-03).x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\Pedestal - DWP (95359-01).png
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\Pedestal - DWP (95359-01).tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\Pedestal - DWP (95359-01).x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\Pedestal - FTR 1mL (95360-01).png
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\Pedestal - FTR 1mL (95360-01).tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\Pedestal - FTR 1mL (95360-01).x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\Pedestal - FTR 5mL (95360-02).png
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\Pedestal - FTR 5mL (95360-02).tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\Pedestal - FTR 5mL (95360-02).x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\Pedestal - HHC.png
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\Pedestal - HHC.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\Pedestal - HHC.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\Pedestal - HHS - Rotated.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\Pedestal - HHS 1.5.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\Pedestal - HHS 2.0.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\Pedestal - HHS 3.0.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\Pedestal - HHS.png
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\Pedestal - MTP (95348-01).png
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\Pedestal - MTP (95348-01).tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\Pedestal - MTP (95348-01).x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\Pedestal - MTP Stack (95352-01).png
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\Pedestal - MTP Stack (95352-01).tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\Pedestal - MTP Stack (95352-01).x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\Pedestal - NTR (96055-01).png
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\Pedestal - NTR (96055-01).tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\Pedestal - NTR (96055-01).x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\Pedestal - NTR Stack (95354-01).png
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\Pedestal - NTR Stack (95354-01).tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\Pedestal - NTR Stack (95354-01).x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\Pedestal - RGTx6 (95356-01).png
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\Pedestal - RGTx6 (95356-01).tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\Pedestal - RGTx6 (95356-01).x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\Pedestal - Tip Box 50uL or 300uL (6602187-01).png
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\Pedestal - Tip Box 50uL or 300uL (6602187-01).tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\Pedestal - Tip Box 50uL or 300uL (6602187-01).x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Pedestals\Pedestal_Inheco_CPAC.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Pedestals\Pedestal-ExtSTACK-NTR_P.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Pedestals\Pedestal-ExtSTACK-NTR.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Pedestals\PedestalFTR_1ml_ISLN.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Pedestals\PedestalFTR_300ul_ISLN.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Pedestals\PedestalHHC.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Pedestals\PedestalHHS_2.0.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Pedestals\PedestalHHS_3.0.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Pedestals\PedestalMTP-1536.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Pedestals\PedestalRGTx5.png
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Pedestals\PedestalTipBox1mL.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Pedestals\PedestalTipBox50uL300uL.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Pedestals\Pedestal-ExtSTACK-NTR_P.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\Rack - RGTx6 (95356-01).rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Pedestals\PedestalRGTx5.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Pedestals\PedestalRGTx6.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Pedestals\PedestalTube15ML.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Pedestals\PedestalTube50ML.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Pedestals\PedestalTube12x75.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Pedestals\PedestalTube13x100.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Pedestals\PedestalTube16x100.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Pedestals\Reagent_Racks.png
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Pedestals\Thermoshake.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Pedestals\PedestalTipBox1mL.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Pedestals\PedestalTipBox50uL300uL.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\PLT_CAR_L4HD.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Stack\PLT_CAR_L4ST_4x5_Nunc96_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Stack\PLT_CAR_L4ST_4x5_Nunc96_B00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Stack\PLT_CAR_L4ST_4x9_Nunc96_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Stack\PLT_CAR_L4ST_HIGH_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Stack\PLT_CAR_L4ST_HIGH_A00_4x5_Nunc96.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Stack\PLT_CAR_L4ST_4x5_Nunc96_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Stack\PLT_CAR_L4ST_LOW_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Stack\PLT_CAR_L4ST_LOW_A00_4x9_Nunc96.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Stack\PLT_CAR_L4ST_4x9_Nunc96_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Stack\PLT_CAR_L4ST_B00_4x5_Nunc96.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Stack\PLT_CAR_L4ST_B00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Stack\PLT_CAR_L4ST_B00_4x5_Nunc96.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Stack\PLT_CAR_L4ST_4x5_Nunc96_B00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Stack\PLT_CAR_L4ST_B00.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Stack\PLT_CAR_L4ST_B00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Stack\PLT_CAR_L4ST_C00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Stack\PLT_CAR_L4ST_C00.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Stack\PLT_CAR_L4ST_C00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Stack\PLT_CAR_L4ST_HIGH_A00_4x5_Nunc96.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Stack\PLT_CAR_L4ST_HIGH_A00.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Stack\PLT_CAR_L4ST_HIGH_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Stack\PLT_CAR_L4ST_LOW_A00_4x9_Nunc96.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Stack\PLT_CAR_L4ST_LOW_A00.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Stack\PLT_CAR_L4ST_LOW_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\PLT_CAR_L5_DWP.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\PLT_CAR_L5_DWP.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\PLT_CAR_L5_DWP.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\PLT_CAR_L5_MTP.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\PLT_CAR_L5_MTP.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\PLT_CAR_L5_MTP.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\PLT_CAR_L5AC.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\PLT_CAR_L5AC_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\PLT_CAR_L5AC_A00.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\PLT_CAR_L5AC_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\PLATE\PLT_CAR_L5AC_P_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\PLATE\PLT_CAR_L5AC_P_A00.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\PLATE\PLT_CAR_L5AC_P_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\PLT_CAR_L5FLEX_AC.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\PLT_CAR_L5FLEX_AC_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\PLT_CAR_L5FLEX_AC_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\PLT_CAR_L5FLEX_MD.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\PLT_CAR_L5FLEX_MD_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\PLT_CAR_L5FLEX_MD_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\PLT_CAR_L5MD.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\PLT_CAR_L5MD_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\PLT_CAR_L5MD_A00.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\PLT_CAR_L5MD_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\PLT_CAR_L5PCR.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\PLT_CAR_L5PCR_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\PLT_CAR_L5PCR_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\PLT_CAR_L5PCR_A00.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\PLT_CAR_L5PCR_A01.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\PLT_CAR_L5PCR_A01.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\PLT_CAR_L5PCR_A01.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\PLT_CAR_P3AC_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\PLT_CAR_P3AC_A00.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\PLT_CAR_P3AC_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\PLT_CAR_P3AC_A01.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\PLT_CAR_P3AC_A01.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\PLT_CAR_P3AC_A01.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\PLT_CAR_P3HD.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\PLATE\PLT_CAR_P3LI_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\PLATE\PLT_CAR_P3LI_A00.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\PLATE\PLT_CAR_P3LI_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\PLT_CAR_P3MD.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\PLT_CAR_P3MD_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\PLT_CAR_P3MD_A00.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\PLT_CAR_P3MD_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\PLT_CAR_P3MD_A01.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\PLT_CAR_P3MD_A01.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\PLT_CAR_P3MD_A01.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Car_Reagenz.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CAR_RGT.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CAR_RGT.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\REA_CAR_L3AT.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent_Vessel.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\RGT_CAR_12R.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\RGT_CAR_12R_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\RGT_CAR_12R_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\RGT_CAR_12R_A00.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\RGT_CAR_1R_A01.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\RGT_CAR_1R_A01.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\RGT_CAR_1R400_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\RGT_CAR_2P5R4C_A01.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\RGT_CAR_2R6C_B00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\RGT_CAR_2R6C_B00.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\RGT_CAR_2R6C_B00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\RGT_CAR_3R_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\RGT_CAR_3R_A01.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\RGT_CAR_3R_A01.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\RGT_CAR_3R_A01.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\RGT_CAR_3R120_B00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\RGT_CAR_3R120_B00_empty.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\RGT_CAR_3R120_B00_empty.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\RGT_CAR_3R120_B00.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\RGT_CAR_3R120_B00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\RGT_CAR_4R100_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\RGT_CAR_4R100_A00.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\RGT_CAR_4R100_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\RGT_CAR_4R200_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\RGT_CAR_4R200_A00.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\RGT_CAR_4R200_A00.PNG
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\RGT_CAR_4R200_B00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\RGT_CAR_4R200_B00.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\RGT_CAR_4R200_B00.PNG
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\RGT_CAR_5R_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\RGT_CAR_5R_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\RGT_CAR_5R60_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\RGT_CAR_5R60_A00_empty.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\RGT_CAR_5R60_A00_empty.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\RGT_CAR_5R60_A00.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\RGT_CAR_5R60_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\RGT_VESSEL_137892.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\RGT_VESSEL_137892.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Car_TCC_1.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Car_TCC_2.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Car_TCC.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Tip Boxes\Ham_MLTipBox_Car_Base_50uL_300uL_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_120BC_4mlTF_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_120BC_4mlTF_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_120BC_5mlT_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_120BC_5mlT_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_288_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_288_B00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_288_C00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_288_C00.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_288_C00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_288_HT_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_288_HT_B00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_288_HT_C00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_288_HT_C00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_288_HTF_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_288_HTF_B00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_288_HTF_C00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_288_LT_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_288_LT_B00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_288_LT_C00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_288_LT_C00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_288_LTF_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_288_LTF_B00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_288_LTF_C00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_288_ST_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_288_ST_B00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_288_ST_C00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_288_ST_C00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_288_STF_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_288_STF_B00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_288_STF_C00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_288_TIP_50ul_C00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_288_TIP_50ul_C00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_288_TIP_50ulF_C00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_384_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_384_A00.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_384_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_384_HT_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_384_HT_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_384_HTF_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_384_LT_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_384_LT_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_384_LTF_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_384_ST_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_384_ST_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_384_STF_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_384_TIP_50ul_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_384_TIP_50ul_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_384_TIP_50ulF_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_384BC_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_384BC_A00.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_384BC_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_384BC_HT_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_384BC_HT_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_384BC_HTF_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_384BC_LT_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_384BC_LT_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_384BC_LTF_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_384BC_ST_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_384BC_ST_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_384BC_STF_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_384BC_TIP_50ul_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_384BC_TIP_50ul_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_384BC_TIP_50ulF_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_480.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_480_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_480_A00.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_480_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_480_HT_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_480_HT_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_480_HTF_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_480_LT_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_480_LT_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_480_LTF_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_480_ST_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_480_ST_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_480_STF_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_480_TIP_50ul_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_480_TIP_50ul_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_480_TIP_50ulF_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_480BC_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_480BC_A00.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_480BC_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_480BC_HT_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_480BC_HT_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_480BC_HTF_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_480BC_LT_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_480BC_LT_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_480BC_LTF_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_480BC_PiercingTip150ulFilter_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_480BC_PiercingTips_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_480BC_SlimTips_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_480BC_SlimTips_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_480BC_SlimTips300ulFilter_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_480BC_SlimTips300ulFilter_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_480BC_ST_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_480BC_ST_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_480BC_STF_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_480BC_TIP_50ul_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_480BC_TIP_50ul_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_480BC_TIP_50ulF_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_72_4mlTF_C00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_72_4mlTF_C00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_72_5mlT_C00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_72_5mlT_C00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_96BC_4mlTF_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_96BC_4mlTF_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_96BC_5mlT_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_96BC_5mlT_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_NTR_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_NTR_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_CAR_NTR_A00.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\TIP384_CAR_480_A00.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\TIP384_CAR_480_RT300_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\TIP384_CAR_480_RT300_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\LT_L.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\LT_P.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\LTF_L.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\LTF_P.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Car_LowTip.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\LowTip_L.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\LowTip.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\LowTips.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\LT_L_NE_stack.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\LT_L.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\LT_L.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\LT_P.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\LT.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\LTF_L.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\LTF_L.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\LTF_P.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\LT_L_NE_stack.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\HT_L.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\HT_P.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\HTF_L.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\HTF_P.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Car_HighTip.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Tip Boxes\Ham_MLTipBox_Car_Base_1mL_A00.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\HighTip_L.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\HighTip.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\HighTips.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\HT_L.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\HT_L.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\HT_P.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\HT.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\HTF_L.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\HTF_L.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\HTF_P.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Tip Boxes\Ham_MLTipBox_Car_Base_1mL_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\TIP384_CAR_1920_30ul_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\TIP384_CAR_1920_30ul_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\TIP384_CAR_1920_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\ST_L.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\ST_P.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\STF_L.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\STF_P.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Car_StandardTip.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\ST_L_NE_stack.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\ST_L_NE_stack.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\ST_L.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\ST_L.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\ST_P.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\ST.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\StandardNeedle_L.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\StandardNeedle.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\StandardNeedle.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\StandardTip_L.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\StandardTip.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\StandardTips.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\STF_L.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\STF_L.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\STF_P.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\TIP384_CAR_1920_50ul_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\TIP384_CAR_1920_50ul_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\TIP384_CAR_NTR_50ul_1920.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\TIP384_CAR_NTR_50ul_7680.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\TIP384_CAR_NTR_50ul_1920_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\TIP384_CAR_NTR_50ul_7680_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\StdCarrier_FTRx4.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\StdCarrier_FTRx4.x
+C:\Program Files (x86)\Hamilton\Labware\HAMILTON\HAM_12_ml.ctr
+C:\Program Files (x86)\Hamilton\Labware\HAMILTON\HAM_22_ml.ctr
+C:\Program Files (x86)\Hamilton\Labware\HAMILTON\Ham_250ml_RGT_L.ctr
+C:\Program Files (x86)\Hamilton\Labware\HAMILTON\Ham_250ml_RGT_L.rck
+C:\Program Files (x86)\Hamilton\Labware\HAMILTON\Ham_250ml_RGT_L.rgt.rck
+C:\Program Files (x86)\Hamilton\Labware\NUNC\nun_100ml_8C_Rgt_L.ctr
+C:\Program Files (x86)\Hamilton\Labware\NUNC\Nun_100ml_8C_Rgt_L.rck
+C:\Program Files (x86)\Hamilton\Labware\NUNC\nun_300ml_8C_Rgt_L.ctr
+C:\Program Files (x86)\Hamilton\Labware\NUNC\Nun_300ml_8C_Rgt_L.rck
+C:\Program Files (x86)\Hamilton\Labware\BITMAPS\RT_L.BMP
+C:\Program Files (x86)\Hamilton\Labware\BITMAPS\RT_P.BMP
+C:\Program Files (x86)\Hamilton\Labware\HAMILTON\HAM_DW_12_ml.png
+C:\Program Files (x86)\Hamilton\Labware\HAMILTON\HAM_DW_12_ml.rck
+C:\Program Files (x86)\Hamilton\Labware\HAMILTON\HAM_DW_12_ml_L.rck
+C:\Program Files (x86)\Hamilton\Labware\NUNC\nun_100ml_12C_Rgt_P.ctr
+C:\Program Files (x86)\Hamilton\Labware\NUNC\Nun_100ml_12C_Rgt_P.rck
+C:\Program Files (x86)\Hamilton\Labware\NUNC\Nun_12_Fl_P.png
+C:\Program Files (x86)\Hamilton\Labware\NUNC\Nun_12_Fl_P.rck
+C:\Program Files (x86)\Hamilton\Labware\NUNC\Nun_12_Fl.ctr
+C:\Program Files (x86)\Hamilton\Labware\NUNC\Nun_12_Fl.rck
+C:\Program Files (x86)\Hamilton\Labware\NUNC\nun_300ml_12C_Rgt_P.ctr
+C:\Program Files (x86)\Hamilton\Labware\NUNC\Nun_300ml_12C_Rgt_P.rck
+C:\Program Files (x86)\Hamilton\Labware\BITMAPS\1536_l.bmp
+C:\Program Files (x86)\Hamilton\Labware\BITMAPS\1536_p.bmp
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_1536_10ul_L.rck
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_1536_10ul_P.rck
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_1536_10ul.ctr
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_1536_10ul.png
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_1536_10ul.rck
+C:\Program Files (x86)\Hamilton\Labware\GREINER\Gre_1536_Sq_L.rck
+C:\Program Files (x86)\Hamilton\Labware\GREINER\Gre_1536_Sq_P.rck
+C:\Program Files (x86)\Hamilton\Labware\GREINER\Gre_1536_Sq.ctr
+C:\Program Files (x86)\Hamilton\Labware\GREINER\Gre_1536_Sq.png
+C:\Program Files (x86)\Hamilton\Labware\GREINER\Gre_1536_Sq.rck
+C:\Program Files (x86)\Hamilton\Labware\HAMILTON\HAM_Cell_Culture_24W.rck
+C:\Program Files (x86)\Hamilton\Labware\HAMILTON\HAM_Cell_Culture_24W.ctr
+C:\Program Files (x86)\Hamilton\Labware\HAMILTON\HAM_Cell_Culture_24W.lid
+C:\Program Files (x86)\Hamilton\Labware\HAMILTON\HAM_Cell_Culture_24W.png
+C:\Program Files (x86)\Hamilton\Labware\Limbro\Limbro_24_Large.bmp
+C:\Program Files (x86)\Hamilton\Labware\Limbro\Limbro_24_Large.ctr
+C:\Program Files (x86)\Hamilton\Labware\Limbro\Limbro_24_Large.rck
+C:\Program Files (x86)\Hamilton\Labware\Limbro\Limbro_24_Small.bmp
+C:\Program Files (x86)\Hamilton\Labware\Limbro\Limbro_24_Small.ctr
+C:\Program Files (x86)\Hamilton\Labware\Limbro\Limbro_24_Small.rck
+C:\Program Files (x86)\Hamilton\Labware\BITMAPS\384_L.BMP
+C:\Program Files (x86)\Hamilton\Labware\BITMAPS\384_P.BMP
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\384_PCR_L.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\384_PCR.ctr
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_384_DW_L.rck
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_384_DW_P.rck
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_384_DW.ctr
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_384_DW.rck
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_384_PCR_L.rck
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_384_PCR_P.rck
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_384_PCR.ctr
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_384_PCR.png
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_384_PCR.rck
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_384_Sq_L.rck
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_384_Sq_P.rck
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_384_Sq_Rd_L.rck
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_384_Sq_Rd_P.rck
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_384_Sq_Rd.ctr
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_384_Sq_Rd.rck
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_384_Sq.ctr
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_384_Sq.png
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_384_Sq.rck
+C:\Program Files (x86)\Hamilton\Labware\BITMAPS\DW384_L.BMP
+C:\Program Files (x86)\Hamilton\Labware\BITMAPS\DW384_P.BMP
+C:\Program Files (x86)\Hamilton\Labware\GREINER\Gre_384_Sq.ctr
+C:\Program Files (x86)\Hamilton\Labware\GREINER\Gre_384_Sq.lid
+C:\Program Files (x86)\Hamilton\Labware\GREINER\Gre_384_Sq.png
+C:\Program Files (x86)\Hamilton\Labware\GREINER\Gre_384_Sq.rck
+C:\Program Files (x86)\Hamilton\Labware\HAMILTON\Ham_DW_Rgt_384_L.rck
+C:\Program Files (x86)\Hamilton\Labware\HAMILTON\Ham_DW_Rgt_384.ctr
+C:\Program Files (x86)\Hamilton\Labware\HAMILTON\Ham_DW_Rgt_384.png
+C:\Program Files (x86)\Hamilton\Labware\HAMILTON\Ham_MTP_384x80uL.ctr
+C:\Program Files (x86)\Hamilton\Labware\HAMILTON\Ham_MTP_384x80uL.png
+C:\Program Files (x86)\Hamilton\Labware\HAMILTON\Ham_MTP_384x80uL.rck
+C:\Program Files (x86)\Hamilton\Labware\MJ_RESEARCH\MJR_384_TC_L.rck
+C:\Program Files (x86)\Hamilton\Labware\MJ_RESEARCH\MJR_384_TC_P.rck
+C:\Program Files (x86)\Hamilton\Labware\MJ_RESEARCH\MJR_384_TC.ctr
+C:\Program Files (x86)\Hamilton\Labware\MJ_RESEARCH\MJR_384_TC.rck
+C:\Program Files (x86)\Hamilton\Labware\NUNC\nun_300ml_384C_Rgt_L.ctr
+C:\Program Files (x86)\Hamilton\Labware\NUNC\Nun_300ml_384C_Rgt_L.rck
+C:\Program Files (x86)\Hamilton\Labware\NUNC\Nun_384_Sq_L.rck
+C:\Program Files (x86)\Hamilton\Labware\NUNC\Nun_384_Sq_P.rck
+C:\Program Files (x86)\Hamilton\Labware\NUNC\Nun_384_Sq.ctr
+C:\Program Files (x86)\Hamilton\Labware\NUNC\Nun_384_Sq.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\Nun_for_384Head_100ml_Sq.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\Nun_for_384Head_100ml_Sq.ctr
+C:\Program Files (x86)\Hamilton\Labware\NUNC\Nunc_384_Sq.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\PCR_CAR_L5_384_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\PCR_CAR_L5_384_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\PCR_CAR_L5_384_A00.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\PCR_L.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\PCR.ctr
+C:\Program Files (x86)\Hamilton\Labware\POLYFILTRONIC\Pfi_384_Sq_L.rck
+C:\Program Files (x86)\Hamilton\Labware\POLYFILTRONIC\Pfi_384_Sq_P.rck
+C:\Program Files (x86)\Hamilton\Labware\POLYFILTRONIC\Pfi_384_Sq.ctr
+C:\Program Files (x86)\Hamilton\Labware\POLYFILTRONIC\Pfi_384_Sq.rck
+C:\Program Files (x86)\Hamilton\Labware\Limbro\Limbro_48_Large.bmp
+C:\Program Files (x86)\Hamilton\Labware\Limbro\Limbro_48_Large.ctr
+C:\Program Files (x86)\Hamilton\Labware\Limbro\Limbro_48_Large.rck
+C:\Program Files (x86)\Hamilton\Labware\NUNC\Nun_48_Fl_P.rck
+C:\Program Files (x86)\Hamilton\Labware\NUNC\Nun_48_Fl.ctr
+C:\Program Files (x86)\Hamilton\Labware\NUNC\Nun_48_Fl.rck
+C:\Program Files (x86)\Hamilton\Labware\HAMILTON\HAM_Cell_Culture_6W.rck
+C:\Program Files (x86)\Hamilton\Labware\HAMILTON\HAM_Cell_Culture_6W.ctr
+C:\Program Files (x86)\Hamilton\Labware\HAMILTON\HAM_Cell_Culture_6W.lid
+C:\Program Files (x86)\Hamilton\Labware\HAMILTON\HAM_Cell_Culture_6W.png
+C:\Program Files (x86)\Hamilton\Labware\BITMAPS\96_L.BMP
+C:\Program Files (x86)\Hamilton\Labware\BITMAPS\96_P.BMP
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\96_PCR_L.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\96_PCR.ctr
+C:\Program Files (x86)\Hamilton\Labware\Ansys\Ans_96_C18_SPE_P.rck
+C:\Program Files (x86)\Hamilton\Labware\Ansys\Ans_96_C18_SPE.ctr
+C:\Program Files (x86)\Hamilton\Labware\Ansys\Ans_96_C18_SPE.rck
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_96_Filter.rck
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_96_Filter_L.rck
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_96_Filter_P.rck
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_96_DW_1mL_L.rck
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_96_DW_1mL_P.rck
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_96_DW_1mL.ctr
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_96_DW_1ml.png
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_96_DW_1mL.rck
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_96_DW_2mL_L.rck
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_96_DW_2mL_P.rck
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_96_DW_2mL.ctr
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_96_DW_2mL.rck
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_96_DW_500ul_L.rck
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_96_DW_500ul_P.rck
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_96_DW_500ul.ctr
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_96_DW_500ul.rck
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_96_EZWash_L.rck
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_96_EZWash_P.rck
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_96_EZWash.ctr
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_96_EZWash.rck
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_96_Filter.ctr
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_96_Filter.png
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_96_Fl.ctr
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_96_HalfArea_L.rck
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_96_HalfArea_P.rck
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_96_HalfArea.ctr
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_96_HalfArea.rck
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_96_PCR_L.rck
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_96_PCR_P.rck
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_96_PCR.ctr
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_96_PCR.png
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_96_PCR.rck
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_96_Post.ctr
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_96_ProtCryst_L.rck
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_96_ProtCryst_P.rck
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_96_ProtCryst.png
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_96_ProtCryst.rck
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_96_Rd_L.rck
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_96_Rd_P.rck
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_96_Rd.ctr
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_96_Rd.png
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_96_Rd.rck
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_96_Res.ctr
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_96_SpecOps_L.rck
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_96_SpecOps_P.rck
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_96_SpecOps.ctr
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_96_SpecOps.rck
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_96_UV_L.rck
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_96_UV_P.rck
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_96_UV.ctr
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_96_UV.png
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_96_UV.rck
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_96_Vb_L.rck
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_96_Vb_P.rck
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_96_Vb.ctr
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_96_Vb.png
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_96_Vb.rck
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_96_Fl_L.rck
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_96_Fl_P.rck
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_96_Fl.rck
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_96_Filter_L.lid
+C:\Program Files (x86)\Hamilton\Labware\CORNING-COSTAR\Cos_96_Filter_P.lid
+C:\Program Files (x86)\Hamilton\Labware\NUNC\Nun_96_Fl.lid
+C:\Program Files (x86)\Hamilton\Labware\NUNC\Nun_96_Fl_L.lid
+C:\Program Files (x86)\Hamilton\Labware\NUNC\Nun_96_Fl_P.lid
+C:\Program Files (x86)\Hamilton\Labware\BITMAPS\DW96_L.BMP
+C:\Program Files (x86)\Hamilton\Labware\BITMAPS\DW96_P.BMP
+C:\Program Files (x86)\Hamilton\Labware\DYNEX\Dyn_96_Fl_L.rck
+C:\Program Files (x86)\Hamilton\Labware\DYNEX\Dyn_96_Fl_P.rck
+C:\Program Files (x86)\Hamilton\Labware\DYNEX\Dyn_96_Fl.ctr
+C:\Program Files (x86)\Hamilton\Labware\DYNEX\Dyn_96_Fl.rck
+C:\Program Files (x86)\Hamilton\Labware\FALCON\Fal_96_Rd_L.rck
+C:\Program Files (x86)\Hamilton\Labware\FALCON\Fal_96_Rd_P.rck
+C:\Program Files (x86)\Hamilton\Labware\FALCON\Fal_96_Rd.ctr
+C:\Program Files (x86)\Hamilton\Labware\FALCON\Fal_96_Rd.rck
+C:\Program Files (x86)\Hamilton\Labware\HAMILTON\Ham_96_DW_L.rck
+C:\Program Files (x86)\Hamilton\Labware\HAMILTON\Ham_96_DW_P.rck
+C:\Program Files (x86)\Hamilton\Labware\HAMILTON\Ham_96_DW.ctr
+C:\Program Files (x86)\Hamilton\Labware\HAMILTON\Ham_96_DW.rck
+C:\Program Files (x86)\Hamilton\Labware\HAMILTON\Ham_96_FluorMeasure_Black.ctr
+C:\Program Files (x86)\Hamilton\Labware\HAMILTON\Ham_96_FluorMeasure_Black.png
+C:\Program Files (x86)\Hamilton\Labware\HAMILTON\HAM_DW_22_ml.png
+C:\Program Files (x86)\Hamilton\Labware\HAMILTON\Ham_DW_Rgt_96_L.rck
+C:\Program Files (x86)\Hamilton\Labware\HAMILTON\Ham_DW_Rgt_96.ctr
+C:\Program Files (x86)\Hamilton\Labware\HAMILTON\Ham_DW_Rgt_96.png
+C:\Program Files (x86)\Hamilton\Labware\HAMILTON\Ham_DW_Rgt_96L.rck
+C:\Program Files (x86)\Hamilton\Labware\BITMAPS\HAM_DW96_L.BMP
+C:\Program Files (x86)\Hamilton\Labware\HAMILTON\HAM_DWP_96x08mL.ctr
+C:\Program Files (x86)\Hamilton\Labware\HAMILTON\HAM_DWP_96x08mL.png
+C:\Program Files (x86)\Hamilton\Labware\HAMILTON\HAM_DW_22_ml.rck
+C:\Program Files (x86)\Hamilton\Labware\HAMILTON\HAM_DW_22_ml_L.rck
+C:\Program Files (x86)\Hamilton\Labware\HAMILTON\Ham_96_FluorMeasure_Black.rck
+C:\Program Files (x86)\Hamilton\Labware\HAMILTON\HAM_DWP_96x08mL.rck
+C:\Program Files (x86)\Hamilton\Labware\NUNC\Nun_96_Fl_HB.lid
+C:\Program Files (x86)\Hamilton\Labware\IST\IST_96_C18_10mg_P.rck
+C:\Program Files (x86)\Hamilton\Labware\IST\IST_96_C18_10mg.ctr
+C:\Program Files (x86)\Hamilton\Labware\IST\IST_96_C18_10mg.rck
+C:\Program Files (x86)\Hamilton\Labware\KAYCO_DALLAS\Kda_96_Rd_L.rck
+C:\Program Files (x86)\Hamilton\Labware\KAYCO_DALLAS\Kda_96_Rd_P.rck
+C:\Program Files (x86)\Hamilton\Labware\KAYCO_DALLAS\Kda_96_Rd.ctr
+C:\Program Files (x86)\Hamilton\Labware\KAYCO_DALLAS\Kda_96_Rd.rck
+C:\Program Files (x86)\Hamilton\Labware\LABSYSTEMS\Lab_96_Fl_L.rck
+C:\Program Files (x86)\Hamilton\Labware\LABSYSTEMS\Lab_96_Fl_P.rck
+C:\Program Files (x86)\Hamilton\Labware\LABSYSTEMS\Lab_96_Fl.ctr
+C:\Program Files (x86)\Hamilton\Labware\LABSYSTEMS\Lab_96_Fl.rck
+C:\Program Files (x86)\Hamilton\Labware\NUNC\Nun_96_Fl_LB.lid
+C:\Program Files (x86)\Hamilton\Labware\Limbro\Limbro_96_Large.bmp
+C:\Program Files (x86)\Hamilton\Labware\Limbro\Limbro_96_Large.ctr
+C:\Program Files (x86)\Hamilton\Labware\Limbro\Limbro_96_Large.rck
+C:\Program Files (x86)\Hamilton\Labware\MJ_RESEARCH\MJR_96_TC_L.rck
+C:\Program Files (x86)\Hamilton\Labware\MJ_RESEARCH\MJR_96_TC_P.rck
+C:\Program Files (x86)\Hamilton\Labware\MJ_RESEARCH\MJR_96_TC.ctr
+C:\Program Files (x86)\Hamilton\Labware\MJ_RESEARCH\MJR_96_TC.png
+C:\Program Files (x86)\Hamilton\Labware\MJ_RESEARCH\MJR_96_TC.rck
+C:\Program Files (x86)\Hamilton\Labware\MACHEREY-NAGEL\MNElutionPlate.ctr
+C:\Program Files (x86)\Hamilton\Labware\MACHEREY-NAGEL\MNElutionPlate.png
+C:\Program Files (x86)\Hamilton\Labware\MACHEREY-NAGEL\MNElutionPlate.rck
+C:\Program Files (x86)\Hamilton\Labware\MATRIX\Mrx_96_DW_L.rck
+C:\Program Files (x86)\Hamilton\Labware\MATRIX\Mrx_96_DW_P.rck
+C:\Program Files (x86)\Hamilton\Labware\MATRIX\Mrx_96_DW.ctr
+C:\Program Files (x86)\Hamilton\Labware\MATRIX\Mrx_96_DW.png
+C:\Program Files (x86)\Hamilton\Labware\MATRIX\Mrx_96_DW.rck
+C:\Program Files (x86)\Hamilton\Labware\MACHEREY-NAGEL\NucleoFast_96_L.rck
+C:\Program Files (x86)\Hamilton\Labware\MACHEREY-NAGEL\NucleoFast_96.ctr
+C:\Program Files (x86)\Hamilton\Labware\MACHEREY-NAGEL\NucleoFast_96.rck
+C:\Program Files (x86)\Hamilton\Labware\MACHEREY-NAGEL\NucleoFast.ctr
+C:\Program Files (x86)\Hamilton\Labware\MACHEREY-NAGEL\NucleoFast.rck
+C:\Program Files (x86)\Hamilton\Labware\NUNC\nun_100ml_96C_Rgt_L.ctr
+C:\Program Files (x86)\Hamilton\Labware\NUNC\Nun_100ml_96C_Rgt_L.rck
+C:\Program Files (x86)\Hamilton\Labware\NUNC\nun_300ml_96C_Rgt_L.ctr
+C:\Program Files (x86)\Hamilton\Labware\NUNC\Nun_300ml_96C_Rgt_L.rck
+C:\Program Files (x86)\Hamilton\Labware\NUNC\Nun_300ml_96C_Rgt.rck
+C:\Program Files (x86)\Hamilton\Labware\NUNC\Nun_96_Fl_LB.png
+C:\Program Files (x86)\Hamilton\Labware\NUNC\Nun_96_Fl.ctr
+C:\Program Files (x86)\Hamilton\Labware\NUNC\Nun_96_Rgt_L.ctr
+C:\Program Files (x86)\Hamilton\Labware\NUNC\Nun_96_Rgt_L.rck
+C:\Program Files (x86)\Hamilton\Labware\NUNC\Nun_96_Rgt_P.ctr
+C:\Program Files (x86)\Hamilton\Labware\NUNC\Nun_96_Rgt_P.rck
+C:\Program Files (x86)\Hamilton\Labware\NUNC\Nun_96_Fl_L.rck
+C:\Program Files (x86)\Hamilton\Labware\NUNC\Nun_96_Fl_P.rck
+C:\Program Files (x86)\Hamilton\Labware\NUNC\Nun_96_Fl_HB.rck
+C:\Program Files (x86)\Hamilton\Labware\NUNC\Nun_96_Fl_LB.rck
+C:\Program Files (x86)\Hamilton\Labware\NUNC\Nun_96_Fl.rck
+C:\Program Files (x86)\Hamilton\Labware\PERKIN-ELMER\PEl_96_TC_L.rck
+C:\Program Files (x86)\Hamilton\Labware\PERKIN-ELMER\PEl_96_TC_P.rck
+C:\Program Files (x86)\Hamilton\Labware\PERKIN-ELMER\PEl_96_TC.ctr
+C:\Program Files (x86)\Hamilton\Labware\PERKIN-ELMER\PEl_96_TC.rck
+C:\Program Files (x86)\Hamilton\Labware\POLYFILTRONIC\Pfi_96_DW_L.rck
+C:\Program Files (x86)\Hamilton\Labware\POLYFILTRONIC\Pfi_96_DW_P.rck
+C:\Program Files (x86)\Hamilton\Labware\POLYFILTRONIC\Pfi_96_DW_Sq_L.rck
+C:\Program Files (x86)\Hamilton\Labware\POLYFILTRONIC\Pfi_96_DW_Sq_P.rck
+C:\Program Files (x86)\Hamilton\Labware\POLYFILTRONIC\Pfi_96_DW_Sq.ctr
+C:\Program Files (x86)\Hamilton\Labware\POLYFILTRONIC\Pfi_96_DW_Sq.rck
+C:\Program Files (x86)\Hamilton\Labware\POLYFILTRONIC\Pfi_96_DW.ctr
+C:\Program Files (x86)\Hamilton\Labware\POLYFILTRONIC\Pfi_96_DW.rck
+C:\Program Files (x86)\Hamilton\Labware\POLYFILTRONIC\Pfi_96_Fl_L.rck
+C:\Program Files (x86)\Hamilton\Labware\POLYFILTRONIC\Pfi_96_Fl_P.rck
+C:\Program Files (x86)\Hamilton\Labware\POLYFILTRONIC\Pfi_96_Fl.ctr
+C:\Program Files (x86)\Hamilton\Labware\POLYFILTRONIC\Pfi_96_Fl.rck
+C:\Program Files (x86)\Hamilton\Labware\POLYFILTRONIC\Pfi_96_Vb_L.rck
+C:\Program Files (x86)\Hamilton\Labware\POLYFILTRONIC\Pfi_96_Vb_P.rck
+C:\Program Files (x86)\Hamilton\Labware\POLYFILTRONIC\Pfi_96_Vb.ctr
+C:\Program Files (x86)\Hamilton\Labware\POLYFILTRONIC\Pfi_96_Vb.rck
+C:\Program Files (x86)\Hamilton\Labware\QIAGEN\Qia_96_DW_L.rck
+C:\Program Files (x86)\Hamilton\Labware\QIAGEN\Qia_96_DW_P.rck
+C:\Program Files (x86)\Hamilton\Labware\QIAGEN\Qia_96_DW.ctr
+C:\Program Files (x86)\Hamilton\Labware\QIAGEN\Qia_96_DW.rck
+C:\Program Files (x86)\Hamilton\Labware\RAININ\Ran_96_Fl_L.rck
+C:\Program Files (x86)\Hamilton\Labware\RAININ\Ran_96_Fl_P.rck
+C:\Program Files (x86)\Hamilton\Labware\RAININ\Ran_96_Fl.ctr
+C:\Program Files (x86)\Hamilton\Labware\RAININ\Ran_96_Fl.rck
+C:\Program Files (x86)\Hamilton\Labware\RAININ\Ran_96_Rd_L.rck
+C:\Program Files (x86)\Hamilton\Labware\RAININ\Ran_96_Rd_P.rck
+C:\Program Files (x86)\Hamilton\Labware\RAININ\Ran_96_Rd.ctr
+C:\Program Files (x86)\Hamilton\Labware\RAININ\Ran_96_Rd.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\Axygen2ml.ctr
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\StarStat1.25.ctr
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\StarStat1.5.ctr
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\StarStat5.0.ctr
+C:\Program Files (x86)\Hamilton\Labware\MACHEREY-NAGEL\MNa_96_Filter_L.rck
+C:\Program Files (x86)\Hamilton\Labware\MACHEREY-NAGEL\MNa_96_Filter.ctr
+C:\Program Files (x86)\Hamilton\Labware\MACHEREY-NAGEL\MNa_96_Filter.rck
+C:\Program Files (x86)\Hamilton\Labware\MACHEREY-NAGEL\MNFilterPlate.ctr
+C:\Program Files (x86)\Hamilton\Labware\MACHEREY-NAGEL\MNFilterPlate.png
+C:\Program Files (x86)\Hamilton\Labware\MACHEREY-NAGEL\MNFilterPlate.rck
+C:\Program Files (x86)\Hamilton\Labware\QIAGEN\Qia_96_filter_L.rck
+C:\Program Files (x86)\Hamilton\Labware\QIAGEN\Qia_96_filter_P.rck
+C:\Program Files (x86)\Hamilton\Labware\QIAGEN\Qia_96_filter.ctr
+C:\Program Files (x86)\Hamilton\Labware\QIAGEN\Qia_96_filter.rck
+C:\Program Files (x86)\Hamilton\Labware\HAMILTON\Ham_DW_Rgt_L.ctr
+C:\Program Files (x86)\Hamilton\Labware\HAMILTON\Ham_DW_Rgt_L.rck
+C:\Program Files (x86)\Hamilton\Labware\HAMILTON\Ham_DW_Rgt_P.ctr
+C:\Program Files (x86)\Hamilton\Labware\HAMILTON\Ham_DW_Rgt_P.rck
+C:\Program Files (x86)\Hamilton\Labware\HAMILTON\Ham_DW_Rgt.png
+C:\Program Files (x86)\Hamilton\Labware\HAMILTON\Ham_TCC_RGT_TUB.ctr
+C:\Program Files (x86)\Hamilton\Labware\HAMILTON\Ham_TCC_RGT_TUB.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\RGT_1R.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\RGT_2P5R4C_125.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\RGT_2P5R4C_125.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\RGT_2P5R4C_25.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\RGT_2P5R4C_25.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\RGT_CAR_5R60_A00_Container+Lid_black.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\RGT_CAR_5R60_A00_Container+Lid_natural.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\RGT_CAR_5R60_A00_Container+Lid_black.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\RGT_CAR_5R60_A00_Container+Lid_natural.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\RGT_CONT_50ml_A00.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\RGT_CONT_50ml_A00.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\RGT_VESSEL_100ml_A00.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\RGT_VESSEL_100ml_A00.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\RGT_VESSEL_100ml_A00.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\RGT_VESSEL_400ml_A00.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\RGT_VESSEL_400ml_A00.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\RGT_CONT_120ml_A00.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\RGT_CONT_120ml_A00.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\RGT_CONT_120ml_A00.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\rgt_cont_120ml_BC_a00.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\rgt_cont_120ml_BC_a00.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\rgt_cont_120ml_BC_a00.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\RGT_20mL_Lid_black.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\RGT_20mL_Lid_natural.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\RGT_20mL_Container_black.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\RGT_20mL_Container_natural.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\RGT_20mL_Container_black.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\RGT_20mL_Container_black.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\RGT_20mL_Container_natural.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\RGT_20mL_Container_natural.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\RGT_20mL_Container.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\RGT_20mL_Lid_black.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\RGT_20mL_Lid_black.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\RGT_20mL_Lid_natural.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\RGT_20mL_Lid_natural.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\RGT_20mL_Lid.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\RGT_200ml_A00.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\RGT_200ml_A00.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\RGT_200ml.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\rgt_cont_60ml_BC_A00.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\rgt_cont_60ml_BC_A00.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\rgt_cont_60ml_BC_A00.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\RGT_CONT_200ml.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\RGT_CONT_50ml.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Pedestals\RGT_CONT_50ml_A00.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\Carrier_RGT_3x200mL.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\Carrier_RGT_4x50mL.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\ReagentRack_5Tubs.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\RGT_CONT_200ml.ctr
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Pedestals\RGT_CONT_50ml_A00.ctr
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\RGT_CONT_50ml.ctr
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\RGT_CONT_50ul_4Pos.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\Cup_10x45.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Reagent\Cup_10x45.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Vial_17x38_a00.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Vial_17x50.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Vial_22x60_a00.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Vial17x38_with_Insert_A00.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Vial22x60_without_Insert_A00.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_12_29x115_A00.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_12_29x115_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_12_A00.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_12_A00.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_12_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_12.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Cup_25x90.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Cup_25x90.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Cup_29x115.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Cup_29x115.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_16_25x90_A00.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_16_25x90_A01.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_16_A00.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_16_A01.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_16_A01.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_16.bmp
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\LargeTubeCarrierx16_15mlFalcon.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\LargeTubeCarrierx16(100mm tubes Z offset, mock tubes).rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\LargeTubeCarrierx16(125mm tubes Z offset, mock tubes).rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\LargeTubeCarrierx16(75mm tubes Z offset, mock tubes).rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\LargeTubeCarrierx16_12x75.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\LargeTubeCarrierx16_17x100.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\SmallTubeCarrierx16_12x75.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\SmallTubeCarrierx16(100mm tubes Z offset, mock tubes).rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\SmallTubeCarrierx16(75mm tubes Z offset, mock tubes).rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Car24_Cup15x100.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Car24_Cup15x75.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Car24_Cup15x95.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Car24_Cup17x100.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Car24_Cup17x75.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Car24_Cup17x95.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Car24_Vial17x50.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Cup_15x100.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Cup_15x100.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Cup_15x75.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Cup_15x75.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Cup_15x95.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Cup_15x95.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Cup_17x100.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Cup_17x100.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Cup_17x75.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Cup_17x75.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Cup_17x95.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Cup_17x95.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SampleCarrier24.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_24_15x100_A00.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_24_15x100_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_24_15x75_A00.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_24_15x75_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_24_15x95_A00.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_24_15x95_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_24_17x100_A00.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_24_17x100_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_24_17x75_A00.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_24_17x75_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_24_17x95_A00.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_24_17x95_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_24_A00.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_24_A00.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_24_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_24.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_24C12_15x100_A00.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_24C12_15x100_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_24C12_15x75_A00.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_24C12_15x75_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_24C12_15x95_A00.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_24C12_15x95_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_24C12_17x100_A00.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_24C12_17x100_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_24C12_17x75_A00.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_24C12_17x75_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_24C12_17x95_A00.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_24C12_17x95_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_24C12_A00.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_24C12_A00.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_24C12.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Car32_Cup12x100.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Car32_Cup12x75.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Car32_Cup12x95.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Car32_Cup13x100.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Car32_Cup13x75.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Car32_Cup13x95.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Cup_12x100.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Cup_12x100.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Cup_12x75.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Cup_12x75.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Cup_12x95.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Cup_12x95.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Cup_13x100.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Cup_13x100.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Cup_13x75.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Cup_13x75.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Cup_13x95.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Cup_13x95.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\EPIL.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\EPIS.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SampleCarrier32.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_32_12x100_A00.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_32_12x100_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_32_12x75_A00.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_32_12x75_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_32_12x95_A00.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_32_12x95_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_32_13x100_A00.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_32_13x100_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_32_13x75_A00.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_32_13x75_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_32_13x95_A00.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_32_13x95_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_32_A00.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_32_A00.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_32_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_32_EPIL_A00.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_32_EPIL_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_32_EPIS_A00.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_32_EPIS_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_32.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_32C12_12x100_A00.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_32C12_12x100_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_32C12_12x75_A00.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_32C12_12x75_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_32C12_12x95_A00.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_32C12_12x95_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_32C12_13x100_A00.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_32C12_13x100_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_32C12_13x75_A00.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_32C12_13x75_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_32C12_13x95_A00.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_32C12_13x95_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_32C12_A00.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_32C12_A00.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_32C12_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SMP_CAR_32C12.bmp
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\TubeRack12x75.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\TubeRack12x75_Right.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\TubeRack13x100.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\TubeRack15ML.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\TubeRack16x100.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\TubeRack16x100_Right.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\24pos_ped_64944-01.jpg
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\24pos_ped_64944-01.png
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\24pos_ped_64944-01.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\Eppendorf32x2ml.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\Eppendorf32Position.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\32pos_ped_64943-01.jpg
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\32pos_ped_64943-01.png
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\32pos_ped_64943-01.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\TubeAdapterPCR_48x0-2.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\TubeAdapterPCR_48Position.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\TubeRack50ML.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\TubeRack50ML_Right.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\62290-01_SS_32POS.bmp
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\62290-01_SS_32POS.png
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\62290-01_SS_32POS.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\62300-01_SS_24POS.bmp
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\62300-01_SS_24POS.png
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\62300-01_SS_24POS.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\6pos_ped_64946-01.jpg
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\6pos_ped_64946-01.png
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\6pos_ped_64946-01.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\Eppendorf0.2.ctr
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\Eppendorf0.6.ctr
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\Eppendorf1.5.ctr
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\Eppendorf2.0.ctr
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\Eppendorf32x2.0_63985-01.jpg
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\Eppendorf32x2.0_63985-01.png
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\Eppendorf32x2.0_63985-01.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\Falcon15ML.ctr
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\Falcon50ML.ctr
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\MockTube.ctr
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\MultiTubeAdapter.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\MultiTubeAdapter_8x5ml_24x1_5.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\ShiftScan24Position_17x100.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\ShiftScan32Position_12x75.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\ShiftScan32Position_13x100.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\ShiftScan24Position.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\ShiftScan32Position.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\HighDensityDeck\TubeCarrierx8_50mlFalcon.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\Tube12x75.ctr
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\Tube13x100.ctr
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\Tube17x100.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\AutoLys\AutoLysCapWaste.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\AutoLys\Ham_24_Adp_HHS-AutoLys_A00.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\AutoLys\AutoLysInnerTubeWaste.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\AutoLys\Ham_24_TuR_AutoLys_A00.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\AutoLys\AutoLysTubeWaste.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\AutoLys\AutoLysTube_A00.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\AutoLys\AutoLysWaste.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\AutoLys\PLT_CAR_L4_HHS-ALT_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\AutoLys\PLT_CAR_L5_ALT_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\AutoLys\PLT_CAR_L5_ALT_A00.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\EntryExitDrawer.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\EntryExitFrame.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\BVS\BVS_ManifoldTop_A00.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\BVS\BVS_ManifoldTop_A00.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\BVS\BVS_ManifoldTop_A00.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\BVS\BVS_MNAdapter_H34.5_A00.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\BVS\BVS_MNAdapter_H34.5_A00.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\BVS\BVS_Shaker0_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\BVS\BVS_Shaker0_A00.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\BVS\BVS_Shaker0_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\BVS\BVS_Shaker1_Pos1_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\BVS\BVS_Shaker1_Pos2_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\BVS\BVS_Shaker2_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\NVS\BVS_Manifold.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\NVS\BVS_Manifold_collection.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\NVS\BVS_Manifold.jpg
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\NVS\BVS_Manifold.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\NVS\BVS_Manifold.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\NVS\phenomenex_96_filter.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\NVS\phenomenex_sq.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\VacuTube\Greiner9ml.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\VacuTube\QFT.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\VacuTube\Tube13x100.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\VacuTube\VacuTube_CapStorage_x16.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\VacuTube\VacuTube_Rack_BD6ml_x16.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\VacuTube\VacuTube_Rack_Greiner6ml_x16.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\VacuTube\VacuTube_Rack_Greiner9ml_x16.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\VacuTube\VacuTube_Rack_QFT_x16.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\VacuTube\SMP_CAR_VacuTube_A.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\VacuTube\VacuTube_CapStorage.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\VacuTube\VacuTube_Rack_BD6ml.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\VacuTube\VacuTube_Rack_Greiner6ml.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\VacuTube\VacuTube_Rack_Greiner9ml.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\VacuTube\VacuTube_Rack_QFT.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\VacuTube\VacuTube_CapWaste.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\VacuTube\VacuTube_Cap.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\VacuTube\Xfiles\16x_BD6ml.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\VacuTube\Xfiles\16x_CapStg.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\VacuTube\Xfiles\16x_Grnr6ml.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\VacuTube\Xfiles\16x_Grnr9ml.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\VacuTube\Xfiles\16x_QFT.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\VacuTube\Xfiles\4x_BD6ml.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\VacuTube\Xfiles\4x_CapStg.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\VacuTube\Xfiles\4x_Grnr6ml.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\VacuTube\Xfiles\4x_Grnr9ml.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\VacuTube\Xfiles\4x_QFT.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\VacuTube\Xfiles\CPC_base_rack.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\PiercingTip150ulFilter.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_250ul_Piercing_L.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\4mlTF_L.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\4mlTF_P.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\4mlT_L.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\4mlT_P.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\4mlTF_L.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\4mlTF_P.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\Core2_96_TipSupport_HT_L.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\Core2_96_TipSupport_LT_L.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\Core2_96_TipSupport_ST_L.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\Core2_96_TipSupport_50ulTip_L.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\Core2_96_TipSupport_50ulTipFilter_L.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\Core2_96_TipSupport_HT_Filter_L.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\Core2_96_TipSupport_LT_Filter_L.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\Core2_96_TipSupport_ST_Filter_L.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\Core384_TipSupport_30ul_L.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\Core384_TipSupport_50ul_L.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\CORE384_TipSupport_RT_L.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\CORE384_TipSupport_RT_L.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\Core384_TipSupport.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\CoRe384Tip_L.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\Core96_TipSupport_1000ul_Filter_L_COREII.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\Core96_TipSupport_1000ul_L_COREII.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\Core96_TipSupport_10ul_Filter_L_COREII.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\Core96_TipSupport_10ul_L_COREII.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\Core96_TipSupport_300ul_Filter_L_COREII.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\Core96_TipSupport_300ul_L_COREII.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\Core96_TipSupport_50ul_Filter_L_COREII.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\Core96_TipSupport_50ul_L_COREII.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\Core96_TipSupport_50ul_L.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\Core96_TipSupport_50ulTip.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\Core96_TipSupport_HT_L.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\Core96_TipSupport_HT_L.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\Core96_TipSupport_LT_L.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\Core96_TipSupport_LT_L.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\Core96_TipSupport_ST_L.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\Core96_TipSupport_ST_L.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\Core96_TipSupport.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Tip Boxes\Ham_MLTipBox_Lid.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Tip Boxes\Ham_MLTipBox_LidAdapter.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\PiercingTip150ulFilter.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\PiercingTip150ulFilter.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\PiercingTip150ulFilter.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Tip Boxes\Ham_MLTipBox_LidAdapter.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_250ul_Piercing_L.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_250ul_Piercing_L.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_250ul_Piercing.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\CORE384_TipSupport_30ul_L.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\CORE384_TipSupport_96Tips_30ul_L.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\CORE384_TipSupport_50ul_L.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\CORE384_TipSupport_96Tips_50ul_L.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\CORE384_TipSupport_50ul_conductive_L.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\CORE384_TipSupport_RT_L.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\Core96_TipSupport_HT_L.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\Core96_TipSupport_LT_L.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\Core96_TipSupport_ST_L.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\Core96_TipSupport_50ulTip_L.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Tip Boxes\Ham_MLTipBox_1000_EntryExit.lid
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Tip Boxes\Ham_MLTipBox_1000.lid
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Tip Boxes\Ham_MLTipBox_1000.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Tip Boxes\Ham_MLTipBox_F1000_EntryExit.lid
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Tip Boxes\Ham_MLTipBox_F1000.lid
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Tip Boxes\Ham_MLTipBox_F1000.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Tip Boxes\Ham_MLTipBox_F1000.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Tip Boxes\Ham_MLTipBox_F1000_EntryExit.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Tip Boxes\Ham_MLTipBox_1000_EntryExit.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Tip Boxes\Ham_MLTipBox_1000.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\384head_384tips_30ul.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\384head_384tips_30ul.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\384head_96tips_30ul.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\384head_96tips_30ul.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\CoRe384tip.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Tip Boxes\Ham_MLTipBox_F300_EntryExit.lid
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Tip Boxes\Ham_MLTipBox_F300.lid
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Tip Boxes\Ham_MLTipBox_F300.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\RT_300ul_L.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\RT_300ul_L.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\RT_300ul.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SlimTip300ul.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SlimTip300ulFilter.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SlimTip300ul.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SlimTip300ul.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SlimTip300ul.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SlimTip300ulFilter.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\SlimTip300ulFilter.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Tip Boxes\Ham_MLTipBox_F300.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Tip Boxes\Ham_MLTipBox_F300_EntryExit.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\5mlT_L.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\5mlT_P.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\5mlT_L.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\5mlT_L.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\5mlT_P.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\5mlT_P.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\5mlT.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\384head_384tips_50ul.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\384head_384tips_50ul.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\384head_96tips_50ul.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\50_96Wash.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\50_HU_96WashDualChamber1.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\50_HU_96WashDualChamber2.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\50_HV_96WashDualChamber1.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\50_HV_96WashDualChamber2.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\50_HW_96WashDualChamber1.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\50_HW_96WashDualChamber2.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_50ul_L.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_50ul_P.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_50ulF_L.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_50ulF_P.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\384head_96tips_50ul.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\CoRe384_50ul_conductive_tip.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\CoRe384_50ul_tip.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\CoRe384Tip50ul_l.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Tip Boxes\Ham_MLTipBox_F50_EntryExit.lid
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Tip Boxes\Ham_MLTipBox_F50.lid
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Tip Boxes\Ham_MLTipBox_F50.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_50ul_L_NE_stack.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Tip Boxes\Ham_MLTipBox_F50.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Tip Boxes\Ham_MLTipBox_F50_EntryExit.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_50ul_L_NE_stack.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_50ul_L.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_50ul_L.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_50ul_P.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TIP_50ul.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\TIP384_384TIPS_NTR_50ul_A00.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\TIP384_384TIPS_NTR_50ul.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\TIP384_384TIPS_NTR_50ul.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\TIP384_96TIPS_NTR_50ul_A00.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\TIP384_96TIPS_NTR_50ul.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\TIP384_96TIPS_NTR_50ul.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\HighNeedle_L.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\HighNeedle.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\HighNeedle.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\LowNeedle_L.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\LowNeedle.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\LowNeedle.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Needle1000ul_L.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Needle1000ul.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Needle1000ul.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Needle300ul_L.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Needle300ul.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Needle300ul.ctr
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\Ham_NTR_10.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\Ham_NTR_10_Clear.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\Ham_FTR_1000.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\Ham_FTR_F1000.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\Ham_FTR_F1000Wide1-2_Sterile.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\Ham_FTR_F1000Wide1-2.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\Ham_FTR_1000Wide1-2.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\Ham_FTR_1000Wide3-2.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\Ham_FTR_F1000Wide3-2_Sterile.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\Ham_FTR_F1000Wide3-2.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\Ham_FTR_1000Wide3-2_Sterile.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\Ham_FTR_F10.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\10uL_FTR.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\10uL_NTR_White.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\10ul_NTR.png
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\10uL_NTR.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\1mL_FTR.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\TIP_250ul_Piercing_L.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\Ham_NTR_300.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\Ham_NTR_300_Clear.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\Ham_FTR_F300.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\300uL_FTR.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\300uL_NTR_White.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\300ul_NTR.png
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\300uL_NTR.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\Ham_NTR_50.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\Ham_NTR_50_Clear.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\Ham_FTR_F50.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\50uL_FTR.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\50uL_NTR_White.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\50ul_NTR.png
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\50uL_NTR.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\Ham_FTR_5000.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\Ham_FTR_F4000.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\5mL_FTR.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\adapter_10ul.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\adapter_1mL.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\adapter_300ul.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\adapter_50ul.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\Adapter.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\Ham_FTR_10.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\Ham_FTR_300.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\Ham_FTR_300Wide0-71.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\Ham_FTR_300Wide1-55.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\Ham_FTR_300Slim.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\Ham_FTR_50.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\Ham_FTR_F300Wide0-71.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\Ham_FTR_F300Wide1-55.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\FTR_10.png
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\FTR_1000_L.bmp
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\FTR_1000_L.png
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\FTR_10ul_L.bmp
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\FTR_300.png
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\FTR_300ul_L.bmp
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\FTR_300ulSlim.png
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\FTR_50.png
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\FTR_5000_L.bmp
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\FTR_5000_L.png
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\FTR_50ul_L.bmp
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\Ham_TipBox_1000.lid
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\Ham_TipBox_1000.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\Ham_TipBox_F1000.lid
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\Ham_TipBox_F1000.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\Ham_TipBox_F300.lid
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\Ham_TipBox_F300.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\Ham_TipBox_F50.lid
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\Ham_TipBox_F50.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\Ham_TipBox_Lid.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\Ham_TipBox_LidAdapter.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\Needle_5000uL.ctr
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\NTR_10ul_L.bmp
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\NTR_300ul_L.bmp
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\NTR_50ul_L.bmp
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\TipAdapter_F1000.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\TipAdapter_1000.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\TipAdapter_F10.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\TipAdapter_10.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\TipAdapter_F300.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\TipAdapter_300.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\TipAdapter_F50.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\TipAdapter_50.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\Ham_TipBox_1000.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\Ham_TipBox_F1000.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\Ham_TipBox_F300.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\Ham_TipBox_F50.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\Ham_TipBox_LidAdapter.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\Tip_0.71mm300uL.ctr
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\Tip_1.2mm1000uL.ctr
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\Tip_1.55mm300uL.ctr
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\Tip_1000uL.ctr
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\Tip_10uL.ctr
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\TIP_250ul_Piercing_L.bmp
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\TIP_250ul_Piercing_L.png
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\TIP_250ul_Piercing.ctr
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\WideBoreTips\Tip_3.2mm1000uL.ctr
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\Tip_300uL.ctr
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\Tip_300uLSlim.ctr
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\Tip_5000uL.ctr
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\Tip_50uL.ctr
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\TipAdapter_10.bmp
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\TipAdapter_50.bmp
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\TipAdapter_F10.bmp
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\TipAdapter_F300.bmp
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\TipAdapter_F50.bmp
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Tip Racks\TipAdapter.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WideBoreTips\Ham_FTR_F1000Wide1-2.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WideBoreTips\Ham_FTR_F1000Wide1-2_Filter.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WideBoreTips\Ham_FTR_F1000Wide1-2_Filter_Sterile.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WideBoreTips\Ham_FTR_1000Wide3-2.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WideBoreTips\Ham_FTR_1000Wide3-2_Sterile.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WideBoreTips\Ham_FTR_1000Wide3-2_Filter.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WideBoreTips\Ham_FTR_F1000Wide3-2_Filter_Sterile.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WideBoreTips\1mL_FTR.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WideBoreTips\Ham_FTR_300Wide0-71.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WideBoreTips\Ham_FTR_300Wide0-71_Filter.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WideBoreTips\Ham_FTR_300Wide1-55.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WideBoreTips\Ham_FTR_300Wide1-55._Filter.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WideBoreTips\300uL_FTR.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WideBoreTips\FTR_1000_L.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WideBoreTips\FTR_1000_L.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WideBoreTips\FTR_300.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WideBoreTips\FTR_300ul_L.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WideBoreTips\Tip_0.71mm300uL.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WideBoreTips\Tip_1.2mm1000uL.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WideBoreTips\Tip_1.55mm300uL.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WideBoreTips\Tip_3.2mm1000uL.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\Tadm96HeadTightnessTool.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\Tadm96HeadTightnessTool.ctr
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Calibration\StackCalLandscape.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\CalTool5ml.ctr
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\ChannelCalBlock.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\GripperCalBlock.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\PCal.ctr
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\PCal.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\CalTool5ml.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\CalTool5ml-HD.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\Teaching2Pos1ml_SplitWaste.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\NimbusIC5mlCalTool.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\Teaching2Pos1ml-HD.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\Teaching2Pos1ml.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\TeachingTool5ml-HD.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\TeachingTool5ml.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Calibration\XArmDiffTool.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Calibration\XYCal.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CO-RE-Grip\VStarCOREGripCarrier.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CO-RE-Grip\COREGripTool_L.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CO-RE-Grip\COREGripTool_P.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\COREPaddlesOnLongWaste.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\COREPaddlesOnSplitWaste.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\COREGripToolOnWastev2.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CO-RE-Grip\COREGripRack_L.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CO-RE-Grip\COREGripRack_P.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CO-RE-Grip\COREGripTool_AtWaste_1000ul.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CO-RE-Grip\COREGripTool_OnWaste_1000ul.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CO-RE-Grip\COREGripTool_OnWaste_5ml.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\COREGripTool5mlOnWastev2.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CO-RE-Grip\COREGripTool_AtWaste_1000ul.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Tip Boxes\COREGripTool_forTipBox_OnWaste_1000ul.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Tip Boxes\COREGripTool_forTipBox_OnWaste_1000ul.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CO-RE-Grip\COREGripTool_L.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CO-RE-Grip\COREGripTool_OnWaste_1000ul.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CO-RE-Grip\COREGripTool_OnWaste_1000ul.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CO-RE-Grip\COREGripTool_OnWaste_5ml.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CO-RE-Grip\COREGripTool_OnWaste_5ml.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CO-RE-Grip\COREGripTool_OnWasteBlock.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CO-RE-Grip\COREGripTool_OnWasteBlock.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CO-RE-Grip\COREGripTool_OnWasteBlock.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CO-RE-Grip\COREGripTool_P.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CO-RE-Grip\COREGripTool.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CO-RE-Grip\QCG (Deep).ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CO-RE-Grip\QCG (Deep).png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CO-RE-Grip\QCG (Deep).rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CO-RE-Grip\QCG (Deep).x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CO-RE-Grip\QCG 2T Mount.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CO-RE-Grip\QCG 2T Mount.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CO-RE-Grip\QCG.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CO-RE-Grip\QCG.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CO-RE-Grip\QCG.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CO-RE-Grip\QCG.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\COREPaddlesTipBoxOnLongWaste.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\COREGripToolTipBoxOnWastev2.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CO-RE-Grip\VStarCOREGripTool.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CO-RE-Grip\VStarCOREGripTool_short.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CO-RE-Grip\VStarCOREGrip_short.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CO-RE-Grip\VStarCOREGrip.ctr
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\COREGripTool.ctr
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\COREGripTool5ml.ctr
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\CORESuctionTool.ctr
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\NimbusIC5mlCOREPaddles.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\NimbusIC5mlTeach_.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\NimbusIC5mlTeach.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\NimbusICCOREPaddles.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\NimbusICSuctionCups.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\NimbusICTeachRack.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\CORESuctionTool.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\HamHeaterShaker\PLT_CAR_L4HHC_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\HamHeaterShaker\PLT_CAR_L4HHC_A00.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\HamHeaterShaker\PLT_CAR_L4HHS_05_FLB_MD_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\HamHeaterShaker\PLT_CAR_L4HHS_15_FLB_MD_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\HamHeaterShaker\PLT_CAR_L4HHS_20_FLB_MD_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\HamHeaterShaker\PLT_CAR_L4HHS_30_FLB_MD_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Nano\service_carrier_oil.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Nano\service_carrier_oil.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Nano\service_carrier_ultraSonic.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Nano\service_carrier_ultraSonic.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Nano\service_carrier_waste.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Nano\service_carrier_waste.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Nano\service_carrier.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WASHSTATION\Car_DC_WashStation_CR_Needle_A01.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WASHSTATION\Car_DC_WashStation_CR_Needle_A01.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Car_Wash_1_1000ulNeedle.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Car_Wash_1_300ulNeedle.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Car_Wash_1_HighNeedle.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Car_Wash_1_LowNeedle.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Car_Wash_1_StandardNeedle.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Car_Wash_2_1000ulNeedle.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Car_Wash_2_300ulNeedle.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Car_Wash_2_HighNeedle.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Car_Wash_2_LowNeedle.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Car_Wash_2_StandardNeedle.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Car_Wash_x_ThirdGen.png
+C:\Program Files (x86)\Hamilton\Labware\MACHEREY-NAGEL\MNWashPlate.ctr
+C:\Program Files (x86)\Hamilton\Labware\MACHEREY-NAGEL\MNWashPlate.png
+C:\Program Files (x86)\Hamilton\Labware\MACHEREY-NAGEL\MNWashPlate.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Wash8_p.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WashStation_1_1000ulNeedle.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WashStation_1_300ulNeedle.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WashStation_1_HighNeedle.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WashStation_1_LowNeedle.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WashStation_1_StandardNeedle.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WashStation_2_1000ulNeedle.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WashStation_2_300ulNeedle.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WashStation_2_HighNeedle.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WashStation_2_LowNeedle.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WashStation_2_StandardNeedle.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WashStation_3_1000ulNeedle.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WashStation_3_300ulNeedle.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WashStation_3_HighNeedle.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WashStation_3_LowNeedle.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WashStation_3_StandardNeedle.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WashStation_4_1000ulNeedle.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WashStation_4_300ulNeedle.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WashStation_4_HighNeedle.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WashStation_4_LowNeedle.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WashStation_4_StandardNeedle.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WashStation_5_1000ulNeedle.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WashStation_5_300ulNeedle.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WashStation_5_HighNeedle.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WashStation_5_LowNeedle.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WashStation_5_StandardNeedle.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WashStation_6_1000ulNeedle.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WashStation_6_300ulNeedle.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WashStation_6_HighNeedle.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WashStation_6_LowNeedle.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WashStation_6_StandardNeedle.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\Core384WasherRack.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\CORE_HU_96WashStation_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\CORE_HV_96WashStation_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\CORE_HW_96WashStation_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\CORE_xx_96WashStation_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\CORE96DualWashStation_HU_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\CORE96DualWashStation_HV_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\CORE96DualWashStation_HW_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\CORE96DualWashStation_xx_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\Core96WasherRack.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WASHSTATION\Car_Wash_1_CR_HighNeedle_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WASHSTATION\Car_Wash_1_CR_LowNeedle_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WASHSTATION\Car_Wash_1_CR_StandardNeedle_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WASHSTATION\Car_Wash_2_CR_HighNeedle_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WASHSTATION\Car_Wash_2_CR_LowNeedle_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WASHSTATION\Car_Wash_2_CR_StandardNeedle_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WASHSTATION\Car_Wash_x_CR.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WASHSTATION\CR_HighNeedle_A00.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WASHSTATION\CR_LowNeedle_A00.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WASHSTATION\CR_StandardNeedle_A00.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WASHSTATION\WashStation_1_CR_HighNeedle_A00.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WASHSTATION\WashStation_1_CR_LowNeedle_A00.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WASHSTATION\WashStation_1_CR_StandardNeedle_A00.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WASHSTATION\WashStation_2_CR_HighNeedle_A00.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WASHSTATION\WashStation_2_CR_LowNeedle_A00.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WASHSTATION\WashStation_2_CR_StandardNeedle_A00.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WASHSTATION\WashStation_3_CR_HighNeedle_A00.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WASHSTATION\WashStation_3_CR_LowNeedle_A00.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WASHSTATION\WashStation_3_CR_StandardNeedle_A00.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WASHSTATION\WashStation_4_CR_HighNeedle_A00.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WASHSTATION\WashStation_4_CR_LowNeedle_A00.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WASHSTATION\WashStation_4_CR_StandardNeedle_A00.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WASHSTATION\WashStation_5_CR_HighNeedle_A00.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WASHSTATION\WashStation_5_CR_LowNeedle_A00.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WASHSTATION\WashStation_5_CR_StandardNeedle_A00.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WASHSTATION\WashStation_6_CR_HighNeedle_A00.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WASHSTATION\WashStation_6_CR_LowNeedle_A00.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WASHSTATION\WashStation_6_CR_StandardNeedle_A00.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WASHSTATION\DC_WashStation_1000ul_CR_Needle_HU.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WASHSTATION\DC_WashStation_1000ul_CR_Needle_HV.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WASHSTATION\DC_WashStation_1000ul_CR_Needle_HW.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WASHSTATION\DC_WashStation_10ul_CR_Needle_HU.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WASHSTATION\DC_WashStation_10ul_CR_Needle_HV.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WASHSTATION\DC_WashStation_10ul_CR_Needle_HW.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WASHSTATION\DC_WashStation_300ul_CR_Needle_HU.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WASHSTATION\DC_WashStation_300ul_CR_Needle_HV.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WASHSTATION\DC_WashStation_300ul_CR_Needle_HW.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WASHSTATION\NeedleDepot_DC_WashStation.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WASHSTATION\WashChamber_DC_WashStation.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WASHSTATION\WashChamber_DC_WashStation.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WASHSTATION\WashChamber_DC_WashStation.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WASHSTATION\Waste_DC_WashStation.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WASHSTATION\Waste_DC_WashStation.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\30ul_384Wash.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\30ul_HU_384WashDualChamber1.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\30ul_HU_384WashDualChamber2.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\30ul_HV_384WashDualChamber1.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\30ul_HV_384WashDualChamber2.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\30ul_HW_384WashDualChamber1.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\30ul_HW_384WashDualChamber2.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\50ul_384Wash.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\50ul_conductive_HU_384WashDualChamber1.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\50ul_conductive_HU_384WashDualChamber2.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\50ul_conductive_HV_384WashDualChamber1.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\50ul_conductive_HV_384WashDualChamber2.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\50ul_conductive_HW_384WashDualChamber1.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\50ul_conductive_HW_384WashDualChamber2.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\50ul_HU_384WashDualChamber1.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\50ul_HU_384WashDualChamber2.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\50ul_HV_384WashDualChamber1.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\50ul_HV_384WashDualChamber2.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\50ul_HW_384WashDualChamber1.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\50ul_HW_384WashDualChamber2.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\CORE384DualWashStation_HU_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\CORE384DualWashStation_HV_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\CORE384DualWashStation_HW_A00.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\CORE384DualWashStation_xx_A00.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\HT_96Wash.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\HT_HU_96WashDualChamber1.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\HT_HU_96WashDualChamber2.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\HT_HV_96WashDualChamber1.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\HT_HV_96WashDualChamber2.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\HT_HW_96WashDualChamber1.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\HT_HW_96WashDualChamber2.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\LT_96Wash.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\LT_HU_96Wash.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\LT_HU_96WashDualChamber1.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\LT_HU_96WashDualChamber2.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\LT_HV_96Wash.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\LT_HV_96WashDualChamber1.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\LT_HV_96WashDualChamber2.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\LT_HW_96Wash.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\LT_HW_96WashDualChamber1.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\LT_HW_96WashDualChamber2.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\RT300_96Wash.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\RT300_HU_96WashDualChamber1.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\RT300_HU_96WashDualChamber2.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\RT300_HV_96WashDualChamber1.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\RT300_HV_96WashDualChamber2.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\RT300_HW_96WashDualChamber1.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\RT300_HW_96WashDualChamber2.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\ST_96Wash.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\ST_HU_96Wash.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\ST_HU_96WashDualChamber1.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\ST_HU_96WashDualChamber2.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\ST_HV_96Wash.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\ST_HV_96WashDualChamber1.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\ST_HV_96WashDualChamber2.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\ST_HW_96Wash.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\ST_HW_96WashDualChamber1.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\ST_HW_96WashDualChamber2.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TeachingNeedleBlock.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\waste.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Waste.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Waste.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Waste2.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\WasteBlock.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\67953-01_front_waste_chute.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\67953-01.jpg
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\ChannelLongWasteBlock.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\ChannelWasteBlock.bmp
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\ChannelWasteBlock.png
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\ChannelWasteBlock.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\DefaultLongWaste.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\LiquidWaste.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\LiquidWaste.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\Long Tip Eject Plate (66662-01).x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\LiquidWaste-HD.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\Waste1ml.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\Waste36x4.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\Waste5ml.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\ChannelLongWasteBlock.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\ChannelSplitWaste.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\DefaultWaste.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\ChannelWasteBlockLQW.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\ChannelWasteBlockLQWDefault.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\ChannelWasteBlockLQW2.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\ChannelEnclosedWaste.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\ChannelEnclosedWasteNVS.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\ChannelFrontWaste.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\Nimbus MPE2 Waste Chute (67581-06).x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\Nimbus Open Waste Chute (67581-03).x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\Nimbus Vibratory Waste, Front Orientation, with 67581-01 Chute.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\Nimbus Vibratory Waste, Side Orientation, with 67581-02 Chute.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\DefaultFrontWaste.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\DefaultLongWaste.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\NimbusEnclosedWaste_66141-01.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\NimbusEnclosedWaste.bmp
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\NimbusEnclosedWaste.png
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\NimbusIC5mlWaste.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\NimbusICLiquidWaste.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\NimbusICWasteLQW.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\NimbusICWasteLQW2.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\NimbusICWasteRack.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\Short Tip Eject Plate (61610-01).x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\Short Waste Block (61606-01).x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\Waste96.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\Waste96_L.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\Channels\Waste.ctr
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\96Head, 1ml\67953-01_front_waste_chute.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\96Head, 1ml\67953-01.jpg
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\96Head, 1ml\HeadCalBlock.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\96Head, 1ml\CORE96EnclosedWaste_66141-01.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\96Head, 1ml\CORE96EnclosedWaste.bmp
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\96Head, 1ml\CORE96EnclosedWaste.jpg
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\96Head, 1ml\CORE96EnclosedWaste.png
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\96Head, 1ml\CORE96Waste_56612-01.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\96Head, 1ml\CORE96Waste.bmp
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\96Head, 1ml\CORE96Waste.jpg
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\96Head, 1ml\CORE96Waste.png
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\96Head, 1ml\CORE96Waste.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\96Head, 1ml\Core96WasteTips.x
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\96Head, 1ml\WasteLabwareL.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\96Head, 1ml\WasteLabware.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\96Head, 1ml\CORE96EnclosedWaste.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\96Head, 1ml\CORE96FrontWaste.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\96Head, 1ml\CORE96Waste.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\96Head, 1ml\Waste.ctr
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\96Head, 1ml\WasteLabware.ctr
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\96Head, 300uL\HeadCalBlock.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\96Head, 300uL\StandOffTallDW.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\96Head, 300uL\StandOffDW.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\96Head, 300uL\StandOffFTR.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\96Head, 300uL\StandOffMTPStack.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\96Head, 300uL\StandOffMTP.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\96Head, 300uL\CORE96Waste.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\96Head, 300uL\StandOffNTR.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\96Head, 300uL\StandOffPCR.tml
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\96Head, 300uL\CORE96Waste.rck
+C:\Program Files (x86)\Hamilton\Labware\Nimbus\96Head, 300uL\Waste.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\Core384SlideWaste.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\Core96SlideWaste.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\Core384SlideWaste.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\Core384SlideWaste.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\Core384SlideWaste.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\core384SlideWaste.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\384CoReHead\core384SlideWasteRack.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\Core96ExternalWaste.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\Core96ExternalWaste.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\Core96ExternalWaste.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\Core96SlideWaste.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\Core96SlideWaste.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\Core96SlideWaste.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\core96SlideWaste.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\96CoReHead\core96SlideWasteRack.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\StarPlusWasteBlock.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\StarPlusCore384Waste.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\StarPlusCore384Waste.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\StarPlusCore384Waste.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\StarPlusCore96Waste.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\StarPlusCore96Waste.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\StarPlusCore96Waste.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\StarPlusdWaste.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\StarPlusWaste.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\TeachingNeedle1ml.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\TeachingNeedle5ml.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\TeachingNeedle5ml.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\TeachingNeedle5ml.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\TeachingNeedle5ml.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\TeachingNeedleBlock.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\TeachingNeedleBlock.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\TeachingNeedleBlock.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\TeachingNeedleBlock.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TN_BLOCK.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\TN.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\Verification.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\Verification.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\Verification.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\Verification.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\WasteBlock.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\waste.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\Waste.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\Waste.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\Waste2.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\Waste2.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\WasteBlock.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\WasteBlock.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\VStarWaste_16Pos.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\TeachingNeedleBlock_VStar_4.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\VStarWasteBlock_2T_1000uL-5mL-Mag_Config.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\VStarWasteBlock_2T_1000uL-5mL_Config.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\VStarWasteBlock_2T_1000uL-Mag_Config.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\VStarWasteBlock_2T_Config.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\VStarWasteBlock_2T_5mL_Config.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\TeachingNeedleBlock_5ml.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\VStarWaste_8Pos.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\818204.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\VStarActiveWaste.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\VStarActiveWaste.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Maintenance\MagPipMaintenanceTool.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\VStarSideDropWaste.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\VStarWaste_2T.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\VStarWaste_2T_Mag_16Pos.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\VStarWaste_2T_5mL_4Pos.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\VStarWaste_2T_1000uL_8Pos.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\VStarWaste_2T_5mL_8Pos.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\VStarWaste_2T_Mag_8Pos.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Maintenance\MagPipMaintenanceTool.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Maintenance\MagPipMaintenanceTool.bmp
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\Maintenance\MagPipMaintenanceTool.hxx
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\twoTWasteBlock.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\VStarWasteBlock_Config.tml
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\universal_waste_chute.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\UW_Teaching_Block_4x1ML.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\VOVVerificationSquare.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\VOVVerificationSquare.rck
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\VStarActiveWaste.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\VStarActiveWaste.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\VStarActiveWaste.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\VStarSideDropWaste.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\VStarSideDropWaste.x
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\VStarWaste_2T_1000uL_Container.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\VStarWaste_2T_5mL_Container.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\VStarWaste_2T_Mag_Container.ctr
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\VStarWasteBlock_2T_1000uL_Cover.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\VStarWasteBlock_2T_1000uL-5mL_Cover.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\VStarWasteBlock_2T_1000uL-5mL-Mag_Cover.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\VStarWasteBlock_2T_1000uL-Mag_Cover.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\VStarWasteBlock_2T_5mL_Cover.png
+C:\Program Files (x86)\Hamilton\Labware\ML_STAR\CORE\VStarWasteBlock_Image.png

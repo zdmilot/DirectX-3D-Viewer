@@ -1,0 +1,177 @@
+<html>
+<head>
+    <title>Labware Generator</title>
+    <link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+<div class="header">Labware Generator</div>
+<div class="main">
+<div class="breadcrumb"><a href="Overview.html">3D File Tools</a> &raquo; Labware Generator</div>
+
+<h2>Overview</h2>
+<p>The <b>Labware Generator</b> creates 3D <code>.x</code> model files for SBS/ANSI-format microplates from parametric inputs. You can configure every aspect of the plate geometry manually, or import an existing labware definition file to pre-populate the parameters. Two import formats are supported:</p>
+<ul>
+  <li><b>Integra XML</b> &mdash; Single <code>.xml</code> file with plate and well definitions</li>
+  <li><b>Hamilton</b> &mdash; Paired <code>.rck</code> (rack) and <code>.ctr</code> (container) files from Hamilton VENUS software</li>
+</ul>
+<div class="image-placeholder">PLACE IMAGE OF LABWARE GENERATOR PANEL WITH A GENERATED PLATE HERE</div>
+
+<h2>Panel Layout</h2>
+<p>The panel uses a two-column layout:</p>
+<ul>
+  <li><b>Left column (parameter panel)</b> &mdash; Import tabs (Integra XML / Hamilton), parameter form, and action buttons</li>
+  <li><b>Right column (3D preview)</b> &mdash; Live 3D viewport with floating toolbar; updates when you generate a model</li>
+</ul>
+
+<h2>Importing Labware Definitions</h2>
+
+<h3>Integra XML Import</h3>
+<p>Click <b>Open XML File</b> (or drag and drop an <code>.xml</code> file onto the viewport) to import an Integra XML labware definition. The parser extracts plate dimensions, well count and geometry, and A1 position, then populates all parameter fields automatically.</p>
+<p>After import, review the populated values and make any corrections before generating. The status display below the button shows the loaded file name or &ldquo;No file loaded &mdash; edit values manually or import&rdquo;.</p>
+
+<h3>Hamilton Import (.rck + .ctr)</h3>
+<p>Hamilton labware definitions use two paired files:</p>
+<ul>
+  <li><b>.rck (rack file)</b> &mdash; Defines the plate footprint, grid layout (rows, columns), well spacing, A1 offset (BndryX/BndryY), outer profile segments, and references the container file</li>
+  <li><b>.ctr (container file)</b> &mdash; Defines the individual well geometry: shape (cylindrical or square), depth, diameter segments from top to bottom, and bottom shape (flat, hemisphere, V-bottom, tapered)</li>
+</ul>
+<p>To import Hamilton labware:</p>
+<ol>
+  <li>Click the <b>Hamilton</b> tab in the Import Definition section</li>
+  <li>Click <b>Open Rack File (.rck)</b> and select the rack definition</li>
+  <li>Click <b>Open Container File (.ctr)</b> and select the matching container definition</li>
+  <li>Click <b>Import Hamilton Labware</b> to parse both files, populate the form fields, and generate the 3D model</li>
+</ol>
+<p>You can also drag and drop both <code>.rck</code> and <code>.ctr</code> files simultaneously onto the viewport &mdash; if both are present, the model is generated automatically.</p>
+
+<h4>Hamilton Container Shape Codes</h4>
+<table>
+<thead><tr><th>Code</th><th>Shape</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td>0</td><td>Cylinder</td><td>Circular cross-section well</td></tr>
+<tr><td>1</td><td>Square</td><td>Rectangular/square cross-section well</td></tr>
+<tr><td>3</td><td>Tapered</td><td>Wells with different top and bottom diameters</td></tr>
+<tr><td>4</td><td>Hemisphere</td><td>Round (U-shaped) bottom</td></tr>
+<tr><td>5</td><td>V-bottom</td><td>Conical/V-shaped bottom</td></tr>
+</tbody>
+</table>
+
+<h2>Parameter Reference</h2>
+
+<h3>General</h3>
+<table>
+<thead><tr><th>Field</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><b>Name</b></td><td>Descriptive name of the labware item (e.g. &ldquo;96 Well Plate&rdquo;)</td></tr>
+<tr><td><b>Manufacturer</b></td><td>Manufacturer name (optional, informational)</td></tr>
+<tr><td><b>Part Number</b></td><td>Manufacturer part number (optional, informational)</td></tr>
+<tr><td><b>Type</b></td><td>Labware type. Currently <b>Plate (SBS)</b> is supported.</td></tr>
+</tbody>
+</table>
+
+<h3>Footprint (SBS/ANSI)</h3>
+<p>The SBS compliance badge next to the section title turns green (<b>SBS Compliant</b>) when the footprint dimensions match ANSI/SLAS 1-2004 standard values, or red (<b>Non-standard</b>) otherwise.</p>
+<table>
+<thead><tr><th>Field</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><b>Length (mm)</b></td><td>127.76</td><td>Overall plate length along the long axis</td></tr>
+<tr><td><b>Width (mm)</b></td><td>85.48</td><td>Overall plate width along the short axis</td></tr>
+<tr><td><b>Total Height (mm)</b></td><td>14.35</td><td>Overall plate height including lid/rim (if applicable)</td></tr>
+</tbody>
+</table>
+<p>Click <b>Apply SBS Defaults</b> to reset the footprint to the ANSI/SLAS 1-2004 standard values (127.76 &times; 85.48 mm).</p>
+
+<h3>Wells</h3>
+<table>
+<thead><tr><th>Field</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><b>Rows</b></td><td>8</td><td>Number of well rows (A-H for a 96-well plate)</td></tr>
+<tr><td><b>Columns</b></td><td>12</td><td>Number of well columns (1-12 for a 96-well plate)</td></tr>
+<tr><td><b>Row Gap (mm)</b></td><td>9.00</td><td>Center-to-center distance between rows</td></tr>
+<tr><td><b>Col Gap (mm)</b></td><td>9.00</td><td>Center-to-center distance between columns</td></tr>
+</tbody>
+</table>
+<p>The well count label above the fields shows the computed total (e.g. &ldquo;96 wells (8&times;12)&rdquo;). SBS standard spacing for 96-well plates is 9.0 mm; 384-well plates use 4.5 mm; 1536-well plates use 2.25 mm.</p>
+
+<h3>Well Geometry</h3>
+<table>
+<thead><tr><th>Field</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><b>Well Shape</b></td><td>Circle</td><td>Cross-sectional shape: <b>Circle</b> or <b>Square</b></td></tr>
+<tr><td><b>Top &Oslash; (mm)</b></td><td>6.86</td><td>Well opening diameter (or width for square wells) at the plate surface</td></tr>
+<tr><td><b>Bottom &Oslash; (mm)</b></td><td>6.35</td><td>Well diameter at the bottom. A smaller value than Top &Oslash; creates a tapered well.</td></tr>
+<tr><td><b>Depth (mm)</b></td><td>10.67</td><td>Well depth from the plate surface to the bottom</td></tr>
+<tr><td><b>Bottom Shape</b></td><td>Round (U-Bottom)</td><td>Shape of the well floor: <b>Flat</b>, <b>Round (U-Bottom)</b>, or <b>V-Bottom</b></td></tr>
+</tbody>
+</table>
+
+<h3>A1 Well Position</h3>
+<p>Defines the X and Y offset of the center of well A1 from the plate corner (origin). Standard SBS values are:</p>
+<table>
+<thead><tr><th>Field</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><b>X offset (mm)</b></td><td>14.38</td><td>Distance from the plate edge to the center of well A1 along the long axis</td></tr>
+<tr><td><b>Y offset (mm)</b></td><td>11.24</td><td>Distance from the plate edge to the center of well A1 along the short axis</td></tr>
+</tbody>
+</table>
+
+<h2>SBS Constants Reference</h2>
+<p>The generator uses the following ANSI/SLAS standard constants:</p>
+<table>
+<thead><tr><th>Constant</th><th>Value (mm)</th><th>Standard</th></tr></thead>
+<tbody>
+<tr><td>Footprint length</td><td>127.76</td><td>ANSI/SLAS 1-2004</td></tr>
+<tr><td>Footprint width</td><td>85.48</td><td>ANSI/SLAS 1-2004</td></tr>
+<tr><td>96-well spacing</td><td>9.0</td><td>ANSI/SLAS 4-2004</td></tr>
+<tr><td>384-well spacing</td><td>4.5</td><td>ANSI/SLAS 4-2004</td></tr>
+<tr><td>1536-well spacing</td><td>2.25</td><td>ANSI/SLAS 4-2004</td></tr>
+<tr><td>A1 X offset</td><td>14.38</td><td>ANSI/SLAS 4-2004</td></tr>
+<tr><td>A1 Y offset</td><td>11.24</td><td>ANSI/SLAS 4-2004</td></tr>
+<tr><td>Corner radius</td><td>3.18</td><td>ANSI/SLAS 1-2004</td></tr>
+<tr><td>Wall thickness</td><td>1.27</td><td>Typical</td></tr>
+<tr><td>Flange height</td><td>2.41</td><td>Typical</td></tr>
+</tbody>
+</table>
+
+<h2>Generating and Saving</h2>
+<table>
+<thead><tr><th>Button</th><th>Action</th></tr></thead>
+<tbody>
+<tr><td><b>Generate 3D Model</b></td><td>Builds the 3D geometry from the current parameter values and displays it in the right-column preview viewport. Well circles are approximated with 16-sided polygons.</td></tr>
+<tr><td><b>Save as .x File</b></td><td>Exports the generated model as a DirectX <code>.x</code> file and triggers a browser download.</td></tr>
+<tr><td><b>Load into Viewer</b></td><td>Sends the generated model to the 3D Viewer panel for detailed inspection, export, or transformation.</td></tr>
+</tbody>
+</table>
+
+<h2>Ruler Tool</h2>
+<p>The ruler tool is available in the 3D preview via the ruler button (ruler icon) in the floating toolbar. It allows you to measure distances between two points on the generated model surface.</p>
+<h3>Using the Ruler</h3>
+<ol>
+  <li>Enable the ruler by clicking the ruler icon in the toolbar. The camera orbit controls are temporarily suspended.</li>
+  <li>Click on a point on the model to set the start point</li>
+  <li>Move the mouse to see a live distance readout at the bottom of the viewport</li>
+  <li>Click a second point to finalize the measurement</li>
+  <li>Press <b>Esc</b> to cancel the measurement and restore orbit controls</li>
+</ol>
+<h3>Axis Lock</h3>
+<p>Press <b>X</b>, <b>Y</b>, or <b>Z</b> while the ruler is active to lock the measurement along that axis only. Press the same key again to unlock. The readout shows the constrained distance along the locked axis.</p>
+<h3>Keyboard</h3>
+<table>
+<thead><tr><th>Key</th><th>Action</th></tr></thead>
+<tbody>
+<tr><td><b>X</b></td><td>Lock/unlock ruler to X axis</td></tr>
+<tr><td><b>Y</b></td><td>Lock/unlock ruler to Y axis</td></tr>
+<tr><td><b>Z</b></td><td>Lock/unlock ruler to Z axis</td></tr>
+<tr><td><b>Esc</b></td><td>Cancel ruler measurement</td></tr>
+<tr><td><b>&#8984;/Ctrl + drag</b></td><td>Orbit camera while ruler is active</td></tr>
+</tbody>
+</table>
+
+<h2>3D Preview Toolbar</h2>
+<p>The floating toolbar in the 3D preview contains the standard camera and view controls plus the Ruler button. See <a href="Toolbar.html">3D Toolbar Reference</a>.</p>
+</div>
+<div class="footer">
+<p>3D File Tools Help</p>
+</div>
+</body>
+</html>

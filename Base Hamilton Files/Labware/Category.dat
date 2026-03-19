@@ -1,0 +1,76 @@
+40006
+VersionGUID{439761C3-4DCB-407a-87A2-FEE4C9E0D27D},4.2
+1000,0,Plates,default.bmp
+1028,1000,Cell culture,default.bmp
+1022,1000,12 positions plates,default.bmp
+1001,1000,24 positions plates,default.bmp
+1002,1000,48 positions plates,default.bmp
+1003,1000,96 positions plates,default.bmp
+1004,1000,384 positions plates,default.bmp
+1005,1000,1536 positions plates,default.bmp
+1006,1000,Deep well plates,default.bmp
+1008,1000,Reagent plates , plates
+1009,1000,Filter plates, plates
+1010,1000,PCR plates,default.bmp
+1021,1000,Temperatured plates,default.bmp
+1011,1000,Plates with special shape,default.bmp
+1015,1000,Corning-Costar,default.bmp
+1016,1000,Dynex,default.bmp
+1025,1000,Greiner,default.bmp
+1019,1000,Hamilton,default.bmp
+1020,1000,Macherey-Nagel,default.bmp
+1012,1000,Nunc,default.bmp
+1023,1000,Polyfiltronic,default.bmp
+1024,1000,Qiagen,default.bmp
+1017,0,Shakers,default.bmp
+1018,1017,ML STAR Carrier,default.bmp
+1026,0,Agowa,default.bmp
+1027,0,Customized,default.bmp
+142,0,ML STAR Carriers,default.bmp
+144,142,Plate carriers,default.bmp
+146,142,Sample carriers,default.bmp
+147,146,12 positions,default.bmp
+148,146,16 positions,default.bmp
+149,146,24 positions,default.bmp
+150,146,32 positions,default.bmp
+177,146,20 positions (for 12 channel instr.),default.bmp
+178,146,24 positions (for 12 channel instr.),default.bmp
+145,142,Reagent carriers,default.bmp
+152,142,Stack carriers,default.bmp
+153,142,Special carriers,default.bmp
+184,142,Multiflex carriers,default.bmp
+20007,142,Tip carriers 24,default.bmp
+151,142,Tip carriers 96,default.bmp
+20004,142,Tip carriers 384,default.bmp
+165,0,ML STAR Tips,default.bmp
+170,165,10ul Low Volume Tips,default.bmp
+20005,165,50ul Tips,default.bmp
+172,165,300ul Standard Volume Tips,default.bmp
+173,165,1000ul High Volume Tips,default.bmp
+20006,165,5ml Channel tips,default.bmp
+20001,165,384 CO-RE head tips,default.bmp
+167,0,ML STAR Needles,default.bmp
+171,167,300ul Needles,default.bmp
+175,167,1000ul Needles,default.bmp
+137,0,ML STAR Wash Stations,default.bmp
+180,137,CR wash station,default.bmp
+183,137,Third generation wash station,default.bmp
+181,137,DC wash station,default.bmp
+182,137,96 CO-RE head wash station,default.bmp
+20002,137,384 CO-RE head wash station,default.bmp
+169,0,ML STAR Tools,default.bmp
+136,0,ML STAR 96 CO-RE head,default.bmp
+20000,0,ML STAR 384 CO-RE head,default.bmp
+20003,0,ML STAR Nano Pipettor,
+176,0,ML STAR BVS,default.bmp
+168,0,ML STAR Wastes,default.bmp
+20008,165,Piercing tips,default.bmp
+20009,165,SLIM tips,default.bmp
+20010,0,ML STAR AutoLys,default.bmp
+20011,0,ML STAR VacuTube,default.bmp
+40000,0,VANTAGE,default.bmp
+40001,40000,Waste Solutions,default.bmp
+40002,40000,QCG,default.bmp
+40003,40000,Teaching Needles,default.bmp
+40004,40000,Verification,default.bmp
+40005,40000,Maintenance,default.bmp

@@ -1,0 +1,155 @@
+<html>
+<head>
+    <title>3D File Tools Overview</title>
+    <link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+<div class="header">3D File Tools</div>
+<div class="main">
+<h2>Overview</h2>
+<p><b>3D File Tools</b> is a browser-based application for viewing, converting, and generating DirectX <code>.x</code> and Hamilton <code>.hxx</code> 3D model files. It runs entirely in the browser without any server-side installation and supports drag-and-drop file loading.</p>
+
+<p>The suite is designed for laboratory automation engineers and hardware developers who work with Hamilton liquid handling systems and need to inspect or create 3D geometry for labware and instrument components.</p>
+
+<div class="image-placeholder">PLACE IMAGE OF 3D FILE TOOLS MAIN WINDOW HERE</div>
+
+<h2>Key Capabilities</h2>
+<ul>
+  <li><b>3D Viewer</b> - Load and inspect <code>.x</code> (DirectX ASCII mesh) and <code>.hxx</code> (Hamilton 3D binary) files with a full 3D scene. Supports wireframe mode, perspective and orthographic projection, camera orbit/pan/zoom, axis gizmo, and live camera position display.</li>
+  <li><b>File Conversion</b> - Import OBJ, STL, and GLB/GLTF files and export them as DirectX <code>.x</code> files. Supports cumulative rotation in 90&deg; increments before export. Six synchronized orthographic views (Top, Front, Right, Bottom, Back, Left) update live as you rotate.</li>
+  <li><b>Plate Placer</b> - Load a custom <code>.x</code> model and overlay it with a reference 96-well microplate to visually calculate X/Y/Z placement offsets. Useful for calibrating labware definitions in Hamilton VENUS.</li>
+  <li><b>Integra XML</b> - Build SBS-format labware 3D models from parametric inputs or imported XML labware definition files. Supports plates, well geometry, A1 positioning, and exports to <code>.x</code>. Includes a built-in ruler tool for measuring distances in the 3D scene.</li>
+  <li><b>Export</b> - Export any loaded model to <b>OBJ</b>, <b>STL</b>, <b>GLB</b>, or <b>HXX</b> format directly from the browser.</li>
+  <li><b>Screenshot</b> - Capture the 3D viewport as PNG, JPG, or SVG with options to include or exclude the grid and background.</li>
+  <li><b>Transform</b> - Rotate the loaded model &#177;90&deg; around X/Y/Z axes and mirror across any axis. Transforms are applied to the underlying <code>.x</code> file data and can be saved back to a <code>.x</code> file.</li>
+  <li><b>Dark / Light Theme</b> - Toggle between light and dark rendering modes. All viewports adapt simultaneously.</li>
+  <li><b>HXX Support</b> - Read Hamilton binary <code>.hxx</code> archives containing gzip-compressed <code>.x</code> data and optional PNG texture sections. Transparent to the user: dropped <code>.hxx</code> files open just like <code>.x</code> files.</li>
+</ul>
+
+<h2>System Requirements</h2>
+<ul>
+  <li><b>Browser:</b> Any modern browser with WebGL support (Chrome, Firefox, Edge, Safari)</li>
+  <li><b>Operating System:</b> Any OS (runs entirely in the browser)</li>
+  <li><b>Server:</b> No server required &mdash; open <code>index.html</code> directly, or serve with any static HTTP server</li>
+  <li><b>External Dependencies:</b> None (all libraries bundled in <code>js/lib/</code>)</li>
+</ul>
+
+<h2>Application Layout</h2>
+<p>The application is a single-page app with four tool panels selectable from the left sidebar:</p>
+<table>
+<thead><tr><th>Panel</th><th>Icon</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><b>3D Viewer</b></td><td>Cube</td><td>Full-featured viewer for <code>.x</code> and <code>.hxx</code> files</td></tr>
+<tr><td><b>Convert to .x</b></td><td>Exchange arrows</td><td>Import OBJ/STL/GLB and export as <code>.x</code></td></tr>
+<tr><td><b>Plate Placer</b></td><td>Grid</td><td>Side-by-side model + plate for offset calculation</td></tr>
+<tr><td><b>Integra XML</b></td><td>Flask</td><td>Parametric labware model builder</td></tr>
+</tbody>
+</table>
+
+<h2>File Support Matrix</h2>
+<table>
+<thead><tr><th>Format</th><th>Read</th><th>Write</th><th>Notes</th></tr></thead>
+<tbody>
+<tr><td><code>.x</code></td><td>Yes</td><td>Yes</td><td>DirectX ASCII text mesh format</td></tr>
+<tr><td><code>.hxx</code></td><td>Yes</td><td>Yes</td><td>Hamilton 3D binary container (gzip+<code>.x</code>)</td></tr>
+<tr><td><code>.obj</code> / <code>.mtl</code></td><td>Yes</td><td>Yes</td><td>Wavefront OBJ (converter input and export)</td></tr>
+<tr><td><code>.stl</code></td><td>Yes</td><td>Yes</td><td>STereoLithography (binary and ASCII)</td></tr>
+<tr><td><code>.glb</code> / <code>.gltf</code></td><td>Yes</td><td>Yes</td><td>GL Transmission Format</td></tr>
+<tr><td><code>.xml</code></td><td>Yes</td><td>No</td><td>Hamilton / Integra XML labware definitions (Integra XML only)</td></tr>
+</tbody>
+</table>
+
+<h2>Documentation Sections</h2>
+<ul>
+  <li><a href="GettingStarted.html">Getting Started</a> - Opening files and basic workflows</li>
+  <li><a href="GUIOverview.html">Interface Overview</a> - Application layout, navigation, and controls</li>
+  <li><a href="3DViewer.html">3D Viewer</a> - Full viewer feature reference</li>
+  <li><a href="Converter.html">Convert to .x</a> - Converting foreign formats to DirectX .x</li>
+  <li><a href="PlatePlacer.html">Plate Placer</a> - Labware placement offset calculation</li>
+  <li><a href="LabwareGenerator.html">Integra XML</a> - Parametric labware model generation</li>
+  <li><a href="Toolbar.html">3D Toolbar Reference</a> - Floating toolbar button reference</li>
+  <li><a href="ExportOptions.html">Export Options</a> - Export formats and options</li>
+  <li><a href="Screenshot.html">Screenshot</a> - Viewport capture and save</li>
+  <li><a href="FileFormats.html">Supported File Formats</a> - Format specifications</li>
+  <li><a href="XFileFormat.html">DirectX .x File Format</a> - <code>.x</code> format internals</li>
+  <li><a href="HXXFormat.html">Hamilton .hxx Format</a> - <code>.hxx</code> binary container</li>
+  <li><a href="KeyboardShortcuts.html">Keyboard &amp; Mouse Controls</a> - Navigation reference</li>
+  <li><a href="XFileLoader.html">XFileLoader Rendering Pipeline</a> - Technical rendering details</li>
+  <li><a href="Troubleshooting.html">Troubleshooting</a> - Common issues and solutions</li>
+</ul>
+</div>
+<div class="footer">
+<p>3D File Tools Help</p>
+</div>
+</body>
+</html>
+<div class="main">
+<h2>Overview</h2>
+<p>Venus Library Manager is a desktop application and command-line tool for managing Hamilton VENUS libraries and related assets. Built on NW.js and Node.js, it provides a complete package lifecycle for <code>.hxlibpkg</code> (single library package) and <code>.hxlibarch</code> (multi-library archive) files.</p>
+
+<p>Venus Library Manager enables laboratory automation engineers to create, import, export, update, roll back, and verify Hamilton VENUS HSL libraries through both a graphical user interface and a scriptable CLI. It replaces the error-prone manual process of copying library files into the VENUS directory tree with a structured, versioned, integrity-checked workflow.</p>
+
+<div class="image-placeholder">PLACE IMAGE OF VENUS LIBRARY MANAGER MAIN WINDOW HERE</div>
+
+<h2>Key Capabilities</h2>
+<ul>
+  <li><b>Visual Library Management</b> - Browse installed libraries as cards with icons, metadata, version, author, tags, and integrity status indicators</li>
+  <li><b>Package Import</b> - Import single <code>.hxlibpkg</code> packages or multi-library <code>.hxlibarch</code> archives with pre-install previews and validation</li>
+  <li><b>Package Export</b> - Export installed libraries back to portable package files, capturing their current on-disk state (mutable export). Optionally export a library with all of its recursively-resolved dependencies as a single archive</li>
+  <li><b>Package Creation</b> - Build <code>.hxlibpkg</code> files from raw HSL source files and metadata using the GUI Library Packager or the <code>create-package</code> CLI command</li>
+  <li><b>Library Deletion</b> - Safely remove libraries with COM-aware workflow, soft-delete history, and optional hard-delete</li>
+  <li><b>Version Rollback</b> - Automatically cache every imported package and roll back to any previously installed version on demand</li>
+  <li><b>File Integrity Verification</b> - SHA-256 hashing for user libraries and Hamilton metadata footer verification for system libraries</li>
+  <li><b>Library Grouping</b> - Organize libraries into custom groups with drag-and-drop reordering and assignment</li>
+  <li><b>Hamilton Default Group</b> - Protected, non-deletable group for Hamilton-authored libraries with password-gated authorship control</li>
+  <li><b>Visual Identity</b> - Composited package icons with brand overlay and distinctive purple archive icons for multi-library bundles</li>
+  <li><b>VENUS Tool Integration</b> - Launch Hamilton editors (Method, Liquid Class, Labware, HSL, System Config) directly from the application</li>
+  <li><b>Command-Line Interface</b> - Full-featured CLI (<code>cli.js</code>) for scripted automation, CI/CD integration, and headless operation</li>
+</ul>
+
+<h2>System Requirements</h2>
+<ul>
+  <li><b>Operating System:</b> Microsoft Windows 10 or Windows 11</li>
+  <li><b>VENUS Version:</b> 4.7 and above (recommended: 6.x)</li>
+  <li><b>Runtime:</b> Node.js (for CLI usage independent of the GUI)</li>
+  <li><b>Default Library Path:</b> <code>C:\Program Files (x86)\HAMILTON\Library</code></li>
+  <li><b>Default Methods Path:</b> <code>C:\Program Files (x86)\HAMILTON\Methods</code></li>
+</ul>
+
+<h2>Documentation Sections</h2>
+<ul>
+  <li><a href="GettingStarted.html">Getting Started</a> - First-time setup and basic workflows</li>
+  <li><a href="GUIOverview.html">GUI Overview</a> - Navigating the graphical user interface</li>
+  <li><a href="PackageFormats.html">Package Formats</a> - Structure of <code>.hxlibpkg</code> and <code>.hxlibarch</code> files</li>
+  <li><a href="ImportingLibraries.html">Importing Libraries</a> - Import single packages and archives</li>
+  <li><a href="ExportingLibraries.html">Exporting Libraries</a> - Export installed libraries to packages and archives</li>
+  <li><a href="CreatingPackages.html">Creating Packages</a> - Build packages from raw source files</li>
+  <li><a href="DeletingLibraries.html">Deleting Libraries</a> - Safe library removal and COM deregistration</li>
+  <li><a href="VersionRollback.html">Version Rollback</a> - Package caching and version management</li>
+  <li><a href="IntegrityVerification.html">Integrity Verification</a> - File hashing and tamper detection</li>
+  <li><a href="HSLFileArchitecture.html">HSL File Architecture</a> - Hamilton metadata footer and read-only flags</li>
+  <li><a href="LibraryGrouping.html">Library Grouping</a> - Organizing libraries into custom groups</li>
+  <li><a href="VisualIdentity.html">Visual Identity &amp; Assets</a> - Package icon compositing, archive icons, and static asset management</li>
+  <li><a href="VENUSIntegration.html">VENUS Integration</a> - Tool launching and simulation mode</li>
+  <li><a href="CLIReference.html">CLI Reference</a> - Complete command-line interface documentation</li>
+  <li><a href="CLIListLibs.html">CLI: list-libs</a></li>
+  <li><a href="CLIImportLib.html">CLI: import-lib</a></li>
+  <li><a href="CLIImportArchive.html">CLI: import-archive</a></li>
+  <li><a href="CLIExportLib.html">CLI: export-lib</a></li>
+  <li><a href="CLIExportArchive.html">CLI: export-archive</a></li>
+  <li><a href="CLIDeleteLib.html">CLI: delete-lib</a></li>
+  <li><a href="CLICreatePackage.html">CLI: create-package</a></li>
+  <li><a href="CLIListVersions.html">CLI: list-versions</a></li>
+  <li><a href="CLIRollbackLib.html">CLI: rollback-lib</a></li>
+  <li><a href="CLIGenerateSyslibHashes.html">CLI: generate-syslib-hashes</a></li>
+  <li><a href="CLIVerifySyslibHashes.html">CLI: verify-syslib-hashes</a></li>
+  <li><a href="PackageSpecSchema.html">Package Spec JSON Schema</a> - Specification file format for <code>create-package</code></li>
+  <li><a href="DataModel.html">Data Model &amp; Persistence</a> - Local database structure and storage</li>
+  <li><a href="Troubleshooting.html">Troubleshooting</a> - Common issues and solutions</li>
+</ul>
+</div>
+<div class="footer">
+<p>Venus Library Manager Help</p>
+</div>
+</body>
+</html>

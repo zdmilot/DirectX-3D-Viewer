@@ -1,0 +1,2325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D File Tools</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1F9EA;</text></svg>">
+    <link rel="stylesheet" href="css/fontawesome.min.css">
+    <link rel="stylesheet" href="css/main.css?v=20260310b">
+</head>
+<body>
+
+    <!-- Splash Screen -->
+    <div id="splash-screen">
+        <div class="splash-content">
+            <div class="splash-icon-wrap">
+                <svg class="splash-icon" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M50.5 32.8L73.8 33.2L79.8 33.9L81.4 34.5L82.0 35.0L82.1 35.7L82.6 36.3L85.0 38.1L87.8 40.9L89.9 44.3L90.8 44.4L95.0 46.5L98.2 49.2L100.0 51.4L101.4 54.3L104.4 64.1L105.6 67.1L107.3 70.0L109.8 72.4L115.4 75.5L104.9 75.2L103.1 74.5L100.9 72.4L100.1 71.2L99.3 69.6L97.4 63.9L95.3 60.6L93.6 59.2L91.5 58.1L89.4 57.7L88.9 58.0L85.2 67.7L81.7 74.9L80.4 75.9L73.9 75.9L70.4 76.6L68.3 76.8L62.3 77.9L59.6 79.1L59.1 79.9L59.1 80.6L62.3 85.0L62.2 85.9L60.9 86.6L56.1 87.0L53.2 86.8L51.3 86.6L50.3 86.1L49.9 85.7L49.9 85.0L50.5 83.9L52.7 81.4L53.2 80.6L53.2 79.9L52.6 79.1L49.9 77.9L38.3 75.9L31.9 75.9L30.6 74.9L28.9 71.6L15.9 71.4L10.9 70.7L7.0 69.3L5.6 68.0L4.7 66.2L4.3 64.7L4.5 61.5L5.4 58.2L6.6 56.0L8.6 53.2L11.1 50.6L17.0 46.4L22.9 43.5L24.5 40.9L26.8 38.6L29.5 36.4L30.1 35.7L30.4 34.9L31.5 34.1L38.6 33.2L50.5 32.8Z M21.6 48.5L21.6 50.9L22.1 54.3L23.0 57.3L24.8 62.7L27.0 67.6L16.4 67.5L13.1 67.0L10.9 66.1L10.2 65.5L9.8 64.8L9.7 62.8L10.3 60.4L12.4 56.1L14.8 53.2L16.2 51.9L19.7 49.3L21.6 48.5Z"
+                          class="splash-teapot-fill" fill-rule="evenodd"/>
+                    <g class="splash-wireframe">
+                        <!-- outer outline -->
+                        <path d="M50.5 32.8L73.8 33.2L79.8 33.9L81.4 34.5L82.0 35.0L82.1 35.7L82.6 36.3L85.0 38.1L87.8 40.9L89.9 44.3L90.8 44.4L95.0 46.5L98.2 49.2L100.0 51.4L101.4 54.3L104.4 64.1L105.6 67.1L107.3 70.0L109.8 72.4L115.4 75.5L104.9 75.2L103.1 74.5L100.9 72.4L100.1 71.2L99.3 69.6L97.4 63.9L95.3 60.6L93.6 59.2L91.5 58.1L89.4 57.7L88.9 58.0L85.2 67.7L81.7 74.9L80.4 75.9L73.9 75.9L70.4 76.6L68.3 76.8L62.3 77.9L59.6 79.1L59.1 79.9L59.1 80.6L62.3 85.0L62.2 85.9L60.9 86.6L56.1 87.0L53.2 86.8L51.3 86.6L50.3 86.1L49.9 85.7L49.9 85.0L50.5 83.9L52.7 81.4L53.2 80.6L53.2 79.9L52.6 79.1L49.9 77.9L38.3 75.9L31.9 75.9L30.6 74.9L28.9 71.6L15.9 71.4L10.9 70.7L7.0 69.3L5.6 68.0L4.7 66.2L4.3 64.7L4.5 61.5L5.4 58.2L6.6 56.0L8.6 53.2L11.1 50.6L17.0 46.4L22.9 43.5L24.5 40.9L26.8 38.6L29.5 36.4L30.1 35.7L30.4 34.9L31.5 34.1L38.6 33.2L50.5 32.8Z"/>
+                        <!-- handle hole -->
+                        <path d="M21.6 48.5L21.6 50.9L22.1 54.3L23.0 57.3L24.8 62.7L27.0 67.6L16.4 67.5L13.1 67.0L10.9 66.1L10.2 65.5L9.8 64.8L9.7 62.8L10.3 60.4L12.4 56.1L14.8 53.2L16.2 51.9L19.7 49.3L21.6 48.5Z"/>
+                        <!-- horizontal cross-sections (clipped at spout gap) -->
+                        <path d="M25.9 39.5L86.4 39.5"/>
+                        <path d="M17.2 46.3L94.6 46.3"/>
+                        <path d="M8.7 53.1L14.9 53.1"/>
+                        <path d="M22.1 53.1L100.8 53.1"/>
+                        <path d="M4.9 59.9L10.4 59.9"/>
+                        <path d="M24.0 59.9L88.2 59.9"/>
+                        <path d="M94.3 59.9L103.2 59.9"/>
+                        <path d="M4.9 66.6L11.8 66.6"/>
+                        <path d="M26.6 66.6L85.7 66.6"/>
+                        <path d="M98.2 66.6L105.5 66.6"/>
+                        <path d="M29.8 73.4L82.5 73.4"/>
+                        <path d="M101.8 73.4L111.7 73.4"/>
+                        <path d="M53.2 80.2L59.1 80.2"/>
+                        <!-- vertical meridians (clipped at gaps) -->
+                        <path d="M22.9 43.5L22.9 56.4"/>
+                        <path d="M22.9 67.7L22.9 71.6"/>
+                        <path d="M41.4 33.2L41.4 76.5"/>
+                        <path d="M59.9 32.8L59.9 79.0"/>
+                        <path d="M59.9 81.8L59.9 86.7"/>
+                        <path d="M78.4 33.8L78.4 75.9"/>
+                        <path d="M96.9 48.0L96.9 63.2"/>
+                    </g>
+                </svg>
+            </div>
+            <div class="splash-title">3D File Tools</div>
+            <div class="splash-subtitle">UNIVERSAL 3D VIEWER</div>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="app" class="app-hidden">
+        <!-- Top Navigation Bar -->
+        <nav class="navbar">
+            <button class="nav-btn nav-btn-icon" id="btn-sidebar-toggle" title="Toggle sidebar">
+                <i class="fas fa-bars"></i>
+            </button>
+            <div class="navbar-brand">
+                    <div class="navbar-logo">
+                        <svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%">
+                            <path d="M50.5 32.8L73.8 33.2L79.8 33.9L81.4 34.5L82.0 35.0L82.1 35.7L82.6 36.3L85.0 38.1L87.8 40.9L89.9 44.3L90.8 44.4L95.0 46.5L98.2 49.2L100.0 51.4L101.4 54.3L104.4 64.1L105.6 67.1L107.3 70.0L109.8 72.4L115.4 75.5L104.9 75.2L103.1 74.5L100.9 72.4L100.1 71.2L99.3 69.6L97.4 63.9L95.3 60.6L93.6 59.2L91.5 58.1L89.4 57.7L88.9 58.0L85.2 67.7L81.7 74.9L80.4 75.9L73.9 75.9L70.4 76.6L68.3 76.8L62.3 77.9L59.6 79.1L59.1 79.9L59.1 80.6L62.3 85.0L62.2 85.9L60.9 86.6L56.1 87.0L53.2 86.8L51.3 86.6L50.3 86.1L49.9 85.7L49.9 85.0L50.5 83.9L52.7 81.4L53.2 80.6L53.2 79.9L52.6 79.1L49.9 77.9L38.3 75.9L31.9 75.9L30.6 74.9L28.9 71.6L15.9 71.4L10.9 70.7L7.0 69.3L5.6 68.0L4.7 66.2L4.3 64.7L4.5 61.5L5.4 58.2L6.6 56.0L8.6 53.2L11.1 50.6L17.0 46.4L22.9 43.5L24.5 40.9L26.8 38.6L29.5 36.4L30.1 35.7L30.4 34.9L31.5 34.1L38.6 33.2L50.5 32.8Z M21.6 48.5L21.6 50.9L22.1 54.3L23.0 57.3L24.8 62.7L27.0 67.6L16.4 67.5L13.1 67.0L10.9 66.1L10.2 65.5L9.8 64.8L9.7 62.8L10.3 60.4L12.4 56.1L14.8 53.2L16.2 51.9L19.7 49.3L21.6 48.5Z"
+                                  fill="rgba(220,225,230,0.85)" fill-rule="evenodd"/>
+                        </svg>
+                    </div>
+                    <div class="navbar-title-group">
+                        <span class="navbar-title">3D File Tools</span>
+                        <span class="navbar-subtitle">UNIVERSAL 3D VIEWER</span>
+                    </div>
+                </div>
+            <div class="navbar-actions">
+                <input type="file" id="file-input" accept=".x,.hxx,.obj,.mtl,.stl,.glb,.gltf" multiple style="display:none">
+                <button class="nav-btn nav-btn-icon" id="btn-theme" data-tooltip="Switch to night mode" aria-label="Switch to night mode">
+                    <i class="fas fa-moon"></i>
+                </button>
+                <button class="nav-btn nav-btn-icon" id="btn-global-settings" data-tooltip="Global Settings" aria-label="Global Settings">
+                    <i class="fas fa-cog"></i>
+                </button>
+                <button class="nav-btn nav-btn-icon" id="btn-settings" data-tooltip="Vantage Settings" aria-label="Vantage Settings" style="display:none">
+                    <i class="fas fa-sliders-h"></i>
+                </button>
+                <button class="nav-btn nav-btn-icon" id="btn-about" title="About" aria-label="About">
+                    <i class="fas fa-info-circle"></i>
+                </button>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Left Sidebar Navigation -->
+            <aside class="sidebar-nav collapsed" id="sidebar-nav">
+                <div class="sidebar-nav-inner">
+                    <button class="sidebar-nav-item is-active" data-view="viewer">
+                        <i class="fas fa-cube"></i>
+                        <span>3D Viewer</span>
+                    </button>
+                    <button class="sidebar-nav-item" data-view="converter">
+                        <i class="fas fa-exchange-alt"></i>
+                        <span>Convert to .x</span>
+                    </button>
+                    <button class="sidebar-nav-item" data-view="placer">
+                        <i class="fas fa-th"></i>
+                        <span>Plate Placer</span>
+                    </button>
+                    <button class="sidebar-nav-item" data-view="labware">
+                        <i class="fas fa-flask"></i>
+                        <span>Integra XML</span>
+                    </button>
+                    <button class="sidebar-nav-item" data-view="hamilton">
+                        <i class="fas fa-vials"></i>
+                        <span>Hamilton</span>
+                    </button>
+                    <button class="sidebar-nav-item" data-view="vantage">
+                        <i class="fas fa-layer-group"></i>
+                        <span>Deck Layout</span>
+                    </button>
+                    <button class="sidebar-nav-item" data-view="mfx">
+                        <i class="fas fa-pallet"></i>
+                        <span>Carrier Editor</span>
+                    </button>
+                    <button class="sidebar-nav-item" data-view="labware-editor">
+                        <i class="fas fa-edit"></i>
+                        <span>Labware Editor</span>
+                    </button>
+                    <button class="sidebar-nav-item" data-view="category-editor">
+                        <i class="fas fa-sitemap"></i>
+                        <span>Categories</span>
+                    </button>
+                </div>
+            </aside>
+
+            <!-- View Panels -->
+            <div class="view-panel is-active" data-view-panel="viewer" id="viewer-host">
+                <div class="viewer-loading" id="viewer-loading">
+                    <div class="viewer-spinner"></div>
+                    <span>Loading 3D Model…</span>
+                </div>
+                <div class="viewer-error viewer-hidden" id="viewer-error">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span id="viewer-error-msg">Failed to load model.</span>
+                </div>
+                <canvas id="viewer-canvas"></canvas>
+
+                <!-- Floating 3D Toolbar (collapsible) -->
+                <div class="viewer-toolbar" id="viewer-toolbar">
+                    <div class="vt-body" id="vt-body">
+                        <!-- Collapse/expand toggle -->
+                        <button class="vt-toggle" id="vt-toggle" title="Toggle toolbar">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+
+                        <div class="vt-collapsible">
+                            <!-- Axis gizmo -->
+                            <div class="vt-gizmo" id="vt-gizmo">
+                                <canvas id="gizmo-canvas" width="44" height="44"></canvas>
+                            </div>
+
+                            <div class="vt-separator"></div>
+
+                            <!-- Toolbar buttons -->
+                            <button class="vt-btn" id="vt-reset-cam" title="Reset camera">
+                                <i class="fas fa-video"></i>
+                            </button>
+                            <button class="vt-btn" id="vt-zoom-fit" title="Zoom to fit">
+                                <i class="fas fa-expand"></i>
+                            </button>
+                            <button class="vt-btn" id="vt-wireframe" title="Toggle wireframe">
+                                <i class="fas fa-draw-polygon"></i>
+                            </button>
+                            <button class="vt-btn" id="vt-perspective" title="Toggle perspective / orthographic">
+                                <i class="fas fa-cube"></i>
+                            </button>
+                            <button class="vt-btn grid-toggle" id="btn-grid" title="Toggle gridlines">
+                                <i class="fas fa-border-all"></i>
+                                <span class="grid-slash" aria-hidden="true"></span>
+                            </button>
+
+                            <div class="vt-separator"></div>
+
+                            <button class="vt-btn vt-btn-round" id="vt-zoom-in" title="Zoom in">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                            <button class="vt-btn vt-btn-round" id="vt-zoom-out" title="Zoom out">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                            <button class="vt-btn vt-btn-round" id="vt-pan" title="Pan mode">
+                                <i class="fas fa-hand-paper"></i>
+                            </button>
+
+                            <div class="vt-separator"></div>
+
+                            <!-- Transform flyout toggle -->
+                            <button class="vt-btn" id="vt-transform-toggle" title="Rotate / Mirror">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+
+                            <div class="vt-separator"></div>
+
+                            <!-- Drag handle to reposition toolbar -->
+                            <div class="vt-grab-handle" id="vt-grab-handle" title="Drag to move toolbar">
+                                <i class="fas fa-grip-horizontal"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Transform Flyout Panel -->
+                <div class="tf-flyout" id="tf-flyout">
+                    <div class="tf-header"><i class="fas fa-sync-alt"></i> Transform</div>
+                    <div class="tf-section">
+                        <div class="tf-label">Rotate ±90°</div>
+                        <div class="tf-grid tf-grid-2">
+                            <button class="tf-btn" id="vt-rot-x-pos"><span class="tf-axis x">X</span><span class="tf-sign">+90°</span></button>
+                            <button class="tf-btn" id="vt-rot-x-neg"><span class="tf-axis x">X</span><span class="tf-sign">−90°</span></button>
+                            <button class="tf-btn" id="vt-rot-y-pos"><span class="tf-axis y">Y</span><span class="tf-sign">+90°</span></button>
+                            <button class="tf-btn" id="vt-rot-y-neg"><span class="tf-axis y">Y</span><span class="tf-sign">−90°</span></button>
+                            <button class="tf-btn" id="vt-rot-z-pos"><span class="tf-axis z">Z</span><span class="tf-sign">+90°</span></button>
+                            <button class="tf-btn" id="vt-rot-z-neg"><span class="tf-axis z">Z</span><span class="tf-sign">−90°</span></button>
+                        </div>
+                    </div>
+                    <div class="tf-divider"></div>
+                    <div class="tf-section">
+                        <div class="tf-label">Mirror / Reflect</div>
+                        <div class="tf-grid tf-grid-3">
+                            <button class="tf-btn" id="vt-mirror-x"><i class="fas fa-arrows-alt-h"></i> <span class="tf-axis x">X</span></button>
+                            <button class="tf-btn" id="vt-mirror-y"><i class="fas fa-arrows-alt-v"></i> <span class="tf-axis y">Y</span></button>
+                            <button class="tf-btn" id="vt-mirror-z"><i class="fas fa-exchange-alt"></i> <span class="tf-axis z">Z</span></button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bottom Controls Bar -->
+                <div class="viewer-controls-bar" id="viewer-controls-bar">
+                    <button class="cv-ctrl-btn" id="vt-open" title="Open 3D file (.x, .obj, .stl, .glb)">
+                        <i class="fas fa-folder-open"></i> Open
+                    </button>
+                    <button class="cv-ctrl-btn" id="vt-save" title="Save as .x file">
+                        <i class="fas fa-save"></i> Save
+                    </button>
+                    <div class="cv-ctrl-divider"></div>
+                    <div class="viewer-info-stack">
+                        <span class="viewer-file-path" id="viewer-file-path" title=""><span id="viewer-file-path-text">No file loaded</span></span>
+                        <span class="viewer-cam-display" id="viewer-cam-display">X: 0.0  Y: 0.0  Z: 0.0  |  Pitch: 0.0°  Yaw: 0.0°  Roll: 0.0°</span>
+                    </div>
+                    <div class="cv-ctrl-spacer"></div>
+                    <div class="screenshot-group" id="screenshot-group">
+                        <button class="cv-ctrl-btn cv-ctrl-btn-accent" id="vt-screenshot" title="Save screenshot">
+                            <i class="fas fa-camera"></i> Screenshot
+                        </button>
+                    </div>
+                    <div class="export-group" id="export-group">
+                        <button class="cv-ctrl-btn cv-ctrl-btn-accent" id="vt-export" title="Export model">
+                            <i class="fas fa-download"></i> Export
+                        </button>
+                        <div class="export-dropdown" id="export-dropdown">
+                            <button class="export-option" data-format="x">
+                                <i class="fas fa-cube"></i> Export as .X
+                            </button>
+                            <button class="export-option" data-format="obj">
+                                <i class="fas fa-cube"></i> Export as .OBJ
+                            </button>
+                            <button class="export-option" data-format="stl">
+                                <i class="fas fa-cube"></i> Export as .STL
+                            </button>
+                            <button class="export-option" data-format="glb">
+                                <i class="fas fa-cube"></i> Export as .GLB
+                            </button>
+                            <button class="export-option" data-format="hxx">
+                                <i class="fas fa-file-archive"></i> Export as .HXX
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="viewer-dropzone viewer-hidden" id="viewer-dropzone">
+                    <div class="dropzone-content">
+                        <i class="fas fa-file-import"></i>
+                        <span>Drop 3D file here (.x, .hxx, .obj, .stl, .glb, .gltf)</span>
+                    </div>
+                </div>
+
+                <!-- Debug Panel -->
+                <div class="debug-panel" id="debug-panel-viewer">
+                    <div class="debug-panel-header"><i class="fas fa-bug"></i> Debug Info</div>
+                    <pre class="debug-panel-content" id="debug-content-viewer">No model loaded.</pre>
+                </div>
+            </div>
+            <!-- ====== FILE CONVERTER VIEW ====== -->
+            <div class="view-panel" data-view-panel="converter">
+                <div class="cv-layout">
+                    <!-- Left: Main 3D viewport -->
+                    <div class="cv-main-col">
+                        <div class="cv-main-viewport" id="converter-main-viewport">
+                            <!-- Floating 3D Toolbar (converter) -->
+                            <div class="viewer-toolbar" id="cv-viewer-toolbar">
+                                <div class="vt-body" id="cv-vt-body">
+                                    <button class="vt-toggle" id="cv-vt-toggle" title="Toggle toolbar">
+                                        <i class="fas fa-chevron-right"></i>
+                                    </button>
+
+                                    <div class="vt-collapsible">
+                                        <div class="vt-gizmo" id="cv-vt-gizmo">
+                                            <canvas id="cv-gizmo-canvas" width="44" height="44"></canvas>
+                                        </div>
+
+                                        <div class="vt-separator"></div>
+
+                                        <button class="vt-btn" id="cv-vt-reset-cam" title="Reset camera">
+                                            <i class="fas fa-video"></i>
+                                        </button>
+                                        <button class="vt-btn" id="cv-vt-zoom-fit" title="Zoom to fit">
+                                            <i class="fas fa-expand"></i>
+                                        </button>
+                                        <button class="vt-btn" id="cv-vt-wireframe" title="Toggle wireframe">
+                                            <i class="fas fa-draw-polygon"></i>
+                                        </button>
+                                        <button class="vt-btn" id="cv-vt-perspective" title="Toggle perspective / orthographic">
+                                            <i class="fas fa-cube"></i>
+                                        </button>
+                                        <button class="vt-btn grid-toggle" id="cv-btn-grid" title="Toggle gridlines">
+                                            <i class="fas fa-border-all"></i>
+                                            <span class="grid-slash" aria-hidden="true"></span>
+                                        </button>
+
+                                        <div class="vt-separator"></div>
+
+                                        <button class="vt-btn vt-btn-round" id="cv-vt-zoom-in" title="Zoom in">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                        <button class="vt-btn vt-btn-round" id="cv-vt-zoom-out" title="Zoom out">
+                                            <i class="fas fa-minus"></i>
+                                        </button>
+                                        <button class="vt-btn vt-btn-round" id="cv-vt-pan" title="Pan mode">
+                                            <i class="fas fa-hand-paper"></i>
+                                        </button>
+
+                                        <div class="vt-separator"></div>
+
+                                        <div class="vt-grab-handle" id="cv-vt-grab-handle" title="Drag to move toolbar">
+                                            <i class="fas fa-grip-horizontal"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <canvas id="cv-main-canvas"></canvas>
+                            <div class="viewer-loading viewer-hidden" id="cv-loading">
+                                <div class="viewer-spinner"></div>
+                                <span>Loading…</span>
+                            </div>
+                            <div class="viewer-error viewer-hidden" id="cv-error">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <span id="cv-error-msg">Error</span>
+                            </div>
+                            <div class="cv-format-badge" id="cv-format-badge" style="display:none">.OBJ</div>
+                            <div class="viewer-dropzone viewer-hidden" id="cv-dropzone">
+                                <div class="dropzone-content">
+                                    <i class="fas fa-file-import"></i>
+                                    <span>Drop 3D file here</span>
+                                </div>
+                            </div>
+
+                            <!-- Debug Panel -->
+                            <div class="debug-panel" id="debug-panel-converter">
+                                <div class="debug-panel-header"><i class="fas fa-bug"></i> Debug Info</div>
+                                <pre class="debug-panel-content" id="debug-content-converter">No model loaded.</pre>
+                            </div>
+                        </div>
+
+                        <!-- Rotation Controls -->
+                        <div class="cv-controls-bar">
+                            <input type="file" id="cv-file-input" accept=".obj,.mtl,.stl,.glb,.gltf,.x,.png,.jpg,.jpeg,.bmp" multiple style="display:none">
+                            <button class="cv-ctrl-btn" id="cv-open-btn" title="Open 3D file">
+                                <i class="fas fa-folder-open"></i> Open
+                            </button>
+                            <div class="cv-ctrl-divider"></div>
+                            <div class="cv-rot-group">
+                                <span class="cv-rot-label">Rotate:</span>
+                                <button class="cv-rot-btn" data-axis="x" data-deg="90" title="Rotate +90° around X">X+90</button>
+                                <button class="cv-rot-btn" data-axis="x" data-deg="-90" title="Rotate −90° around X">X−90</button>
+                                <button class="cv-rot-btn" data-axis="y" data-deg="90" title="Rotate +90° around Y">Y+90</button>
+                                <button class="cv-rot-btn" data-axis="y" data-deg="-90" title="Rotate −90° around Y">Y−90</button>
+                                <button class="cv-rot-btn" data-axis="z" data-deg="90" title="Rotate +90° around Z">Z+90</button>
+                                <button class="cv-rot-btn" data-axis="z" data-deg="-90" title="Rotate −90° around Z">Z−90</button>
+                            </div>
+                            <button class="cv-ctrl-btn cv-ctrl-btn-muted" id="cv-reset-rot" title="Reset orientation">
+                                <i class="fas fa-undo"></i> Reset
+                            </button>
+                            <span class="cv-rotation-display" id="cv-rotation-display">X: 0°  Y: 0°  Z: 0°</span>
+                            <div class="cv-ctrl-spacer"></div>
+                            <div class="screenshot-group" id="cv-screenshot-group">
+                                <button class="cv-ctrl-btn cv-ctrl-btn-accent" id="cv-screenshot" title="Save screenshot">
+                                    <i class="fas fa-camera"></i> Screenshot
+                                </button>
+                            </div>
+                            <button class="cv-ctrl-btn cv-ctrl-btn-accent" id="cv-export-btn" disabled title="Export as .x file">
+                                <i class="fas fa-download"></i> Export .x
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Right: Six orthographic views -->
+                    <div class="cv-views-col">
+                        <div class="cv-views-grid">
+                            <div class="cv-view-card">
+                                <div class="cv-view-label">Top</div>
+                                <canvas id="cv-view-top"></canvas>
+                            </div>
+                            <div class="cv-view-card">
+                                <div class="cv-view-label">Front</div>
+                                <canvas id="cv-view-front"></canvas>
+                            </div>
+                            <div class="cv-view-card">
+                                <div class="cv-view-label">Right</div>
+                                <canvas id="cv-view-right"></canvas>
+                            </div>
+                            <div class="cv-view-card">
+                                <div class="cv-view-label">Bottom</div>
+                                <canvas id="cv-view-bottom"></canvas>
+                            </div>
+                            <div class="cv-view-card">
+                                <div class="cv-view-label">Back</div>
+                                <canvas id="cv-view-back"></canvas>
+                            </div>
+                            <div class="cv-view-card">
+                                <div class="cv-view-label">Left</div>
+                                <canvas id="cv-view-left"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ====== PLATE PLACER VIEW ====== -->
+            <div class="view-panel" data-view-panel="placer" id="placer-host">
+                <div class="viewer-loading viewer-hidden" id="pp-loading">
+                    <div class="viewer-spinner"></div>
+                    <span>Loading 3D Model…</span>
+                </div>
+                <div class="viewer-error viewer-hidden" id="pp-error">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span id="pp-error-msg">Failed to load model.</span>
+                </div>
+                <canvas id="pp-canvas"></canvas>
+
+                <!-- Floating 3D Toolbar (placer) -->
+                <div class="viewer-toolbar" id="pp-toolbar">
+                    <div class="vt-body" id="pp-vt-body">
+                        <button class="vt-toggle" id="pp-vt-toggle" title="Toggle toolbar">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+
+                        <div class="vt-collapsible">
+                            <div class="vt-gizmo pp-gizmo-sm" id="pp-vt-gizmo">
+                                <canvas id="pp-gizmo-canvas" width="28" height="28"></canvas>
+                            </div>
+
+                            <div class="vt-separator"></div>
+
+                            <button class="vt-btn" id="pp-vt-reset-cam" title="Reset camera">
+                                <i class="fas fa-video"></i>
+                            </button>
+                            <button class="vt-btn" id="pp-vt-zoom-fit" title="Zoom to fit">
+                                <i class="fas fa-expand"></i>
+                            </button>
+                            <button class="vt-btn" id="pp-vt-wireframe" title="Toggle wireframe">
+                                <i class="fas fa-draw-polygon"></i>
+                            </button>
+                            <button class="vt-btn" id="pp-vt-perspective" title="Toggle perspective / orthographic">
+                                <i class="fas fa-cube"></i>
+                            </button>
+                            <button class="vt-btn grid-toggle" id="pp-btn-grid" title="Toggle gridlines">
+                                <i class="fas fa-border-all"></i>
+                                <span class="grid-slash" aria-hidden="true"></span>
+                            </button>
+
+                            <div class="vt-separator"></div>
+
+                            <button class="vt-btn vt-btn-round" id="pp-vt-zoom-in" title="Zoom in">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                            <button class="vt-btn vt-btn-round" id="pp-vt-zoom-out" title="Zoom out">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                            <button class="vt-btn vt-btn-round" id="pp-vt-pan" title="Pan mode">
+                                <i class="fas fa-hand-paper"></i>
+                            </button>
+
+                            <div class="vt-separator"></div>
+
+                            <div class="vt-grab-handle" id="pp-vt-grab-handle" title="Drag to move toolbar">
+                                <i class="fas fa-grip-horizontal"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Offset Overlay (bottom right) -->
+                <div class="pp-offset-overlay" id="pp-offset-overlay">
+                    <div class="pp-offset-header">
+                        <i class="fas fa-arrows-alt"></i> Placement Offsets
+                        <button class="pp-offset-toggle" id="pp-offset-toggle" title="Collapse">&#8211;</button>
+                    </div>
+                    <div class="pp-offset-body">
+                        <div class="pp-offset-section">
+                            <div class="pp-offset-section-title">Model Position</div>
+                            <div class="pp-offset-row">
+                                <label>X</label>
+                                <input type="number" id="pp-model-x" value="0" step="0.1">
+                                <span class="pp-unit">mm</span>
+                            </div>
+                            <div class="pp-offset-row">
+                                <label>Y</label>
+                                <input type="number" id="pp-model-y" value="0" step="0.1">
+                                <span class="pp-unit">mm</span>
+                            </div>
+                            <div class="pp-offset-row">
+                                <label>Z</label>
+                                <input type="number" id="pp-model-z" value="0" step="0.1">
+                                <span class="pp-unit">mm</span>
+                            </div>
+                        </div>
+                        <div class="pp-offset-divider"></div>
+                        <div class="pp-offset-section">
+                            <div class="pp-offset-section-title">Plate Position &amp; Scale</div>
+                            <div class="pp-offset-row">
+                                <label>X</label>
+                                <input type="number" id="pp-plate-x" value="0" step="0.1">
+                                <span class="pp-unit">mm</span>
+                            </div>
+                            <div class="pp-offset-row">
+                                <label>Y</label>
+                                <input type="number" id="pp-plate-y" value="0" step="0.1">
+                                <span class="pp-unit">mm</span>
+                            </div>
+                            <div class="pp-offset-row">
+                                <label>Z</label>
+                                <input type="number" id="pp-plate-z" value="0" step="0.1">
+                                <span class="pp-unit">mm</span>
+                            </div>
+                            <div class="pp-offset-row pp-scale-row">
+                                <label><i class="fas fa-expand-arrows-alt pp-scale-icon"></i></label>
+                                <input type="number" id="pp-plate-scale" value="1" step="0.01" min="0.001">
+                                <span class="pp-scale-pct" id="pp-plate-scale-pct">100%</span>
+                            </div>
+                        </div>
+                        <div class="pp-offset-divider"></div>
+                        <div class="pp-offset-section pp-offset-result">
+                            <div class="pp-offset-section-title">Calculated Offset</div>
+                            <div class="pp-offset-row">
+                                <label>ΔX</label>
+                                <span class="pp-offset-val" id="pp-delta-x">0.0</span>
+                                <span class="pp-unit">mm</span>
+                            </div>
+                            <div class="pp-offset-row">
+                                <label>ΔY</label>
+                                <span class="pp-offset-val" id="pp-delta-y">0.0</span>
+                                <span class="pp-unit">mm</span>
+                            </div>
+                            <div class="pp-offset-row">
+                                <label>ΔZ</label>
+                                <span class="pp-offset-val" id="pp-delta-z">0.0</span>
+                                <span class="pp-unit">mm</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bottom Controls Bar -->
+                <div class="viewer-controls-bar" id="pp-controls-bar">
+                    <input type="file" id="pp-file-input" accept=".x,.hxx" style="display:none">
+                    <button class="cv-ctrl-btn" id="pp-open" title="Open .x file">
+                        <i class="fas fa-folder-open"></i> Open
+                    </button>
+                    <div class="cv-ctrl-divider"></div>
+                    <button class="cv-ctrl-btn" id="pp-reset-positions" title="Reset all positions to zero">
+                        <i class="fas fa-undo"></i> Reset Positions
+                    </button>
+                    <div class="cv-ctrl-divider"></div>
+                    <span class="viewer-cam-display" id="pp-cam-display">X: 0.0  Y: 0.0  Z: 0.0  |  Pitch: 0.0°  Yaw: 0.0°  Roll: 0.0°</span>
+                    <div class="cv-ctrl-spacer"></div>
+                    <div class="screenshot-group" id="pp-screenshot-group">
+                        <button class="cv-ctrl-btn cv-ctrl-btn-accent" id="pp-screenshot" title="Save screenshot">
+                            <i class="fas fa-camera"></i> Screenshot
+                        </button>
+                    </div>
+                    <div class="export-group" id="pp-export-group">
+                        <button class="cv-ctrl-btn cv-ctrl-btn-accent" id="pp-export" title="Export model">
+                            <i class="fas fa-download"></i> Export
+                        </button>
+                        <div class="export-dropdown" id="pp-export-dropdown">
+                            <button class="export-option" data-format="obj">
+                                <i class="fas fa-cube"></i> Export as .OBJ
+                            </button>
+                            <button class="export-option" data-format="stl">
+                                <i class="fas fa-cube"></i> Export as .STL
+                            </button>
+                            <button class="export-option" data-format="glb">
+                                <i class="fas fa-cube"></i> Export as .GLB
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="viewer-dropzone viewer-hidden" id="pp-dropzone">
+                    <div class="dropzone-content">
+                        <i class="fas fa-file-import"></i>
+                        <span>Drop .x or .hxx file here</span>
+                    </div>
+                </div>
+
+                <!-- Debug Panel -->
+                <div class="debug-panel" id="debug-panel-placer">
+                    <div class="debug-panel-header"><i class="fas fa-bug"></i> Debug Info</div>
+                    <pre class="debug-panel-content" id="debug-content-placer">No model loaded.</pre>
+                </div>
+            </div>
+
+            <!-- ====== LABWARE GENERATOR VIEW ====== -->
+            <div class="view-panel" data-view-panel="labware" id="labware-host">
+                <div class="lg-layout">
+                    <!-- Left: Parameter Panel -->
+                    <div class="lg-params-col">
+                        <div class="lg-params-scroll">
+                            <div class="lg-params-header">
+                                <i class="fas fa-flask"></i> Integra XML
+                            </div>
+
+                            <!-- File Input -->
+                            <div class="lg-section">
+                                <div class="lg-section-title">Import Definition</div>
+                                <input type="file" id="lg-file-input" accept=".xml" style="display:none">
+                                <button class="cv-ctrl-btn lg-full-btn" id="lg-open-btn">
+                                    <i class="fas fa-folder-open"></i> Open XML File
+                                </button>
+                                <div class="lg-status" id="lg-status">No file loaded — edit values manually or import XML</div>
+                            </div>
+
+                            <div class="lg-divider"></div>
+
+                            <!-- General Info -->
+                            <form id="lg-param-form" autocomplete="off">
+                                <div class="lg-section">
+                                    <div class="lg-section-title">General</div>
+                                    <div class="lg-field">
+                                        <label>Name</label>
+                                        <input type="text" id="lg-name" value="96 Well Plate">
+                                    </div>
+                                    <div class="lg-field">
+                                        <label>Manufacturer</label>
+                                        <input type="text" id="lg-manufacturer" value="">
+                                    </div>
+                                    <div class="lg-field">
+                                        <label>Part Number</label>
+                                        <input type="text" id="lg-part-number" value="">
+                                    </div>
+                                    <div class="lg-field">
+                                        <label>Type</label>
+                                        <select id="lg-type">
+                                            <option value="plate" selected>Plate (SBS)</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="lg-divider"></div>
+
+                                <div id="lg-plate-fields">
+                                    <!-- Footprint -->
+                                    <div class="lg-section">
+                                        <div class="lg-section-title">
+                                            Footprint (SBS/ANSI)
+                                            <span class="lg-sbs-badge sbs-ok" id="lg-sbs-badge">SBS Compliant</span>
+                                        </div>
+                                        <div class="lg-field-row">
+                                            <div class="lg-field">
+                                                <label>Length (mm)</label>
+                                                <input type="number" id="lg-fp-length" value="127.76" step="0.01">
+                                            </div>
+                                            <div class="lg-field">
+                                                <label>Width (mm)</label>
+                                                <input type="number" id="lg-fp-width" value="85.48" step="0.01">
+                                            </div>
+                                        </div>
+                                        <div class="lg-field">
+                                            <label>Total Height (mm)</label>
+                                            <input type="number" id="lg-height" value="14.35" step="0.01">
+                                        </div>
+                                        <button type="button" class="cv-ctrl-btn cv-ctrl-btn-muted lg-full-btn" id="lg-sbs-defaults">
+                                            <i class="fas fa-ruler-combined"></i> Apply SBS Defaults
+                                        </button>
+                                    </div>
+
+                                    <div class="lg-divider"></div>
+
+                                    <!-- Wells -->
+                                    <div class="lg-section">
+                                        <div class="lg-section-title">Wells</div>
+                                        <div class="lg-well-count" id="lg-well-count">96 wells (8×12)</div>
+                                        <div class="lg-field-row">
+                                            <div class="lg-field">
+                                                <label>Rows</label>
+                                                <input type="number" id="lg-rows" value="8" min="1" max="48">
+                                            </div>
+                                            <div class="lg-field">
+                                                <label>Columns</label>
+                                                <input type="number" id="lg-cols" value="12" min="1" max="48">
+                                            </div>
+                                        </div>
+                                        <div class="lg-field-row">
+                                            <div class="lg-field">
+                                                <label>Row Gap (mm)</label>
+                                                <input type="number" id="lg-row-gap" value="9.00" step="0.01">
+                                            </div>
+                                            <div class="lg-field">
+                                                <label>Col Gap (mm)</label>
+                                                <input type="number" id="lg-col-gap" value="9.00" step="0.01">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="lg-divider"></div>
+
+                                    <!-- Well Geometry -->
+                                    <div class="lg-section">
+                                        <div class="lg-section-title">Well Geometry</div>
+                                        <div class="lg-field">
+                                            <label>Well Shape</label>
+                                            <select id="lg-well-shape">
+                                                <option value="Circle" selected>Circle</option>
+                                                <option value="Square">Square</option>
+                                            </select>
+                                        </div>
+                                        <div class="lg-field-row">
+                                            <div class="lg-field">
+                                                <label>Top Ø (mm)</label>
+                                                <input type="number" id="lg-well-size" value="6.86" step="0.01">
+                                            </div>
+                                            <div class="lg-field">
+                                                <label>Bottom Ø (mm)</label>
+                                                <input type="number" id="lg-well-size-bottom" value="6.35" step="0.01">
+                                            </div>
+                                        </div>
+                                        <div class="lg-field">
+                                            <label>Depth (mm)</label>
+                                            <input type="number" id="lg-well-depth" value="10.67" step="0.01">
+                                        </div>
+                                        <div class="lg-field">
+                                            <label>Bottom Shape</label>
+                                            <select id="lg-bottom-shape">
+                                                <option value="Flat">Flat</option>
+                                                <option value="Circle" selected>Round (U-Bottom)</option>
+                                                <option value="VShape">V-Bottom</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div class="lg-divider"></div>
+
+                                    <!-- A1 Position -->
+                                    <div class="lg-section">
+                                        <div class="lg-section-title">A1 Well Position</div>
+                                        <div class="lg-field-row">
+                                            <div class="lg-field">
+                                                <label>X offset (mm)</label>
+                                                <input type="number" id="lg-first-x" value="14.38" step="0.01">
+                                            </div>
+                                            <div class="lg-field">
+                                                <label>Y offset (mm)</label>
+                                                <input type="number" id="lg-first-y" value="11.24" step="0.01">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+
+                            <div class="lg-divider"></div>
+
+                            <!-- Action Buttons -->
+                            <div class="lg-section lg-actions">
+                                <button class="cv-ctrl-btn cv-ctrl-btn-accent lg-full-btn" id="lg-generate-btn">
+                                    <i class="fas fa-sync-alt"></i> Generate 3D Model
+                                </button>
+                                <button class="cv-ctrl-btn cv-ctrl-btn-accent lg-full-btn" id="lg-save-btn">
+                                    <i class="fas fa-download"></i> Save as .x File
+                                </button>
+                                <button class="cv-ctrl-btn lg-full-btn" id="lg-load-viewer-btn">
+                                    <i class="fas fa-eye"></i> Load into Viewer
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: 3D Preview -->
+                    <div class="lg-preview-col">
+                        <div class="lg-preview-viewport">
+                            <canvas id="lg-canvas"></canvas>
+
+                            <!-- Floating 3D Toolbar -->
+                            <div class="viewer-toolbar" id="lg-toolbar">
+                                <div class="vt-body" id="lg-vt-body">
+                                    <button class="vt-toggle" id="lg-vt-toggle" title="Toggle toolbar">
+                                        <i class="fas fa-chevron-right"></i>
+                                    </button>
+                                    <div class="vt-collapsible">
+                                        <div class="vt-gizmo pp-gizmo-sm" id="lg-vt-gizmo">
+                                            <canvas id="lg-gizmo-canvas" width="28" height="28"></canvas>
+                                        </div>
+                                        <div class="vt-separator"></div>
+                                        <button class="vt-btn" id="lg-vt-reset-cam" title="Reset camera">
+                                            <i class="fas fa-video"></i>
+                                        </button>
+                                        <button class="vt-btn" id="lg-vt-zoom-fit" title="Zoom to fit">
+                                            <i class="fas fa-expand"></i>
+                                        </button>
+                                        <button class="vt-btn" id="lg-vt-wireframe" title="Toggle wireframe">
+                                            <i class="fas fa-draw-polygon"></i>
+                                        </button>
+                                        <button class="vt-btn" id="lg-vt-perspective" title="Toggle perspective/orthographic">
+                                            <i class="fas fa-cube"></i>
+                                        </button>
+                                        <button class="vt-btn grid-toggle" id="lg-btn-grid" title="Toggle gridlines">
+                                            <i class="fas fa-border-all"></i>
+                                            <span class="grid-slash" aria-hidden="true"></span>
+                                        </button>
+                                        <div class="vt-separator"></div>
+                                        <button class="vt-btn vt-btn-round" id="lg-vt-zoom-in" title="Zoom in">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                        <button class="vt-btn vt-btn-round" id="lg-vt-zoom-out" title="Zoom out">
+                                            <i class="fas fa-minus"></i>
+                                        </button>
+                                        <button class="vt-btn vt-btn-round" id="lg-vt-pan" title="Pan mode">
+                                            <i class="fas fa-hand-paper"></i>
+                                        </button>
+                                        <div class="vt-separator"></div>
+                                        <button class="vt-btn" id="lg-vt-ruler" title="Ruler — click two points to measure">
+                                            <i class="fas fa-ruler"></i>
+                                        </button>
+                                        <div class="vt-separator"></div>
+                                        <div class="vt-grab-handle" id="lg-vt-grab-handle" title="Drag to move toolbar">
+                                            <i class="fas fa-grip-horizontal"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Ruler measurement readout -->
+                            <div id="lg-ruler-readout" style="display:none;position:absolute;bottom:12px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.75);color:#fff;padding:6px 16px;border-radius:6px;font:bold 14px/1.4 monospace;z-index:60;pointer-events:none;white-space:nowrap;"></div>
+
+                            <div class="viewer-dropzone viewer-hidden" id="lg-dropzone">
+                                <div class="dropzone-content">
+                                    <i class="fas fa-file-import"></i>
+                                    <span>Drop XML labware file here</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Bottom status bar -->
+                        <div class="viewer-controls-bar" id="lg-controls-bar">
+                            <span id="lg-ruler-help" style="display:none;color:#888;font-size:11px;line-height:1.3;margin-bottom:2px;">
+                                Click to place start point · Move for live distance · Click to finalize<br>
+                                ⌘/Ctrl+drag to orbit · X Y Z to lock axis · Esc to cancel
+                            </span>
+                            <span class="viewer-cam-display" id="lg-cam-display">X: 0.0  Y: 0.0  Z: 0.0</span>
+                            <div class="cv-ctrl-spacer"></div>
+                            <div class="screenshot-group" id="lg-screenshot-group">
+                                <button class="cv-ctrl-btn cv-ctrl-btn-accent" id="lg-screenshot" title="Save screenshot">
+                                    <i class="fas fa-camera"></i> Screenshot
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ====== HAMILTON IMPORT VIEW ====== -->
+            <div class="view-panel" data-view-panel="hamilton" id="hamilton-host">
+                <div class="lg-layout">
+                    <!-- Left: Parameter Panel -->
+                    <div class="lg-params-col">
+                        <div class="lg-params-scroll">
+                            <div class="lg-params-header">
+                                <i class="fas fa-vials"></i> Hamilton Import
+                            </div>
+
+                            <!-- File Input -->
+                            <div class="lg-section">
+                                <div class="lg-section-title">Import Files</div>
+
+                                <input type="file" id="ham-rck-input" accept=".rck" style="display:none">
+                                <button class="cv-ctrl-btn lg-full-btn" id="ham-rck-btn">
+                                    <i class="fas fa-th"></i> Open Rack File (.rck)
+                                </button>
+                                <div class="lg-ham-file-label" id="ham-rck-label">No rack file loaded</div>
+
+                                <input type="file" id="ham-ctr-input" accept=".ctr" style="display:none" multiple>
+                                <button class="cv-ctrl-btn lg-full-btn" id="ham-ctr-btn" style="margin-top:6px">
+                                    <i class="fas fa-flask"></i> Open Container File (.ctr)
+                                </button>
+                                <div class="lg-ham-file-label" id="ham-ctr-label">No container file loaded</div>
+
+                                <button class="cv-ctrl-btn cv-ctrl-btn-accent lg-full-btn" id="ham-import-btn" style="margin-top:8px" disabled>
+                                    <i class="fas fa-file-import"></i> Import Hamilton Labware
+                                </button>
+
+                                <div class="lg-status" id="ham-status">Load a .rck rack file and matching .ctr container file</div>
+                            </div>
+
+                            <div class="lg-divider"></div>
+
+                            <!-- General Info -->
+                            <form id="ham-param-form" autocomplete="off">
+                                <div class="lg-section">
+                                    <div class="lg-section-title">General</div>
+                                    <div class="lg-field">
+                                        <label>Name</label>
+                                        <input type="text" id="ham-name" value="">
+                                    </div>
+                                    <div class="lg-field">
+                                        <label>Manufacturer</label>
+                                        <input type="text" id="ham-manufacturer" value="Hamilton">
+                                    </div>
+                                    <div class="lg-field">
+                                        <label>Description</label>
+                                        <input type="text" id="ham-description" value="" readonly>
+                                    </div>
+                                </div>
+
+                                <div class="lg-divider"></div>
+
+                                <div id="ham-plate-fields">
+                                    <!-- Footprint -->
+                                    <div class="lg-section">
+                                        <div class="lg-section-title">
+                                            Footprint
+                                            <span class="lg-sbs-badge sbs-ok" id="ham-sbs-badge">SBS Compliant</span>
+                                        </div>
+                                        <div class="lg-field-row">
+                                            <div class="lg-field">
+                                                <label>Length (mm)</label>
+                                                <input type="number" id="ham-fp-length" value="127.00" step="0.01">
+                                            </div>
+                                            <div class="lg-field">
+                                                <label>Width (mm)</label>
+                                                <input type="number" id="ham-fp-width" value="86.00" step="0.01">
+                                            </div>
+                                        </div>
+                                        <div class="lg-field">
+                                            <label>Total Height (mm)</label>
+                                            <input type="number" id="ham-height" value="14.00" step="0.01">
+                                        </div>
+                                    </div>
+
+                                    <div class="lg-divider"></div>
+
+                                    <!-- Wells -->
+                                    <div class="lg-section">
+                                        <div class="lg-section-title">Wells</div>
+                                        <div class="lg-well-count" id="ham-well-count">96 wells (8×12)</div>
+                                        <div class="lg-field-row">
+                                            <div class="lg-field">
+                                                <label>Rows</label>
+                                                <input type="number" id="ham-rows" value="8" min="1" max="48">
+                                            </div>
+                                            <div class="lg-field">
+                                                <label>Columns</label>
+                                                <input type="number" id="ham-cols" value="12" min="1" max="48">
+                                            </div>
+                                        </div>
+                                        <div class="lg-field-row">
+                                            <div class="lg-field">
+                                                <label>Row Spacing (mm)</label>
+                                                <input type="number" id="ham-row-gap" value="9.00" step="0.01">
+                                            </div>
+                                            <div class="lg-field">
+                                                <label>Col Spacing (mm)</label>
+                                                <input type="number" id="ham-col-gap" value="9.00" step="0.01">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="lg-divider"></div>
+
+                                    <!-- Well Geometry -->
+                                    <div class="lg-section">
+                                        <div class="lg-section-title">Well Geometry</div>
+                                        <div class="lg-field">
+                                            <label>Well Shape</label>
+                                            <select id="ham-well-shape">
+                                                <option value="Circle" selected>Circle</option>
+                                                <option value="Square">Square</option>
+                                            </select>
+                                        </div>
+                                        <div class="lg-field-row">
+                                            <div class="lg-field">
+                                                <label>Top Ø (mm)</label>
+                                                <input type="number" id="ham-well-size" value="7.00" step="0.01">
+                                            </div>
+                                            <div class="lg-field">
+                                                <label>Bottom Ø (mm)</label>
+                                                <input type="number" id="ham-well-size-bottom" value="6.50" step="0.01">
+                                            </div>
+                                        </div>
+                                        <div class="lg-field">
+                                            <label>Depth (mm)</label>
+                                            <input type="number" id="ham-well-depth" value="10.00" step="0.01">
+                                        </div>
+                                        <div class="lg-field">
+                                            <label>Bottom Shape</label>
+                                            <select id="ham-bottom-shape">
+                                                <option value="Flat">Flat</option>
+                                                <option value="Circle">Round (U-Bottom)</option>
+                                                <option value="VShape">V-Bottom</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div class="lg-divider"></div>
+
+                                    <!-- A1 Position -->
+                                    <div class="lg-section">
+                                        <div class="lg-section-title">A1 Well Position</div>
+                                        <div class="lg-field-row">
+                                            <div class="lg-field">
+                                                <label>X offset (mm)</label>
+                                                <input type="number" id="ham-first-x" value="14.00" step="0.01">
+                                            </div>
+                                            <div class="lg-field">
+                                                <label>Y offset (mm)</label>
+                                                <input type="number" id="ham-first-y" value="11.50" step="0.01">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+
+                            <div class="lg-divider"></div>
+
+                            <!-- Action Buttons -->
+                            <div class="lg-section lg-actions">
+                                <button class="cv-ctrl-btn cv-ctrl-btn-accent lg-full-btn" id="ham-generate-btn">
+                                    <i class="fas fa-sync-alt"></i> Generate 3D Model
+                                </button>
+                                <button class="cv-ctrl-btn cv-ctrl-btn-accent lg-full-btn" id="ham-save-btn">
+                                    <i class="fas fa-download"></i> Save as .x File
+                                </button>
+                                <button class="cv-ctrl-btn lg-full-btn" id="ham-load-viewer-btn">
+                                    <i class="fas fa-eye"></i> Load into Viewer
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: 3D Preview -->
+                    <div class="lg-preview-col">
+                        <div class="lg-preview-viewport">
+                            <canvas id="ham-canvas"></canvas>
+
+                            <!-- Floating 3D Toolbar -->
+                            <div class="viewer-toolbar" id="ham-toolbar">
+                                <div class="vt-body" id="ham-vt-body">
+                                    <button class="vt-toggle" id="ham-vt-toggle" title="Toggle toolbar">
+                                        <i class="fas fa-chevron-right"></i>
+                                    </button>
+                                    <div class="vt-collapsible">
+                                        <div class="vt-gizmo pp-gizmo-sm" id="ham-vt-gizmo">
+                                            <canvas id="ham-gizmo-canvas" width="28" height="28"></canvas>
+                                        </div>
+                                        <div class="vt-separator"></div>
+                                        <button class="vt-btn" id="ham-vt-reset-cam" title="Reset camera">
+                                            <i class="fas fa-video"></i>
+                                        </button>
+                                        <button class="vt-btn" id="ham-vt-zoom-fit" title="Zoom to fit">
+                                            <i class="fas fa-expand"></i>
+                                        </button>
+                                        <button class="vt-btn" id="ham-vt-wireframe" title="Toggle wireframe">
+                                            <i class="fas fa-draw-polygon"></i>
+                                        </button>
+                                        <button class="vt-btn" id="ham-vt-perspective" title="Toggle perspective/orthographic">
+                                            <i class="fas fa-cube"></i>
+                                        </button>
+                                        <button class="vt-btn grid-toggle" id="ham-btn-grid" title="Toggle gridlines">
+                                            <i class="fas fa-border-all"></i>
+                                            <span class="grid-slash" aria-hidden="true"></span>
+                                        </button>
+                                        <div class="vt-separator"></div>
+                                        <button class="vt-btn vt-btn-round" id="ham-vt-zoom-in" title="Zoom in">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                        <button class="vt-btn vt-btn-round" id="ham-vt-zoom-out" title="Zoom out">
+                                            <i class="fas fa-minus"></i>
+                                        </button>
+                                        <button class="vt-btn vt-btn-round" id="ham-vt-pan" title="Pan mode">
+                                            <i class="fas fa-hand-paper"></i>
+                                        </button>
+                                        <div class="vt-separator"></div>
+                                        <button class="vt-btn" id="ham-vt-ruler" title="Ruler — click two points to measure">
+                                            <i class="fas fa-ruler"></i>
+                                        </button>
+                                        <div class="vt-separator"></div>
+                                        <div class="vt-grab-handle" id="ham-vt-grab-handle" title="Drag to move toolbar">
+                                            <i class="fas fa-grip-horizontal"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Ruler measurement readout -->
+                            <div id="ham-ruler-readout" style="display:none;position:absolute;bottom:12px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.75);color:#fff;padding:6px 16px;border-radius:6px;font:bold 14px/1.4 monospace;z-index:60;pointer-events:none;white-space:nowrap;"></div>
+
+                            <div class="viewer-dropzone viewer-hidden" id="ham-dropzone">
+                                <div class="dropzone-content">
+                                    <i class="fas fa-file-import"></i>
+                                    <span>Drop .rck and/or .ctr files here</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Bottom status bar -->
+                        <div class="viewer-controls-bar" id="ham-controls-bar">
+                            <span id="ham-ruler-help" style="display:none;color:#888;font-size:11px;line-height:1.3;margin-bottom:2px;">
+                                Click to place start point · Move for live distance · Click to finalize<br>
+                                ⌘/Ctrl+drag to orbit · X Y Z to lock axis · Esc to cancel
+                            </span>
+                            <span class="viewer-cam-display" id="ham-cam-display">X: 0.0  Y: 0.0  Z: 0.0</span>
+                            <div class="cv-ctrl-spacer"></div>
+                            <div class="screenshot-group" id="ham-screenshot-group">
+                                <button class="cv-ctrl-btn cv-ctrl-btn-accent" id="ham-screenshot" title="Save screenshot">
+                                    <i class="fas fa-camera"></i> Screenshot
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ====== DECK LAYOUT VIEW ====== -->
+            <div class="view-panel" data-view-panel="vantage" id="vl-host">
+                <canvas id="vl-canvas"></canvas>
+
+                <!-- Floating 3D Toolbar -->
+                <div class="viewer-toolbar" id="vl-toolbar">
+                    <div class="vt-body" id="vl-vt-body">
+                        <button class="vt-toggle" id="vl-vt-toggle" title="Toggle toolbar">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                        <div class="vt-collapsible">
+                            <div class="vt-gizmo pp-gizmo-sm" id="vl-vt-gizmo">
+                                <canvas id="vl-gizmo-canvas" width="28" height="28"></canvas>
+                            </div>
+                            <button class="vt-btn vt-active" id="vl-vt-labels" title="Toggle orientation labels">
+                                <i class="fas fa-font"></i>
+                            </button>
+                            <div class="vt-separator"></div>
+                            <button class="vt-btn" id="vl-vt-reset-cam" title="Reset camera">
+                                <i class="fas fa-video"></i>
+                            </button>
+                            <button class="vt-btn" id="vl-vt-zoom-fit" title="Zoom to fit deck">
+                                <i class="fas fa-expand"></i>
+                            </button>
+                            <button class="vt-btn" id="vl-vt-topdown" title="Top-down orthographic view">
+                                <i class="fas fa-arrow-down"></i>
+                            </button>
+                            <button class="vt-btn" id="vl-vt-perspective" title="Toggle perspective / orthographic">
+                                <i class="fas fa-cube"></i>
+                            </button>
+                            <div class="vt-separator"></div>
+                            <button class="vt-btn vt-btn-round" id="vl-vt-zoom-in" title="Zoom in">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                            <button class="vt-btn vt-btn-round" id="vl-vt-zoom-out" title="Zoom out">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                            <button class="vt-btn vt-btn-round" id="vl-vt-pan" title="Pan mode">
+                                <i class="fas fa-hand-paper"></i>
+                            </button>
+                            <div class="vt-separator"></div>
+                            <div class="vt-grab-handle" id="vl-vt-grab-handle" title="Drag to move toolbar">
+                                <i class="fas fa-grip-horizontal"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Left Panel: Carrier Palette + TML Import -->
+                <div class="vl-left-panel" id="vl-left-panel">
+
+                    <!-- Carrier Palette (collapsible) -->
+                    <div class="vl-lp-section">
+                        <div class="vl-lp-section-header" id="vl-sec-palette-toggle">
+                            <i class="fas fa-th-large"></i> Carrier Palette
+                            <i class="fas fa-chevron-down vl-lp-chevron"></i>
+                        </div>
+                        <div class="vl-lp-section-body" id="vl-sec-palette-body">
+                            <div class="vl-palette-list" id="vl-palette-list">
+                                <!-- populated by JS -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Import .tml (collapsible) -->
+                    <div class="vl-lp-section">
+                        <div class="vl-lp-section-header" id="vl-sec-tml-toggle">
+                            <i class="fas fa-file-import"></i> Import .tml
+                            <i class="fas fa-chevron-down vl-lp-chevron"></i>
+                        </div>
+                        <div class="vl-lp-section-body" id="vl-sec-tml-body">
+                            <input type="file" id="vl-tml-input" accept=".tml,.x" multiple style="display:none">
+                            <div class="vl-tml-drop" id="vl-tml-drop">
+                                <i class="fas fa-file-upload"></i>
+                                <span>Drop .tml (+ .x model) here or</span>
+                                <button class="vl-tml-browse" id="vl-tml-open">Browse</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Rack / Container Library (collapsible) -->
+                    <div class="vl-lp-section">
+                        <div class="vl-lp-section-header" id="vl-sec-rack-toggle">
+                            <i class="fas fa-box"></i> Rack / Container Library
+                            <i class="fas fa-chevron-down vl-lp-chevron"></i>
+                        </div>
+                        <div class="vl-lp-section-body" id="vl-sec-rack-body">
+                            <input type="file" id="vl-rack-input" accept=".rck,.x,.hxx" multiple style="display:none">
+                            <div class="vl-tml-drop" id="vl-rack-drop">
+                                <i class="fas fa-file-upload"></i>
+                                <span>Drop .rck (+ .x model) here or</span>
+                                <button class="vl-tml-browse" id="vl-rack-open">Browse</button>
+                            </div>
+                            <div class="vl-rack-list" id="vl-rack-list">
+                                <div class="vl-empty-hint">No racks imported yet.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Placed Carriers (collapsible) -->
+                    <div class="vl-lp-section vl-lp-section-flex">
+                        <div class="vl-lp-section-header" id="vl-sec-placed-toggle">
+                            <i class="fas fa-list"></i> Placed Carriers
+                            <i class="fas fa-chevron-down vl-lp-chevron"></i>
+                        </div>
+                        <div class="vl-lp-section-body vl-lp-section-body-flex" id="vl-sec-placed-body">
+                            <div class="vl-carrier-list" id="vl-carrier-list">
+                                <div class="vl-empty-hint">No carriers placed yet.<br>Select a carrier above and click Place.</div>
+                            </div>
+                            <button class="vl-danger-btn" id="vl-clear-deck">
+                                <i class="fas fa-trash"></i> Clear Deck
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Panel: Site Manager -->
+                <div class="vl-right-panel" id="vl-right-panel">
+                    <div class="vl-panel-header" id="vl-site-panel-title">
+                        <i class="fas fa-map-marker-alt"></i> Site Positions
+                        <button class="vl-panel-toggle-btn" id="vl-right-panel-close" title="Collapse site positions">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                    <div class="vl-site-panel" id="vl-site-panel">
+                        <div class="vl-empty-hint">Select a carrier to manage its plate sites.</div>
+                    </div>
+                    <div class="vl-site-actions">
+                        <button class="vl-site-action-btn" id="vl-fill-all">
+                            <i class="fas fa-plus"></i> Fill All Sites
+                        </button>
+                        <button class="vl-site-action-btn vl-site-action-btn-muted" id="vl-clear-all">
+                            <i class="fas fa-minus"></i> Clear All
+                        </button>
+                    </div>
+                </div>
+
+                <!-- GLTF Deck Alignment Debug Panel -->
+                <div class="vl-deck-debug-panel" id="vl-deck-debug-panel">
+                    <div class="vl-dbg-header"><i class="fas fa-ruler-combined"></i> Deck Alignment Debug</div>
+                    <div class="vl-dbg-readout" id="vl-dbg-readout">No GLTF model yet</div>
+                    <div class="vl-dbg-row">
+                        <span class="vl-dbg-axis x">X</span>
+                        <button class="dbg-step-btn" data-axis="x" data-delta="-10">−10</button>
+                        <button class="dbg-step-btn" data-axis="x" data-delta="-1">−1</button>
+                        <input type="number" id="vl-dbg-x" class="vl-dbg-input" value="0" step="0.5">
+                        <button class="dbg-step-btn" data-axis="x" data-delta="1">+1</button>
+                        <button class="dbg-step-btn" data-axis="x" data-delta="10">+10</button>
+                    </div>
+                    <div class="vl-dbg-row">
+                        <span class="vl-dbg-axis y">Y</span>
+                        <button class="dbg-step-btn" data-axis="y" data-delta="-10">−10</button>
+                        <button class="dbg-step-btn" data-axis="y" data-delta="-1">−1</button>
+                        <input type="number" id="vl-dbg-y" class="vl-dbg-input" value="0" step="0.5">
+                        <button class="dbg-step-btn" data-axis="y" data-delta="1">+1</button>
+                        <button class="dbg-step-btn" data-axis="y" data-delta="10">+10</button>
+                    </div>
+                    <div class="vl-dbg-row">
+                        <span class="vl-dbg-axis z">Z</span>
+                        <button class="dbg-step-btn" data-axis="z" data-delta="-10">−10</button>
+                        <button class="dbg-step-btn" data-axis="z" data-delta="-1">−1</button>
+                        <input type="number" id="vl-dbg-z" class="vl-dbg-input" value="0" step="0.5">
+                        <button class="dbg-step-btn" data-axis="z" data-delta="1">+1</button>
+                        <button class="dbg-step-btn" data-axis="z" data-delta="10">+10</button>
+                    </div>
+                    <div class="vl-dbg-actions">
+                        <button id="vl-dbg-reset" class="vl-dbg-action-btn"><i class="fas fa-undo"></i> Reset</button>
+                        <button id="vl-dbg-copy"  class="vl-dbg-action-btn vl-dbg-action-accent"><i class="fas fa-copy"></i> Copy offsets</button>
+                        <button id="vl-dbg-apply" class="vl-dbg-action-btn vl-dbg-action-accent"><i class="fas fa-check"></i> Apply offsets</button>
+                    </div>
+                </div>
+
+                <!-- Waste Unit Debug Panel (waste/drawer body vs accessories) -->
+                <div class="vl-deck-debug-panel vl-fixture-debug-panel" id="vl-fixture-debug-panel">
+                    <div class="vl-dbg-header"><i class="fas fa-crosshairs"></i> Waste Unit Debug</div>
+                    <div class="vl-dbg-readout" id="vl-fix-readout">No fixture installed</div>
+
+                    <!-- Target selector: Body / All Accessories / Individual / Group -->
+                    <div class="vl-fix-target-row">
+                        <button class="vl-fix-target-btn is-active" id="vl-fix-target-body" data-target="body">Body</button>
+                        <button class="vl-fix-target-btn" id="vl-fix-target-acc" data-target="accessories">All Acces</button>
+                        <button class="vl-fix-target-btn" id="vl-fix-target-group" data-target="group">Group</button>
+                    </div>
+                    <div class="vl-fix-component-row">
+                        <label style="font-size:10px;color:#9ab;">Component:</label>
+                        <select id="vl-fix-component-select" class="vl-dbg-input" style="flex:1;font-size:10px;">
+                            <option value="">(none — use target above)</option>
+                        </select>
+                    </div>
+
+                    <div class="vl-dbg-row">
+                        <span class="vl-dbg-axis x">X</span>
+                        <button class="dbg-step-btn fix-step" data-axis="x" data-delta="-10">−10</button>
+                        <button class="dbg-step-btn fix-step" data-axis="x" data-delta="-1">−1</button>
+                        <input type="number" id="vl-fix-x" class="vl-dbg-input" value="0" step="0.5">
+                        <button class="dbg-step-btn fix-step" data-axis="x" data-delta="1">+1</button>
+                        <button class="dbg-step-btn fix-step" data-axis="x" data-delta="10">+10</button>
+                    </div>
+                    <div class="vl-dbg-row">
+                        <span class="vl-dbg-axis y">Y</span>
+                        <button class="dbg-step-btn fix-step" data-axis="y" data-delta="-10">−10</button>
+                        <button class="dbg-step-btn fix-step" data-axis="y" data-delta="-1">−1</button>
+                        <input type="number" id="vl-fix-y" class="vl-dbg-input" value="0" step="0.5">
+                        <button class="dbg-step-btn fix-step" data-axis="y" data-delta="1">+1</button>
+                        <button class="dbg-step-btn fix-step" data-axis="y" data-delta="10">+10</button>
+                    </div>
+                    <div class="vl-dbg-row">
+                        <span class="vl-dbg-axis z">Z</span>
+                        <button class="dbg-step-btn fix-step" data-axis="z" data-delta="-10">−10</button>
+                        <button class="dbg-step-btn fix-step" data-axis="z" data-delta="-1">−1</button>
+                        <input type="number" id="vl-fix-z" class="vl-dbg-input" value="0" step="0.5">
+                        <button class="dbg-step-btn fix-step" data-axis="z" data-delta="1">+1</button>
+                        <button class="dbg-step-btn fix-step" data-axis="z" data-delta="10">+10</button>
+                    </div>
+                    <div class="vl-dbg-actions">
+                        <button id="vl-fix-reset" class="vl-dbg-action-btn"><i class="fas fa-undo"></i> Reset</button>
+                        <button id="vl-fix-copy"  class="vl-dbg-action-btn vl-dbg-action-accent"><i class="fas fa-copy"></i> Copy offsets</button>
+                        <button id="vl-fix-apply" class="vl-dbg-action-btn vl-dbg-action-accent"><i class="fas fa-check"></i> Set</button>
+                    </div>
+                </div>
+
+                <!-- Entry/Exit Drawer Debug Panel -->
+                <div class="vl-deck-debug-panel vl-ee-debug-panel" id="vl-ee-debug-panel">
+                    <div class="vl-dbg-header"><i class="fas fa-door-open"></i> EE Drawer Debug</div>
+                    <div class="vl-dbg-readout" id="vl-ee-readout">No drawer installed</div>
+                    <div class="vl-dbg-row">
+                        <span class="vl-dbg-axis x">X</span>
+                        <button class="dbg-step-btn ee-step" data-axis="x" data-delta="-10">−10</button>
+                        <button class="dbg-step-btn ee-step" data-axis="x" data-delta="-1">−1</button>
+                        <input type="number" id="vl-ee-x" class="vl-dbg-input" value="0" step="0.5">
+                        <button class="dbg-step-btn ee-step" data-axis="x" data-delta="1">+1</button>
+                        <button class="dbg-step-btn ee-step" data-axis="x" data-delta="10">+10</button>
+                    </div>
+                    <div class="vl-dbg-row">
+                        <span class="vl-dbg-axis y">Y</span>
+                        <button class="dbg-step-btn ee-step" data-axis="y" data-delta="-10">−10</button>
+                        <button class="dbg-step-btn ee-step" data-axis="y" data-delta="-1">−1</button>
+                        <input type="number" id="vl-ee-y" class="vl-dbg-input" value="0" step="0.5">
+                        <button class="dbg-step-btn ee-step" data-axis="y" data-delta="1">+1</button>
+                        <button class="dbg-step-btn ee-step" data-axis="y" data-delta="10">+10</button>
+                    </div>
+                    <div class="vl-dbg-row">
+                        <span class="vl-dbg-axis z">Z</span>
+                        <button class="dbg-step-btn ee-step" data-axis="z" data-delta="-10">−10</button>
+                        <button class="dbg-step-btn ee-step" data-axis="z" data-delta="-1">−1</button>
+                        <input type="number" id="vl-ee-z" class="vl-dbg-input" value="0" step="0.5">
+                        <button class="dbg-step-btn ee-step" data-axis="z" data-delta="1">+1</button>
+                        <button class="dbg-step-btn ee-step" data-axis="z" data-delta="10">+10</button>
+                    </div>
+                    <div class="vl-dbg-actions">
+                        <button id="vl-ee-reset" class="vl-dbg-action-btn"><i class="fas fa-undo"></i> Reset</button>
+                        <button id="vl-ee-copy"  class="vl-dbg-action-btn vl-dbg-action-accent"><i class="fas fa-copy"></i> Copy offsets</button>
+                        <button id="vl-ee-apply" class="vl-dbg-action-btn vl-dbg-action-accent"><i class="fas fa-check"></i> Set</button>
+                    </div>
+                </div>
+
+                <!-- Place Carrier Dialog -->
+                <div class="vl-dialog-overlay" id="vl-place-dialog">
+                    <div class="vl-dialog">
+                        <div class="vl-dialog-header">
+                            <i class="fas fa-plus-circle"></i> Place Carrier
+                        </div>
+                        <div class="vl-dialog-body">
+                            <div class="vl-dialog-row">
+                                <span class="vl-dialog-key">Carrier</span>
+                                <span class="vl-dialog-val" id="vl-pd-carrier-name">—</span>
+                            </div>
+                            <div class="vl-dialog-row">
+                                <span class="vl-dialog-key">Description</span>
+                                <span class="vl-dialog-val vl-dialog-val-sm" id="vl-pd-carrier-desc">—</span>
+                            </div>
+                            <div class="vl-dialog-row">
+                                <span class="vl-dialog-key">Width</span>
+                                <span class="vl-dialog-val" id="vl-pd-twidth">6T</span>
+                            </div>
+                            <div class="vl-dialog-row">
+                                <span class="vl-dialog-key">Sites</span>
+                                <span class="vl-dialog-val" id="vl-pd-sites">5</span>
+                            </div>
+                            <div class="vl-dialog-row">
+                                <span class="vl-dialog-key">Start Track</span>
+                                <input type="number" id="vl-pd-track" value="1" min="1" max="54" class="vl-dialog-input">
+                            </div>
+                            <div class="vl-dialog-row vl-dialog-row-check">
+                                <label class="vl-dialog-check">
+                                    <input type="checkbox" id="vl-pd-autofill" checked>
+                                    <span>Auto-fill plates on all sites</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="vl-dialog-footer">
+                            <button class="vl-dialog-cancel" id="vl-pd-cancel">Cancel</button>
+                            <button class="vl-dialog-confirm" id="vl-pd-confirm">
+                                <i class="fas fa-check"></i> Place
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Container Picker Dialog -->
+                <div class="vl-dialog-overlay" id="vl-container-dialog">
+                    <div class="vl-dialog vl-dialog-wide">
+                        <div class="vl-dialog-header">
+                            <i class="fas fa-box"></i> <span id="vl-cd-title">Assign Container</span>
+                        </div>
+                        <div class="vl-dialog-body vl-cd-body">
+                            <div class="vl-cd-actions">
+                                <input type="file" id="vl-cd-import-input" accept=".rck,.x,.hxx" multiple style="display:none">
+                                <button class="vl-cd-action-btn" id="vl-cd-import-btn">
+                                    <i class="fas fa-file-import"></i> Import .rck
+                                </button>
+                                <button class="vl-cd-action-btn" id="vl-cd-browse-server">
+                                    <i class="fas fa-server"></i> Browse Server
+                                </button>
+                            </div>
+                            <div class="vl-cd-list-wrap" id="vl-cd-list">
+                                <div class="vl-empty-hint">No racks loaded yet.</div>
+                            </div>
+                        </div>
+                        <div class="vl-dialog-footer">
+                            <button class="vl-dialog-cancel" id="vl-cd-cancel">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Panel collapse toggle tabs -->
+                <button class="vl-panel-toggle vl-left-toggle" id="vl-left-toggle" title="Show / hide left panel">
+                    <i class="fas fa-chevron-left" id="vl-left-toggle-icon"></i>
+                </button>
+                <button class="vl-panel-toggle vl-right-toggle" id="vl-right-toggle" title="Show / hide right panel">
+                    <i class="fas fa-chevron-right" id="vl-right-toggle-icon"></i>
+                </button>
+
+                <!-- Bottom Controls Bar -->
+                <div class="viewer-controls-bar" id="vl-controls-bar">
+                    <!-- Pending rack placement banner -->
+                    <div class="vl-pending-banner" id="vl-pending-rack-banner" style="display:none">
+                        <i class="fas fa-hand-pointer"></i>
+                        Placing: <strong id="vl-pending-rack-name"></strong> — click a carrier site
+                        <button class="vl-pending-cancel" id="vl-cancel-pending-rack" title="Cancel placement">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <span class="vl-status-msg" id="vl-status">Ready</span>
+                    <div class="cv-ctrl-spacer"></div>
+                    <div class="screenshot-group" id="vl-screenshot-group">
+                        <button class="cv-ctrl-btn cv-ctrl-btn-accent" id="vl-screenshot" title="Save screenshot">
+                            <i class="fas fa-camera"></i> Screenshot
+                        </button>
+                    </div>
+                    <div class="cv-ctrl-divider"></div>
+                    <button class="cv-ctrl-btn cv-ctrl-btn-accent" id="vl-export-btn" title="Export layout as JSON">
+                        <i class="fas fa-download"></i> Export Layout
+                    </button>
+                </div>
+
+                <!-- Trash drop zone (shown during carrier drag) -->
+                <div class="vl-trash-zone" id="vl-trash-zone">
+                    <i class="fas fa-trash-alt"></i>
+                    <span>Drop to remove</span>
+                </div>
+            </div>
+
+            <!-- ======================================================
+                 Carrier Editor Panel
+                 ====================================================== -->
+            <div class="view-panel" data-view-panel="mfx" id="mfx-host">
+                <canvas id="mfx-canvas"></canvas>
+
+                <!-- 3D Toolbar anchored to left edge of right panel -->
+                <div class="mfx-toolbar-anchor" id="mfx-toolbar">
+                    <div class="vt-body mfx-anchored-vt-body" id="mfx-vt-body">
+                        <button class="vt-toggle" id="mfx-vt-toggle" title="Toggle toolbar">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                        <div class="vt-collapsible">
+                            <div class="vt-gizmo pp-gizmo-sm" id="mfx-vt-gizmo">
+                                <canvas id="mfx-gizmo-canvas" width="28" height="28"></canvas>
+                            </div>
+                            <div class="vt-separator"></div>
+                            <button class="vt-btn" id="mfx-vt-reset-cam" title="Reset camera">
+                                <i class="fas fa-video"></i>
+                            </button>
+                            <button class="vt-btn" id="mfx-vt-zoom-fit" title="Zoom to fit carrier">
+                                <i class="fas fa-expand"></i>
+                            </button>
+                            <button class="vt-btn" id="mfx-vt-topdown" title="Top-down view">
+                                <i class="fas fa-arrow-down"></i>
+                            </button>
+                            <button class="vt-btn" id="mfx-vt-perspective" title="Toggle perspective / orthographic">
+                                <i class="fas fa-cube"></i>
+                            </button>
+                            <div class="vt-separator"></div>
+                            <button class="vt-btn vt-btn-round" id="mfx-vt-zoom-in" title="Zoom in">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                            <button class="vt-btn vt-btn-round" id="mfx-vt-zoom-out" title="Zoom out">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                            <button class="vt-btn vt-btn-round" id="mfx-vt-pan" title="Pan mode">
+                                <i class="fas fa-hand-paper"></i>
+                            </button>
+                            <button class="vt-btn vt-btn-round is-active" id="mfx-vt-reorder" title="Reorder modules (drag to rearrange)">
+                                <i class="fas fa-mouse-pointer"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Left Panel: Carrier Details + Carrier Type + Module Catalog -->
+                <div class="vl-left-panel" id="mfx-left-panel">
+
+                    <!-- Carrier Details (collapsible) -->
+                    <div class="mfx-rp-section">
+                        <div class="mfx-rp-section-header" id="mfx-meta-toggle">
+                            <i class="fas fa-id-card"></i> Carrier Details
+                            <i class="fas fa-chevron-down mfx-rp-chevron"></i>
+                        </div>
+                        <div class="mfx-rp-section-body" id="mfx-meta-body">
+                            <div class="lwe-field">
+                                <label class="lwe-label">Name</label>
+                                <input type="text" id="mfx-car-name" class="lwe-input" placeholder="e.g. MFX_CAR_L5_MTP_A00" value="">
+                            </div>
+                            <div class="lwe-field">
+                                <label class="lwe-label">Description</label>
+                                <textarea id="mfx-car-desc" class="lwe-input" placeholder="Carrier description" rows="3"></textarea>
+                            </div>
+                            <div class="lwe-field-row">
+                                <div class="lwe-field">
+                                    <label class="lwe-label">Barcode Mask</label>
+                                    <input type="text" id="mfx-car-barcode" class="lwe-input" placeholder="e.g. P04*****" value="">
+                                </div>
+                                <div class="lwe-field" style="flex:0 0 auto">
+                                    <label class="lwe-check-label" style="margin-top:16px">
+                                        <input type="checkbox" id="mfx-car-bc-unique"> Unique
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="lwe-field">
+                                <label class="lwe-label">Categories</label>
+                                <div class="cated-field-row">
+                                    <input type="text" id="mfx-car-categories" class="lwe-input" placeholder="No categories assigned" value="" readonly>
+                                    <button class="lwe-btn lwe-btn-sm" id="mfx-car-cat-picker" title="Choose categories"><i class="fas fa-sitemap"></i></button>
+                                </div>
+                            </div>
+                            <div class="lwe-field">
+                                <label class="lwe-label">Properties</label>
+                                <div class="cated-field-row">
+                                    <input type="text" id="mfx-car-properties" class="lwe-input" placeholder="No properties defined" value="" readonly>
+                                    <button class="lwe-btn lwe-btn-sm" id="mfx-car-prop-picker" title="Edit properties"><i class="fas fa-list"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Carrier Type (collapsible) -->
+                    <div class="mfx-rp-section">
+                        <div class="mfx-rp-section-header" id="mfx-carrier-type-toggle">
+                            <i class="fas fa-th-large"></i> Carrier Type
+                            <i class="fas fa-chevron-down mfx-rp-chevron"></i>
+                        </div>
+                        <div class="mfx-rp-section-body" id="mfx-carrier-type-body">
+                            <div class="mfx-carrier-tabs" id="mfx-carrier-tabs">
+                                <!-- populated by JS -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Module Catalog (collapsible) -->
+                    <div class="mfx-rp-section">
+                        <div class="mfx-rp-section-header" id="mfx-catalog-toggle">
+                            <i class="fas fa-puzzle-piece"></i> Module Catalog
+                            <i class="fas fa-chevron-down mfx-rp-chevron"></i>
+                        </div>
+                        <div class="mfx-rp-section-body mfx-catalog-section-body" id="mfx-catalog-body">
+                            <div class="mfx-catalog-filters">
+                                <select class="mfx-cat-select" id="mfx-cat-filter">
+                                    <option value="All">All Categories</option>
+                                </select>
+                                <input type="text" class="mfx-search-input" id="mfx-module-search" placeholder="Search modules…">
+                            </div>
+                            <div class="mfx-module-list" id="mfx-module-list">
+                                <!-- populated by JS -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Labware Catalog (collapsible) — racks from Hamilton dir -->
+                    <div class="mfx-rp-section">
+                        <div class="mfx-rp-section-header" id="mfx-labware-toggle">
+                            <i class="fas fa-flask"></i> Labware Catalog
+                            <i class="fas fa-chevron-down mfx-rp-chevron"></i>
+                        </div>
+                        <div class="mfx-rp-section-body mfx-catalog-section-body" id="mfx-labware-body">
+                            <button class="cv-ctrl-btn mfx-scan-btn" id="mfx-scan-labware">
+                                <i class="fas fa-sync-alt"></i> Scan Labware Directory
+                            </button>
+                            <div class="mfx-catalog-filters" id="mfx-labware-filters" style="display:none">
+                                <select class="mfx-cat-select" id="mfx-labware-cat-filter">
+                                    <option value="All">All Categories</option>
+                                </select>
+                                <input type="text" class="mfx-search-input" id="mfx-labware-search" placeholder="Search labware…">
+                            </div>
+                            <div class="mfx-module-list" id="mfx-labware-list">
+                                <!-- populated by JS after scanning -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Panel collapse toggle (left only — right panel removed) -->
+                <button class="vl-panel-toggle vl-left-toggle" id="mfx-left-toggle" title="Show / hide left panel">
+                    <i class="fas fa-chevron-left" id="mfx-left-toggle-icon"></i>
+                </button>
+
+                <!-- Hidden file inputs for manual labware assignment -->
+                <input type="file" id="mfx-lw-rack-input" accept=".rck" style="display:none">
+                <input type="file" id="mfx-lw-ctr-input" accept=".ctr" style="display:none">
+
+                <!-- Bottom Controls Bar -->
+                <div class="viewer-controls-bar" id="mfx-controls-bar">
+                    <!-- Pending placement banner (inline in status bar) -->
+                    <div class="mfx-pending-banner" id="mfx-pending-banner" style="display:none">
+                        <i class="fas fa-hand-pointer"></i>
+                        Placing: <strong id="mfx-pending-name"></strong>
+                        <button class="mfx-pending-cancel" id="mfx-cancel-pending" title="Cancel placement">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <span class="vl-status-msg" id="mfx-status">Select a carrier type, then click a module to place it.</span>
+                    <div class="cv-ctrl-spacer"></div>
+                    <button class="cv-ctrl-btn" id="mfx-clear-all" title="Clear all slots">
+                        <i class="fas fa-trash"></i> Clear All
+                    </button>
+                    <div class="cv-ctrl-divider"></div>
+                    <div class="screenshot-group" id="mfx-screenshot-group">
+                        <button class="cv-ctrl-btn cv-ctrl-btn-accent" id="mfx-screenshot" title="Save screenshot">
+                            <i class="fas fa-camera"></i> Screenshot
+                        </button>
+                    </div>
+                    <div class="cv-ctrl-divider"></div>
+                    <button class="cv-ctrl-btn cv-ctrl-btn-accent" id="mfx-export-zip-btn" title="Export full Hamilton package (.zip)">
+                        <i class="fas fa-file-archive"></i> Export Package
+                    </button>
+                </div>
+
+                <!-- Trash drop zone (shown during 3D drag) -->
+                <div class="mfx-trash-zone" id="mfx-trash-zone">
+                    <i class="fas fa-trash-alt"></i>
+                    <span>Drop to remove</span>
+                </div>
+            </div>
+
+            <!-- ====== Labware Editor ====== -->
+            <div class="view-panel" data-view-panel="labware-editor" id="labware-editor-host">
+
+                <!-- Mode Tabs -->
+                <div class="lwe-mode-bar">
+                    <button class="lwe-mode-tab is-active" data-mode="rack"><i class="fas fa-grip-horizontal"></i> Rack</button>
+                    <button class="lwe-mode-tab" data-mode="container"><i class="fas fa-vial"></i> Container</button>
+                    <div class="lwe-mode-spacer"></div>
+                    <div class="lwe-file-btns">
+                        <button id="lwe-new-btn" class="lwe-btn" title="New"><i class="fas fa-file"></i></button>
+                        <button id="lwe-open-btn" class="lwe-btn" title="Open file"><i class="fas fa-folder-open"></i></button>
+                        <button id="lwe-save-btn" class="lwe-btn" title="Save"><i class="fas fa-save"></i></button>
+                        <button id="lwe-export-x-btn" class="lwe-btn" title="Export .x"><i class="fas fa-cube"></i></button>
+                        <input type="file" id="lwe-file-input" accept=".rck,.ctr" style="display:none">
+                    </div>
+                </div>
+
+                <!-- Main Layout: Left Panel + 3D Canvas + Right Panel -->
+                <div class="lwe-layout">
+
+                    <!-- Left Panel: Property Forms -->
+                    <div class="lwe-left-panel">
+
+                        <!-- === RACK FORM === -->
+                        <div id="lwe-rack-section" class="lwe-form-section">
+                            <h3 class="lwe-section-title"><i class="fas fa-grip-horizontal"></i> Rack Properties</h3>
+
+                            <label class="lwe-label">Name</label>
+                            <input type="text" id="lwe-rack-name" class="lwe-input" value="New Rack">
+
+                            <label class="lwe-label">Description</label>
+                            <input type="text" id="lwe-rack-desc" class="lwe-input">
+
+                            <div class="lwe-field-row">
+                                <div class="lwe-field"><label class="lwe-label">Width (Dx)</label><input type="number" id="lwe-rack-dx" class="lwe-input" step="0.01" value="127.76"></div>
+                                <div class="lwe-field"><label class="lwe-label">Depth (Dy)</label><input type="number" id="lwe-rack-dy" class="lwe-input" step="0.01" value="85.48"></div>
+                                <div class="lwe-field"><label class="lwe-label">Height (Dz)</label><input type="number" id="lwe-rack-dz" class="lwe-input" step="0.01" value="14.00"></div>
+                            </div>
+
+                            <h4 class="lwe-subsection">Well Layout</h4>
+                            <div class="lwe-field-row">
+                                <div class="lwe-field"><label class="lwe-label">Rows</label><input type="number" id="lwe-rack-rows" class="lwe-input" min="1" max="384" value="8"></div>
+                                <div class="lwe-field"><label class="lwe-label">Columns</label><input type="number" id="lwe-rack-cols" class="lwe-input" min="1" max="384" value="12"></div>
+                            </div>
+                            <div class="lwe-well-count" id="lwe-rack-well-count">96 wells (8×12)</div>
+                            <div class="lwe-field-row">
+                                <div class="lwe-field"><label class="lwe-label">Col Spacing</label><input type="number" id="lwe-rack-col-spacing" class="lwe-input" step="0.01" value="9.00"></div>
+                                <div class="lwe-field"><label class="lwe-label">Row Spacing</label><input type="number" id="lwe-rack-row-spacing" class="lwe-input" step="0.01" value="9.00"></div>
+                            </div>
+                            <div class="lwe-field-row">
+                                <div class="lwe-field"><label class="lwe-label">Boundary X</label><input type="number" id="lwe-rack-bndry-x" class="lwe-input" step="0.01" value="14.38"></div>
+                                <div class="lwe-field"><label class="lwe-label">Boundary Y</label><input type="number" id="lwe-rack-bndry-y" class="lwe-input" step="0.01" value="11.24"></div>
+                            </div>
+
+                            <h4 class="lwe-subsection">Well Geometry</h4>
+                            <div class="lwe-field-row">
+                                <div class="lwe-field">
+                                    <label class="lwe-label">Hole Shape</label>
+                                    <select id="lwe-rack-hole-shape" class="lwe-input">
+                                        <option value="0">Cylinder</option>
+                                        <option value="1">Rectangle</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="lwe-field-row">
+                                <div class="lwe-field"><label class="lwe-label">Hole X</label><input type="number" id="lwe-rack-hole-x" class="lwe-input" step="0.01" value="7.00"></div>
+                                <div class="lwe-field"><label class="lwe-label">Hole Y</label><input type="number" id="lwe-rack-hole-y" class="lwe-input" step="0.01" value="7.00"></div>
+                                <div class="lwe-field"><label class="lwe-label">Hole Z</label><input type="number" id="lwe-rack-hole-z" class="lwe-input" step="0.01" value="7.00"></div>
+                            </div>
+
+                            <h4 class="lwe-subsection">Stacking</h4>
+                            <div class="lwe-field">
+                                <label class="lwe-label">Stack Height</label>
+                                <input type="number" id="lwe-rack-stack-ht" class="lwe-input" step="0.01" value="0">
+                            </div>
+                        </div>
+
+                        <!-- === CONTAINER FORM === -->
+                        <div id="lwe-container-section" class="lwe-form-section" style="display:none">
+                            <h3 class="lwe-section-title"><i class="fas fa-vial"></i> Container Properties</h3>
+
+                            <div class="lwe-field-row">
+                                <div class="lwe-field">
+                                    <label class="lwe-label">Top Shape</label>
+                                    <select id="lwe-ctr-shape" class="lwe-input">
+                                        <option value="0">Cylinder</option>
+                                        <option value="1">Rectangle</option>
+                                    </select>
+                                </div>
+                                <div class="lwe-field"><label class="lwe-label">Depth</label><input type="number" id="lwe-ctr-depth" class="lwe-input" step="0.01" value="10.00"></div>
+                            </div>
+                            <div class="lwe-field-row">
+                                <div class="lwe-field"><label class="lwe-label">Aperture DX</label><input type="number" id="lwe-ctr-dx" class="lwe-input" step="0.01" value="7.00"></div>
+                                <div class="lwe-field"><label class="lwe-label">Aperture DY</label><input type="number" id="lwe-ctr-dy" class="lwe-input" step="0.01" value="7.00"></div>
+                            </div>
+                            <div class="lwe-field">
+                                <label class="lwe-label">Base Thickness (mm)</label>
+                                <input type="number" id="lwe-ctr-base-thick" class="lwe-input" step="0.01" value="0.50">
+                            </div>
+
+                            <h4 class="lwe-subsection">Liquid Level Detection</h4>
+                            <label class="lwe-check-label"><input type="checkbox" id="lwe-ctr-lld-enable"> Enable LLD</label>
+                            <div class="lwe-field">
+                                <label class="lwe-label">LLD Seek Height</label>
+                                <input type="number" id="lwe-ctr-lld-height" class="lwe-input" step="0.01" value="0">
+                            </div>
+
+                            <h4 class="lwe-subsection">Segments</h4>
+                            <div id="lwe-seg-list" class="lwe-seg-list"></div>
+                            <button id="lwe-add-segment" class="lwe-btn lwe-btn-sm"><i class="fas fa-plus"></i> Add Segment</button>
+
+                            <h4 class="lwe-subsection">First Segment</h4>
+                            <div class="lwe-field-row">
+                                <div class="lwe-field">
+                                    <label class="lwe-label">Shape</label>
+                                    <select id="lwe-ctr-seg-shape" class="lwe-input">
+                                        <option value="0">Cylinder</option>
+                                        <option value="1">Rectangle</option>
+                                        <option value="2">Inverted V-Cone</option>
+                                        <option value="3">V-Cone</option>
+                                        <option value="4">Round Base</option>
+                                        <option value="5">V-Cone Base</option>
+                                        <option value="6">Flat Base</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="lwe-field-row">
+                                <div class="lwe-field"><label class="lwe-label">DX</label><input type="number" id="lwe-ctr-seg-dx" class="lwe-input" step="0.01" value="7.00"></div>
+                                <div class="lwe-field"><label class="lwe-label">DY</label><input type="number" id="lwe-ctr-seg-dy" class="lwe-input" step="0.01" value="7.00"></div>
+                                <div class="lwe-field"><label class="lwe-label">DZ</label><input type="number" id="lwe-ctr-seg-dz" class="lwe-input" step="0.01" value="7.00"></div>
+                            </div>
+
+                            <h4 class="lwe-subsection">Volume</h4>
+                            <div class="lwe-volume-display">Total: <span id="lwe-ctr-volume">0.00 µL</span></div>
+                        </div>
+
+                    </div>
+
+                    <!-- Center: 3D Preview -->
+                    <div class="lwe-preview-col">
+                        <canvas id="lwe-canvas"></canvas>
+
+                        <!-- Floating Toolbar -->
+                        <div class="viewer-toolbar lwe-toolbar" id="lwe-toolbar">
+                            <div class="vt-body" id="lwe-vt-body">
+                                <button class="vt-toggle" id="lwe-vt-toggle" title="Toggle toolbar">
+                                    <i class="fas fa-chevron-right"></i>
+                                </button>
+                                <div class="vt-collapsible">
+                                    <div class="vt-gizmo pp-gizmo-sm" id="lwe-vt-gizmo">
+                                        <canvas id="lwe-gizmo-canvas" width="28" height="28"></canvas>
+                                    </div>
+                                    <div class="vt-separator"></div>
+                                    <button class="vt-btn" id="lwe-vt-grab-handle" title="Drag to reposition"><i class="fas fa-grip-vertical"></i></button>
+                                    <div class="vt-separator"></div>
+                                    <button class="vt-btn" id="lwe-vt-reset-cam" title="Reset camera"><i class="fas fa-video"></i></button>
+                                    <button class="vt-btn" id="lwe-vt-zoom-fit" title="Zoom to fit"><i class="fas fa-expand"></i></button>
+                                    <button class="vt-btn" id="lwe-vt-topdown" title="Top-down view"><i class="fas fa-arrow-down"></i></button>
+                                    <div class="vt-separator"></div>
+                                    <button class="vt-btn" id="lwe-vt-zoom-in" title="Zoom in"><i class="fas fa-search-plus"></i></button>
+                                    <button class="vt-btn" id="lwe-vt-zoom-out" title="Zoom out"><i class="fas fa-search-minus"></i></button>
+                                    <button class="vt-btn" id="lwe-vt-pan" title="Pan mode"><i class="fas fa-hand-paper"></i></button>
+                                    <div class="vt-separator"></div>
+                                    <button class="vt-btn" id="lwe-vt-wireframe" title="Toggle wireframe"><i class="fas fa-border-none"></i></button>
+                                    <button class="vt-btn" id="lwe-vt-perspective" title="Toggle ortho/persp"><i class="fas fa-video"></i></button>
+                                    <button class="vt-btn" id="lwe-btn-grid" title="Toggle grid"><i class="fas fa-th"></i></button>
+                                    <div class="vt-separator"></div>
+                                    <button class="vt-btn" id="lwe-vt-ruler" title="Ruler tool"><i class="fas fa-ruler"></i></button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Ruler readout -->
+                        <div class="viewer-ruler-readout" id="lwe-ruler-readout" style="display:none"></div>
+
+                        <!-- Dimension display -->
+                        <div class="lwe-dim-overlay" id="lwe-dim-display"></div>
+
+                        <!-- Camera display -->
+                        <div class="lwe-cam-overlay" id="lwe-cam-display"></div>
+
+                        <!-- Dropzone -->
+                        <div class="viewer-dropzone viewer-hidden" id="lwe-dropzone">
+                            <i class="fas fa-file-import"></i>
+                            <span>Drop .rck or .ctr file</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Status Bar -->
+                <div class="viewer-controls-bar">
+                    <span class="lwe-status" id="lwe-status">Ready</span>
+                    <div class="cv-ctrl-spacer"></div>
+                    <div class="screenshot-group">
+                        <button class="cv-ctrl-btn cv-ctrl-btn-accent" id="lwe-screenshot" title="Save screenshot">
+                            <i class="fas fa-camera"></i> Screenshot
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ====== Category Editor ====== -->
+            <div class="view-panel" data-view-panel="category-editor" id="category-editor-host">
+                <div class="cated-layout">
+                    <!-- Left: Category Tree -->
+                    <div class="cated-tree-panel">
+                        <div class="cated-tree-header">
+                            <i class="fas fa-sitemap"></i> Labware Categories
+                            <div class="cated-tree-actions">
+                                <button class="lwe-btn lwe-btn-sm" id="cated-expand-all" title="Expand All"><i class="fas fa-expand-alt"></i></button>
+                                <button class="lwe-btn lwe-btn-sm" id="cated-collapse-all" title="Collapse All"><i class="fas fa-compress-alt"></i></button>
+                                <button class="lwe-btn lwe-btn-sm" id="cated-refresh" title="Reload"><i class="fas fa-sync-alt"></i></button>
+                            </div>
+                        </div>
+                        <div class="cated-search-bar">
+                            <i class="fas fa-search cated-search-icon"></i>
+                            <input type="text" id="cated-search" class="cated-search-input" placeholder="Search categories or labware…" spellcheck="false" autocomplete="off">
+                        </div>
+                        <div class="cated-tree" id="cated-tree">
+                            <div class="cated-empty">Loading…</div>
+                        </div>
+                        <div class="cated-tree-footer">
+                            <span id="cated-status">Ready</span>
+                        </div>
+                    </div>
+                    <!-- Right: Detail Panel -->
+                    <div class="cated-detail-panel" id="cated-detail-panel">
+                        <div class="cated-detail-placeholder">
+                            <i class="fas fa-mouse-pointer"></i>
+                            <p>Select a labware item to view details</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ====== Carrier Editor ====== -->
+            <div class="view-panel" data-view-panel="carrier-editor" id="carrier-editor-host" style="display:none">
+                <canvas id="ce-canvas"></canvas>
+
+                <!-- Left Panel: Carrier Properties -->
+                <div class="vl-left-panel" id="ce-left-panel">
+                    <div class="vl-panel-header">
+                        <i class="fas fa-pallet"></i> Carrier Properties
+                        <div class="lwe-file-btns" style="margin-left:auto">
+                            <button id="ce-new-btn" class="lwe-btn" title="New"><i class="fas fa-file"></i></button>
+                            <button id="ce-open-btn" class="lwe-btn" title="Open .tml"><i class="fas fa-folder-open"></i></button>
+                            <button id="ce-save-btn" class="lwe-btn" title="Save"><i class="fas fa-save"></i></button>
+                            <button id="ce-export-x-btn" class="lwe-btn" title="Export .x"><i class="fas fa-cube"></i></button>
+                            <input type="file" id="ce-file-input" accept=".tml" style="display:none">
+                        </div>
+                    </div>
+
+                    <div class="ce-form-body">
+                        <label class="lwe-label">Name</label>
+                        <input type="text" id="ce-car-name" class="lwe-input" value="New Carrier">
+
+                        <label class="lwe-label">Description</label>
+                        <input type="text" id="ce-car-desc" class="lwe-input">
+
+                        <div class="lwe-field-row">
+                            <div class="lwe-field"><label class="lwe-label">Width (Dx)</label><input type="number" id="ce-car-dx" class="lwe-input" step="0.01" value="135.00"></div>
+                            <div class="lwe-field"><label class="lwe-label">Depth (Dy)</label><input type="number" id="ce-car-dy" class="lwe-input" step="0.01" value="497.00"></div>
+                            <div class="lwe-field"><label class="lwe-label">Height (Dz)</label><input type="number" id="ce-car-dz" class="lwe-input" step="0.01" value="130.00"></div>
+                        </div>
+
+                        <h4 class="lwe-subsection">Selected Site</h4>
+                        <div class="lwe-field-row">
+                            <div class="lwe-field"><label class="lwe-label">Site ID</label><input type="number" id="ce-site-id" class="lwe-input" min="1" value="1"></div>
+                        </div>
+                        <div class="lwe-field-row">
+                            <div class="lwe-field"><label class="lwe-label">X</label><input type="number" id="ce-site-x" class="lwe-input" step="0.01" value="4.00"></div>
+                            <div class="lwe-field"><label class="lwe-label">Y</label><input type="number" id="ce-site-y" class="lwe-input" step="0.01" value="8.50"></div>
+                            <div class="lwe-field"><label class="lwe-label">Z</label><input type="number" id="ce-site-z" class="lwe-input" step="0.01" value="112.00"></div>
+                        </div>
+                        <div class="lwe-field-row">
+                            <div class="lwe-field"><label class="lwe-label">Site Width</label><input type="number" id="ce-site-dx" class="lwe-input" step="0.01" value="127.00"></div>
+                            <div class="lwe-field"><label class="lwe-label">Site Depth</label><input type="number" id="ce-site-dy" class="lwe-input" step="0.01" value="86.00"></div>
+                        </div>
+                        <div class="lwe-field">
+                            <label class="lwe-label">Labware File</label>
+                            <input type="text" id="ce-site-labware" class="lwe-input" placeholder="path/to/labware.rck">
+                        </div>
+                        <div class="lwe-check-row">
+                            <label class="lwe-check-label"><input type="checkbox" id="ce-site-covered"> Covered</label>
+                            <label class="lwe-check-label"><input type="checkbox" id="ce-site-visible" checked> Visible</label>
+                            <label class="lwe-check-label"><input type="checkbox" id="ce-site-snap" checked> Snap Base</label>
+                        </div>
+                        <div class="lwe-check-row">
+                            <label class="lwe-check-label"><input type="checkbox" id="ce-site-stack"> Is Stack</label>
+                            <div class="lwe-field lwe-field-inline"><label class="lwe-label">Stack Size</label><input type="number" id="ce-site-stack-size" class="lwe-input" min="1" value="1"></div>
+                        </div>
+                        <div class="lwe-site-actions">
+                            <button id="ce-add-site" class="lwe-btn lwe-btn-sm"><i class="fas fa-plus"></i> Add Site</button>
+                            <button id="ce-del-site" class="lwe-btn lwe-btn-sm lwe-btn-danger"><i class="fas fa-trash"></i> Delete Site</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Panel: Site list -->
+                <div class="vl-right-panel" id="ce-right-panel">
+                    <div class="vl-panel-header"><i class="fas fa-list"></i> Sites</div>
+                    <div id="ce-site-list" class="mfx-slot-list"></div>
+                </div>
+
+                <!-- Floating 3D Toolbar (minimal, like MFX) -->
+                <div class="mfx-toolbar-anchor" id="ce-toolbar">
+                    <div class="vt-body mfx-anchored-vt-body" id="ce-vt-body">
+                        <button class="vt-toggle" id="ce-vt-toggle"><i class="fas fa-chevron-right"></i></button>
+                        <div class="vt-collapsible">
+                            <div class="vt-gizmo pp-gizmo-sm" id="ce-vt-gizmo">
+                                <canvas id="ce-gizmo-canvas" width="28" height="28"></canvas>
+                            </div>
+                            <button class="vt-btn" id="ce-vt-reset-cam" title="Reset camera"><i class="fas fa-video"></i></button>
+                            <button class="vt-btn" id="ce-vt-zoom-fit" title="Zoom to fit"><i class="fas fa-expand"></i></button>
+                            <button class="vt-btn" id="ce-vt-topdown" title="Top-down view"><i class="fas fa-arrow-down"></i></button>
+                            <button class="vt-btn" id="ce-vt-perspective" title="Toggle ortho/persp"><i class="fas fa-video"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dropzone -->
+                <div class="viewer-dropzone viewer-hidden" id="ce-dropzone">
+                    <i class="fas fa-file-import"></i>
+                    <span>Drop .tml file</span>
+                </div>
+
+                <!-- Bottom Controls Bar -->
+                <div class="viewer-controls-bar" id="ce-controls-bar">
+                    <span class="vl-status-msg" id="ce-status">Ready</span>
+                    <button class="cv-ctrl-btn cv-ctrl-btn-accent" id="ce-screenshot" title="Save screenshot">
+                        <i class="fas fa-camera"></i> Screenshot
+                    </button>
+                    <button class="cv-ctrl-btn cv-ctrl-btn-accent" id="ce-export-btn" title="Export .x">
+                        <i class="fas fa-cube"></i> Export .x
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="ss-overlay" id="ss-overlay">
+        <div class="ss-modal">
+            <div class="ss-header">
+                <div class="ss-title"><i class="fas fa-camera"></i> Screenshot Preview</div>
+                <button class="ss-close-btn" id="ss-close" title="Close">&times;</button>
+            </div>
+            <div class="ss-body">
+                <div class="ss-preview-wrap">
+                    <img id="ss-preview-img" class="ss-preview-img" alt="Screenshot preview" />
+                </div>
+                <div class="ss-options">
+                    <label class="ss-toggle">
+                        <input type="checkbox" id="ss-opt-grid" checked />
+                        <span class="ss-toggle-slider"></span>
+                        <span class="ss-toggle-label">Show Grid</span>
+                    </label>
+                    <label class="ss-toggle">
+                        <input type="checkbox" id="ss-opt-bg" checked />
+                        <span class="ss-toggle-slider"></span>
+                        <span class="ss-toggle-label">Show Background</span>
+                    </label>
+                </div>
+            </div>
+            <div class="ss-footer">
+                <button class="ss-save-btn" data-format="png"><i class="fas fa-file-image"></i> Save .PNG</button>
+                <button class="ss-save-btn" data-format="jpg"><i class="fas fa-file-image"></i> Save .JPG</button>
+                <button class="ss-save-btn" data-format="svg"><i class="fas fa-file-code"></i> Save .SVG</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Global Settings Modal -->
+    <div class="settings-overlay" id="global-settings-overlay">
+        <div class="settings-modal" style="width:520px">
+            <div class="settings-header">
+                <i class="fas fa-cog settings-header-icon"></i>
+                <div class="settings-title">Global Settings</div>
+                <div class="settings-subtitle">Application-wide Configuration</div>
+            </div>
+            <div class="settings-body">
+                <div class="settings-section-title"><i class="fas fa-folder-open"></i> Hamilton Installation Directory</div>
+                <p class="settings-hint">Set the root Hamilton directory so applets can locate configuration files, labware categories, and other resources. This is typically <code>C:\Program Files (x86)\HAMILTON</code>.</p>
+                <div class="global-settings-dir-row">
+                    <input type="text" id="global-hamilton-dir" class="global-settings-dir-input" placeholder="e.g. C:\Program Files (x86)\HAMILTON" spellcheck="false" autocomplete="off">
+                    <button class="global-settings-browse-btn" id="global-hamilton-browse" title="Browse…"><i class="fas fa-folder"></i></button>
+                </div>
+                <input type="file" id="global-hamilton-dir-picker" webkitdirectory style="display:none">
+                <p class="settings-hint" style="margin-top:8px;font-size:0.72rem;opacity:0.7">This value is saved in your browser and will persist across sessions.</p>
+            </div>
+            <div class="settings-footer">
+                <button class="settings-close-btn" id="global-settings-close">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="settings-overlay" id="settings-overlay">
+        <div class="settings-modal">
+            <div class="settings-header">
+                <i class="fas fa-cog settings-header-icon"></i>
+                <div class="settings-title">Deck Layout Settings</div>
+                <div class="settings-subtitle">Deck Appearance &amp; Positioning</div>
+            </div>
+            <div class="settings-body">
+
+                <!-- Deck Cover Panels -->
+                <div class="settings-section-title"><i class="fas fa-th-large"></i> Deck Cover Panels</div>
+                <p class="settings-hint">Toggle the 4 removable cover panels on the right side of the deck.</p>
+
+                <div class="settings-toggle-row">
+                    <span class="settings-toggle-label">Cover Panel 1</span>
+                    <label class="settings-switch">
+                        <input type="checkbox" id="settings-cover-0" checked>
+                        <span class="settings-switch-slider"></span>
+                    </label>
+                </div>
+                <div class="settings-toggle-row">
+                    <span class="settings-toggle-label">Cover Panel 2</span>
+                    <label class="settings-switch">
+                        <input type="checkbox" id="settings-cover-1" checked>
+                        <span class="settings-switch-slider"></span>
+                    </label>
+                </div>
+                <div class="settings-toggle-row">
+                    <span class="settings-toggle-label">Cover Panel 3</span>
+                    <label class="settings-switch">
+                        <input type="checkbox" id="settings-cover-2" checked>
+                        <span class="settings-switch-slider"></span>
+                    </label>
+                </div>
+                <div class="settings-toggle-row">
+                    <span class="settings-toggle-label">Cover Panel 4</span>
+                    <label class="settings-switch">
+                        <input type="checkbox" id="settings-cover-3" checked>
+                        <span class="settings-switch-slider"></span>
+                    </label>
+                </div>
+
+                <div class="settings-divider"></div>
+
+                <!-- Waste Chute -->
+                <div class="settings-section-title"><i class="fas fa-trash-alt"></i> Waste Chute</div>
+                <p class="settings-hint">Install the universal waste chute at a deck cutout position. The waste extends through and below the deck, blocking those tracks from carrier placement.</p>
+
+                <div class="settings-toggle-row">
+                    <span class="settings-toggle-label">Waste Position</span>
+                    <select id="settings-waste-position" class="settings-select">
+                        <option value="-1">None (no waste)</option>
+                        <option value="0">Panel 1</option>
+                        <option value="1">Panel 2</option>
+                        <option value="2">Panel 3</option>
+                        <option value="3">Panel 4</option>
+                    </select>
+                </div>
+
+                <div class="settings-divider"></div>
+
+                <!-- Entry/Exit Drawer -->
+                <div class="settings-section-title"><i class="fas fa-door-open"></i> Entry/Exit Drawer</div>
+                <p class="settings-hint">Install the entry/exit drawer at a deck cutout. The drawer extends below the deck with 4 stack locations.</p>
+
+                <div class="settings-toggle-row">
+                    <span class="settings-toggle-label">Drawer Position</span>
+                    <select id="settings-drawer-position" class="settings-select">
+                        <option value="-1">None (no drawer)</option>
+                        <option value="0">Panel 1</option>
+                        <option value="1">Panel 2</option>
+                        <option value="2">Panel 3</option>
+                        <option value="3">Panel 4</option>
+                    </select>
+                </div>
+
+                <div class="settings-divider"></div>
+
+                <!-- Back Shields -->
+                <div class="settings-section-title"><i class="fas fa-layer-group"></i> Back Shields</div>
+                <div class="settings-toggle-row">
+                    <span class="settings-toggle-label">Shield 1</span>
+                    <label class="settings-switch">
+                        <input type="checkbox" id="settings-back-shield-0" checked>
+                        <span class="settings-switch-slider"></span>
+                    </label>
+                </div>
+                <div class="settings-toggle-row">
+                    <span class="settings-toggle-label">Shield 2</span>
+                    <label class="settings-switch">
+                        <input type="checkbox" id="settings-back-shield-1" checked>
+                        <span class="settings-switch-slider"></span>
+                    </label>
+                </div>
+                <div class="settings-toggle-row">
+                    <span class="settings-toggle-label">Shield 3</span>
+                    <label class="settings-switch">
+                        <input type="checkbox" id="settings-back-shield-2" checked>
+                        <span class="settings-switch-slider"></span>
+                    </label>
+                </div>
+                <div class="settings-toggle-row">
+                    <span class="settings-toggle-label">Shield 4</span>
+                    <label class="settings-switch">
+                        <input type="checkbox" id="settings-back-shield-3">
+                        <span class="settings-switch-slider"></span>
+                    </label>
+                </div>
+
+                <div class="settings-divider"></div>
+
+                <!-- Display Options -->
+                <div class="settings-section-title"><i class="fas fa-eye"></i> Display Options</div>
+                <div class="settings-toggle-row">
+                    <span class="settings-toggle-label">Show Grid Lines</span>
+                    <label class="settings-switch">
+                        <input type="checkbox" id="settings-grid-toggle">
+                        <span class="settings-switch-slider"></span>
+                    </label>
+                </div>
+                <div class="settings-toggle-row">
+                    <span class="settings-toggle-label">Drag-to-Place</span>
+                    <label class="settings-switch">
+                        <input type="checkbox" id="settings-drag-place-toggle" checked>
+                        <span class="settings-switch-slider"></span>
+                    </label>
+                </div>
+                <div class="settings-toggle-row">
+                    <span class="settings-toggle-label">Deck Alignment Debug</span>
+                    <label class="settings-switch">
+                        <input type="checkbox" id="settings-deck-debug-toggle">
+                        <span class="settings-switch-slider"></span>
+                    </label>
+                </div>
+                <div class="settings-toggle-row">
+                    <span class="settings-toggle-label">Waste Unit Debug</span>
+                    <label class="settings-switch">
+                        <input type="checkbox" id="settings-fixture-debug-toggle">
+                        <span class="settings-switch-slider"></span>
+                    </label>
+                </div>
+                <div class="settings-toggle-row">
+                    <span class="settings-toggle-label">EE Drawer Debug</span>
+                    <label class="settings-switch">
+                        <input type="checkbox" id="settings-ee-debug-toggle">
+                        <span class="settings-switch-slider"></span>
+                    </label>
+                </div>
+                <div class="settings-toggle-row">
+                    <span class="settings-toggle-label">Use Generic Carriers</span>
+                    <label class="settings-switch">
+                        <input type="checkbox" id="settings-generic-carrier-toggle">
+                        <span class="settings-switch-slider"></span>
+                    </label>
+                </div>
+                <p class="settings-hint">When enabled, carriers use simple box rendering instead of 3D models.</p>
+
+            </div>
+            <div class="settings-footer">
+                <button class="settings-close-btn" id="settings-close">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- About Modal -->
+    <div class="about-overlay" id="about-overlay">
+        <div class="about-modal">
+            <div class="about-header">
+                <svg class="about-logo" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M50.5 32.8L73.8 33.2L79.8 33.9L81.4 34.5L82.0 35.0L82.1 35.7L82.6 36.3L85.0 38.1L87.8 40.9L89.9 44.3L90.8 44.4L95.0 46.5L98.2 49.2L100.0 51.4L101.4 54.3L104.4 64.1L105.6 67.1L107.3 70.0L109.8 72.4L115.4 75.5L104.9 75.2L103.1 74.5L100.9 72.4L100.1 71.2L99.3 69.6L97.4 63.9L95.3 60.6L93.6 59.2L91.5 58.1L89.4 57.7L88.9 58.0L85.2 67.7L81.7 74.9L80.4 75.9L73.9 75.9L70.4 76.6L68.3 76.8L62.3 77.9L59.6 79.1L59.1 79.9L59.1 80.6L62.3 85.0L62.2 85.9L60.9 86.6L56.1 87.0L53.2 86.8L51.3 86.6L50.3 86.1L49.9 85.7L49.9 85.0L50.5 83.9L52.7 81.4L53.2 80.6L53.2 79.9L52.6 79.1L49.9 77.9L38.3 75.9L31.9 75.9L30.6 74.9L28.9 71.6L15.9 71.4L10.9 70.7L7.0 69.3L5.6 68.0L4.7 66.2L4.3 64.7L4.5 61.5L5.4 58.2L6.6 56.0L8.6 53.2L11.1 50.6L17.0 46.4L22.9 43.5L24.5 40.9L26.8 38.6L29.5 36.4L30.1 35.7L30.4 34.9L31.5 34.1L38.6 33.2L50.5 32.8Z M21.6 48.5L21.6 50.9L22.1 54.3L23.0 57.3L24.8 62.7L27.0 67.6L16.4 67.5L13.1 67.0L10.9 66.1L10.2 65.5L9.8 64.8L9.7 62.8L10.3 60.4L12.4 56.1L14.8 53.2L16.2 51.9L19.7 49.3L21.6 48.5Z"
+                          fill="rgba(220,225,230,0.85)" fill-rule="evenodd"/>
+                </svg>
+                <div class="about-title">About 3D File Tools</div>
+                <div class="about-subtitle">Universal 3D File Viewer &amp; Converter</div>
+            </div>
+            <div class="about-body">
+                <div class="about-info-row"><span class="about-label">Version</span><span class="about-value">1.0.0</span></div>
+                <div class="about-info-row"><span class="about-label">Author</span><span class="about-value">Zachary Milot</span></div>
+                <div class="about-divider"></div>
+                <div class="about-section-title"><i class="fas fa-balance-scale"></i> Third-Party Licenses</div>
+                <div class="about-licenses">
+                    <table class="about-license-table">
+                        <thead><tr><th>Component</th><th>License</th></tr></thead>
+                        <tbody>
+                            <tr><td>Three.js r152</td><td>MIT &mdash; &copy; 2010-2024 Three.js Authors</td></tr>
+                            <tr><td>OrbitControls.js</td><td>MIT &mdash; &copy; Three.js Authors</td></tr>
+                            <tr><td>OBJLoader.js</td><td>MIT &mdash; &copy; Three.js Authors</td></tr>
+                            <tr><td>MTLLoader.js</td><td>MIT &mdash; &copy; Three.js Authors</td></tr>
+                            <tr><td>GLTFLoader.js</td><td>MIT &mdash; &copy; Three.js Authors</td></tr>
+                            <tr><td>STLLoader.js</td><td>MIT &mdash; &copy; Three.js Authors</td></tr>
+                            <tr><td>Font Awesome Free</td><td>CC BY 4.0 / MIT &mdash; &copy; Fonticons, Inc.</td></tr>
+                            <tr><td>Inter Font</td><td>OFL 1.1 &mdash; &copy; Rasmus Andersson</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="about-footer">
+                <button class="about-close-btn" id="about-close">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Carrier drag-to-place cursor ghost -->
+    <div id="vl-drag-cursor-ghost" style="display:none">
+        <i class="fas fa-th-large"></i>
+        <span id="vl-drag-ghost-label"></span>
+    </div>
+
+    <!-- MFX module drag-to-place cursor ghost -->
+    <div id="mfx-drag-cursor-ghost" style="display:none">
+        <i class="fas fa-puzzle-piece"></i>
+        <span id="mfx-drag-ghost-label"></span>
+    </div>
+
+    <script src="js/lib/pako.min.js"></script>
+    <script src="js/lib/three.min.js"></script>
+    <script src="js/lib/OrbitControls.js"></script>
+    <script src="js/lib/XFileLoader.js?v=20260304a"></script>
+    <script src="js/lib/OBJLoader.js"></script>
+    <script src="js/lib/MTLLoader.js"></script>
+    <script src="js/lib/GLTFLoader.js"></script>
+    <script src="js/lib/GLTFExporter.js"></script>
+    <script src="js/lib/STLLoader.js"></script>
+    <script src="js/hxxLoader.js?v=20260305a"></script>
+    <script src="js/deckUnits.js?v=20260308a"></script>
+    <script src="js/vantageLayout.js?v=20260309b"></script>
+    <script src="js/converter.js?v=20260304d"></script>
+    <script src="js/platePlacer.js?v=20260304d"></script>
+    <script src="js/labwareGenerator.js?v=20260308a"></script>
+    <script src="js/hamiltonImport.js?v=20260309a"></script>
+    <script src="js/mfxCarrier.js?v=20260310i"></script>
+    <script src="js/labwareEditor.js?v=20260315b"></script>
+    <script src="js/carrierEditor.js?v=20260315a"></script>
+    <script src="js/categoryEditor.js?v=20260315a"></script>
+    <script src="js/app.js?v=20260310b"></script>
+</body>
+</html>

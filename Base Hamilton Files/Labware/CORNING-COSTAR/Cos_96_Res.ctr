@@ -1,0 +1,34 @@
+HxCfgFile,2;
+
+ConfigIsValid,Y;
+
+DataDef,CONTAINER,3,default,
+{
+1.DX, "6",
+1.DY, "4.6",
+1.DZ, "0",
+1.EqnOfVol, "h*22.1901",
+1.Max, "12.1",
+1.Min, "0",
+1.Shape, "3",
+BaseMM, "1",
+Clearance, "20",
+Depth, "12.1",
+Dim.Dx, "6",
+Dim.Dy, "6",
+LS, "1",
+LSHt, "15",
+MaxDepth, "0",
+ReadOnly, "1",
+Segments, "1",
+Shape, "0",
+TchBack, "1",
+TchBase, "0",
+TchFront, "2.3",
+TchHt, "9",
+TchLeft, "2.3",
+TchOff, "1",
+TchRight, "1"
+};
+
+* $$author=ContainerAdministrator$$valid=1$$time=2025-06-21 16:41$$checksum=88e58594$$length=098$$

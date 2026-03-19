@@ -1,0 +1,37 @@
+HxCfgFile,2;
+
+ConfigIsValid,Y;
+
+DataDef,CONTAINER,3,default,
+{
+1.DX, "0",
+1.DY, "0",
+1.DZ, "3.7",
+1.EqnOfVol, "h*10.7521",
+1.Max, "7.9",
+1.Min, "0",
+1.Shape, "0",
+Barcode.Unique, "0",
+Barcode.Value, "",
+BaseMM, "1",
+CategoryCnt, "0",
+Clearance, "9.9",
+Depth, "7.9",
+Description, "Hamilton 384 x 80uL Microtiter Plate",
+Dim.Dx, "3.7",
+Dim.Dy, "3.7",
+LS, "1",
+LSHt, "7.9",
+MaxDepth, "0",
+ReadOnly, "1",
+Segments, "1",
+Shape, "1",
+TchBase, "0",
+TchOff, "0",
+UseBndry, "0",
+ViewName, "Hamilton 384 x 80uL Microtiter Plate",
+Visible, "0",
+cLLD, "2"
+};
+
+* $$author=ContainerAdministrator$$valid=1$$time=2025-06-21 16:41$$checksum=e3c45526$$length=098$$

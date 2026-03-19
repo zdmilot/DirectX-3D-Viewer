@@ -1,0 +1,49 @@
+HxCfgFile,2;
+
+ConfigIsValid,Y;
+
+DataDef,CONTAINER,3,default,
+{
+1.DX, "0",
+1.DY, "0",
+1.DZ, "7",
+1.EqnOfVol, "h*38.4845",
+1.Max, "37.4",
+1.Min, "0.9",
+1.Shape, "0",
+2.DX, "0",
+2.DY, "0",
+2.DZ, "6.5",
+2.EqnOfVol, "h*h*(10.2102 - 1.0472*h)",
+2.Max, "0.9",
+2.Min, "0",
+2.Shape, "4",
+Barcode.Value, "",
+BaseMM, "1",
+CategoryCnt, "0",
+Clearance, "42",
+Depth, "37.4",
+Description, "",
+Dim.Dx, "7",
+Dim.Dy, "7",
+Dim.Dz, "0",
+LS, "1",
+LSHt, "40",
+MaxDepth, "0",
+ReadOnly, "1",
+Segments, "2",
+Shape, "0",
+TchBack, "3",
+TchBase, "0",
+TchFront, "3",
+TchHt, "30",
+TchLeft, "3",
+TchOff, "1",
+TchRight, "3",
+UseBndry, "0",
+ViewName, "",
+Visible, "0",
+cLLD, "1"
+};
+
+* $$author=ContainerAdministrator$$valid=1$$time=2025-06-21 16:41$$checksum=0edf57ce$$length=098$$

@@ -1,0 +1,1272 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+
+Pedestal definitions to be used in HxLabwareEd2 during Microlab® STAR / VANTAGE multiflex carrier creation
+
+displayName - string value, name that will be displayed in pedestal selection dropdown lists along side model joiner; must be UNIQUE per each pedestal
+displayPartNumber - (optional) string value, part number that will be displayed under displayName
+pedestalType - string value (key), pedestal type that ties a group of pedestals together and is used to identify/use that group of pedestals in StarCarriers.xml when defining sitePedestalTypes
+templateFilePath - relative path (within Vector's Labware folder) that points to pedestal template (*.tml)
+modelFilePath - relative path (within Vector's Labware folder) that points to pedestal DirectX model (*.x)
+imageFilePath - relative path (within Vector's Labware folder) that points to pedestal image (*.png)
+modelOffsetsOverride - x and y offset values, allows overriding standard pedestal position offsets for 3D model placement
+sitesOffsetsOverride - x and y offset values, allows overriding standard pedestal position offsets for pedestal template (*.tml) placement
+oversized - single value or array, "-1" or ["1","-1"], allows blocking neighboring pedestal sites due to pedestal being oversized by providing indicies of pedestals that need to be blocked (positive numbers represent next pedestal positions and negative number represent previous pedestal positions)
+
+-->
+
+<pedestalConfig>
+
+	<pedestal 
+		displayName="Heating Module" 
+		displayPartNumber="188045"
+		pedestalType="HeatCool" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - Heating Module.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - Heating Module.x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - Heating Module.png"
+		modelOffsetsOverride="0,47" 
+		sitesOffsetsOverride="0,16.5" 
+		oversized="-1" />
+
+	<pedestal 
+		displayName="Heating Module" 
+		displayPartNumber="188045"
+		pedestalType="HeatCoolShaker" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - Heating Module (Brackets).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - Heating Module (Brackets).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - Heating Module.png" 
+		modelOffsetsOverride="0,76"
+		sitesOffsetsOverride="0,46"   
+		oversized="-1" />
+
+	<pedestal 
+		displayName="Cooling Module"
+		displayPartNumber="188046" 
+		pedestalType="HeatCool" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - Cooling Module.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - Cooling Module.x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - Cooling Module.png" 
+		modelOffsetsOverride="0,47"
+		sitesOffsetsOverride="0,16.5"  
+		oversized="-1" />
+
+	<pedestal 
+		displayName="Cooling Module"
+		displayPartNumber="188046" 
+		pedestalType="HeatCoolShaker" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - Cooling Module (Brackets).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - Cooling Module (Brackets).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - Cooling Module.png" 
+		modelOffsetsOverride="0,76"
+		sitesOffsetsOverride="0,46"  
+		oversized="-1" />
+	
+	<pedestal 
+		displayName="Turn Table Module" 
+		displayPartNumber="188055APE"
+		pedestalType="TurnTable" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - Turn Table Module.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - Turn Table Module.x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - Turn Table Module.png" 
+		modelOffsetsOverride="0,-49"
+		sitesOffsetsOverride="0,-48"  
+		oversized="1" />
+
+	<pedestal 
+		displayName="Lid Park Module" 
+		displayPartNumber="188058APE"
+		pedestalType="LidPark" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - Lid Park Module.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - Lid Park Module.x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - Lid Park Module.png" 
+		modelOffsetsOverride="0,-2"
+		sitesOffsetsOverride="0,-12" />
+
+	<pedestal 
+		displayName="Lid Park Module" 
+		displayPartNumber="188058APE"
+		pedestalType="LidParkBack" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - Lid Park Module.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - Lid Park Module (Back).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - Lid Park Module.png" 
+		modelOffsetsOverride="0,5"
+		sitesOffsetsOverride="0,12" />
+
+	<pedestal 
+		displayName="Lid Park Module" 
+		displayPartNumber="188058APE"
+		pedestalType="LidParkShaker" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - Lid Park Module (Brackets).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - Lid Park Module (Brackets).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - Lid Park Module.png" 
+		modelOffsetsOverride="0,-2"
+		sitesOffsetsOverride="0,-12" />
+
+	<pedestal 
+		displayName="Lid Park Module" 
+		displayPartNumber="188058APE"
+		pedestalType="LidParkBackShaker" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - Lid Park Module (Brackets).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - Lid Park Module (Back, Brackets).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - Lid Park Module.png" 
+		modelOffsetsOverride="0,5"
+		sitesOffsetsOverride="0,12" />
+
+	<pedestal 
+		displayName="Tip Stack Standard" 
+		displayPartNumber="188062"
+		pedestalType="Standard" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - Tip Stack Standard.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - Tip Stack Standard.x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - Tip Stack Standard.png" />
+
+	<pedestal 
+		displayName="Tip Stack Standard" 
+		displayPartNumber="188062"
+		pedestalType="StandardShaker" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - Tip Stack Standard (Brackets).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - Tip Stack Standard (Brackets).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - Tip Stack Standard.png" />
+
+	<pedestal 
+		displayName="Tip Stack Low" 
+		displayPartNumber="188062"
+		pedestalType="Standard" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - Tip Stack Low.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - Tip Stack Low.x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - Tip Stack Low.png" />
+
+	<pedestal 
+		displayName="Tip Stack Low" 
+		displayPartNumber="188062"
+		pedestalType="StandardShaker" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - Tip Stack Low (Brackets).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - Tip Stack Low (Brackets).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - Tip Stack Low.png" />
+
+	<pedestal 
+		displayName="Stacker Module" 
+		displayPartNumber="188044"
+		pedestalType="Standard" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - Stacker Module.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - Stacker Module.x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - Stacker Module.png" />
+
+	<pedestal 
+		displayName="Stacker Module" 
+		displayPartNumber="188044"
+		pedestalType="StandardShaker" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - Stacker Module (Brackets).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - Stacker Module (Brackets).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - Stacker Module.png" />
+
+	<pedestal 
+		displayName="Stacker Module" 
+		displayPartNumber="188059"
+		pedestalType="StandardPortrait" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - Stacker Module (Portrait).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - Stacker Module (Portrait).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - Stacker Module (Portrait).png" />
+
+	<pedestal 
+		displayName="Tube Module" 
+		displayPartNumber="188048"
+		pedestalType="Standard" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - Tube Module.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - Tube Module.x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - Tube Module.png" />
+
+	<pedestal 
+		displayName="Tube Module" 
+		displayPartNumber="188048"
+		pedestalType="StandardShaker" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - Tube Module (Brackets).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - Tube Module (Brackets).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - Tube Module.png" />
+
+	<pedestal 
+		displayName="Tube Module Mixed" 
+		displayPartNumber="188307"
+		pedestalType="Standard" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - Tube Module Mixed.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - Tube Module Mixed.x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - Tube Module Mixed.png" />
+
+	<pedestal 
+		displayName="Tube Module Mixed" 
+		displayPartNumber="188307"
+		pedestalType="StandardShaker" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - Tube Module Mixed (Brackets).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - Tube Module Mixed (Brackets).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - Tube Module Mixed.png" />
+
+	<pedestal 
+		displayName="DWP" 
+		displayPartNumber="188042"
+		pedestalType="Standard" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - DWP.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - DWP.x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - DWP.png" />
+
+	<pedestal 
+		displayName="DWP" 
+		displayPartNumber="188042"
+		pedestalType="StandardShaker" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - DWP (Brackets).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - DWP (Brackets).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - DWP.png" />
+
+	<pedestal 
+		displayName="DWP" 
+		displayPartNumber="188042"
+		pedestalType="StandardPortrait" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - DWP (Portrait).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - DWP (Portrait).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - DWP.png" />
+
+	<pedestal 
+		displayName="DWP Nest Rack Based" 
+		displayPartNumber="188229"
+		pedestalType="Standard" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - DWP Nest Rack Based.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - DWP Nest Rack Based.x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - DWP Nest Rack Based.png" />
+
+	<pedestal 
+		displayName="DWP Nest Rack Based" 
+		displayPartNumber="188229"
+		pedestalType="StandardShaker" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - DWP Nest Rack Based (Brackets).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - DWP Nest Rack Based (Brackets).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - DWP Nest Rack Based.png" />
+
+	<pedestal 
+		displayName="DWP Nest Rack Based" 
+		displayPartNumber="188229"
+		pedestalType="StandardPortrait" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - DWP Nest Rack Based (Portrait).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - DWP Nest Rack Based (Portrait).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - DWP Nest Rack Based.png" />
+
+	<pedestal 
+		displayName="DWP Nest Container Based" 
+		displayPartNumber="188180"
+		pedestalType="Standard" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - DWP Nest Container Based.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - DWP Nest Container Based.x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - DWP Nest Container Based.png" />
+
+	<pedestal 
+		displayName="DWP Nest Container Based" 
+		displayPartNumber="188180"
+		pedestalType="StandardShaker" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - DWP Nest Container Based (Brackets).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - DWP Nest Container Based (Brackets).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - DWP Nest Container Based.png" />
+
+	<pedestal 
+		displayName="DWP Nest Container Based" 
+		displayPartNumber="188180"
+		pedestalType="StandardPortrait" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - DWP Nest Container Based (Portrait).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - DWP Nest Container Based (Portrait).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - DWP Nest Container Based.png" />
+
+	<pedestal 
+		displayName="MTP" 
+		displayPartNumber="188041"
+		pedestalType="Standard" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - MTP.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - MTP.x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - MTP.png" />
+
+	<pedestal 
+		displayName="MTP" 
+		displayPartNumber="188041"
+		pedestalType="StandardShaker" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - MTP (Brackets).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - MTP (Brackets).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - MTP.png" />
+
+	<pedestal 
+		displayName="MTP" 
+		displayPartNumber="188041"
+		pedestalType="StandardPortrait" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - MTP (Portrait).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - MTP (Portrait).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - MTP.png" />
+
+	<pedestal 
+		displayName="MTP Nest Rack Based" 
+		displayPartNumber="188228"
+		pedestalType="Standard" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - MTP Nest Rack Based.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - MTP Nest Rack Based.x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - MTP Nest Rack Based.png" />
+
+	<pedestal 
+		displayName="MTP Nest Rack Based" 
+		displayPartNumber="188228"
+		pedestalType="StandardShaker" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - MTP Nest Rack Based (Brackets).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - MTP Nest Rack Based (Brackets).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - MTP Nest Rack Based.png" />
+
+	<pedestal 
+		displayName="MTP Nest Rack Based" 
+		displayPartNumber="188228"
+		pedestalType="StandardPortrait" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - MTP Nest Rack Based (Portrait).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - MTP Nest Rack Based (Portrait).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - MTP Nest Rack Based.png" />
+
+	<pedestal 
+		displayName="MTP Nest Container Based" 
+		displayPartNumber="188094"
+		pedestalType="Standard" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - MTP Nest Container Based.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - MTP Nest Container Based.x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - MTP Nest Container Based.png" />
+
+	<pedestal 
+		displayName="MTP Nest Container Based" 
+		displayPartNumber="188094"
+		pedestalType="StandardShaker" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - MTP Nest Container Based (Brackets).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - MTP Nest Container Based (Brackets).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - MTP Nest Container Based.png" />
+
+	<pedestal 
+		displayName="MTP Nest Container Based" 
+		displayPartNumber="188094"
+		pedestalType="StandardPortrait" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - MTP Nest Container Based (Portrait).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - MTP Nest Container Based (Portrait).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - MTP Nest Container Based.png" />
+
+	<pedestal 
+		displayName="Tip Module" 
+		displayPartNumber="188040"
+		pedestalType="Standard" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - Tip Module.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - Tip Module.x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - Tip Module.png" />
+
+	<pedestal 
+		displayName="Tip Module" 
+		displayPartNumber="188040"
+		pedestalType="StandardShaker" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - Tip Module (Brackets).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - Tip Module (Brackets).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - Tip Module.png" />
+
+	<pedestal 
+		displayName="Tip Module" 
+		displayPartNumber="188040"
+		pedestalType="StandardPortrait" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - Tip Module (Portrait).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - Tip Module (Portrait).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - Tip Module.png" />
+
+	<pedestal 
+		displayName="Tip Module BC" 
+		displayPartNumber="188160"
+		pedestalType="Standard" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - Tip Module BC.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - Tip Module BC.x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - Tip Module BC.png" />
+
+	<pedestal 
+		displayName="Tip Module BC" 
+		displayPartNumber="188160"
+		pedestalType="StandardShaker" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - Tip Module BC (Brackets).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - Tip Module BC (Brackets).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - Tip Module BC.png" />
+
+	<pedestal 
+		displayName="Tip Module BC" 
+		displayPartNumber="188160"
+		pedestalType="StandardPortrait" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - Tip Module BC (Portrait).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - Tip Module BC (Portrait).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - Tip Module BC.png" />
+
+	<pedestal 
+		displayName="Tip Park Module" 
+		displayPartNumber="188248"
+		pedestalType="StandardShaker" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - Tip Park Module.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - Tip Park Module.x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - Tip Park Module.png" />
+
+	<pedestal 
+		displayName="PCR 96" 
+		displayPartNumber="188049"
+		pedestalType="Standard" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - PCR 96.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - PCR 96.x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - PCR 96.png" />
+
+	<pedestal 
+		displayName="PCR 96" 
+		displayPartNumber="188049"
+		pedestalType="StandardShaker" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - PCR 96 (Brackets).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - PCR 96 (Brackets).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - PCR 96.png" />
+
+	<pedestal 
+		displayName="PCR 96" 
+		displayPartNumber="188049"
+		pedestalType="StandardPortrait" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - PCR 96 (Portrait).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - PCR 96 (Portrait).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - PCR 96.png" />
+
+	<pedestal 
+		displayName="PCR 96 ABI" 
+		displayPartNumber="188314"
+		pedestalType="Standard" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - PCR 96 ABI.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - PCR 96 ABI.x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - PCR 96 ABI.png" />
+
+	<pedestal 
+		displayName="PCR 96 ABI" 
+		displayPartNumber="188314"
+		pedestalType="StandardShaker" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - PCR 96 ABI (Brackets).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - PCR 96 ABI (Brackets).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - PCR 96 ABI.png" />
+
+	<pedestal 
+		displayName="PCR 96 ABI" 
+		displayPartNumber="188314"
+		pedestalType="StandardPortrait" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - PCR 96 ABI (Portrait).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - PCR 96 ABI (Portrait).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - PCR 96 ABI.png" />
+
+	<pedestal 
+		displayName="PCR 384" 
+		displayPartNumber="188052"
+		pedestalType="Standard" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - PCR 384.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - PCR 384.x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - PCR 384.png" />
+
+	<pedestal 
+		displayName="PCR 384" 
+		displayPartNumber="188052"
+		pedestalType="StandardShaker" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - PCR 384 (Brackets).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - PCR 384 (Brackets).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - PCR 384.png" />
+
+	<pedestal 
+		displayName="PCR 384" 
+		displayPartNumber="188052"
+		pedestalType="StandardPortrait" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - PCR 384 (Portrait).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - PCR 384 (Portrait).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - PCR 384.png" />
+
+	<pedestal 
+		displayName="Tilt Module" 
+		displayPartNumber="188061"
+		pedestalType="Standard" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - Tilt Module.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - Tilt Module.x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - Tilt Module.png" />
+
+	<pedestal 
+		displayName="Tilt Module" 
+		displayPartNumber="188061"
+		pedestalType="StandardShaker" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - Tilt Module (Brackets).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - Tilt Module (Brackets).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - Tilt Module.png" />
+
+	<pedestal 
+		displayName="Tilt Module" 
+		displayPartNumber="188061"
+		pedestalType="StandardPortrait" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - Tilt Module (Portrait).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - Tilt Module (Portrait).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - Tilt Module.png" />
+
+	<pedestal
+		displayName="Tilt Module 2G"
+		displayPartNumber="10171308"
+		pedestalType="Standard"
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - Tilt Module 2G.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - Tilt Module 2G.x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - Tilt Module 2G.png"
+		modelOffsetsOverride="0,0" />
+
+	<pedestal
+		displayName="Tilt Module 2G on Single Active Position"
+		displayPartNumber="10171308 on 10106787"
+		pedestalType="StandardShaker"
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - Tilt Module 2G (SAP).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - Tilt Module 2G (SAP).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - Tilt Module 2G (SAP).png"
+		modelOffsetsOverride="0,0" />
+
+	<pedestal 
+		displayName="NTR1" 
+		displayPartNumber="191420"
+		pedestalType="Standard" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - NTR1.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - NTR1.x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - NTR1.png" />
+
+	<pedestal 
+		displayName="NTR1" 
+		displayPartNumber="191420"
+		pedestalType="StandardShaker" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - NTR1 (Brackets).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - NTR1 (Brackets).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - NTR1.png" />
+
+	<pedestal 
+		displayName="NTR4" 
+		displayPartNumber="191425"
+		pedestalType="Standard" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - NTR4.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - NTR4.x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - NTR4.png" />
+
+	<pedestal 
+		displayName="NTR4" 
+		displayPartNumber="191425"
+		pedestalType="StandardShaker" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - NTR4 (Brackets).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - NTR4 (Brackets).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - NTR4.png" />
+
+	<pedestal 
+		displayName="NTR1 384" 
+		displayPartNumber="196371"
+		pedestalType="Standard" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - NTR1 384.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - NTR1 384.x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - NTR1 384.png" />
+
+	<pedestal 
+		displayName="NTR1 384" 
+		displayPartNumber="196371"
+		pedestalType="StandardShaker" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - NTR1 384 (Brackets).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - NTR1 384 (Brackets).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - NTR1 384.png" />
+
+	<pedestal 
+		displayName="RGT" 
+		displayPartNumber="188047"
+		pedestalType="Standard" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - RGT.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - RGT.x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - RGT.png" />
+
+	<pedestal 
+		displayName="RGT" 
+		displayPartNumber="188047"
+		pedestalType="StandardShaker" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - RGT (Brackets).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - RGT (Brackets).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - RGT.png" />
+
+	<pedestal 
+		displayName="RGT 96 Refill" 
+		displayPartNumber="188115APE"
+		pedestalType="Standard" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - RGT 96 Refill.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - RGT 96 Refill.x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - RGT 96 Refill.png" />
+
+	<pedestal 
+		displayName="RGT 96 Refill" 
+		displayPartNumber="188115APE"
+		pedestalType="StandardShaker" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - RGT 96 Refill (Brackets).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - RGT 96 Refill (Brackets).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - RGT 96 Refill.png" />
+
+	<pedestal 
+		displayName="RGT 8 Refill" 
+		displayPartNumber="188114APE"
+		pedestalType="Standard" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - RGT 8 Refill.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - RGT 8 Refill.x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - RGT 8 Refill.png" />
+
+	<pedestal 
+		displayName="RGT 8 Refill" 
+		displayPartNumber="188114APE"
+		pedestalType="StandardShaker" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - RGT 8 Refill (Brackets).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - RGT 8 Refill (Brackets).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - RGT 8 Refill.png" />
+
+	<pedestal 
+		displayName="HHS 1.5mm Sarstedt" 
+		displayPartNumber="199027"
+		pedestalType="StandardShaker" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - HHS 1.5mm Sarst.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - HHS 1.5mm Sarst.x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - HHS 1.5mm Sarst.png" />
+
+	<pedestal 
+		displayName="HHS 2mm Flat MTP" 
+		displayPartNumber="199033"
+		pedestalType="StandardShaker" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - HHS 2mm Flat MTP.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - HHS Flat MTP.x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - HHS Flat MTP.png" />
+
+	<pedestal 
+		displayName="HHS 3mm Flat MTP" 
+		displayPartNumber="199034"
+		pedestalType="StandardShaker" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - HHS 3mm Flat MTP.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - HHS Flat MTP.x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - HHS Flat MTP.png" />
+
+	<pedestal 
+		displayName="HHS 2mm Flat DWP" 
+		displayPartNumber="199033"
+		pedestalType="StandardShaker" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - HHS 2mm Flat DWP.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - HHS Flat MTP.x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - HHS Flat MTP.png" />
+
+	<pedestal 
+		displayName="HHS 3mm Flat DWP" 
+		displayPartNumber="199034"
+		pedestalType="StandardShaker" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - HHS 3mm Flat DWP.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - HHS Flat DWP.x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - HHS Flat DWP.png" />
+
+	<pedestal 
+		displayName="HHS 1.5mm Nunc DWP" 
+		displayPartNumber="199037"
+		pedestalType="StandardShaker" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - HHS 1.5mm Nunc DWP.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - HHS Nunc DWP.x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - HHS Nunc DWP.png" />
+
+	<pedestal 
+		displayName="HHS 2mm Nunc DWP" 
+		displayPartNumber="199038"
+		pedestalType="StandardShaker" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - HHS 2mm Nunc DWP.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - HHS Nunc DWP.x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - HHS Nunc DWP.png" />
+
+	<pedestal 
+		displayName="HHS 3mm Nunc DWP" 
+		displayPartNumber="199039"
+		pedestalType="StandardShaker" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - HHS 3mm Nunc DWP.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - HHS Nunc DWP.x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - HHS Nunc DWP.png" />
+
+	<pedestal 
+		displayName="HHS PCR96 ABI" 
+		displayPartNumber="188298"
+		pedestalType="StandardShaker" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - HHS PCR96 ABI.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - HHS PCR96 ABI.x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - HHS PCR96 ABI.png" />
+
+	<pedestal 
+		displayName="Teleshake 95 DWP" 
+		displayPartNumber="188197"
+		pedestalType="StandardShaker" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - Teleshake 95 DWP.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - Teleshake 95 DWP.x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - Teleshake 95 DWP.png" />
+
+	<pedestal 
+		displayName="Teleshake 95 MTP" 
+		displayPartNumber="188196"
+		pedestalType="StandardShaker" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - Teleshake 95 MTP.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - Teleshake 95 MTP.x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - Teleshake 95 MTP.png" />
+
+	<pedestal 
+		displayName="Teleshake DWP" 
+		displayPartNumber="187143/49"
+		pedestalType="StandardShaker" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - Teleshake DWP.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - Teleshake DWP.x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - Teleshake DWP.png" />
+
+	<pedestal 
+		displayName="Teleshake MTP" 
+		displayPartNumber="187295/96"
+		pedestalType="StandardShaker" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - Teleshake MTP.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - Teleshake MTP.x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - Teleshake MTP.png" />
+
+	<pedestal 
+		displayName="Matrix 1.4mL DH" 
+		displayPartNumber="188313"
+		pedestalType="Standard" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - Matrix 1.4mL DH.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - Matrix 1.4mL DH.x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - Matrix 1.4mL DH.png" />
+
+	<pedestal 
+		displayName="Matrix 1.4mL DH" 
+		displayPartNumber="188313"
+		pedestalType="StandardShaker" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - Matrix 1.4mL DH (Brackets).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - Matrix 1.4mL DH (Brackets).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - Matrix 1.4mL DH.png" />
+
+	<pedestal 
+		displayName="Matrix 1.4mL DH" 
+		displayPartNumber="188313"
+		pedestalType="StandardPortrait" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - Matrix 1.4mL DH (Portrait).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - Matrix 1.4mL DH (Portrait).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - Matrix 1.4mL DH.png" />
+
+	<pedestal 
+		displayName="CPAC Flat" 
+		displayPartNumber="58246/47/48-01"
+		pedestalType="Standard" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - CPAC Flat.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - CPAC Flat.x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - CPAC Flat.png" />
+
+	<pedestal 
+		displayName="CPAC Flat" 
+		displayPartNumber="58246/47/48-01"
+		pedestalType="StandardShaker" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - CPAC Flat (Brackets).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - CPAC Flat (Brackets).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - CPAC Flat.png" />
+
+	<pedestal 
+		displayName="MTP HP Flat Sloped" 
+		displayPartNumber="92585-01"
+		pedestalType="Standard" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - MTP HP Flat Sloped.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - MTP HP Flat Sloped.x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - MTP HP Flat Sloped.png" />
+
+	<pedestal 
+		displayName="MTP HP Flat Sloped" 
+		displayPartNumber="92585-01"
+		pedestalType="StandardShaker" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - MTP HP Flat Sloped (Brackets).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - MTP HP Flat Sloped (Brackets).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - MTP HP Flat Sloped.png" />
+
+	<pedestal 
+		displayName="MTP HP Flat Sloped" 
+		displayPartNumber="92585-01"
+		pedestalType="StandardPortrait" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - MTP HP Flat Sloped (Portrait).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - MTP HP Flat Sloped (Portrait).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - MTP HP Flat Sloped.png" />
+
+	<pedestal 
+		displayName="DWP HP Flat Sloped" 
+		displayPartNumber="92586-01"
+		pedestalType="Standard" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - DWP HP Flat Sloped.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - DWP HP Flat Sloped.x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - DWP HP Flat Sloped.png" />
+
+	<pedestal 
+		displayName="DWP HP Flat Sloped" 
+		displayPartNumber="92586-01"
+		pedestalType="StandardShaker" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - DWP HP Flat Sloped (Brackets).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - DWP HP Flat Sloped (Brackets).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - DWP HP Flat Sloped.png" />
+
+	<pedestal 
+		displayName="DWP HP Flat Sloped" 
+		displayPartNumber="92586-01"
+		pedestalType="StandardPortrait" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - DWP HP Flat Sloped (Portrait).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - DWP HP Flat Sloped (Portrait).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - DWP HP Flat Sloped.png" />
+
+	<pedestal 
+		displayName="Tall HP Flat" 
+		displayPartNumber="67540-01"
+		pedestalType="Standard" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - Tall HP Flat.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - Tall HP Flat.x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - Tall HP Flat.png" />
+
+	<pedestal 
+		displayName="Tall HP Flat" 
+		displayPartNumber="67540-01"
+		pedestalType="StandardShaker" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - Tall HP Flat (Brackets).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - Tall HP Flat (Brackets).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - Tall HP Flat.png" />
+
+	<pedestal 
+		displayName="Tall HP Flat" 
+		displayPartNumber="67540-01"
+		pedestalType="StandardPortrait" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - Tall HP Flat (Portrait).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - Tall HP Flat (Portrait).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - Tall HP Flat.png" />
+
+	<pedestal 
+		displayName="MTP HP Flat" 
+		displayPartNumber="58363-02"
+		pedestalType="Standard" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - MTP HP Flat.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - MTP HP Flat.x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - MTP HP Flat.png" />
+
+	<pedestal 
+		displayName="MTP HP Flat" 
+		displayPartNumber="58363-02"
+		pedestalType="StandardShaker" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - MTP HP Flat (Brackets).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - MTP HP Flat (Brackets).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - MTP HP Flat.png" />
+
+	<pedestal 
+		displayName="MTP HP Flat" 
+		displayPartNumber="58363-02"
+		pedestalType="StandardPortrait" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - MTP HP Flat (Portrait).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - MTP HP Flat (Portrait).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - MTP HP Flat.png" />
+
+	<pedestal 
+		displayName="MTP HP Raised" 
+		displayPartNumber="58363-01"
+		pedestalType="Standard" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - MTP HP Raised.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - MTP HP Raised.x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - MTP HP Raised.png" />
+
+	<pedestal 
+		displayName="MTP HP Raised" 
+		displayPartNumber="58363-01"
+		pedestalType="StandardShaker" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - MTP HP Raised (Brackets).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - MTP HP Raised (Brackets).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - MTP HP Raised.png" />
+
+	<pedestal 
+		displayName="MTP HP Raised" 
+		displayPartNumber="58363-01"
+		pedestalType="StandardPortrait" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - MTP HP Raised (Portrait).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - MTP HP Raised (Portrait).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - MTP HP Raised.png" />
+
+	<pedestal 
+		displayName="DWP HP Flat" 
+		displayPartNumber="58364-02"
+		pedestalType="Standard" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - DWP HP Flat.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - DWP HP Flat.x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - DWP HP Flat.png" />
+
+	<pedestal 
+		displayName="DWP HP Flat" 
+		displayPartNumber="58364-02"
+		pedestalType="StandardShaker" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - DWP HP Flat (Brackets).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - DWP HP Flat (Brackets).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - DWP HP Flat.png" />
+
+	<pedestal 
+		displayName="DWP HP Flat" 
+		displayPartNumber="58364-02"
+		pedestalType="StandardPortrait" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - DWP HP Flat (Portrait).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - DWP HP Flat (Portrait).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - DWP HP Flat.png" />
+
+	<pedestal 
+		displayName="DWP HP Raised" 
+		displayPartNumber="58364-01"
+		pedestalType="Standard" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - DWP HP Raised.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - DWP HP Raised.x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - DWP HP Raised.png" />
+
+	<pedestal 
+		displayName="DWP HP Raised" 
+		displayPartNumber="58364-01"
+		pedestalType="StandardShaker" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - DWP HP Raised (Brackets).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - DWP HP Raised (Brackets).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - DWP HP Raised.png" />
+
+	<pedestal 
+		displayName="DWP HP Raised" 
+		displayPartNumber="58364-01"
+		pedestalType="StandardPortrait" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - DWP HP Raised (Portrait).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - DWP HP Raised (Portrait).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - DWP HP Raised.png" />
+
+	<pedestal 
+		displayName="MIDI Raised" 
+		displayPartNumber="93561-01"
+		pedestalType="Standard" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - MIDI Raised.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - MIDI Raised.x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - MIDI Raised.png" />
+
+	<pedestal 
+		displayName="MIDI Raised" 
+		displayPartNumber="93561-01"
+		pedestalType="StandardShaker" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - MIDI Raised (Brackets).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - MIDI Raised (Brackets).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - MIDI Raised.png" />
+
+	<pedestal 
+		displayName="MIDI Raised" 
+		displayPartNumber="93561-01"
+		pedestalType="StandardPortrait" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - MIDI Raised (Portrait).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - MIDI Raised (Portrait).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - MIDI Raised.png" />
+
+	<pedestal 
+		displayName="MTP HP Tabbed Old" 
+		displayPartNumber="98552-01"
+		pedestalType="Standard" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - MTP HP Tabbed Old.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - MTP HP Tabbed Old.x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - MTP HP Tabbed Old.png" />
+
+	<pedestal 
+		displayName="MTP HP Tabbed Old" 
+		displayPartNumber="98552-01"
+		pedestalType="StandardShaker" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - MTP HP Tabbed Old (Brackets).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - MTP HP Tabbed Old (Brackets).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - MTP HP Tabbed Old.png" />
+
+	<pedestal 
+		displayName="MTP HP Tabbed Old" 
+		displayPartNumber="98552-01"
+		pedestalType="StandardPortrait" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - MTP HP Tabbed Old (Portrait).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - MTP HP Tabbed Old (Portrait).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - MTP HP Tabbed Old.png" />
+
+	<pedestal 
+		displayName="DWP HP Tabbed Old" 
+		displayPartNumber="98553-01"
+		pedestalType="Standard" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - DWP HP Tabbed Old.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - DWP HP Tabbed Old.x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - DWP HP Tabbed Old.png" />
+
+	<pedestal 
+		displayName="DWP HP Tabbed Old" 
+		displayPartNumber="98553-01"
+		pedestalType="StandardShaker" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - DWP HP Tabbed Old (Brackets).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - DWP HP Tabbed Old (Brackets).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - DWP HP Tabbed Old.png" />
+
+	<pedestal 
+		displayName="DWP HP Tabbed Old" 
+		displayPartNumber="98553-01"
+		pedestalType="StandardPortrait" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - DWP HP Tabbed Old (Portrait).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - DWP HP Tabbed Old (Portrait).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - DWP HP Tabbed Old.png" />
+
+	<pedestal 
+		displayName="Tip Isolator" 
+		displayPartNumber="92882-01"
+		pedestalType="Standard" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - Tip Isolator.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - Tip Isolator.x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - Tip Isolator.png" />
+
+	<pedestal 
+		displayName="Tip Isolator" 
+		displayPartNumber="92882-01"
+		pedestalType="StandardShaker" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - Tip Isolator (Brackets).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - Tip Isolator (Brackets).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - Tip Isolator.png" />
+
+	<pedestal 
+		displayName="Tip Isolator" 
+		displayPartNumber="92882-01"
+		pedestalType="StandardPortrait" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - Tip Isolator (Portrait).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - Tip Isolator (Portrait).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - Tip Isolator.png" />
+
+	<pedestal 
+		displayName="Gravity Waste"
+		displayPartNumber="992581-01" 
+		pedestalType="Standard" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - Gravity Waste.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - Gravity Waste.x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - Gravity Waste.png" />
+
+	<pedestal 
+		displayName="Gravity Waste" 
+		displayPartNumber="992581-01"
+		pedestalType="StandardShaker" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - Gravity Waste (Brackets).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - Gravity Waste (Brackets).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - Gravity Waste.png" />
+
+	<pedestal 
+		displayName="Gravity Waste" 
+		displayPartNumber="992581-01"
+		pedestalType="StandardPortrait" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - Gravity Waste (Portrait).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - Gravity Waste (Portrait).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - Gravity Waste.png" />
+
+	<pedestal 
+		displayName="MIDI HP Flat" 
+		displayPartNumber="95298-01"
+		pedestalType="Standard" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - MIDI HP Flat.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - MIDI HP Flat.x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - MIDI HP Flat.png" />
+
+	<pedestal 
+		displayName="MIDI HP Flat" 
+		displayPartNumber="95298-01"
+		pedestalType="StandardShaker" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - MIDI HP Flat (Brackets).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - MIDI HP Flat (Brackets).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - MIDI HP Flat.png" />
+
+	<pedestal 
+		displayName="MIDI HP Flat" 
+		displayPartNumber="95298-01"
+		pedestalType="StandardPortrait" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - MIDI HP Flat (Portrait).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - MIDI HP Flat (Portrait).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - MIDI HP Flat.png" />
+
+	<pedestal 
+		displayName="CPAC 2mL" 
+		displayPartNumber="58246/47/48-01"
+		pedestalType="Standard" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - CPAC 2mL.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - CPAC 2mL.x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - CPAC 2mL.png" />
+
+	<pedestal 
+		displayName="CPAC 2mL" 
+		displayPartNumber="58246/47/48-01"
+		pedestalType="StandardShaker" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - CPAC 2mL (Brackets).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - CPAC 2mL (Brackets).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - CPAC 2mL.png" />
+
+	<pedestal 
+		displayName="MTP HP Tabbed" 
+		displayPartNumber="6601987-01"
+		pedestalType="Standard" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - MTP HP Tabbed.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - MTP HP Tabbed.x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - MTP HP Tabbed.png" />
+
+	<pedestal 
+		displayName="MTP HP Tabbed" 
+		displayPartNumber="6601987-01"
+		pedestalType="StandardShaker" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - MTP HP Tabbed (Brackets).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - MTP HP Tabbed (Brackets).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - MTP HP Tabbed.png" />
+
+	<pedestal 
+		displayName="MTP HP Tabbed" 
+		displayPartNumber="6601987-01"
+		pedestalType="StandardPortrait" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - MTP HP Tabbed (Portrait).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - MTP HP Tabbed (Portrait).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - MTP HP Tabbed.png" />
+
+	<pedestal 
+		displayName="DWP HP Tabbed" 
+		displayPartNumber="6601988-01"
+		pedestalType="Standard" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - DWP HP Tabbed.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - DWP HP Tabbed.x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - DWP HP Tabbed.png" />
+
+	<pedestal 
+		displayName="DWP HP Tabbed" 
+		displayPartNumber="6601988-01"
+		pedestalType="StandardShaker" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - DWP HP Tabbed (Brackets).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - DWP HP Tabbed (Brackets).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - DWP HP Tabbed.png" />
+
+	<pedestal 
+		displayName="DWP HP Tabbed" 
+		displayPartNumber="6601988-01"
+		pedestalType="StandardPortrait" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - DWP HP Tabbed (Portrait).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - DWP HP Tabbed (Portrait).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - DWP HP Tabbed.png" />
+
+	<pedestal 
+		displayName="MIDI HP Tabbed" 
+		displayPartNumber="6600518-01"
+		pedestalType="Standard" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - MIDI HP Tabbed.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - MIDI HP Tabbed.x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - MIDI HP Tabbed.png" />
+
+	<pedestal 
+		displayName="MIDI HP Tabbed" 
+		displayPartNumber="6600518-01"
+		pedestalType="StandardShaker" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - MIDI HP Tabbed (Brackets).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - MIDI HP Tabbed (Brackets).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - MIDI HP Tabbed.png" />
+
+	<pedestal 
+		displayName="MIDI HP Tabbed" 
+		displayPartNumber="6600518-01"
+		pedestalType="StandardPortrait" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - MIDI HP Tabbed (Portrait).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - MIDI HP Tabbed (Portrait).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - MIDI HP Tabbed.png" />
+
+	<pedestal 
+		displayName="Base HP Tabbed" 
+		displayPartNumber="6601925-01"
+		pedestalType="Standard" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - Base HP Tabbed.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - Base HP Tabbed.x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - Base HP Tabbed.png" />
+
+	<pedestal 
+		displayName="Base HP Tabbed" 
+		displayPartNumber="6601925-01"
+		pedestalType="StandardShaker" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - Base HP Tabbed (Brackets).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - Base HP Tabbed (Brackets).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - Base HP Tabbed.png" />
+
+	<pedestal 
+		displayName="Base HP Tabbed" 
+		displayPartNumber="6601925-01"
+		pedestalType="StandardPortrait" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - Base HP Tabbed (Portrait).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - Base HP Tabbed (Portrait).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - Base HP Tabbed.png" />
+
+	<pedestal 
+		displayName="HHC" 
+		displayPartNumber="6601900-01"
+		pedestalType="StandardShaker" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - HHC.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - HHC.x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - HHC.png" />
+
+	<pedestal 
+		displayName="BYONOY Absorbance 96 Automate Reader" 
+		displayPartNumber="not defined"
+		pedestalType="StandardShaker" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - Byonoy Reader (Brackets).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - Byonoy Reader (Brackets).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - Byonoy Reader (Brackets).png" />
+
+	<pedestal 
+		displayName="BYONOY Absorbance 96 Automate Park with Cover" 
+		displayPartNumber="not defined - Grip Height from Top 13.5mm"
+		pedestalType="StandardShaker" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - Byonoy Park (Brackets).tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - Byonoy Park (Brackets).x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - Byonoy Park (Brackets).png" /> 
+
+	<pedestal 
+		displayName="RGT 20mL Lid Parking with Lids" 
+		displayPartNumber="10163095"
+		pedestalType="Standard" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - RGT 20mL Lid Parking.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - RGT 20mL Lid Parking.x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - RGT 20mL Lid Parking.png" /> 
+
+	<pedestal 
+        displayName="NTR1" 
+        displayPartNumber="191420"
+        pedestalType="StandardPortrait" 
+        templateFilePath="ML_STAR\MFXCreation\Pedestal - NTR1 (Portrait).tml"
+        modelFilePath="ML_STAR\MFXCreation\Pedestal - NTR1 (Portrait).x"
+        imageFilePath="ML_STAR\MFXCreation\Pedestal - NTR1.png" />
+
+    <pedestal 
+        displayName="NTR4" 
+        displayPartNumber="191425"
+        pedestalType="StandardPortrait" 
+        templateFilePath="ML_STAR\MFXCreation\Pedestal - NTR4 (Portrait).tml"
+        modelFilePath="ML_STAR\MFXCreation\Pedestal - NTR4 (Portrait).x"
+        imageFilePath="ML_STAR\MFXCreation\Pedestal - NTR4.png" />
+
+    <pedestal 
+        displayName="QCG Mount" 
+        displayPartNumber="95499-01"
+        pedestalType="Standard" 
+        templateFilePath="ML_STAR\MFXCreation\Pedestal - QCG Mount.tml"
+        modelFilePath="ML_STAR\MFXCreation\Pedestal - QCG Mount.x"
+        imageFilePath="ML_STAR\MFXCreation\Pedestal - QCG Mount.png" />
+
+	<pedestal 
+		displayName="FluorEye Module Balcony" 
+		displayPartNumber="10141149 with 10149934(STAR) or 10161654(VANTAGE/STAR V)"
+		pedestalType="Standard" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - FluorEye Balcony.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - FluorEye Balcony.x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - FluorEye Balcony.png" 
+		modelOffsetsOverride="0.5,28" />
+
+	<pedestal 
+		displayName="FluorEye Module" 
+		displayPartNumber="10141149"
+		pedestalType="Standard" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - FluorEye Base.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - FluorEye Base.x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - FluorEye Base.png"
+		modelOffsetsOverride="0.5,0" />
+
+	<pedestal 
+		displayName="DWP XL Nest Rack Based" 
+		displayPartNumber="188293"
+		pedestalType="Standard" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - DWP XL Nest Rack Based.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - DWP XL Nest Rack Based.x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - DWP XL Nest Rack Based.png" />
+
+	<pedestal 
+		displayName="Tip Park Module 6T" 
+		displayPartNumber="188402"
+		pedestalType="Standard" 
+		templateFilePath="ML_STAR\MFXCreation\Pedestal - Tip Park Module 6T.tml"
+		modelFilePath="ML_STAR\MFXCreation\Pedestal - Tip Park Module 6T.x"
+		imageFilePath="ML_STAR\MFXCreation\Pedestal - Tip Park Module 6T.png" />
+
+</pedestalConfig>

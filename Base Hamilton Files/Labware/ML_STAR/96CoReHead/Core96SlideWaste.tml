@@ -1,0 +1,44 @@
+HxCfgFile,2;
+
+ConfigIsValid,Y;
+
+DataDef,TEMPLATE,1,default,
+{
+3DModel, "ML_STAR\\96CoReHead\\Core96SlideWaste.hxx",
+3DModelRel, ".\\Core96SlideWaste.hxx",
+3DxOffset, "250",
+3DyOffset, "2.45",
+3DzOffset, "-6",
+BackgrndClr, "12639424",
+Barcode.Unique, "0",
+Barcode.Value, "",
+Category.0.Id, "168",
+CategoryCnt, "1",
+Description, "Tip Chute with Waste for CO-RE 96 Probe Head",
+Dim.Dx, "450",
+Dim.Dy, "161",
+Dim.Dz, "136",
+Image3D, "ML_STAR\\96CoReHead\\core96slidewaste.png",
+ImageRel, ".\\core96slidewaste.png",
+ReadOnly, "1",
+Site.1.Dx, "121",
+Site.1.Dy, "85",
+Site.1.Id, "1",
+Site.1.IsCovered, "0",
+Site.1.Label, "1",
+Site.1.LabwareFile, "ML_STAR\\96CoReHead\\core96slidewaste.rck",
+Site.1.LabwareFileRel, ".\\core96slidewaste.rck",
+Site.1.SnapBase, "1",
+Site.1.Stack, "0",
+Site.1.StackSize, "1",
+Site.1.Visible, "1",
+Site.1.X, "332.05",
+Site.1.Y, "55.65",
+Site.1.Z, "127",
+Site.Cnt, "1",
+UseBndry, "0",
+ViewName, "Core 96 Slide Waste",
+Visible, "1"
+};
+
+* $$author=ContainerAdministrator$$valid=1$$time=2025-06-21 16:40$$checksum=9276fb86$$length=098$$
