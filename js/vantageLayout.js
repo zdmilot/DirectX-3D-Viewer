@@ -412,7 +412,8 @@
         vlState.isPerspective = true;
         vlState.camera = new THREE.PerspectiveCamera(45, w / h, 1, 100000);
         // Position camera top-down, slightly tilted so it reads naturally
-        const deckCX = DECK.FIRST_TRACK_X + (DECK.TRACK_COUNT * DECK.TRACK_SPACING) / 2;
+        // Use PHYSICAL_TRACKS to center on the actual GLTF deck model
+        const deckCX = DECK.FIRST_TRACK_X + ((DECK.PHYSICAL_TRACKS - 1) * DECK.TRACK_SPACING) / 2;
         vlState.camera.position.set(deckCX, 1600, 600);
         vlState.camera.up.set(0, 1, 0);
 
@@ -521,9 +522,10 @@
         }
 
         // Grid overlay on deck surface (mm-based via DeckUnits)
+        // Center grid on PHYSICAL_TRACKS to align with the GLTF deck model
         const gridColor = isDark ? DARK_GRID : LIGHT_GRID;
         const grid = DeckUnits.createGrid(2000, 22.5, gridColor, { name: '__vlgrid__', visible: vlState.gridVisible });
-        grid.position.set(DECK.FIRST_TRACK_X + (DECK.TRACK_COUNT * DECK.TRACK_SPACING) / 2, DECK.SURFACE_Z + 4.1, 310);
+        grid.position.set(DECK.FIRST_TRACK_X + ((DECK.PHYSICAL_TRACKS - 1) * DECK.TRACK_SPACING) / 2, DECK.SURFACE_Z + 4.1, 310);
         scene.add(grid);
 
         // Orientation labels (Front / Back / Left / Right)
@@ -5307,10 +5309,11 @@
     // ================================================================
     function resetVLCamera() {
         if (!vlState.camera || !vlState.controls) return;
-        const cx = DECK.FIRST_TRACK_X + (DECK.TRACK_COUNT * DECK.TRACK_SPACING) / 2;
+        // Center on PHYSICAL_TRACKS to match the GLTF deck model position
+        const cx = DECK.FIRST_TRACK_X + ((DECK.PHYSICAL_TRACKS - 1) * DECK.TRACK_SPACING) / 2;
         const cy = DECK.TRACK_Y_START + DECK.TRACK_DEPTH / 2;
         vlState.controls.target.set(cx, DECK.SURFACE_Z, cy);
-        const maxDim = DECK.TRACK_COUNT * DECK.TRACK_SPACING;
+        const maxDim = DECK.PHYSICAL_TRACKS * DECK.TRACK_SPACING;
         const fov = vlState.camera.fov || 45;
         const dist = (maxDim / 2) / Math.tan(THREE.MathUtils.degToRad(fov / 2)) * 1.15;
         vlState.camera.position.set(cx, DECK.SURFACE_Z + dist, cy + dist * 0.15);
@@ -5323,10 +5326,11 @@
 
     function setTopDownView() {
         if (!vlState.camera || !vlState.controls) return;
-        const cx = DECK.FIRST_TRACK_X + (DECK.TRACK_COUNT * DECK.TRACK_SPACING) / 2;
+        // Center on PHYSICAL_TRACKS to match the GLTF deck model position
+        const cx = DECK.FIRST_TRACK_X + ((DECK.PHYSICAL_TRACKS - 1) * DECK.TRACK_SPACING) / 2;
         const cy = DECK.TRACK_Y_START + DECK.TRACK_DEPTH / 2;
         vlState.controls.target.set(cx, DECK.SURFACE_Z, cy);
-        const maxDimTD = DECK.TRACK_COUNT * DECK.TRACK_SPACING;
+        const maxDimTD = DECK.PHYSICAL_TRACKS * DECK.TRACK_SPACING;
         const fovTD = vlState.camera.fov || 45;
         const distTD = (maxDimTD / 2) / Math.tan(THREE.MathUtils.degToRad(fovTD / 2)) * 1.15;
         vlState.camera.position.set(cx, DECK.SURFACE_Z + distTD, cy + 0.01); // near-zero Z offset avoids gimbal lock
@@ -5346,10 +5350,10 @@
             if (obj.isMesh) box.expandByObject(obj);
         });
 
-        // Fallback to deck track extents if scene is empty
+        // Fallback to physical deck track extents if scene is empty
         if (box.isEmpty()) {
             const x0 = DECK.FIRST_TRACK_X;
-            const x1 = DECK.FIRST_TRACK_X + (DECK.TRACK_COUNT - 1) * DECK.TRACK_SPACING + DECK.TRACK_WIDTH;
+            const x1 = DECK.FIRST_TRACK_X + (DECK.PHYSICAL_TRACKS - 1) * DECK.TRACK_SPACING + DECK.TRACK_WIDTH;
             const z0 = DECK.TRACK_Y_START;
             const z1 = DECK.TRACK_Y_START + DECK.TRACK_DEPTH;
             box.set(
