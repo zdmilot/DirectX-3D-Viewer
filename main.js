@@ -1,4 +1,4 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, Menu, globalShortcut } = require('electron');
 const path = require('path');
 
 let mainWindow;
@@ -22,14 +22,19 @@ function createWindow() {
         width: 1280,
         height: 860,
         icon: path.join(__dirname, 'build', 'icon.ico'),
+        autoHideMenuBar: true,
         webPreferences: {
             nodeIntegration: false,
             contextIsolation: true,
+            devTools: false,
             preload: path.join(__dirname, 'preload.js')
         },
         show: false,
         backgroundColor: '#1a1d23'
     });
+
+    // Remove the application menu entirely
+    Menu.setApplicationMenu(null);
 
     mainWindow.loadFile('index.html');
 
@@ -47,7 +52,15 @@ function createWindow() {
     });
 }
 
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+    createWindow();
+
+    // Block DevTools keyboard shortcuts
+    globalShortcut.register('F12', () => {});
+    globalShortcut.register('CommandOrControl+Shift+I', () => {});
+    globalShortcut.register('CommandOrControl+Shift+J', () => {});
+    globalShortcut.register('CommandOrControl+Shift+C', () => {});
+});
 
 // Windows: second-instance handles file association when app is already running
 const gotLock = app.requestSingleInstanceLock();
