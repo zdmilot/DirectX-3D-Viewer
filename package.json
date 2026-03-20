@@ -13,7 +13,7 @@
     "url": "git+https://github.com/zdmilot/X3DViewer.git"
   },
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "devDependencies": {
     "@resvg/resvg-js": "^2.6.2",
     "electron": "^35.3.0",
