@@ -13,19 +13,8 @@
         aboutOverlay: $('#about-overlay'),
         aboutClose: $('#about-close'),
         aboutLogo: null,   // set after DOM query
-        btnSettings: $('#btn-settings'),
-        settingsOverlay: $('#settings-overlay'),
-        settingsClose: $('#settings-close'),
-        btnGlobalSettings: $('#btn-global-settings'),
-        globalSettingsOverlay: $('#global-settings-overlay'),
-        globalSettingsClose: $('#global-settings-close'),
-        globalHamiltonDir: $('#global-hamilton-dir'),
-        globalHamiltonBrowse: $('#global-hamilton-browse'),
-        globalHamiltonDirPicker: $('#global-hamilton-dir-picker'),
         btnGrid: $('#btn-grid'),
         fileInput: $('#file-input'),
-        btnSidebarToggle: $('#btn-sidebar-toggle'),
-        sidebarNav: $('#sidebar-nav'),
         viewerHost: null,   // set in initViewer
         dropzone: $('#viewer-dropzone'),
         navSubtitle: null,  // set dynamically
@@ -276,7 +265,6 @@
         if (errorEl) errorEl.classList.add('viewer-hidden');
         setFilenameDisplay();
         loadXFile(url, loading, errorEl);
-        switchView('viewer');
     };
 
     // -- Theme Toggle ------------------------------------------------
@@ -985,135 +973,7 @@
             grid.material.color.copy(c);
             if (grid.material.uniforms) grid.material.uniforms.diffuse.value.copy(c);
         }
-        // Also update converter theme
-        if (window.ConverterModule) window.ConverterModule.updateTheme();
-        // Also update placer theme
-        if (window.PlacerModule) window.PlacerModule.updateTheme();
-        // Also update labware generator theme
-        if (window.LabwareGenModule) window.LabwareGenModule.updateTheme();
-        // Also update hamilton import theme
-        if (window.HamiltonImportModule) window.HamiltonImportModule.updateTheme();
-        // Also update vantage layout theme
-        if (window.VantageLayoutModule) window.VantageLayoutModule.updateTheme();
-        // Also update MFX carrier theme
-        if (window.MFXCarrierModule) window.MFXCarrierModule.updateTheme();
-        // Also update labware editor theme
-        if (window.LabwareEditorModule) window.LabwareEditorModule.updateTheme();
 
-    }
-
-    // ================================================================
-    //  Sidebar View Switching
-    // ================================================================
-    function switchView(viewName) {
-        if (state.activeView === viewName) return;
-        state.activeView = viewName;
-
-        // Update sidebar active states
-        document.querySelectorAll('.sidebar-nav-item').forEach(btn => {
-            btn.classList.toggle('is-active', btn.dataset.view === viewName);
-        });
-
-        // Switch visible panel
-        document.querySelectorAll('.view-panel').forEach(panel => {
-            panel.classList.toggle('is-active', panel.dataset.viewPanel === viewName);
-        });
-
-        // Show settings button only for vantage layout applet
-        if (dom.btnSettings) {
-            dom.btnSettings.style.display = viewName === 'vantage' ? '' : 'none';
-        }
-
-        // Initialize converter on first switch
-        if (viewName === 'converter' && window.ConverterModule) {
-            // Small delay to ensure panel has dimensions
-            setTimeout(() => window.ConverterModule.init(), 50);
-        }
-
-        // Initialize plate placer on first switch
-        if (viewName === 'placer' && window.PlacerModule) {
-            setTimeout(() => window.PlacerModule.init(state.lastLoadedUrl, state.loadedFileName), 50);
-        }
-
-        // Initialize labware generator on first switch
-        if (viewName === 'labware' && window.LabwareGenModule) {
-            setTimeout(() => window.LabwareGenModule.init(), 50);
-        }
-
-        // Initialize hamilton import on first switch
-        if (viewName === 'hamilton' && window.HamiltonImportModule) {
-            setTimeout(() => window.HamiltonImportModule.init(), 50);
-        }
-
-        // Initialize vantage layout on first switch
-        if (viewName === 'vantage' && window.VantageLayoutModule) {
-            setTimeout(() => window.VantageLayoutModule.init(), 50);
-        }
-
-        // Initialize MFX carrier (now "Carrier Editor") on first switch
-        if (viewName === 'mfx' && window.MFXCarrierModule) {
-            setTimeout(() => window.MFXCarrierModule.init(), 50);
-        }
-
-        // Initialize labware editor on first switch
-        if (viewName === 'labware-editor' && window.LabwareEditorModule) {
-            setTimeout(() => window.LabwareEditorModule.init(), 50);
-        }
-
-        // Legacy carrier-editor view → redirect to unified carrier editor (mfx)
-        if (viewName === 'carrier-editor') {
-            switchView('mfx');
-            return;
-        }
-
-        // Initialize category editor on first switch
-        if (viewName === 'category-editor' && window.CategoryEditorModule) {
-            setTimeout(() => window.CategoryEditorModule.init(), 50);
-        }
-
-        // Auto-collapse sidebar after navigation
-        if (dom.sidebarNav) {
-            dom.sidebarNav.classList.add('collapsed');
-        }
-
-        // Persist last active view and update MRU order
-        try {
-            localStorage.setItem('app-last-view', viewName);
-            updateMru(viewName);
-        } catch(e) {}
-    }
-
-    // -- MRU (Most Recently Used) sidebar ordering ---------------
-    function getMru() {
-        try {
-            var stored = localStorage.getItem('app-mru-views');
-            if (stored) return JSON.parse(stored);
-        } catch(e) {}
-        return [];
-    }
-
-    function updateMru(viewName) {
-        var mru = getMru().filter(function(v) { return v !== viewName; });
-        mru.unshift(viewName);
-        try { localStorage.setItem('app-mru-views', JSON.stringify(mru)); } catch(e) {}
-        reorderSidebar(mru);
-    }
-
-    function reorderSidebar(mru) {
-        var container = document.querySelector('.sidebar-nav-inner');
-        if (!container) return;
-        var buttons = Array.from(container.querySelectorAll('.sidebar-nav-item'));
-        // Build a priority map: lower index = more recent
-        var priority = {};
-        mru.forEach(function(v, i) { priority[v] = i; });
-        var nextPriority = mru.length;
-        buttons.forEach(function(btn) {
-            if (!(btn.dataset.view in priority)) {
-                priority[btn.dataset.view] = nextPriority++;
-            }
-        });
-        buttons.sort(function(a, b) { return priority[a.dataset.view] - priority[b.dataset.view]; });
-        buttons.forEach(function(btn) { container.appendChild(btn); });
     }
 
     // ================================================================
@@ -1788,7 +1648,7 @@
     }
 
     // ── Screenshot modal ─────────────────────────────────────
-    let ssModalSource = null; // 'viewer' or 'placer'
+    let ssModalSource = null; // tracks which viewer opened the modal
 
     function openScreenshotModal(source) {
         ssModalSource = source;
@@ -1825,23 +1685,7 @@
             showBg:   optBg   ? optBg.checked   : true,
         };
 
-        if (ssModalSource === 'placer' && window.PlacerModule && window.PlacerModule.screenshotPreviewDataURL) {
-            img.src = window.PlacerModule.screenshotPreviewDataURL(opts);
-        } else if (ssModalSource === 'converter' && window.ConverterModule && window.ConverterModule.screenshotPreviewDataURL) {
-            img.src = window.ConverterModule.screenshotPreviewDataURL(opts);
-        } else if (ssModalSource === 'labware' && window.LabwareGenModule && window.LabwareGenModule.screenshotPreviewDataURL) {
-            img.src = window.LabwareGenModule.screenshotPreviewDataURL(opts);
-        } else if (ssModalSource === 'hamilton' && window.HamiltonImportModule && window.HamiltonImportModule.screenshotPreviewDataURL) {
-            img.src = window.HamiltonImportModule.screenshotPreviewDataURL(opts);
-        } else if (ssModalSource === 'vantage' && window.VantageLayoutModule && window.VantageLayoutModule.screenshotPreviewDataURL) {
-            img.src = window.VantageLayoutModule.screenshotPreviewDataURL(opts);
-        } else if (ssModalSource === 'mfx' && window.MFXCarrierModule && window.MFXCarrierModule.screenshotPreviewDataURL) {
-            img.src = window.MFXCarrierModule.screenshotPreviewDataURL(opts);
-        } else if (ssModalSource === 'labware-editor' && window.LabwareEditorModule && window.LabwareEditorModule.screenshotPreviewDataURL) {
-            img.src = window.LabwareEditorModule.screenshotPreviewDataURL(opts);
-        } else {
-            img.src = screenshotPreviewDataURL(opts);
-        }
+        img.src = screenshotPreviewDataURL(opts);
     }
 
     function ssModalSave(format) {
@@ -1852,23 +1696,7 @@
             showBg:   optBg   ? optBg.checked   : true,
         };
 
-        if (ssModalSource === 'placer' && window.PlacerModule && window.PlacerModule.saveScreenshot) {
-            window.PlacerModule.saveScreenshot(format, opts);
-        } else if (ssModalSource === 'converter' && window.ConverterModule && window.ConverterModule.saveScreenshot) {
-            window.ConverterModule.saveScreenshot(format, opts);
-        } else if (ssModalSource === 'labware' && window.LabwareGenModule && window.LabwareGenModule.saveScreenshot) {
-            window.LabwareGenModule.saveScreenshot(format, opts);
-        } else if (ssModalSource === 'hamilton' && window.HamiltonImportModule && window.HamiltonImportModule.saveScreenshot) {
-            window.HamiltonImportModule.saveScreenshot(format, opts);
-        } else if (ssModalSource === 'vantage' && window.VantageLayoutModule && window.VantageLayoutModule.saveScreenshot) {
-            window.VantageLayoutModule.saveScreenshot(format, opts);
-        } else if (ssModalSource === 'mfx' && window.MFXCarrierModule && window.MFXCarrierModule.saveScreenshot) {
-            window.MFXCarrierModule.saveScreenshot(format, opts);
-        } else if (ssModalSource === 'labware-editor' && window.LabwareEditorModule && window.LabwareEditorModule.saveScreenshot) {
-            window.LabwareEditorModule.saveScreenshot(format, opts);
-        } else {
-            saveScreenshot(format, opts);
-        }
+        saveScreenshot(format, opts);
         closeScreenshotModal();
     }
 
@@ -2124,8 +1952,8 @@
     function exportViewerHXX() {
         const model = getViewerModel();
         if (!model) return;
-        if (!window.ConverterModule || !window.ConverterModule.generateXFileText) {
-            alert('Converter module not loaded — cannot generate .x data for .hxx export.');
+        if (!state.rawXFileContent) {
+            alert('No .x file content available — HXX export requires a loaded .x file.');
             return;
         }
         if (!window.HXXLoader || !window.HXXLoader.composeHXX) {
@@ -2133,8 +1961,7 @@
             return;
         }
         try {
-            const xText = window.ConverterModule.generateXFileText(model);
-            HXXLoader.composeHXX(xText).then(function (hxxBuffer) {
+            HXXLoader.composeHXX(state.rawXFileContent).then(function (hxxBuffer) {
                 downloadBlob(
                     new Blob([hxxBuffer], { type: 'application/octet-stream' }),
                     viewerFileName() + '.hxx'
@@ -2427,23 +2254,6 @@
         } catch(e) {}
         applyTheme();
 
-        // Restore last active view and MRU sidebar order
-        (function restoreLastView() {
-            var mru = getMru();
-            if (mru.length) reorderSidebar(mru);
-            try {
-                var lastView = localStorage.getItem('app-last-view');
-                if (lastView && lastView !== 'viewer') {
-                    // Reset state so switchView doesn't bail on the guard
-                    state.activeView = '__none__';
-                    switchView(lastView);
-                } else if (lastView === 'viewer') {
-                    // Already the default — just update MRU without switching
-                    updateMru('viewer');
-                }
-            } catch(e) {}
-        })();
-
         dom.btnTheme.addEventListener('click', toggleTheme);
         dom.btnGrid.addEventListener('click', toggleGrid);
 
@@ -2465,68 +2275,7 @@
             }
         });
 
-        // Global settings modal
-        if (dom.btnGlobalSettings) dom.btnGlobalSettings.addEventListener('click', () => {
-            if (dom.globalSettingsOverlay) dom.globalSettingsOverlay.classList.add('is-open');
-        });
-        if (dom.globalSettingsClose) dom.globalSettingsClose.addEventListener('click', () => {
-            if (dom.globalSettingsOverlay) dom.globalSettingsOverlay.classList.remove('is-open');
-        });
-        if (dom.globalSettingsOverlay) dom.globalSettingsOverlay.addEventListener('click', (e) => {
-            if (e.target === dom.globalSettingsOverlay) dom.globalSettingsOverlay.classList.remove('is-open');
-        });
-        // Hamilton directory persistence
-        if (dom.globalHamiltonDir) {
-            var savedDir = '';
-            try { savedDir = localStorage.getItem('hamilton-install-dir') || ''; } catch(e) {}
-            if (!savedDir) {
-                savedDir = 'Base Hamilton Files';
-                try { localStorage.setItem('hamilton-install-dir', savedDir); } catch(e) {}
-            }
-            dom.globalHamiltonDir.value = savedDir;
-            dom.globalHamiltonDir.addEventListener('input', () => {
-                try { localStorage.setItem('hamilton-install-dir', dom.globalHamiltonDir.value); } catch(e) {}
-            });
-        }
-        if (dom.globalHamiltonBrowse && dom.globalHamiltonDirPicker) {
-            dom.globalHamiltonBrowse.addEventListener('click', () => dom.globalHamiltonDirPicker.click());
-            dom.globalHamiltonDirPicker.addEventListener('change', (e) => {
-                var files = e.target.files;
-                if (files && files.length > 0) {
-                    // Extract the common root directory from the webkitRelativePath
-                    var first = files[0].webkitRelativePath || files[0].name;
-                    var root = first.split('/')[0] || first;
-                    dom.globalHamiltonDir.value = root;
-                    try { localStorage.setItem('hamilton-install-dir', root); } catch(ex) {}
-                }
-                dom.globalHamiltonDirPicker.value = '';
-            });
-        }
-
-        // Settings modal (Vantage-specific)
-        if (dom.btnSettings) dom.btnSettings.addEventListener('click', () => {
-            if (dom.settingsOverlay) dom.settingsOverlay.classList.add('is-open');
-        });
-        if (dom.settingsClose) dom.settingsClose.addEventListener('click', () => {
-            if (dom.settingsOverlay) dom.settingsOverlay.classList.remove('is-open');
-        });
-        if (dom.settingsOverlay) dom.settingsOverlay.addEventListener('click', (e) => {
-            if (e.target === dom.settingsOverlay) dom.settingsOverlay.classList.remove('is-open');
-        });
-
         dom.fileInput.addEventListener('change', handleFileSelected);
-
-        // Sidebar toggle – overlay style, no layout shift
-        dom.btnSidebarToggle.addEventListener('click', () => {
-            dom.sidebarNav.classList.toggle('collapsed');
-        });
-
-        // Sidebar view switching
-        document.querySelectorAll('.sidebar-nav-item').forEach(btn => {
-            btn.addEventListener('click', () => {
-                switchView(btn.dataset.view);
-            });
-        });
 
         // Floating toolbar events
         if (dom.vtToggle) dom.vtToggle.addEventListener('click', toggleToolbar);
@@ -2573,46 +2322,6 @@
             });
         }
 
-        // Converter screenshot button
-        const cvSsBtn = $('#cv-screenshot');
-        if (cvSsBtn) {
-            cvSsBtn.addEventListener('click', () => {
-                openScreenshotModal('converter');
-            });
-        }
-
-        // Labware generator screenshot button
-        const lgSsBtn = $('#lg-screenshot');
-        if (lgSsBtn) {
-            lgSsBtn.addEventListener('click', () => {
-                openScreenshotModal('labware');
-            });
-        }
-
-        // Hamilton import screenshot button
-        const hamSsBtn = $('#ham-screenshot');
-        if (hamSsBtn) {
-            hamSsBtn.addEventListener('click', () => {
-                openScreenshotModal('hamilton');
-            });
-        }
-
-        // Vantage layout screenshot button
-        const vlSsBtn = $('#vl-screenshot');
-        if (vlSsBtn) {
-            vlSsBtn.addEventListener('click', () => {
-                openScreenshotModal('vantage');
-            });
-        }
-
-        // MFX carrier screenshot button
-        const mfxSsBtn = $('#mfx-screenshot');
-        if (mfxSsBtn) {
-            mfxSsBtn.addEventListener('click', () => {
-                openScreenshotModal('mfx');
-            });
-        }
-
         // Export button & dropdown
         const exBtn = $('#vt-export');
         const exDrop = $('#export-dropdown');
@@ -2641,13 +2350,6 @@
         initSplash();
         initDraggablePanels();
     }
-
-    // ================================================================
-    //  Global Settings Accessor — available to all applets
-    // ================================================================
-    window.getHamiltonDir = function () {
-        try { return localStorage.getItem('hamilton-install-dir') || ''; } catch(e) { return ''; }
-    };
 
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);
