@@ -145,7 +145,6 @@
         el.textContent = info.join('\n');
     }
 
-    // Expose for converter/placer modules
     window._updateDebugPanel = updateDebugPanel;
 
     /**
@@ -1719,7 +1718,6 @@
         });
     }
 
-    // Expose openScreenshotModal so platePlacer can call it
     window.openScreenshotModal = openScreenshotModal;
     window.downloadBlob = downloadBlob;
 
@@ -2215,29 +2213,6 @@
         // Main viewer toolbar
         const viewerHost = document.getElementById('viewer-host');
         wireToolbarDrag('vt-body', 'vt-grab-handle', viewerHost);
-
-        // Converter toolbar
-        const converterHost = document.getElementById('converter-main-viewport');
-        wireToolbarDrag('cv-vt-body', 'cv-vt-grab-handle', converterHost);
-
-        // Placer toolbar
-        const placerHost = document.getElementById('placer-host');
-        wireToolbarDrag('pp-vt-body', 'pp-vt-grab-handle', placerHost);
-
-        // Placement offsets overlay
-        const offsetOverlay = document.getElementById('pp-offset-overlay');
-        if (offsetOverlay) makeDraggable(offsetOverlay, '.pp-offset-header', placerHost);
-
-        // Placement offsets collapse toggle
-        const offsetToggle = document.getElementById('pp-offset-toggle');
-        if (offsetToggle && offsetOverlay) {
-            offsetToggle.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const collapsed = offsetOverlay.classList.toggle('collapsed');
-                offsetToggle.innerHTML = collapsed ? '+' : '&#8211;';
-                offsetToggle.title = collapsed ? 'Expand' : 'Collapse';
-            });
-        }
 
         // Debug panels
         document.querySelectorAll('.debug-panel').forEach(panel => {
