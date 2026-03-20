@@ -24,7 +24,7 @@
     "appId": "com.hamilton.3dfiletools",
     "productName": "3D File Tools",
     "win": {
-      "target": "portable",
+      "target": ["portable", "dir"],
       "icon": "build/icon.ico"
     },
     "portable": {
@@ -32,7 +32,9 @@
     },
     "files": [
       "main.js",
+      "preload.js",
       "index.html",
+      "build/icon.ico",
       "css/**/*",
       "fonts/**/*",
       "webfonts/**/*",

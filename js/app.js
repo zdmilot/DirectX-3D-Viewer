@@ -57,13 +57,13 @@
         isPanning: false,
         toolbarCollapsed: false,
         activeView: 'viewer',
-        loadedFileName: 'test',
+        loadedFileName: null,
         loadedFilePath: null,  // Full path or name of the loaded file for display
         lastLoadedUrl: null,   // URL of the last loaded .x file (for passing to placer)
         rawXFileContent: null, // Raw .x file text content for save/transform
     };
 
-    const DEFAULT_X_FILENAME = 'test.x';
+
 
     // -- Splash Screen -----------------------------------------------
     function initSplash() {
@@ -756,12 +756,9 @@
         dom.viewerHost = card;
         initDragDrop();
 
-        // ── Load the default .x model ────────────────────────
-        console.log('[Viewer] Starting loadXFile...');
-        state.loadedFilePath = DEFAULT_X_FILENAME;
+        // Start with empty scene — user loads a file via toolbar or drag-and-drop
+        if (loading) loading.classList.add('viewer-hidden');
         setFilenameDisplay();
-        state.lastLoadedUrl = DEFAULT_X_FILENAME;
-        loadXFile(DEFAULT_X_FILENAME, loading, errorEl);
     }
 
     /**
@@ -2349,6 +2346,65 @@
         initScreenshotModal();
         initSplash();
         initDraggablePanels();
+
+        // Electron file association: open file passed from main process
+        if (window.electronAPI && window.electronAPI.onOpenFile) {
+            window.electronAPI.onOpenFile(function (filePath) {
+                const name = filePath.replace(/\\/g, '/').split('/').pop();
+                const ext = name.split('.').pop().toLowerCase();
+                // Skip the splash if a file is being opened directly
+                const splash = document.getElementById('splash-screen');
+                if (splash) splash.style.display = 'none';
+                const appEl = document.getElementById('app');
+                if (appEl) appEl.classList.remove('app-hidden');
+
+                state.loadedFileName = name;
+                state.loadedFilePath = filePath;
+                clearModel();
+                const loading = $('#viewer-loading');
+                const errorEl = $('#viewer-error');
+                if (loading) {
+                    loading.classList.remove('viewer-hidden');
+                    const span = loading.querySelector('span');
+                    if (span) span.textContent = 'Loading ' + name + '\u2026';
+                }
+                if (errorEl) errorEl.classList.add('viewer-hidden');
+
+                const fileUrl = 'file:///' + filePath.replace(/\\/g, '/').replace(/ /g, '%20');
+                switch (ext) {
+                    case 'hxx':
+                        fetch(fileUrl).then(r => r.arrayBuffer()).then(buf => {
+                            HXXLoader.toXFileBlob(buf).then(blob => {
+                                const url = URL.createObjectURL(blob);
+                                state.lastLoadedUrl = url;
+                                setFilenameDisplay();
+                                loadXFile(url, loading, errorEl);
+                            });
+                        }).catch(err => showError(errorEl, 'Failed to load: ' + err.message));
+                        break;
+                    case 'x':
+                        state.lastLoadedUrl = fileUrl;
+                        setFilenameDisplay();
+                        loadXFile(fileUrl, loading, errorEl);
+                        break;
+                    case 'obj':
+                        state.lastLoadedUrl = fileUrl;
+                        setFilenameDisplay();
+                        loadXFile(fileUrl, loading, errorEl);
+                        break;
+                    case 'stl':
+                    case 'glb':
+                    case 'gltf':
+                        state.lastLoadedUrl = fileUrl;
+                        setFilenameDisplay();
+                        loadXFile(fileUrl, loading, errorEl);
+                        break;
+                    default:
+                        if (loading) loading.classList.add('viewer-hidden');
+                        showError(errorEl, 'Unsupported format: .' + ext);
+                }
+            });
+        }
     }
 
     if (document.readyState === 'loading') {
