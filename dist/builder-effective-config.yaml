@@ -1,0 +1,22 @@
+directories:
+  output: dist
+  buildResources: build
+appId: com.hamilton.3dfiletools
+productName: 3D File Tools
+win:
+  target: portable
+  icon: build/icon.ico
+portable:
+  artifactName: 3DFileTools.exe
+files:
+  - filter:
+      - main.js
+      - index.html
+      - css/**/*
+      - fonts/**/*
+      - webfonts/**/*
+      - js/app.js
+      - js/hxxLoader.js
+      - js/deckUnits.js
+      - js/lib/**/*
+electronVersion: 35.7.5
