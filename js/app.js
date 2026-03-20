@@ -634,6 +634,10 @@
     const DARK_GRID  = 0x2a3a4a;
 
     function initViewer() {
+        // Guard against double initialisation (e.g. file-association path
+        // may call initViewer() early, before the splash-screen timeout fires).
+        if (scene) return;
+
         const canvas  = $('#viewer-canvas');
         const card    = $('#viewer-host');
         const loading = $('#viewer-loading');
@@ -2313,7 +2317,17 @@
                 const splash = document.getElementById('splash-screen');
                 if (splash) splash.style.display = 'none';
                 const appEl = document.getElementById('app');
-                if (appEl) appEl.classList.remove('app-hidden');
+                if (appEl) {
+                    appEl.classList.remove('app-hidden');
+                    appEl.classList.add('app-visible');
+                }
+
+                // Ensure the 3D viewer is initialised before loading a file.
+                // initViewer() is normally deferred by the splash-screen animation,
+                // so it may not have run yet when a file is opened via OS association.
+                if (!scene) {
+                    initViewer();
+                }
 
                 state.loadedFileName = name;
                 state.loadedFilePath = filePath;
