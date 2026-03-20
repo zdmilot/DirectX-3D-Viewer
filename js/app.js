@@ -59,7 +59,7 @@
         activeView: 'viewer',
         loadedFileName: null,
         loadedFilePath: null,  // Full path or name of the loaded file for display
-        lastLoadedUrl: null,   // URL of the last loaded .x file (for passing to placer)
+        lastLoadedUrl: null,   // URL of the last loaded .x file
         rawXFileContent: null, // Raw .x file text content for save/transform
     };
 
@@ -247,24 +247,6 @@
         }
     }
     window._nudgeDecalMeshes = nudgeDecalMeshes;
-
-    // -- Load generated .x file from labware generator ---------------
-    window._loadGeneratedXFile = function (url, name) {
-        state.loadedFileName = name || 'labware.x';
-        state.loadedFilePath = name || 'labware.x';
-        state.lastLoadedUrl = url;
-        clearModel();
-        const loading = $('#viewer-loading');
-        const errorEl = $('#viewer-error');
-        if (loading) {
-            loading.classList.remove('viewer-hidden');
-            const span = loading.querySelector('span');
-            if (span) span.textContent = 'Loading ' + name + '…';
-        }
-        if (errorEl) errorEl.classList.add('viewer-hidden');
-        setFilenameDisplay();
-        loadXFile(url, loading, errorEl);
-    };
 
     // -- Theme Toggle ------------------------------------------------
     function toggleTheme() {
