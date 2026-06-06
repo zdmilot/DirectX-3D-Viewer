@@ -1,0 +1,12 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>DirectX3DViewer.Core</RootNamespace>
+    <AssemblyName>DirectX3DViewer.Core</AssemblyName>
+  </PropertyGroup>
+
+</Project>

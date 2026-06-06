@@ -1,0 +1,41 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+    <RootNamespace>DirectX3DViewer.App</RootNamespace>
+    <AssemblyName>DirectX3DViewer</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Product>DirectX 3D Viewer</Product>
+    <AssemblyTitle>DirectX 3D Viewer</AssemblyTitle>
+    <Description>DirectX 3D file viewer and converter for .x, .hxx, .obj, and .stl models.</Description>
+    <Authors>Zachary Milot</Authors>
+    <Version>1.0.0</Version>
+    <Platforms>x86;x64;arm64</Platforms>
+    <RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>
+    <UseWinUI>true</UseWinUI>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <!-- Unpackaged, self-contained portable .exe (matches the current distribution). -->
+    <WindowsPackageType>None</WindowsPackageType>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <EnableMsixTooling>false</EnableMsixTooling>
+    <!-- Lightweight startup: no tiered-PGO bloat, trim-friendly. -->
+    <ApplicationIcon>Assets\icon.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.1.3" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.1839" />
+    <PackageReference Include="Vortice.Direct3D11" Version="3.8.3" />
+    <PackageReference Include="Vortice.DXGI" Version="3.8.3" />
+    <PackageReference Include="Vortice.D3DCompiler" Version="3.8.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DirectX3DViewer.Core\DirectX3DViewer.Core.csproj" />
+  </ItemGroup>
+
+</Project>

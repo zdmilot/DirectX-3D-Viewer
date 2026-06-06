@@ -1,0 +1,8 @@
+﻿<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/DirectX3DViewer.App/DirectX3DViewer.App.csproj">
+      <Platform Project="x86" />
+    </Project>
+    <Project Path="src/DirectX3DViewer.Core/DirectX3DViewer.Core.csproj" />
+  </Folder>
+</Solution>

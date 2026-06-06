@@ -1,101 +1,74 @@
-# X3DViewer (3D File Tools)
+﻿# DirectX 3D Viewer
 
-X3DViewer is a desktop tool for viewing, converting, and generating 3D files used in Hamilton automation workflows and general 3D pipelines.
+DirectX 3D Viewer is a **native Windows desktop application** for viewing, converting, and inspecting 3D files used in Hamilton automation workflows and general 3D pipelines. It is built with **WinUI 3 / Windows App SDK** and renders models with a hardware-accelerated **Direct3D 11** viewport.
 
 ## Why this project exists
 
-Hamilton VENUS relies on `.x` and `.3dx` model formats. Support for these formats has been dropped or is no longer maintained in many mainstream 3D tools (including newer Blender workflows and other common tooling).
+Hamilton VENUS relies on `.x` and `.hxx` model formats. Support for these formats has been dropped or is no longer maintained in many mainstream 3D tools (including newer Blender workflows and other common tooling).
 
 This project aims to change that by giving the power back to the people:
 
 - Open and inspect legacy Hamilton 3D assets
-- Generate your own `.x` models
+- Generate and convert `.x` models
 - Switch between `.x` and common 3D formats without vendor lock-in
-
-## Download
-
-- Releases (Windows builds): https://github.com/zdmilot/X3DViewer/releases
-
-## Screenshot
-
-<img width="1268" height="855" alt="X3DViewer app screenshot" src="https://github.com/user-attachments/assets/a6b9fc61-668f-48d9-99c2-141d0175b387" />
 
 ## Features
 
-- Load and view `.x`, `.hxx`, `.obj`, `.stl`, `.glb`, and `.gltf`
-- Drag-and-drop file loading in the desktop viewer
-- Convert common 3D formats to `.x`
-- Export `.x` or `.hxx` content to `.obj`, `.stl`, or `.glb`
-- Apply transform operations (rotate and mirror) during conversion
-- Generate `.x` models from labware XML definitions
-- Use either a GUI (Electron app) or a full CLI workflow
+- Load and view `.x`, `.hxx`, `.obj`, and `.stl`
+- Native Direct3D 11 viewport with orbit / pan / dolly camera controls
+- Drag-and-drop file loading
+- Wireframe, grid, and perspective/orthographic toggles
+- Apply transform operations (rotate Â±90Â° and mirror on X/Y/Z)
+- Export to `.x`, `.obj`, `.stl`, and `.glb`
+- Light / dark theme with Windows 11 Fluent styling (Mica backdrop, rounded cards, native command bars)
+- Native splash screen and About dialog
 
 ## Supported format workflows
 
-- Input: `.x`, `.hxx`, `.obj`, `.stl`, `.glb`, `.gltf`
-- Convert to `.x`: `.obj`, `.stl`, `.glb`, `.x`
-- Export from `.x`/`.hxx`: `.obj`, `.stl`, `.glb`
+- Input: `.x`, `.hxx`, `.obj`, `.stl`
+- Export: `.x`, `.obj`, `.stl`, `.glb`
 
-## Quick start
+## Architecture
 
-### Option 1: Download prebuilt app
+The solution (`DirectX3DViewer.slnx`) contains two projects:
 
-1. Go to the releases page: https://github.com/zdmilot/X3DViewer/releases
-2. Download the latest Windows executable
-3. Run the app
+| Project | Target | Purpose |
+| --- | --- | --- |
+| `src/DirectX3DViewer.Core` | `net8.0` | UI-independent geometry, format loaders/writers, and conversion logic |
+| `src/DirectX3DViewer.App` | `net8.0-windows` (WinUI 3) | Native UI shell, Direct3D 11 renderer, file I/O |
 
-### Option 2: Run from source
+- **Rendering:** Direct3D 11 via [Vortice.Windows](https://github.com/amerkoleci/Vortice.Windows), hosted in a `SwapChainPanel` through a composition swap chain.
+- **UI:** WinUI 3 / Windows App SDK with Fluent Design styling.
 
-Requirements:
+## Requirements
 
-- Node.js 18+
+- Windows 10 version 1809 (10.0.17763) or later
+- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
+- Windows App SDK runtime (restored automatically as a NuGet dependency)
 
-Install and start:
+## Build and run from source
 
-```bash
-npm install
-npm start
+```powershell
+# Build (Platform must be specified)
+dotnet build src\DirectX3DViewer.App\DirectX3DViewer.App.csproj -p:Platform=x64
+
+# Run
+.\src\DirectX3DViewer.App\bin\x64\Debug\net8.0-windows10.0.19041.0\DirectX3DViewer.exe
 ```
 
-## Build a portable Windows executable
+You can also open `DirectX3DViewer.slnx` in Visual Studio 2022 and run the `DirectX3DViewer.App` project (set the platform to **x64**).
 
-```bash
-npm run dist
-```
+To open a file directly on launch, pass its path as a command-line argument:
 
-Build output is generated in the `dist` directory.
-
-## CLI usage
-
-Show all commands:
-
-```bash
-node cli.js --help
-```
-
-Common examples:
-
-```bash
-# Inspect a file
-node cli.js your_model.hxx
-
-# Validate and deep-parse a file
-node cli.js your_model.x --validate
-
-# Convert OBJ/STL/GLB/X to .x
-node cli.js convert input.obj output.x --rotate-z 90 --mirror-y
-
-# Export .x/.hxx to GLB
-node cli.js export-x input.hxx output.glb --format glb
-
-# Generate .x from labware XML
-node cli.js generate labware.xml output.x --sbs
+```powershell
+DirectX3DViewer.exe path\to\model.x
 ```
 
 ## Tech stack
 
-- Electron
-- Three.js
+- WinUI 3 / Windows App SDK
+- Direct3D 11 (Vortice.Windows)
+- .NET 8
 - Custom loaders and conversion pipeline for Hamilton and DirectX-oriented assets
 
 ## License

@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!--
+      Visual identity ported from css/main.css of the original web app.
+      Palette: medium blue #5f97c5, deep navy #002e48, accent #0275d8,
+      tube gradient #0366A0 -> #00bcd7.
+    -->
+    <ResourceDictionary.ThemeDictionaries>
+
+        <!-- ===================== LIGHT ===================== -->
+        <ResourceDictionary x:Key="Light">
+            <Color x:Key="ViewerBackgroundColor">#FFE9EEF2</Color>
+            <Color x:Key="ViewerGridColor">#FFCCD4DC</Color>
+
+            <Color x:Key="AppBackgroundColor">#FFE9EEF2</Color>
+            <Color x:Key="CardBackgroundColor">#FFFFFFFF</Color>
+            <Color x:Key="CardBorderColor">#14000000</Color>
+
+            <Color x:Key="TextPrimaryColor">#FF1A2B3C</Color>
+            <Color x:Key="TextSecondaryColor">#FF5C7080</Color>
+            <Color x:Key="TextMutedColor">#FF8A9BA8</Color>
+
+            <Color x:Key="AccentColor">#FF0275D8</Color>
+            <Color x:Key="AccentHoverColor">#FF0166BE</Color>
+
+            <SolidColorBrush x:Key="AppBackgroundBrush" Color="#FFE9EEF2" />
+            <SolidColorBrush x:Key="CardBackgroundBrush" Color="#FFFFFFFF" />
+            <SolidColorBrush x:Key="CardBorderBrush" Color="#14000000" />
+            <SolidColorBrush x:Key="TextPrimaryBrush" Color="#FF1A2B3C" />
+            <SolidColorBrush x:Key="TextSecondaryBrush" Color="#FF5C7080" />
+            <SolidColorBrush x:Key="TextMutedBrush" Color="#FF8A9BA8" />
+            <SolidColorBrush x:Key="AccentBrush" Color="#FF0275D8" />
+            <SolidColorBrush x:Key="AccentHoverBrush" Color="#FF0166BE" />
+            <SolidColorBrush x:Key="ToolbarBackgroundBrush" Color="#F2FFFFFF" />
+            <SolidColorBrush x:Key="ToolbarBorderBrush" Color="#1A000000" />
+            <SolidColorBrush x:Key="CommandBarBrush" Color="#F7FFFFFF" />
+        </ResourceDictionary>
+
+        <!-- ===================== DARK ===================== -->
+        <ResourceDictionary x:Key="Dark">
+            <Color x:Key="ViewerBackgroundColor">#FF1B2838</Color>
+            <Color x:Key="ViewerGridColor">#FF2A3A4A</Color>
+
+            <Color x:Key="AppBackgroundColor">#FF0D1B2A</Color>
+            <Color x:Key="CardBackgroundColor">#FF1B2838</Color>
+            <Color x:Key="CardBorderColor">#18FFFFFF</Color>
+
+            <Color x:Key="TextPrimaryColor">#FFE0E8F0</Color>
+            <Color x:Key="TextSecondaryColor">#FF8AA0B8</Color>
+            <Color x:Key="TextMutedColor">#FF5A7088</Color>
+
+            <Color x:Key="AccentColor">#FF3B9BE8</Color>
+            <Color x:Key="AccentHoverColor">#FF5BAEF0</Color>
+
+            <SolidColorBrush x:Key="AppBackgroundBrush" Color="#FF0D1B2A" />
+            <SolidColorBrush x:Key="CardBackgroundBrush" Color="#FF1B2838" />
+            <SolidColorBrush x:Key="CardBorderBrush" Color="#18FFFFFF" />
+            <SolidColorBrush x:Key="TextPrimaryBrush" Color="#FFE0E8F0" />
+            <SolidColorBrush x:Key="TextSecondaryBrush" Color="#FF8AA0B8" />
+            <SolidColorBrush x:Key="TextMutedBrush" Color="#FF5A7088" />
+            <SolidColorBrush x:Key="AccentBrush" Color="#FF3B9BE8" />
+            <SolidColorBrush x:Key="AccentHoverBrush" Color="#FF5BAEF0" />
+            <SolidColorBrush x:Key="ToolbarBackgroundBrush" Color="#F21F2D3D" />
+            <SolidColorBrush x:Key="ToolbarBorderBrush" Color="#24FFFFFF" />
+            <SolidColorBrush x:Key="CommandBarBrush" Color="#F2162230" />
+        </ResourceDictionary>
+    </ResourceDictionary.ThemeDictionaries>
+
+    <!-- ============ Shared (theme-independent) resources ============ -->
+
+    <!-- Tube accent gradient: #0366A0 -> #00bcd7 -->
+    <LinearGradientBrush x:Key="TubeGradientBrush" StartPoint="0,0" EndPoint="1,0">
+        <GradientStop Color="#FF0366A0" Offset="0.0" />
+        <GradientStop Color="#FF00BCD7" Offset="1.0" />
+    </LinearGradientBrush>
+
+    <!-- Navy splash / brand gradient -->
+    <LinearGradientBrush x:Key="BrandGradientBrush" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#FF002E48" Offset="0.0" />
+        <GradientStop Color="#FF0A4A6E" Offset="0.45" />
+        <GradientStop Color="#FF255A85" Offset="1.0" />
+    </LinearGradientBrush>
+
+</ResourceDictionary>
