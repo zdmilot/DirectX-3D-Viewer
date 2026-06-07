@@ -113,6 +113,68 @@ function Save-HeroImage {
     $bmp.Dispose()
 }
 
+function Save-SafeLandscapeImage {
+    param(
+        [string]$Path,
+        [int]$Width,
+        [int]$Height,
+        [string]$Title,
+        [string]$Subtitle
+    )
+
+    $bmp = New-Object System.Drawing.Bitmap $Width, $Height
+    $g = [System.Drawing.Graphics]::FromImage($bmp)
+    New-GradientBackground -Width $Width -Height $Height -Graphics $g
+
+    # Safe zones to keep content fully visible in constrained Store layouts.
+    $outerPad = [int]([Math]::Round($Width * 0.055))
+    $gap = [int]([Math]::Round($Width * 0.035))
+    $contentH = $Height - (2 * $outerPad)
+
+    $textW = [int]([Math]::Round($Width * 0.58))
+    $textRect = [System.Drawing.RectangleF]::new([float]$outerPad, [float]$outerPad, [float]$textW, [float]$contentH)
+
+    $iconAreaX = $outerPad + $textW + $gap
+    $iconAreaW = $Width - $iconAreaX - $outerPad
+    $iconSize = [int]([Math]::Min($iconAreaW, $contentH) * 0.92)
+    $iconX = $iconAreaX + [int](($iconAreaW - $iconSize) / 2)
+    $iconY = $outerPad + [int](($contentH - $iconSize) / 2)
+
+    $overlayBrush = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::FromArgb(150, 7, 31, 49))
+    $overlayRect = New-Object System.Drawing.Rectangle($outerPad, $outerPad, [int]($textW + $gap * 0.35), $contentH)
+    $g.FillRectangle($overlayBrush, $overlayRect)
+    $overlayBrush.Dispose()
+
+    $g.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::HighQuality
+    $g.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
+    $g.PixelOffsetMode = [System.Drawing.Drawing2D.PixelOffsetMode]::HighQuality
+    $g.DrawImage($icon, $iconX, $iconY, $iconSize, $iconSize)
+
+    $titleFont = New-Object System.Drawing.Font('Segoe UI Semibold', [float]([Math]::Round($Height * 0.105)), [System.Drawing.FontStyle]::Bold)
+    $subtitleFont = New-Object System.Drawing.Font('Segoe UI', [float]([Math]::Round($Height * 0.048)), [System.Drawing.FontStyle]::Regular)
+    $titleBrush = New-Object System.Drawing.SolidBrush($textColor)
+    $subtitleBrush = New-Object System.Drawing.SolidBrush($mutedText)
+    $format = New-Object System.Drawing.StringFormat
+    $format.Alignment = [System.Drawing.StringAlignment]::Near
+    $format.LineAlignment = [System.Drawing.StringAlignment]::Near
+    $format.Trimming = [System.Drawing.StringTrimming]::EllipsisWord
+
+    $titleRect = [System.Drawing.RectangleF]::new([float]$textRect.X, [float]($textRect.Y + [int]($contentH * 0.20)), [float]$textRect.Width, [float]([int]($contentH * 0.28)))
+    $subtitleRect = [System.Drawing.RectangleF]::new([float]$textRect.X, [float]($textRect.Y + [int]($contentH * 0.53)), [float]$textRect.Width, [float]([int]($contentH * 0.22)))
+
+    $g.DrawString($Title, $titleFont, $titleBrush, $titleRect, $format)
+    $g.DrawString($Subtitle, $subtitleFont, $subtitleBrush, $subtitleRect, $format)
+
+    $format.Dispose()
+    $subtitleBrush.Dispose()
+    $titleBrush.Dispose()
+    $subtitleFont.Dispose()
+    $titleFont.Dispose()
+    $g.Dispose()
+    $bmp.Save($Path, [System.Drawing.Imaging.ImageFormat]::Png)
+    $bmp.Dispose()
+}
+
 function Save-ScreenshotPlaceholder {
     param(
         [string]$Path,
@@ -175,6 +237,7 @@ Save-BrandTile -Path (Join-Path $layoutOut 'box-art-1080x1080.png') -Width 1080 
 Save-BrandTile -Path (Join-Path $layoutOut 'box-art-2160x2160.png') -Width 2160 -Height 2160 -IconScale 0.64
 Save-HeroImage -Path (Join-Path $layoutOut 'poster-art-720x1080.png') -Width 720 -Height 1080 -Title 'Direct X 3D Viewer' -Subtitle 'View and convert technical 3D model formats'
 Save-HeroImage -Path (Join-Path $layoutOut 'poster-art-1440x2160.png') -Width 1440 -Height 2160 -Title 'Direct X 3D Viewer' -Subtitle 'View and convert technical 3D model formats'
+Save-SafeLandscapeImage -Path (Join-Path $layoutOut 'landscape-art-1080x720.png') -Width 1080 -Height 720 -Title 'Direct X 3D Viewer' -Subtitle 'View and convert technical 3D model formats'
 
 Save-ScreenshotPlaceholder -Path (Join-Path $shotsOut '01-main-viewport.png') -Heading 'Inspect 3D Models' -Line1 'Open and orbit DirectX, OBJ, and STL files.' -Line2 'Analyze geometry with a native Direct3D viewport.'
 Save-ScreenshotPlaceholder -Path (Join-Path $shotsOut '02-conversion-workflow.png') -Heading 'Convert and Export' -Line1 'Convert between supported model formats quickly.' -Line2 'Use practical conversion options in one desktop app.'

@@ -26,6 +26,7 @@
     "spotlight1920x1080": "assets/hero/spotlight-1920x1080.png",
     "boxArt1080x1080": "assets/layout/box-art-1080x1080.png",
     "boxArt2160x2160": "assets/layout/box-art-2160x2160.png",
+    "landscapeArt1080x720": "assets/layout/landscape-art-1080x720.png",
     "posterArt720x1080": "assets/layout/poster-art-720x1080.png",
     "posterArt1440x2160": "assets/layout/poster-art-1440x2160.png",
     "screenshots": [
