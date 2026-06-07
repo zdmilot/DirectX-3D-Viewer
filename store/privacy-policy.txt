@@ -1,0 +1,23 @@
+Privacy Policy (Draft)
+
+Direct X 3D Viewer is a local desktop application.
+
+Data collection:
+- The app is designed to process user-selected model files locally on the device.
+- The app does not require account sign-in.
+- The app does not intentionally collect personal data.
+
+Network usage:
+- The app does not require cloud services for core viewing and conversion workflows.
+
+Diagnostics:
+- If diagnostics are enabled in future versions, this policy should be updated to describe what is collected and how it is used.
+
+Third-party components:
+- The application uses standard Windows and .NET runtime components.
+
+Contact:
+- support@example.com
+
+Note:
+- Replace this draft with your final legal privacy policy URL and text before publishing in Microsoft Store.

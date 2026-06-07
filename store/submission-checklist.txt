@@ -1,0 +1,19 @@
+Microsoft Store Submission Checklist
+
+Completed in this package:
+- Product listing metadata (store-package.json)
+- en-US listing content (localization/en-US/store-listing.json)
+- Visual identity guide and palette
+- App icon set and promotional artwork
+- Screenshot placeholders in Store-friendly landscape format
+- Support contact template
+- Privacy policy draft
+- Release notes and keywords
+
+Before publishing:
+- Replace support@example.com with real support email
+- Replace placeholder https://github.com/ URLs with real product/support/privacy URLs
+- Review and finalize legal privacy policy text
+- Replace screenshot placeholders with real in-app screenshots if required
+- Confirm category and taxonomy selections in Partner Center
+- Verify package architecture details match uploaded app package(s)
