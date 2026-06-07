@@ -38,4 +38,18 @@
     <ProjectReference Include="..\DirectX3DViewer.Core\DirectX3DViewer.Core.csproj" />
   </ItemGroup>
 
+  <!--
+    The WinUI build emits the app's compiled resource index ($(AssemblyName).pri),
+    which a self-contained / unpackaged app must load at startup. `dotnet publish`
+    does not copy it into the publish folder, so without this the published app
+    crashes immediately with a XamlParseException
+    (ModernResourceProvider::Create -> ERROR_FILE_NOT_FOUND). Copy it explicitly.
+  -->
+  <Target Name="CopyAppPriToPublish" AfterTargets="Publish">
+    <Copy SourceFiles="$(OutDir)$(AssemblyName).pri"
+          DestinationFolder="$(PublishDir)"
+          Condition="Exists('$(OutDir)$(AssemblyName).pri')"
+          SkipUnchangedFiles="false" />
+  </Target>
+
 </Project>

@@ -13,7 +13,7 @@
 ;  you in one step.
 ; ============================================================================
 
-#define AppName "DirectX 3D Viewer"
+#define AppName "Direct X 3D Viewer"
 #define AppVersion "1.0.0"
 #define AppPublisher "Zachary Milot"
 #define AppExeName "DirectX3DViewer.exe"
@@ -39,6 +39,18 @@ DefaultGroupName={#AppName}
 DisableProgramGroupPage=yes
 UninstallDisplayName={#AppName}
 UninstallDisplayIcon={app}\{#AppExeName}
+
+; Keep Inno Setup's generated uninstaller (unins000.exe / unins000.dat) out of
+; the main app folder - they live in {app}\Installer instead. The internal name
+; stays unins000.exe by design; only its location and the user-facing labels are
+; customised.
+UninstallFilesDir={app}\Installer
+
+; Digitally sign the generated uninstaller as well as the setup EXE. The named
+; "sslcom" SignTool must be defined either in the Inno Setup IDE or on the ISCC
+; command line (see installer\build_installer.ps1).
+SignedUninstaller=yes
+SignTool=sslcom
 
 ; Install per-machine into Program Files and write associations to HKLM.
 PrivilegesRequired=admin
