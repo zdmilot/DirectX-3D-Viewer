@@ -175,6 +175,21 @@ function Save-SafeLandscapeImage {
     $bmp.Dispose()
 }
 
+function Save-BackgroundOnlyImage {
+    param(
+        [string]$Path,
+        [int]$Width,
+        [int]$Height
+    )
+
+    $bmp = New-Object System.Drawing.Bitmap $Width, $Height
+    $g = [System.Drawing.Graphics]::FromImage($bmp)
+    New-GradientBackground -Width $Width -Height $Height -Graphics $g
+    $g.Dispose()
+    $bmp.Save($Path, [System.Drawing.Imaging.ImageFormat]::Png)
+    $bmp.Dispose()
+}
+
 function Save-ScreenshotPlaceholder {
     param(
         [string]$Path,
@@ -237,7 +252,7 @@ Save-BrandTile -Path (Join-Path $layoutOut 'box-art-1080x1080.png') -Width 1080 
 Save-BrandTile -Path (Join-Path $layoutOut 'box-art-2160x2160.png') -Width 2160 -Height 2160 -IconScale 0.64
 Save-HeroImage -Path (Join-Path $layoutOut 'poster-art-720x1080.png') -Width 720 -Height 1080 -Title 'Direct X 3D Viewer' -Subtitle 'View and convert technical 3D model formats'
 Save-HeroImage -Path (Join-Path $layoutOut 'poster-art-1440x2160.png') -Width 1440 -Height 2160 -Title 'Direct X 3D Viewer' -Subtitle 'View and convert technical 3D model formats'
-Save-SafeLandscapeImage -Path (Join-Path $layoutOut 'landscape-art-1080x720.png') -Width 1080 -Height 720 -Title 'Direct X 3D Viewer' -Subtitle 'View and convert technical 3D model formats'
+Save-BackgroundOnlyImage -Path (Join-Path $layoutOut 'poster-art-1080x720.png') -Width 1080 -Height 720
 
 Save-ScreenshotPlaceholder -Path (Join-Path $shotsOut '01-main-viewport.png') -Heading 'Inspect 3D Models' -Line1 'Open and orbit DirectX, OBJ, and STL files.' -Line2 'Analyze geometry with a native Direct3D viewport.'
 Save-ScreenshotPlaceholder -Path (Join-Path $shotsOut '02-conversion-workflow.png') -Heading 'Convert and Export' -Line1 'Convert between supported model formats quickly.' -Line2 'Use practical conversion options in one desktop app.'
