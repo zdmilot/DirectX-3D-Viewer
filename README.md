@@ -12,6 +12,10 @@ This project aims to change that by giving the power back to the people:
 - Generate and convert `.x` models
 - Switch between `.x` and common 3D formats without vendor lock-in
 
+## Download
+
+Download the latest signed installer from the [Releases page](https://github.com/zdmilot/DirectX-3D-Viewer/releases).
+
 ## Features
 
 - Load and view `.x`, `.hxx`, `.obj`, and `.stl`
