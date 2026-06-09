@@ -2,6 +2,10 @@
 
 DirectX 3D Viewer is a **native Windows desktop application** for viewing, converting, and inspecting 3D files used in Hamilton automation workflows and general 3D pipelines. It is built with **WinUI 3 / Windows App SDK** and renders models with a hardware-accelerated **Direct3D 11** viewport.
 
+<img width="468" height="275" alt="Picture2" src="https://github.com/user-attachments/assets/08c80d2e-8397-4b07-88b2-c92e497344cb" />
+<img width="468" height="275" alt="Picture1" src="https://github.com/user-attachments/assets/d8d527c4-e185-454e-8673-3ecb5ebb70a7" />
+
+
 ## Why this project exists
 
 Hamilton VENUS relies on `.x` and `.hxx` model formats. Support for these formats has been dropped or is no longer maintained in many mainstream 3D tools (including newer Blender workflows and other common tooling).
