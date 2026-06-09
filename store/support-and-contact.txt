@@ -1,0 +1,19 @@
+Support and Contact
+
+Product: DirectX 3D Viewer
+Publisher: Zachary Milot
+
+Support email:
+- support@example.com
+
+Support web page:
+- https://github.com/
+
+Issue tracking:
+- https://github.com/
+
+FAQ starter topics:
+- Supported model formats and limitations
+- Model rendering performance tips
+- File conversion troubleshooting
+- Import and export compatibility notes

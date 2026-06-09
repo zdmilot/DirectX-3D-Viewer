@@ -1,0 +1,36 @@
+DirectX 3D Viewer - Visual Identity Pack
+
+Brand direction:
+- Style: Technical, modern, trustworthy desktop utility
+- Tone: Professional and practical for engineering and developer workflows
+
+Primary colors:
+- Deep navy: #002E48
+- Brand blue: #0366A0
+- Accent cyan: #00BCD7
+- Action accent: #0275D8
+
+Neutrals:
+- Light background: #E9EEF2
+- Dark background: #0D1B2A
+- Primary text (light theme): #1A2B3C
+- Primary text (dark theme): #E0E8F0
+
+Typography:
+- UI font: Segoe UI / Segoe UI Semibold
+- Use strong headings and concise utility text
+
+Iconography:
+- App mark: Teapot silhouette from existing application icon
+- Icon treatment: centered icon over navy-blue-cyan gradient tile
+- Do not distort icon aspect ratio
+
+Image style guidance:
+- Use blue gradients and subtle geometric overlays
+- Keep copy readable with high-contrast text on dark overlays
+- Include real in-app screenshots for production submission when available
+
+Asset mapping:
+- App icons: store/assets/icons/
+- Promotional hero images: store/assets/hero/
+- Screenshot set: store/assets/screenshots/

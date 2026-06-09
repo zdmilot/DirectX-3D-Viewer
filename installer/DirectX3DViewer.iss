@@ -40,9 +40,29 @@ DisableProgramGroupPage=yes
 UninstallDisplayName={#AppName}
 UninstallDisplayIcon={app}\{#AppExeName}
 
-; Install per-machine into Program Files and write associations to HKLM.
+; Keep Inno Setup's generated uninstaller (unins000.exe / unins000.dat) out of
+; the main app folder - they live in {app}\Installer instead. The internal name
+; stays unins000.exe by design; only its location and the user-facing labels are
+; customised.
+UninstallFilesDir={app}\Installer
+
+; Digitally sign the generated uninstaller as well as the setup EXE. The named
+; "sslcom" SignTool must be defined either in the Inno Setup IDE or on the ISCC
+; command line (see installer\build_installer.ps1). Both directives are skipped
+; when ISCC is invoked with /DUnsigned (structure-only validation builds).
+#ifndef Unsigned
+SignedUninstaller=yes
+SignTool=sslcom
+#endif
+
+; Install per-machine into Program Files (all users) or, if the user chooses,
+; into the current user's profile. PrivilegesRequiredOverridesAllowed=dialog
+; shows the "Install for all users / Install for me only" chooser at startup,
+; and UsePreviousPrivileges=no makes that chooser appear on EVERY run instead of
+; silently reusing a remembered choice from a previous install.
 PrivilegesRequired=admin
 PrivilegesRequiredOverridesAllowed=dialog
+UsePreviousPrivileges=no
 
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
@@ -54,6 +74,11 @@ Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern
 ChangesAssociations=yes
+
+; Keep the "Select Additional Tasks" wizard page (desktop icon + file
+; associations) and the Ready page visible so the user is always asked which
+; file types to associate with the app before files are copied.
+DisableReadyPage=no
 
 ; Re-running setup acts as an "edit associations" tool: previous task choices
 ; (incl. each file association) are restored on the Tasks page so the user can
@@ -73,9 +98,10 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 ; Desktop shortcut (asked during setup).
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
 
-; File associations - one independent checkbox per supported format. These can
-; be changed later by simply running this installer again (it restores the
-; current choices, and unticking removes an association).
+; File associations - one independent checkbox per supported format. They are
+; ticked by default (no "unchecked" flag) so a first-time install associates all
+; supported types; they can be changed later by simply running this installer
+; again (it restores the current choices, and unticking removes an association).
 Name: "assoc_x";   Description: "Associate &.x DirectX model files";   GroupDescription: "Associate file types with {#AppName} (you can re-run setup later to change these):"
 Name: "assoc_hxx"; Description: "Associate .&hxx Hamilton model files"; GroupDescription: "Associate file types with {#AppName} (you can re-run setup later to change these):"
 Name: "assoc_obj"; Description: "Associate .&obj model files";          GroupDescription: "Associate file types with {#AppName} (you can re-run setup later to change these):"
@@ -134,7 +160,13 @@ Root: HKA; Subkey: "Software\Classes\.stl\OpenWithProgids"; ValueType: string; V
 
 [Run]
 ; Offer to launch the app on the final wizard page (checkbox).
-Filename: "{app}\{#AppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(AppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
+;
+; runasoriginaluser is ESSENTIAL: Setup runs elevated (PrivilegesRequired=admin),
+; and a WinUI 3 / Windows App SDK desktop app will not start when launched with
+; an elevated token. This flag spawns the app with the original (non-elevated)
+; user token, exactly as a Start Menu / desktop shortcut would, so "Launch
+; DirectX 3D Viewer" on the Finish page actually opens the app.
+Filename: "{app}\{#AppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(AppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent runasoriginaluser
 
 [Code]
 { ---------------------------------------------------------------------------

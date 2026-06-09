@@ -1,0 +1,46 @@
+{
+  "packageVersion": "1.0.0",
+  "createdUtc": "2026-06-06T21:10:00Z",
+  "product": {
+    "name": "DirectX 3D Viewer",
+    "category": "DeveloperTools",
+    "platform": "Windows",
+    "minimumOS": "Windows 10 version 17763.0",
+    "architectures": ["x64"],
+    "publisher": "Zachary Milot"
+  },
+  "localization": {
+    "defaultLanguage": "en-US",
+    "files": [
+      "localization/en-US/store-listing.json"
+    ]
+  },
+  "assets": {
+    "icon300": "assets/icons/app-icon-300x300.png",
+    "icon150": "assets/icons/app-icon-150x150.png",
+    "icon71": "assets/icons/app-icon-71x71.png",
+    "icon50": "assets/icons/app-icon-50x50.png",
+    "icon44": "assets/icons/app-icon-44x44.png",
+    "hero2400x1200": "assets/hero/hero-2400x1200.png",
+    "promo732x412": "assets/hero/promo-tile-732x412.png",
+    "spotlight1920x1080": "assets/hero/spotlight-1920x1080.png",
+    "boxArt1080x1080": "assets/layout/box-art-1080x1080.png",
+    "boxArt2160x2160": "assets/layout/box-art-2160x2160.png",
+    "posterArt1080x720": "assets/layout/poster-art-1080x720.png",
+    "posterArt720x1080": "assets/layout/poster-art-720x1080.png",
+    "posterArt1440x2160": "assets/layout/poster-art-1440x2160.png",
+    "screenshots": [
+      "assets/screenshots/01-main-viewport.png",
+      "assets/screenshots/02-conversion-workflow.png",
+      "assets/screenshots/03-light-dark-themes.png",
+      "assets/screenshots/04-file-associations.png"
+    ]
+  },
+  "submission": {
+    "privacyPolicy": "privacy-policy.txt",
+    "support": "support-and-contact.txt",
+    "releaseNotes": "release-notes.txt",
+    "visualIdentity": "visual-identity.txt",
+    "keywords": "search-keywords.txt"
+  }
+}

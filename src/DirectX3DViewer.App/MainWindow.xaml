@@ -59,6 +59,38 @@
         <Grid Grid.Row="2" AllowDrop="True"
               DragOver="OnDragOver" Drop="OnDrop" DragLeave="OnDragLeave">
 
+            <!-- Viewport right-click context menu -->
+            <Grid.ContextFlyout>
+                <MenuFlyout>
+                    <MenuFlyoutItem x:Name="CtxScreenshot" Text="Screenshot&#x2026;" Tag="screenshot"
+                                    Click="OnContextMenuAction">
+                        <MenuFlyoutItem.Icon>
+                            <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xE722;" />
+                        </MenuFlyoutItem.Icon>
+                    </MenuFlyoutItem>
+                    <MenuFlyoutSubItem Text="Export object&#x2026;">
+                        <MenuFlyoutSubItem.Icon>
+                            <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xE896;" />
+                        </MenuFlyoutSubItem.Icon>
+                        <MenuFlyoutItem Text="Export as .X" Tag="x" Click="OnExport" />
+                        <MenuFlyoutItem Text="Export as .OBJ" Tag="obj" Click="OnExport" />
+                        <MenuFlyoutItem Text="Export as .STL" Tag="stl" Click="OnExport" />
+                        <MenuFlyoutItem Text="Export as .GLB" Tag="glb" Click="OnExport" />
+                    </MenuFlyoutSubItem>
+                    <MenuFlyoutSeparator />
+                    <MenuFlyoutItem Text="Reset camera" Tag="reset" Click="OnContextMenuAction">
+                        <MenuFlyoutItem.Icon>
+                            <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xE72C;" />
+                        </MenuFlyoutItem.Icon>
+                    </MenuFlyoutItem>
+                    <MenuFlyoutItem Text="Zoom to fit" Tag="fit" Click="OnContextMenuAction">
+                        <MenuFlyoutItem.Icon>
+                            <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xE9A6;" />
+                        </MenuFlyoutItem.Icon>
+                    </MenuFlyoutItem>
+                </MenuFlyout>
+            </Grid.ContextFlyout>
+
             <!-- Native D3D viewport -->
             <ctl:D3DViewport x:Name="Viewport" />
 
@@ -103,11 +135,25 @@
                                   Click="OnWireframe" ToolTipService.ToolTip="Wireframe">
                         <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xE8A9;" FontSize="15" />
                     </ToggleButton>
-                    <ToggleButton x:Name="PerspectiveButton" Style="{StaticResource ToolToggleStyle}"
-                                  IsChecked="True" Click="OnPerspective"
-                                  ToolTipService.ToolTip="Perspective / Orthographic">
+                    <Button x:Name="ProjectionButton" Style="{StaticResource ToolButtonStyle}"
+                            ToolTipService.ToolTip="Projection mode">
                         <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xE809;" FontSize="15" />
-                    </ToggleButton>
+                        <Button.Flyout>
+                            <Flyout Placement="Left">
+                                <StackPanel Width="175" Spacing="10">
+                                    <TextBlock Text="Projection" FontWeight="SemiBold" FontSize="14" />
+                                    <TextBlock Text="PROJECTION TYPE" FontSize="10" FontWeight="SemiBold"
+                                               CharacterSpacing="160" Foreground="{ThemeResource TextMutedBrush}" />
+                                    <RadioButton x:Name="ProjPerspective" Content="Perspective"
+                                                 GroupName="ProjGroup" Tag="perspective"
+                                                 IsChecked="True" Checked="OnProjectionChanged" />
+                                    <RadioButton x:Name="ProjOrthographic" Content="Orthographic"
+                                                 GroupName="ProjGroup" Tag="orthographic"
+                                                 Checked="OnProjectionChanged" />
+                                </StackPanel>
+                            </Flyout>
+                        </Button.Flyout>
+                    </Button>
                     <ToggleButton x:Name="GridButton" Style="{StaticResource ToolToggleStyle}"
                                   IsChecked="True" Click="OnGrid" ToolTipService.ToolTip="Gridlines">
                         <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xF0E2;" FontSize="15" />
@@ -190,31 +236,26 @@
                                     <TextBlock Text="Appearance" FontWeight="SemiBold" FontSize="14" />
                                     <TextBlock Text="LOOK" FontSize="10" FontWeight="SemiBold"
                                                CharacterSpacing="160" Foreground="{ThemeResource TextMutedBrush}" />
-                                    <Slider x:Name="LookSlider" Minimum="0" Maximum="2"
-                                            StepFrequency="1" SnapsTo="Ticks" TickFrequency="1"
-                                            TickPlacement="Outside" Value="0" />
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="*" />
-                                        </Grid.ColumnDefinitions>
-                                        <TextBlock Grid.Column="0" Text="Day" FontSize="12"
-                                                   HorizontalAlignment="Left"
-                                                   Foreground="{ThemeResource TextSecondaryBrush}" />
-                                        <TextBlock Grid.Column="1" Text="Night" FontSize="12"
-                                                   HorizontalAlignment="Center"
-                                                   Foreground="{ThemeResource TextSecondaryBrush}" />
-                                        <TextBlock Grid.Column="2" Text="Transparent" FontSize="12"
-                                                   HorizontalAlignment="Right"
-                                                   Foreground="{ThemeResource TextSecondaryBrush}" />
-                                    </Grid>
-                                    <TextBlock Text="Transparent removes the backdrop - ideal for PNG screenshots."
+                                    <RadioButton x:Name="LookDay" Content="Day"
+                                                 GroupName="LookGroup" Tag="0"
+                                                 IsChecked="True" Checked="OnLookOptionChecked" />
+                                    <RadioButton x:Name="LookNight" Content="Night"
+                                                 GroupName="LookGroup" Tag="1"
+                                                 Checked="OnLookOptionChecked" />
+                                    <RadioButton x:Name="LookTransparent" Content="Transparent"
+                                                 GroupName="LookGroup" Tag="2"
+                                                 Checked="OnLookOptionChecked" />
+                                    <TextBlock Text="Transparent removes the backdrop — ideal for PNG screenshots."
                                                FontSize="11" TextWrapping="Wrap"
                                                Foreground="{ThemeResource TextMutedBrush}" />
                                 </StackPanel>
                             </Flyout>
                         </Button.Flyout>
+                    </Button>
+                    <Button Style="{StaticResource ToolButtonStyle}" Click="OnHelp"
+                            ToolTipService.ToolTip="Help &amp; CLI Reference">
+                        <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}"
+                                  Glyph="&#xE9CE;" FontSize="15" />
                     </Button>
                     <Button x:Name="AboutButton" Style="{StaticResource ToolButtonStyle}"
                             Click="OnAbout" ToolTipService.ToolTip="About">

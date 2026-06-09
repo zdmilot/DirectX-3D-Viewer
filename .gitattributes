@@ -2,3 +2,4 @@
 * text=auto
 Other[[:space:]]3D[[:space:]]formats[[:space:]]to[[:space:]]test/Meshy_AI_PHERAstar_FSX_0221221220_texture.obj filter=lfs diff=lfs merge=lfs -text
 Other[[:space:]]3D[[:space:]]formats[[:space:]]to[[:space:]]test/PHERAstar_FSX.glb filter=lfs diff=lfs merge=lfs -text
+Output/DirectX3DViewer-1.0.0-Setup.exe filter=lfs diff=lfs merge=lfs -text
