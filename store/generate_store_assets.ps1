@@ -243,15 +243,15 @@ foreach ($size in $iconSizes) {
     Save-BrandTile -Path (Join-Path $iconsOut ("app-icon-{0}x{0}.png" -f $size)) -Width $size -Height $size -IconScale 0.70
 }
 
-Save-HeroImage -Path (Join-Path $heroOut 'hero-2400x1200.png') -Width 2400 -Height 1200 -Title 'Direct X 3D Viewer' -Subtitle 'Load, inspect, and convert .x, .hxx, .obj, and .stl models.'
-Save-HeroImage -Path (Join-Path $heroOut 'promo-tile-732x412.png') -Width 732 -Height 412 -Title 'Direct X 3D Viewer' -Subtitle 'WinUI 3 model viewer and converter'
-Save-HeroImage -Path (Join-Path $heroOut 'spotlight-1920x1080.png') -Width 1920 -Height 1080 -Title 'Direct X 3D Viewer' -Subtitle 'Direct3D viewport with export workflows'
+Save-HeroImage -Path (Join-Path $heroOut 'hero-2400x1200.png') -Width 2400 -Height 1200 -Title 'DirectX 3D Viewer' -Subtitle 'Load, inspect, and convert .x, .hxx, .obj, and .stl models.'
+Save-HeroImage -Path (Join-Path $heroOut 'promo-tile-732x412.png') -Width 732 -Height 412 -Title 'DirectX 3D Viewer' -Subtitle 'WinUI 3 model viewer and converter'
+Save-HeroImage -Path (Join-Path $heroOut 'spotlight-1920x1080.png') -Width 1920 -Height 1080 -Title 'DirectX 3D Viewer' -Subtitle 'Direct3D viewport with export workflows'
 
 # Microsoft Store layout-specific branding images.
 Save-BrandTile -Path (Join-Path $layoutOut 'box-art-1080x1080.png') -Width 1080 -Height 1080 -IconScale 0.64
 Save-BrandTile -Path (Join-Path $layoutOut 'box-art-2160x2160.png') -Width 2160 -Height 2160 -IconScale 0.64
-Save-HeroImage -Path (Join-Path $layoutOut 'poster-art-720x1080.png') -Width 720 -Height 1080 -Title 'Direct X 3D Viewer' -Subtitle 'View and convert technical 3D model formats'
-Save-HeroImage -Path (Join-Path $layoutOut 'poster-art-1440x2160.png') -Width 1440 -Height 2160 -Title 'Direct X 3D Viewer' -Subtitle 'View and convert technical 3D model formats'
+Save-HeroImage -Path (Join-Path $layoutOut 'poster-art-720x1080.png') -Width 720 -Height 1080 -Title 'DirectX 3D Viewer' -Subtitle 'View and convert technical 3D model formats'
+Save-HeroImage -Path (Join-Path $layoutOut 'poster-art-1440x2160.png') -Width 1440 -Height 2160 -Title 'DirectX 3D Viewer' -Subtitle 'View and convert technical 3D model formats'
 Save-BackgroundOnlyImage -Path (Join-Path $layoutOut 'poster-art-1080x720.png') -Width 1080 -Height 720
 
 Save-ScreenshotPlaceholder -Path (Join-Path $shotsOut '01-main-viewport.png') -Heading 'Inspect 3D Models' -Line1 'Open and orbit DirectX, OBJ, and STL files.' -Line2 'Analyze geometry with a native Direct3D viewport.'

@@ -1,7 +1,7 @@
 Release Notes
 
 Version 1.0.0
-- Native WinUI 3 desktop release of Direct X 3D Viewer
+- Native WinUI 3 desktop release of DirectX 3D Viewer
 - Open and inspect .x, .hxx, .obj, and .stl model files
 - Export and conversion workflow improvements
 - Updated installer identity and digital signing flow

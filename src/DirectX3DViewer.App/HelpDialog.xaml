@@ -1,0 +1,237 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ContentDialog
+    x:Class="DirectX3DViewer.App.HelpDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Help &amp; CLI Reference"
+    CloseButtonText="Close"
+    DefaultButton="Close"
+    MaxWidth="640">
+
+    <ScrollViewer MaxHeight="540" VerticalScrollBarVisibility="Auto">
+        <StackPanel Spacing="18" Padding="0,4,12,4">
+
+            <!-- ── Keyboard shortcuts ──────────────────────────────── -->
+            <TextBlock Text="KEYBOARD &amp; MOUSE" FontSize="10" FontWeight="SemiBold"
+                       CharacterSpacing="180" Foreground="{ThemeResource AccentBrush}" />
+
+            <Grid ColumnSpacing="12" RowSpacing="6">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition /><RowDefinition /><RowDefinition /><RowDefinition />
+                    <RowDefinition /><RowDefinition /><RowDefinition />
+                </Grid.RowDefinitions>
+
+                <Border Grid.Row="0" Grid.Column="0" CornerRadius="4"
+                        Background="{ThemeResource CardBackgroundBrush}"
+                        BorderBrush="{ThemeResource ToolbarBorderBrush}" BorderThickness="1"
+                        Padding="6,2">
+                    <TextBlock Text="Left drag" FontFamily="Consolas" FontSize="12" />
+                </Border>
+                <TextBlock Grid.Row="0" Grid.Column="1" Text="Orbit camera"
+                           VerticalAlignment="Center" Foreground="{ThemeResource TextSecondaryBrush}" FontSize="13"/>
+
+                <Border Grid.Row="1" Grid.Column="0" CornerRadius="4"
+                        Background="{ThemeResource CardBackgroundBrush}"
+                        BorderBrush="{ThemeResource ToolbarBorderBrush}" BorderThickness="1"
+                        Padding="6,2">
+                    <TextBlock Text="Right / Middle drag" FontFamily="Consolas" FontSize="12" />
+                </Border>
+                <TextBlock Grid.Row="1" Grid.Column="1" Text="Pan camera"
+                           VerticalAlignment="Center" Foreground="{ThemeResource TextSecondaryBrush}" FontSize="13"/>
+
+                <Border Grid.Row="2" Grid.Column="0" CornerRadius="4"
+                        Background="{ThemeResource CardBackgroundBrush}"
+                        BorderBrush="{ThemeResource ToolbarBorderBrush}" BorderThickness="1"
+                        Padding="6,2">
+                    <TextBlock Text="Scroll wheel" FontFamily="Consolas" FontSize="12" />
+                </Border>
+                <TextBlock Grid.Row="2" Grid.Column="1" Text="Zoom in / out"
+                           VerticalAlignment="Center" Foreground="{ThemeResource TextSecondaryBrush}" FontSize="13"/>
+
+                <Border Grid.Row="3" Grid.Column="0" CornerRadius="4"
+                        Background="{ThemeResource CardBackgroundBrush}"
+                        BorderBrush="{ThemeResource ToolbarBorderBrush}" BorderThickness="1"
+                        Padding="6,2">
+                    <TextBlock Text="Right-click viewport" FontFamily="Consolas" FontSize="12" />
+                </Border>
+                <TextBlock Grid.Row="3" Grid.Column="1" Text="Context menu: screenshot, export, reset"
+                           VerticalAlignment="Center" Foreground="{ThemeResource TextSecondaryBrush}" FontSize="13"/>
+
+                <Border Grid.Row="4" Grid.Column="0" CornerRadius="4"
+                        Background="{ThemeResource CardBackgroundBrush}"
+                        BorderBrush="{ThemeResource ToolbarBorderBrush}" BorderThickness="1"
+                        Padding="6,2">
+                    <TextBlock Text="Drag &amp; drop" FontFamily="Consolas" FontSize="12" />
+                </Border>
+                <TextBlock Grid.Row="4" Grid.Column="1" Text="Drop any supported file onto the viewport to open it"
+                           VerticalAlignment="Center" Foreground="{ThemeResource TextSecondaryBrush}" FontSize="13"/>
+
+                <Border Grid.Row="5" Grid.Column="0" CornerRadius="4"
+                        Background="{ThemeResource CardBackgroundBrush}"
+                        BorderBrush="{ThemeResource ToolbarBorderBrush}" BorderThickness="1"
+                        Padding="6,2">
+                    <TextBlock Text="Screenshot button" FontFamily="Consolas" FontSize="12" />
+                </Border>
+                <TextBlock Grid.Row="5" Grid.Column="1" Text="Save viewport as PNG or JPEG (transparent BG supported)"
+                           VerticalAlignment="Center" Foreground="{ThemeResource TextSecondaryBrush}" FontSize="13"/>
+
+                <Border Grid.Row="6" Grid.Column="0" CornerRadius="4"
+                        Background="{ThemeResource CardBackgroundBrush}"
+                        BorderBrush="{ThemeResource ToolbarBorderBrush}" BorderThickness="1"
+                        Padding="6,2">
+                    <TextBlock Text="Export button" FontFamily="Consolas" FontSize="12" />
+                </Border>
+                <TextBlock Grid.Row="6" Grid.Column="1" Text="Export loaded model as .X .OBJ .STL or .GLB"
+                           VerticalAlignment="Center" Foreground="{ThemeResource TextSecondaryBrush}" FontSize="13"/>
+            </Grid>
+
+            <!-- ── Supported formats ─────────────────────────────── -->
+            <TextBlock Text="SUPPORTED FORMATS" FontSize="10" FontWeight="SemiBold"
+                       CharacterSpacing="180" Foreground="{ThemeResource AccentBrush}" />
+
+            <Grid ColumnSpacing="16" RowSpacing="6">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition /><RowDefinition /><RowDefinition /><RowDefinition /><RowDefinition />
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" Grid.Column="0" Text=".x" FontFamily="Consolas" FontSize="13"
+                           Foreground="{ThemeResource AccentBrush}" />
+                <TextBlock Grid.Row="0" Grid.Column="1" FontSize="13"
+                           Foreground="{ThemeResource TextSecondaryBrush}"
+                           Text="DirectX .X model  —  read &amp; write (binary or text)" />
+
+                <TextBlock Grid.Row="1" Grid.Column="0" Text=".hxx" FontFamily="Consolas" FontSize="13"
+                           Foreground="{ThemeResource AccentBrush}" />
+                <TextBlock Grid.Row="1" Grid.Column="1" FontSize="13"
+                           Foreground="{ThemeResource TextSecondaryBrush}"
+                           Text="Half-precision X variant  —  read only" />
+
+                <TextBlock Grid.Row="2" Grid.Column="0" Text=".obj" FontFamily="Consolas" FontSize="13"
+                           Foreground="{ThemeResource AccentBrush}" />
+                <TextBlock Grid.Row="2" Grid.Column="1" FontSize="13"
+                           Foreground="{ThemeResource TextSecondaryBrush}"
+                           Text="Wavefront OBJ  —  read &amp; write" />
+
+                <TextBlock Grid.Row="3" Grid.Column="0" Text=".stl" FontFamily="Consolas" FontSize="13"
+                           Foreground="{ThemeResource AccentBrush}" />
+                <TextBlock Grid.Row="3" Grid.Column="1" FontSize="13"
+                           Foreground="{ThemeResource TextSecondaryBrush}"
+                           Text="Stereolithography  —  read &amp; write" />
+
+                <TextBlock Grid.Row="4" Grid.Column="0" Text=".glb" FontFamily="Consolas" FontSize="13"
+                           Foreground="{ThemeResource AccentBrush}" />
+                <TextBlock Grid.Row="4" Grid.Column="1" FontSize="13"
+                           Foreground="{ThemeResource TextSecondaryBrush}"
+                           Text="glTF 2.0 binary  —  write only" />
+            </Grid>
+
+            <!-- ── CLI Reference ──────────────────────────────────── -->
+            <TextBlock Text="CLI REFERENCE" FontSize="10" FontWeight="SemiBold"
+                       CharacterSpacing="180" Foreground="{ThemeResource AccentBrush}" />
+
+            <TextBlock FontSize="12" Foreground="{ThemeResource TextSecondaryBrush}" TextWrapping="Wrap"
+                       Text="Run DirectX3DViewer.exe from any terminal to convert 3D files without opening the GUI." />
+
+            <!-- syntax block -->
+            <Border CornerRadius="8" Padding="12,10"
+                    Background="{ThemeResource CardBackgroundBrush}"
+                    BorderBrush="{ThemeResource ToolbarBorderBrush}" BorderThickness="1">
+                <StackPanel Spacing="4">
+                    <TextBlock FontFamily="Consolas" FontSize="12"
+                               Foreground="{ThemeResource TextMutedBrush}"
+                               Text="# Open file in the viewer" />
+                    <TextBlock FontFamily="Consolas" FontSize="12"
+                               Foreground="{ThemeResource TextPrimaryBrush}"
+                               Text="DirectX3DViewer.exe model.x" />
+                    <TextBlock Margin="0,6,0,0" FontFamily="Consolas" FontSize="12"
+                               Foreground="{ThemeResource TextMutedBrush}"
+                               Text="# Convert between formats" />
+                    <TextBlock FontFamily="Consolas" FontSize="12"
+                               Foreground="{ThemeResource TextPrimaryBrush}"
+                               Text="DirectX3DViewer.exe convert &lt;input&gt; &lt;output&gt; [--format &lt;fmt&gt;]" />
+                    <TextBlock Margin="0,6,0,0" FontFamily="Consolas" FontSize="12"
+                               Foreground="{ThemeResource TextMutedBrush}"
+                               Text="# Show full CLI help" />
+                    <TextBlock FontFamily="Consolas" FontSize="12"
+                               Foreground="{ThemeResource TextPrimaryBrush}"
+                               Text="DirectX3DViewer.exe --help" />
+                </StackPanel>
+            </Border>
+
+            <!-- examples -->
+            <TextBlock Text="EXAMPLES" FontSize="10" FontWeight="SemiBold"
+                       CharacterSpacing="180" Foreground="{ThemeResource AccentBrush}" />
+
+            <Border CornerRadius="8" Padding="12,10"
+                    Background="{ThemeResource CardBackgroundBrush}"
+                    BorderBrush="{ThemeResource ToolbarBorderBrush}" BorderThickness="1">
+                <StackPanel Spacing="10">
+                    <StackPanel Spacing="2">
+                        <TextBlock FontFamily="Consolas" FontSize="12"
+                                   Foreground="{ThemeResource TextPrimaryBrush}"
+                                   Text="DirectX3DViewer.exe convert model.obj model.x" />
+                        <TextBlock FontSize="12" Foreground="{ThemeResource TextMutedBrush}"
+                                   Text="  Convert OBJ &#x2192; DirectX .X binary" />
+                    </StackPanel>
+                    <StackPanel Spacing="2">
+                        <TextBlock FontFamily="Consolas" FontSize="12"
+                                   Foreground="{ThemeResource TextPrimaryBrush}"
+                                   Text="DirectX3DViewer.exe convert model.stl output.glb" />
+                        <TextBlock FontSize="12" Foreground="{ThemeResource TextMutedBrush}"
+                                   Text="  Convert STL &#x2192; glTF 2.0 binary (.glb)" />
+                    </StackPanel>
+                    <StackPanel Spacing="2">
+                        <TextBlock FontFamily="Consolas" FontSize="12"
+                                   Foreground="{ThemeResource TextPrimaryBrush}"
+                                   Text="DirectX3DViewer.exe convert model.x result --format obj" />
+                        <TextBlock FontSize="12" Foreground="{ThemeResource TextMutedBrush}"
+                                   Text="  Convert .X &#x2192; OBJ, format flag overrides extension" />
+                    </StackPanel>
+                    <StackPanel Spacing="2">
+                        <TextBlock FontFamily="Consolas" FontSize="12"
+                                   Foreground="{ThemeResource TextPrimaryBrush}"
+                                   Text="DirectX3DViewer.exe convert *.hxx output.obj" />
+                        <TextBlock FontSize="12" Foreground="{ThemeResource TextMutedBrush}"
+                                   Text="  Convert .HXX half-precision X &#x2192; OBJ" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- exit codes -->
+            <TextBlock Text="EXIT CODES" FontSize="10" FontWeight="SemiBold"
+                       CharacterSpacing="180" Foreground="{ThemeResource AccentBrush}" />
+
+            <Grid ColumnSpacing="16" RowSpacing="4">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition /><RowDefinition /><RowDefinition />
+                </Grid.RowDefinitions>
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="0" FontFamily="Consolas" FontSize="13"
+                           Foreground="{ThemeResource AccentBrush}" />
+                <TextBlock Grid.Row="0" Grid.Column="1" FontSize="13"
+                           Foreground="{ThemeResource TextSecondaryBrush}" Text="Success" />
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="1" FontFamily="Consolas" FontSize="13"
+                           Foreground="{ThemeResource AccentBrush}" />
+                <TextBlock Grid.Row="1" Grid.Column="1" FontSize="13"
+                           Foreground="{ThemeResource TextSecondaryBrush}"
+                           Text="Conversion or IO error  (message printed to stderr)" />
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="2" FontFamily="Consolas" FontSize="13"
+                           Foreground="{ThemeResource AccentBrush}" />
+                <TextBlock Grid.Row="2" Grid.Column="1" FontSize="13"
+                           Foreground="{ThemeResource TextSecondaryBrush}" Text="Invalid arguments" />
+            </Grid>
+
+        </StackPanel>
+    </ScrollViewer>
+</ContentDialog>

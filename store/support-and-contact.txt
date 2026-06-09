@@ -1,6 +1,6 @@
 Support and Contact
 
-Product: Direct X 3D Viewer
+Product: DirectX 3D Viewer
 Publisher: Zachary Milot
 
 Support email:

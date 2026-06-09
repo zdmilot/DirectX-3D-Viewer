@@ -18,10 +18,44 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
-    <!-- Unpackaged, self-contained portable .exe (matches the current distribution). -->
-    <WindowsPackageType>None</WindowsPackageType>
-    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
-    <EnableMsixTooling>false</EnableMsixTooling>
+    <!--
+      Distribution mode.
+        Default (Unpackaged unset/false) : MSIX package for the Microsoft Store.
+        -p:Unpackaged=true               : self-contained, UNPACKAGED Win32 build
+                                           consumed by the Inno Setup single-EXE
+                                           installer (installer\build_installer.ps1).
+
+      An unpackaged WinUI 3 app MUST be self-contained and have NO MSIX package
+      type, so the Windows App SDK auto-initializer bootstraps the runtime at
+      launch. An MSIX-typed build will not start outside its package container,
+      which would make the EXE installer's payload fail to run.
+    -->
+    <WindowsPackageType Condition="'$(Unpackaged)' == 'true'">None</WindowsPackageType>
+    <WindowsPackageType Condition="'$(Unpackaged)' != 'true'">MSIX</WindowsPackageType>
+    <WindowsAppSDKSelfContained Condition="'$(Unpackaged)' == 'true'">true</WindowsAppSDKSelfContained>
+    <WindowsAppSDKSelfContained Condition="'$(Unpackaged)' != 'true'">false</WindowsAppSDKSelfContained>
+    <!--
+      EnableMsixTooling must stay true even for the unpackaged build: it drives
+      generation of the app's resources.pri (which indexes Themes\Palette.xaml,
+      Styles.xaml and other ms-appx:/// resources). Without it the published app
+      crashes at startup (0xC000027B in Microsoft.UI.Xaml.dll) because the XAML
+      loader cannot resolve its merged resource dictionaries.
+    -->
+    <EnableMsixTooling>true</EnableMsixTooling>
+    <!--
+      For Store uploads Partner Center re-signs the package, so local signing is disabled.
+      To sideload for testing, set AppxPackageSigningEnabled=true and supply a test cert thumbprint.
+    -->
+    <AppxPackageSigningEnabled>false</AppxPackageSigningEnabled>
+    <!--
+      SideloadOnly produces a .msix that can be uploaded directly to Partner Center.
+      StoreUpload additionally bundles a .appxsym symbols file, which requires
+      mspdbcmf.exe from Visual Studio; use StoreUpload when building inside VS.
+    -->
+    <UapAppxPackageBuildMode>SideloadOnly</UapAppxPackageBuildMode>
+    <AppxBundleMode>Never</AppxBundleMode>
+    <AppxPackageDir>$(MSBuildProjectDirectory)\..\..\Output\msix\</AppxPackageDir>
+    <AppxSymbolPackageEnabled>false</AppxSymbolPackageEnabled>
     <!-- Lightweight startup: no tiered-PGO bloat, trim-friendly. -->
     <ApplicationIcon>Assets\icon.ico</ApplicationIcon>
   </PropertyGroup>
@@ -29,6 +63,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.1.3" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.1839" />
+    <PackageReference Include="System.Security.Permissions" Version="8.0.0" />
     <PackageReference Include="Vortice.Direct3D11" Version="3.8.3" />
     <PackageReference Include="Vortice.DXGI" Version="3.8.3" />
     <PackageReference Include="Vortice.D3DCompiler" Version="3.8.3" />
@@ -39,17 +74,38 @@
   </ItemGroup>
 
   <!--
-    The WinUI build emits the app's compiled resource index ($(AssemblyName).pri),
-    which a self-contained / unpackaged app must load at startup. `dotnet publish`
-    does not copy it into the publish folder, so without this the published app
-    crashes immediately with a XamlParseException
-    (ModernResourceProvider::Create -> ERROR_FILE_NOT_FOUND). Copy it explicitly.
+    MSIX tile assets: existing store icons are linked directly from store/assets/icons/;
+    generated sizes (Wide 310x150, Large 310x310, SplashScreen 620x300) are produced by
+    store\generate_msix_assets.ps1 and stored in Assets\  (auto-run on first build).
   -->
-  <Target Name="CopyAppPriToPublish" AfterTargets="Publish">
-    <Copy SourceFiles="$(OutDir)$(AssemblyName).pri"
-          DestinationFolder="$(PublishDir)"
-          Condition="Exists('$(OutDir)$(AssemblyName).pri')"
-          SkipUnchangedFiles="false" />
+  <ItemGroup Label="MSIX Tile Assets" Condition="'$(Unpackaged)' != 'true'">
+    <Content Include="..\..\store\assets\icons\app-icon-50x50.png"
+             Link="Assets\StoreLogo.png" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\..\store\assets\icons\app-icon-44x44.png"
+             Link="Assets\Square44x44Logo.png" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\..\store\assets\icons\app-icon-150x150.png"
+             Link="Assets\Square150x150Logo.png" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\..\store\assets\icons\app-icon-71x71.png"
+             Link="Assets\SmallTile.png" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="$(MSBuildProjectDirectory)\Assets\Wide310x150Logo.png"
+             Condition="Exists('$(MSBuildProjectDirectory)\Assets\Wide310x150Logo.png')"
+             CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="$(MSBuildProjectDirectory)\Assets\LargeTile.png"
+             Condition="Exists('$(MSBuildProjectDirectory)\Assets\LargeTile.png')"
+             CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="$(MSBuildProjectDirectory)\Assets\SplashScreen.png"
+             Condition="Exists('$(MSBuildProjectDirectory)\Assets\SplashScreen.png')"
+             CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <!--
+    Auto-generate missing MSIX tile PNGs from the 300x300 master icon before each build.
+    Re-runs whenever SplashScreen.png is absent (i.e. first build or after clean).
+  -->
+  <Target Name="GenerateMsixAssets" BeforeTargets="BeforeBuild"
+          Condition="'$(Unpackaged)' != 'true' And !Exists('$(MSBuildProjectDirectory)\Assets\SplashScreen.png')">
+    <Message Importance="high" Text="Generating MSIX tile assets..." />
+    <Exec Command="powershell -ExecutionPolicy Bypass -NoProfile -File &quot;$(MSBuildProjectDirectory)\..\..\store\generate_msix_assets.ps1&quot; -ProjectRoot &quot;$(MSBuildProjectDirectory)&quot;" />
   </Target>
 
 </Project>

@@ -1,8 +1,8 @@
 {
   "language": "en-US",
-  "title": "Direct X 3D Viewer",
+  "title": "DirectX 3D Viewer",
   "shortDescription": "Open, inspect, and convert DirectX and common mesh formats with a native Windows desktop viewer.",
-  "fullDescription": "Direct X 3D Viewer is a native WinUI 3 and Direct3D desktop application for reviewing and converting 3D model files used in engineering and legacy content pipelines.\n\nSupported import formats include .x, .hxx, .obj, and .stl. Use the interactive viewport to inspect geometry, rotate and zoom models, and validate model quality before sharing or export.\n\nDesigned for practical desktop workflows, the app keeps controls straightforward while providing fast startup and responsive rendering. Optional file associations let users open supported files directly from Windows Explorer.\n\nDirect X 3D Viewer is ideal for developers, technical artists, and engineering users who need a focused Windows tool for day-to-day model inspection and conversion tasks.",
+  "fullDescription": "DirectX 3D Viewer is a native WinUI 3 and Direct3D desktop application for reviewing and converting 3D model files used in engineering and legacy content pipelines.\n\nSupported import formats include .x, .hxx, .obj, and .stl. Use the interactive viewport to inspect geometry, rotate and zoom models, and validate model quality before sharing or export.\n\nDesigned for practical desktop workflows, the app keeps controls straightforward while providing fast startup and responsive rendering. Optional file associations let users open supported files directly from Windows Explorer.\n\nDirectX 3D Viewer is ideal for developers, technical artists, and engineering users who need a focused Windows tool for day-to-day model inspection and conversion tasks.",
   "features": [
     "Open and inspect .x, .hxx, .obj, and .stl files",
     "Native Direct3D viewport for smooth model navigation",

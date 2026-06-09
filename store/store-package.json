@@ -2,7 +2,7 @@
   "packageVersion": "1.0.0",
   "createdUtc": "2026-06-06T21:10:00Z",
   "product": {
-    "name": "Direct X 3D Viewer",
+    "name": "DirectX 3D Viewer",
     "category": "DeveloperTools",
     "platform": "Windows",
     "minimumOS": "Windows 10 version 17763.0",

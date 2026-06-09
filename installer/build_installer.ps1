@@ -12,7 +12,7 @@
 # both signed via a command-line "sslcom" SignTool definition handed to ISCC,
 # which matches the SignTool=sslcom / SignedUninstaller=yes directives in the
 # .iss. The sign command is equivalent to:
-#     signtool sign /fd SHA256 /tr http://ts.ssl.com /td SHA256 /a /d "Direct X 3D Viewer" $f
+#     signtool sign /fd SHA256 /tr http://ts.ssl.com /td SHA256 /a /d "DirectX 3D Viewer" $f
 
 [CmdletBinding()]
 param(
@@ -62,32 +62,37 @@ function Resolve-SignTool {
 
 if ($Sign) {
     $signtool = Resolve-SignTool
-    # /Ssslcom="<signtool>" sign /fd SHA256 /tr http://ts.ssl.com /td SHA256 /a /d "Direct X 3D Viewer" <file>
-    $signDef = '/Ssslcom=$q' + $signtool + '$q sign /fd SHA256 /tr http://ts.ssl.com /td SHA256 /a /d $qDirect X 3D Viewer$q $f'
+    # /Ssslcom="<signtool>" sign /fd SHA256 /tr http://ts.ssl.com /td SHA256 /a /d "DirectX 3D Viewer" <file>
+    $isccArgs = @('/Ssslcom=$q' + $signtool + '$q sign /fd SHA256 /tr http://ts.ssl.com /td SHA256 /a /d $qDirectX 3D Viewer$q $f')
 }
 else {
-    # No-op SignTool so ISCC still satisfies the .iss SignTool=sslcom directive
-    # during an unsigned, structure-only build (-Sign:$false).
-    $signDef = '/Ssslcom=cmd.exe /c rem $f'
-    Write-Host '==> -Sign:$false : building UNSIGNED (sslcom is a no-op).' -ForegroundColor Yellow
+    # Skip the SignedUninstaller / SignTool directives in the .iss entirely so a
+    # structure-only build does not require a certificate (-Sign:$false).
+    $isccArgs = @('/DUnsigned')
+    Write-Host '==> -Sign:$false : building UNSIGNED (signing directives skipped).' -ForegroundColor Yellow
 }
 
 Write-Host '==> Regenerating wizard images' -ForegroundColor Cyan
 & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $here 'make_wizard_images.ps1')
 
-Write-Host '==> Publishing app (Release, self-contained, win-x64)' -ForegroundColor Cyan
+Write-Host '==> Publishing app (Release, self-contained, UNPACKAGED, win-x64)' -ForegroundColor Cyan
 if (Test-Path $publishDir) { Remove-Item $publishDir -Recurse -Force }
+# -p:Unpackaged=true switches the project to an unpackaged (WindowsPackageType=None),
+# self-contained WinUI 3 build so the published EXE launches outside an MSIX
+# container. See DirectX3DViewer.App.csproj for the matching property switch.
 & $dotnet publish $proj `
     -c $Configuration `
     -r win-x64 `
     --self-contained true `
     -p:Platform=x64 `
+    -p:Unpackaged=true `
+    -p:WindowsPackageType=None `
     -p:WindowsAppSDKSelfContained=true `
     -o $publishDir
 if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed ($LASTEXITCODE)." }
 
 Write-Host '==> Compiling installer' -ForegroundColor Cyan
-& $iscc $signDef "/DPublishDir=$publishDir" (Join-Path $here 'DirectX3DViewer.iss')
+& $iscc @isccArgs "/DPublishDir=$publishDir" (Join-Path $here 'DirectX3DViewer.iss')
 if ($LASTEXITCODE -ne 0) { throw "ISCC failed ($LASTEXITCODE)." }
 
 $out = Join-Path $here 'Output'

@@ -41,13 +41,20 @@ public sealed partial class MainWindow : Window
         ApplyTheme(_dark);
 
         GridButton.IsChecked = _settings.Settings.GridVisible;
-        PerspectiveButton.IsChecked = _settings.Settings.Perspective;
         Viewport.Renderer.GridVisible = _settings.Settings.GridVisible;
         Viewport.Renderer.Camera.Perspective = _settings.Settings.Perspective;
 
-        // Appearance selector: 0 = Day, 1 = Night, 2 = Transparent.
-        LookSlider.Value = _dark ? 1 : 0;
-        LookSlider.ValueChanged += OnLookChanged;
+        // Appearance selector: Day / Night / Transparent radio buttons.
+        if (_dark)
+            LookNight.IsChecked = true;
+        else
+            LookDay.IsChecked = true;
+
+        // Projection radio buttons.
+        if (_settings.Settings.Perspective)
+            ProjPerspective.IsChecked = true;
+        else
+            ProjOrthographic.IsChecked = true;
 
         // Periodically refresh the camera read-out.
         _camTimer = DispatcherQueue.CreateTimer();
@@ -66,7 +73,7 @@ public sealed partial class MainWindow : Window
         {
             _settings.Settings.DarkMode = _dark;
             _settings.Settings.GridVisible = GridButton.IsChecked == true;
-            _settings.Settings.Perspective = PerspectiveButton.IsChecked == true;
+            _settings.Settings.Perspective = ProjPerspective.IsChecked == true;
             _settings.Save();
         };
     }
@@ -108,7 +115,7 @@ public sealed partial class MainWindow : Window
         ApplyBackground();
     }
 
-    // â”€â”€ Background color â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Background color ─────────────────────────────────────────────────────────
 
     private void ApplyBackground()
     {
@@ -116,8 +123,11 @@ public sealed partial class MainWindow : Window
         Viewport.Render();
     }
 
-    private void OnLookChanged(object sender, Microsoft.UI.Xaml.Controls.Primitives.RangeBaseValueChangedEventArgs e)
-        => ApplyLook((int)Math.Round(e.NewValue));
+    private void OnLookOptionChecked(object sender, RoutedEventArgs e)
+    {
+        if (sender is RadioButton rb && rb.Tag is string tag && int.TryParse(tag, out int val))
+            ApplyLook(val);
+    }
 
     // 0 = Day (light), 1 = Night (dark), 2 = Transparent backdrop.
     private void ApplyLook(int look)
@@ -295,9 +305,9 @@ public sealed partial class MainWindow : Window
         Viewport.Render();
     }
 
-    private void OnPerspective(object sender, RoutedEventArgs e)
+    private void OnProjectionChanged(object sender, RoutedEventArgs e)
     {
-        Viewport.Renderer.Camera.Perspective = PerspectiveButton.IsChecked == true;
+        Viewport.Renderer.Camera.Perspective = ProjPerspective.IsChecked == true;
         Viewport.Render();
     }
 
@@ -362,7 +372,28 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    // â”€â”€ About â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Help & context menu ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+    private async void OnHelp(object sender, RoutedEventArgs e)
+    {
+        var dialog = new HelpDialog { XamlRoot = RootGrid.XamlRoot };
+        await dialog.ShowAsync();
+    }
+
+    private void OnContextMenuAction(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuFlyoutItem item)
+        {
+            switch (item.Tag as string)
+            {
+                case "screenshot": OnScreenshot(sender, e); break;
+                case "reset":      OnResetCamera(sender, e); break;
+                case "fit":        OnZoomFit(sender, e);     break;
+            }
+        }
+    }
+
+    // ── About ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
     private async void OnAbout(object sender, RoutedEventArgs e)
     {
@@ -370,7 +401,7 @@ public sealed partial class MainWindow : Window
         await dialog.ShowAsync();
     }
 
-    // â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Helpers ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
     private void UpdateCamDisplay()
     {

@@ -1,6 +1,6 @@
 Privacy Policy (Draft)
 
-Direct X 3D Viewer is a local desktop application.
+DirectX 3D Viewer is a local desktop application.
 
 Data collection:
 - The app is designed to process user-selected model files locally on the device.
