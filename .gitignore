@@ -1,18 +1,4 @@
-# Build output
-[Bb]in/
-[Oo]bj/
-x64/
-x86/
-publish/
-*.user
-
-# .NET / Visual Studio
-.vs/
-*.suo
-*.cache
-
-# Rider / VS Code
-.idea/
-
-# Misc
-*.log
+node_modules
+dist/
+build/node_modules
+build/package-lock.json

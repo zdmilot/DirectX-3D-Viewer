@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DirectX 3D Viewer</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1F9EA;</text></svg>">
+    <link rel="stylesheet" href="css/fontawesome.min.css">
+    <link rel="stylesheet" href="css/main.css?v=20260610a">
+</head>
+<body>
+
+    <!-- Splash Screen -->
+    <div id="splash-screen">
+        <div class="splash-content">
+            <div class="splash-icon-wrap">
+                <svg class="splash-icon" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M50.5 32.8L73.8 33.2L79.8 33.9L81.4 34.5L82.0 35.0L82.1 35.7L82.6 36.3L85.0 38.1L87.8 40.9L89.9 44.3L90.8 44.4L95.0 46.5L98.2 49.2L100.0 51.4L101.4 54.3L104.4 64.1L105.6 67.1L107.3 70.0L109.8 72.4L115.4 75.5L104.9 75.2L103.1 74.5L100.9 72.4L100.1 71.2L99.3 69.6L97.4 63.9L95.3 60.6L93.6 59.2L91.5 58.1L89.4 57.7L88.9 58.0L85.2 67.7L81.7 74.9L80.4 75.9L73.9 75.9L70.4 76.6L68.3 76.8L62.3 77.9L59.6 79.1L59.1 79.9L59.1 80.6L62.3 85.0L62.2 85.9L60.9 86.6L56.1 87.0L53.2 86.8L51.3 86.6L50.3 86.1L49.9 85.7L49.9 85.0L50.5 83.9L52.7 81.4L53.2 80.6L53.2 79.9L52.6 79.1L49.9 77.9L38.3 75.9L31.9 75.9L30.6 74.9L28.9 71.6L15.9 71.4L10.9 70.7L7.0 69.3L5.6 68.0L4.7 66.2L4.3 64.7L4.5 61.5L5.4 58.2L6.6 56.0L8.6 53.2L11.1 50.6L17.0 46.4L22.9 43.5L24.5 40.9L26.8 38.6L29.5 36.4L30.1 35.7L30.4 34.9L31.5 34.1L38.6 33.2L50.5 32.8Z M21.6 48.5L21.6 50.9L22.1 54.3L23.0 57.3L24.8 62.7L27.0 67.6L16.4 67.5L13.1 67.0L10.9 66.1L10.2 65.5L9.8 64.8L9.7 62.8L10.3 60.4L12.4 56.1L14.8 53.2L16.2 51.9L19.7 49.3L21.6 48.5Z"
+                          class="splash-teapot-fill" fill-rule="evenodd"/>
+                    <g class="splash-wireframe">
+                        <!-- outer outline -->
+                        <path d="M50.5 32.8L73.8 33.2L79.8 33.9L81.4 34.5L82.0 35.0L82.1 35.7L82.6 36.3L85.0 38.1L87.8 40.9L89.9 44.3L90.8 44.4L95.0 46.5L98.2 49.2L100.0 51.4L101.4 54.3L104.4 64.1L105.6 67.1L107.3 70.0L109.8 72.4L115.4 75.5L104.9 75.2L103.1 74.5L100.9 72.4L100.1 71.2L99.3 69.6L97.4 63.9L95.3 60.6L93.6 59.2L91.5 58.1L89.4 57.7L88.9 58.0L85.2 67.7L81.7 74.9L80.4 75.9L73.9 75.9L70.4 76.6L68.3 76.8L62.3 77.9L59.6 79.1L59.1 79.9L59.1 80.6L62.3 85.0L62.2 85.9L60.9 86.6L56.1 87.0L53.2 86.8L51.3 86.6L50.3 86.1L49.9 85.7L49.9 85.0L50.5 83.9L52.7 81.4L53.2 80.6L53.2 79.9L52.6 79.1L49.9 77.9L38.3 75.9L31.9 75.9L30.6 74.9L28.9 71.6L15.9 71.4L10.9 70.7L7.0 69.3L5.6 68.0L4.7 66.2L4.3 64.7L4.5 61.5L5.4 58.2L6.6 56.0L8.6 53.2L11.1 50.6L17.0 46.4L22.9 43.5L24.5 40.9L26.8 38.6L29.5 36.4L30.1 35.7L30.4 34.9L31.5 34.1L38.6 33.2L50.5 32.8Z"/>
+                        <!-- handle hole -->
+                        <path d="M21.6 48.5L21.6 50.9L22.1 54.3L23.0 57.3L24.8 62.7L27.0 67.6L16.4 67.5L13.1 67.0L10.9 66.1L10.2 65.5L9.8 64.8L9.7 62.8L10.3 60.4L12.4 56.1L14.8 53.2L16.2 51.9L19.7 49.3L21.6 48.5Z"/>
+                        <!-- horizontal cross-sections (clipped at spout gap) -->
+                        <path d="M25.9 39.5L86.4 39.5"/>
+                        <path d="M17.2 46.3L94.6 46.3"/>
+                        <path d="M8.7 53.1L14.9 53.1"/>
+                        <path d="M22.1 53.1L100.8 53.1"/>
+                        <path d="M4.9 59.9L10.4 59.9"/>
+                        <path d="M24.0 59.9L88.2 59.9"/>
+                        <path d="M94.3 59.9L103.2 59.9"/>
+                        <path d="M4.9 66.6L11.8 66.6"/>
+                        <path d="M26.6 66.6L85.7 66.6"/>
+                        <path d="M98.2 66.6L105.5 66.6"/>
+                        <path d="M29.8 73.4L82.5 73.4"/>
+                        <path d="M101.8 73.4L111.7 73.4"/>
+                        <path d="M53.2 80.2L59.1 80.2"/>
+                        <!-- vertical meridians (clipped at gaps) -->
+                        <path d="M22.9 43.5L22.9 56.4"/>
+                        <path d="M22.9 67.7L22.9 71.6"/>
+                        <path d="M41.4 33.2L41.4 76.5"/>
+                        <path d="M59.9 32.8L59.9 79.0"/>
+                        <path d="M59.9 81.8L59.9 86.7"/>
+                        <path d="M78.4 33.8L78.4 75.9"/>
+                        <path d="M96.9 48.0L96.9 63.2"/>
+                    </g>
+                </svg>
+            </div>
+            <div class="splash-title">DirectX 3D Viewer</div>
+            <div class="splash-subtitle">DIRECTX MODEL VIEWER</div>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="app" class="app-hidden">
+        <!-- Top Navigation Bar -->
+        <nav class="navbar">
+            <div class="navbar-brand">
+                    <div class="navbar-logo">
+                        <svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%">
+                            <path d="M50.5 32.8L73.8 33.2L79.8 33.9L81.4 34.5L82.0 35.0L82.1 35.7L82.6 36.3L85.0 38.1L87.8 40.9L89.9 44.3L90.8 44.4L95.0 46.5L98.2 49.2L100.0 51.4L101.4 54.3L104.4 64.1L105.6 67.1L107.3 70.0L109.8 72.4L115.4 75.5L104.9 75.2L103.1 74.5L100.9 72.4L100.1 71.2L99.3 69.6L97.4 63.9L95.3 60.6L93.6 59.2L91.5 58.1L89.4 57.7L88.9 58.0L85.2 67.7L81.7 74.9L80.4 75.9L73.9 75.9L70.4 76.6L68.3 76.8L62.3 77.9L59.6 79.1L59.1 79.9L59.1 80.6L62.3 85.0L62.2 85.9L60.9 86.6L56.1 87.0L53.2 86.8L51.3 86.6L50.3 86.1L49.9 85.7L49.9 85.0L50.5 83.9L52.7 81.4L53.2 80.6L53.2 79.9L52.6 79.1L49.9 77.9L38.3 75.9L31.9 75.9L30.6 74.9L28.9 71.6L15.9 71.4L10.9 70.7L7.0 69.3L5.6 68.0L4.7 66.2L4.3 64.7L4.5 61.5L5.4 58.2L6.6 56.0L8.6 53.2L11.1 50.6L17.0 46.4L22.9 43.5L24.5 40.9L26.8 38.6L29.5 36.4L30.1 35.7L30.4 34.9L31.5 34.1L38.6 33.2L50.5 32.8Z M21.6 48.5L21.6 50.9L22.1 54.3L23.0 57.3L24.8 62.7L27.0 67.6L16.4 67.5L13.1 67.0L10.9 66.1L10.2 65.5L9.8 64.8L9.7 62.8L10.3 60.4L12.4 56.1L14.8 53.2L16.2 51.9L19.7 49.3L21.6 48.5Z"
+                                  fill="rgba(220,225,230,0.85)" fill-rule="evenodd"/>
+                        </svg>
+                    </div>
+                    <div class="navbar-title-group">
+                        <span class="navbar-title">DirectX 3D Viewer</span>
+                        <span class="navbar-subtitle">DIRECTX MODEL VIEWER</span>
+                    </div>
+                </div>
+            <div class="navbar-actions">
+                <input type="file" id="file-input" accept=".x,.hxx,.obj,.mtl,.stl,.glb,.gltf" multiple style="display:none">
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- View Panels -->
+            <div class="view-panel is-active" data-view-panel="viewer" id="viewer-host">
+                <div class="viewer-loading" id="viewer-loading">
+                    <div class="viewer-spinner"></div>
+                    <span>Loading 3D Model…</span>
+                </div>
+                <div class="viewer-error viewer-hidden" id="viewer-error">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span id="viewer-error-msg">Failed to load model.</span>
+                </div>
+                <canvas id="viewer-canvas"></canvas>
+
+                <!-- Floating 3D Toolbar -->
+                <div class="viewer-toolbar" id="viewer-toolbar">
+                    <div class="vt-body" id="vt-body">
+                        <button class="vt-btn" id="vt-reset-cam" title="Reset camera">
+                            <i class="fas fa-video"></i>
+                        </button>
+                        <button class="vt-btn" id="vt-zoom-fit" title="Zoom to fit">
+                            <i class="fas fa-expand"></i>
+                        </button>
+                        <button class="vt-btn" id="vt-wireframe" title="Wireframe">
+                            <i class="fas fa-draw-polygon"></i>
+                        </button>
+                        <button class="vt-btn" id="vt-projection" title="Projection mode">
+                            <i class="fas fa-cube"></i>
+                        </button>
+                        <button class="vt-btn grid-toggle" id="btn-grid" title="Gridlines">
+                            <i class="fas fa-border-all"></i>
+                            <span class="grid-slash" aria-hidden="true"></span>
+                        </button>
+
+                        <div class="vt-separator"></div>
+
+                        <button class="vt-btn" id="vt-zoom-in" title="Zoom in">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                        <button class="vt-btn" id="vt-zoom-out" title="Zoom out">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                        <button class="vt-btn" id="vt-pan" title="Pan mode">
+                            <i class="fas fa-hand-paper"></i>
+                        </button>
+
+                        <div class="vt-separator"></div>
+
+                        <button class="vt-btn" id="vt-transform-toggle" title="Rotate / Mirror">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+
+                        <div class="vt-separator"></div>
+
+                        <button class="vt-btn" id="vt-appearance" title="Appearance">
+                            <i class="fas fa-palette"></i>
+                        </button>
+                        <button class="vt-btn" id="vt-help" title="Help &amp; Shortcuts">
+                            <i class="fas fa-question-circle"></i>
+                        </button>
+                        <button class="vt-btn" id="vt-about" title="About">
+                            <i class="fas fa-info-circle"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Transform Flyout Panel -->
+                <div class="tf-flyout" id="tf-flyout">
+                    <div class="tf-header"><i class="fas fa-sync-alt"></i> Transform</div>
+                    <div class="tf-section">
+                        <div class="tf-label">Rotate ±90°</div>
+                        <div class="tf-grid tf-grid-2">
+                            <button class="tf-btn" id="vt-rot-x-pos"><span class="tf-axis x">X</span><span class="tf-sign">+90°</span></button>
+                            <button class="tf-btn" id="vt-rot-x-neg"><span class="tf-axis x">X</span><span class="tf-sign">−90°</span></button>
+                            <button class="tf-btn" id="vt-rot-y-pos"><span class="tf-axis y">Y</span><span class="tf-sign">+90°</span></button>
+                            <button class="tf-btn" id="vt-rot-y-neg"><span class="tf-axis y">Y</span><span class="tf-sign">−90°</span></button>
+                            <button class="tf-btn" id="vt-rot-z-pos"><span class="tf-axis z">Z</span><span class="tf-sign">+90°</span></button>
+                            <button class="tf-btn" id="vt-rot-z-neg"><span class="tf-axis z">Z</span><span class="tf-sign">−90°</span></button>
+                        </div>
+                    </div>
+                    <div class="tf-divider"></div>
+                    <div class="tf-section">
+                        <div class="tf-label">Mirror / Reflect</div>
+                        <div class="tf-grid tf-grid-3">
+                            <button class="tf-btn" id="vt-mirror-x"><i class="fas fa-arrows-alt-h"></i> <span class="tf-axis x">X</span></button>
+                            <button class="tf-btn" id="vt-mirror-y"><i class="fas fa-arrows-alt-v"></i> <span class="tf-axis y">Y</span></button>
+                            <button class="tf-btn" id="vt-mirror-z"><i class="fas fa-exchange-alt"></i> <span class="tf-axis z">Z</span></button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Projection Flyout Panel -->
+                <div class="vt-flyout" id="proj-flyout">
+                    <div class="vt-flyout-title">Projection</div>
+                    <div class="vt-flyout-label">Projection Type</div>
+                    <label class="vt-radio">
+                        <input type="radio" name="proj-mode" value="perspective" checked>
+                        <span class="vt-radio-dot"></span>
+                        <span class="vt-radio-text">Perspective</span>
+                    </label>
+                    <label class="vt-radio">
+                        <input type="radio" name="proj-mode" value="orthographic">
+                        <span class="vt-radio-dot"></span>
+                        <span class="vt-radio-text">Orthographic</span>
+                    </label>
+                </div>
+
+                <!-- Appearance Flyout Panel -->
+                <div class="vt-flyout" id="appearance-flyout">
+                    <div class="vt-flyout-title">Appearance</div>
+                    <div class="vt-flyout-label">Look</div>
+                    <label class="vt-radio">
+                        <input type="radio" name="look-mode" value="0" checked>
+                        <span class="vt-radio-dot"></span>
+                        <span class="vt-radio-text">Day</span>
+                    </label>
+                    <label class="vt-radio">
+                        <input type="radio" name="look-mode" value="1">
+                        <span class="vt-radio-dot"></span>
+                        <span class="vt-radio-text">Night</span>
+                    </label>
+                    <label class="vt-radio">
+                        <input type="radio" name="look-mode" value="2">
+                        <span class="vt-radio-dot"></span>
+                        <span class="vt-radio-text">Transparent</span>
+                    </label>
+                    <p class="vt-flyout-note">Transparent removes the backdrop &mdash; ideal for PNG screenshots.</p>
+                </div>
+
+                <!-- Bottom Controls Bar -->
+                <div class="viewer-controls-bar" id="viewer-controls-bar">
+                    <button class="cv-ctrl-btn" id="vt-open" title="Open 3D file (.x, .obj, .stl, .glb)">
+                        <i class="fas fa-folder-open"></i> Open
+                    </button>
+                    <button class="cv-ctrl-btn" id="vt-save" title="Save as .x file">
+                        <i class="fas fa-save"></i> Save
+                    </button>
+                    <div class="cv-ctrl-divider"></div>
+                    <div class="viewer-info-stack">
+                        <span class="viewer-file-path" id="viewer-file-path" title=""><span id="viewer-file-path-text">No file loaded</span></span>
+                        <span class="viewer-cam-display" id="viewer-cam-display">X: 0.0  Y: 0.0  Z: 0.0  |  Pitch: 0.0°  Yaw: 0.0°  Roll: 0.0°</span>
+                    </div>
+                    <div class="cv-ctrl-spacer"></div>
+                    <div class="screenshot-group" id="screenshot-group">
+                        <button class="cv-ctrl-btn cv-ctrl-btn-accent" id="vt-screenshot" title="Save screenshot">
+                            <i class="fas fa-camera"></i> Screenshot
+                        </button>
+                    </div>
+                    <div class="export-group" id="export-group">
+                        <button class="cv-ctrl-btn cv-ctrl-btn-accent" id="vt-export" title="Export model">
+                            <i class="fas fa-download"></i> Export
+                        </button>
+                        <div class="export-dropdown" id="export-dropdown">
+                            <button class="export-option" data-format="x">
+                                <i class="fas fa-cube"></i> Export as .X
+                            </button>
+                            <button class="export-option" data-format="obj">
+                                <i class="fas fa-cube"></i> Export as .OBJ
+                            </button>
+                            <button class="export-option" data-format="stl">
+                                <i class="fas fa-cube"></i> Export as .STL
+                            </button>
+                            <button class="export-option" data-format="glb">
+                                <i class="fas fa-cube"></i> Export as .GLB
+                            </button>
+                            <button class="export-option" data-format="hxx">
+                                <i class="fas fa-file-archive"></i> Export as .HXX
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="viewer-dropzone viewer-hidden" id="viewer-dropzone">
+                    <div class="dropzone-content">
+                        <i class="fas fa-file-import"></i>
+                        <span>Drop 3D file here (.x, .hxx, .obj, .stl, .glb, .gltf)</span>
+                    </div>
+                </div>
+
+                <!-- Debug Panel -->
+                <div class="debug-panel" id="debug-panel-viewer">
+                    <div class="debug-panel-header"><i class="fas fa-bug"></i> Debug Info</div>
+                    <pre class="debug-panel-content" id="debug-content-viewer">No model loaded.</pre>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="ss-overlay" id="ss-overlay">
+        <div class="ss-modal">
+            <div class="ss-header">
+                <div class="ss-title"><i class="fas fa-camera"></i> Screenshot Preview</div>
+                <button class="ss-close-btn" id="ss-close" title="Close">&times;</button>
+            </div>
+            <div class="ss-body">
+                <div class="ss-preview-wrap">
+                    <img id="ss-preview-img" class="ss-preview-img" alt="Screenshot preview" />
+                </div>
+                <div class="ss-options">
+                    <label class="ss-toggle">
+                        <input type="checkbox" id="ss-opt-grid" checked />
+                        <span class="ss-toggle-slider"></span>
+                        <span class="ss-toggle-label">Show Grid</span>
+                    </label>
+                    <label class="ss-toggle">
+                        <input type="checkbox" id="ss-opt-bg" checked />
+                        <span class="ss-toggle-slider"></span>
+                        <span class="ss-toggle-label">Show Background</span>
+                    </label>
+                </div>
+            </div>
+            <div class="ss-footer">
+                <button class="ss-save-btn" data-format="png"><i class="fas fa-file-image"></i> Save .PNG</button>
+                <button class="ss-save-btn" data-format="jpg"><i class="fas fa-file-image"></i> Save .JPG</button>
+                <button class="ss-save-btn" data-format="svg"><i class="fas fa-file-code"></i> Save .SVG</button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Help & Shortcuts Modal -->
+    <div class="help-overlay" id="help-overlay">
+        <div class="help-modal">
+            <div class="help-header">
+                <div class="help-title"><i class="fas fa-question-circle"></i> Help &amp; Shortcuts</div>
+                <button class="help-close-btn" id="help-close" title="Close">&times;</button>
+            </div>
+            <div class="help-body">
+                <div class="help-section-title">Keyboard &amp; Mouse</div>
+                <div class="help-kv-grid">
+                    <code class="help-key">Left drag</code><span>Orbit camera</span>
+                    <code class="help-key">Right / Middle drag</code><span>Pan camera</span>
+                    <code class="help-key">Scroll wheel</code><span>Zoom in / out</span>
+                    <code class="help-key">Drag &amp; drop</code><span>Drop any supported file onto the viewport to open it</span>
+                    <code class="help-key">Screenshot</code><span>Save viewport as PNG, JPG or SVG (transparent BG supported)</span>
+                    <code class="help-key">Export</code><span>Export loaded model as .X .OBJ .STL .GLB or .HXX</span>
+                </div>
+
+                <div class="help-section-title">Supported Formats</div>
+                <div class="help-fmt-grid">
+                    <code class="help-fmt">.x</code><span>DirectX .X model &mdash; read &amp; write (text)</span>
+                    <code class="help-fmt">.hxx</code><span>Hamilton 3D archive &mdash; read &amp; write</span>
+                    <code class="help-fmt">.obj</code><span>Wavefront OBJ &mdash; read &amp; write</span>
+                    <code class="help-fmt">.stl</code><span>Stereolithography &mdash; read &amp; write</span>
+                    <code class="help-fmt">.glb</code><span>glTF 2.0 binary &mdash; read &amp; write</span>
+                    <code class="help-fmt">.gltf</code><span>glTF 2.0 &mdash; read</span>
+                </div>
+            </div>
+            <div class="help-footer">
+                <button class="about-close-btn" id="help-close-btn">Close</button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- About Modal -->
+    <div class="about-overlay" id="about-overlay">
+        <div class="about-modal">
+            <div class="about-header">
+                <svg class="about-logo" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M50.5 32.8L73.8 33.2L79.8 33.9L81.4 34.5L82.0 35.0L82.1 35.7L82.6 36.3L85.0 38.1L87.8 40.9L89.9 44.3L90.8 44.4L95.0 46.5L98.2 49.2L100.0 51.4L101.4 54.3L104.4 64.1L105.6 67.1L107.3 70.0L109.8 72.4L115.4 75.5L104.9 75.2L103.1 74.5L100.9 72.4L100.1 71.2L99.3 69.6L97.4 63.9L95.3 60.6L93.6 59.2L91.5 58.1L89.4 57.7L88.9 58.0L85.2 67.7L81.7 74.9L80.4 75.9L73.9 75.9L70.4 76.6L68.3 76.8L62.3 77.9L59.6 79.1L59.1 79.9L59.1 80.6L62.3 85.0L62.2 85.9L60.9 86.6L56.1 87.0L53.2 86.8L51.3 86.6L50.3 86.1L49.9 85.7L49.9 85.0L50.5 83.9L52.7 81.4L53.2 80.6L53.2 79.9L52.6 79.1L49.9 77.9L38.3 75.9L31.9 75.9L30.6 74.9L28.9 71.6L15.9 71.4L10.9 70.7L7.0 69.3L5.6 68.0L4.7 66.2L4.3 64.7L4.5 61.5L5.4 58.2L6.6 56.0L8.6 53.2L11.1 50.6L17.0 46.4L22.9 43.5L24.5 40.9L26.8 38.6L29.5 36.4L30.1 35.7L30.4 34.9L31.5 34.1L38.6 33.2L50.5 32.8Z M21.6 48.5L21.6 50.9L22.1 54.3L23.0 57.3L24.8 62.7L27.0 67.6L16.4 67.5L13.1 67.0L10.9 66.1L10.2 65.5L9.8 64.8L9.7 62.8L10.3 60.4L12.4 56.1L14.8 53.2L16.2 51.9L19.7 49.3L21.6 48.5Z"
+                          fill="rgba(220,225,230,0.85)" fill-rule="evenodd"/>
+                </svg>
+                <div class="about-title">About DirectX 3D Viewer</div>
+                <div class="about-subtitle">DirectX 3D File Viewer &amp; Converter</div>
+            </div>
+            <div class="about-body">
+                <div class="about-info-row"><span class="about-label">Version</span><span class="about-value">1.0.0</span></div>
+                <div class="about-info-row"><span class="about-label">Author</span><span class="about-value">Zachary Milot</span></div>
+                <div class="about-divider"></div>
+                <div class="about-section-title"><i class="fas fa-balance-scale"></i> Third-Party Licenses</div>
+                <div class="about-licenses">
+                    <table class="about-license-table">
+                        <thead><tr><th>Component</th><th>License</th></tr></thead>
+                        <tbody>
+                            <tr><td>Three.js r152</td><td>MIT &mdash; &copy; 2010-2024 Three.js Authors</td></tr>
+                            <tr><td>OrbitControls.js</td><td>MIT &mdash; &copy; Three.js Authors</td></tr>
+                            <tr><td>OBJLoader.js</td><td>MIT &mdash; &copy; Three.js Authors</td></tr>
+                            <tr><td>MTLLoader.js</td><td>MIT &mdash; &copy; Three.js Authors</td></tr>
+                            <tr><td>GLTFLoader.js</td><td>MIT &mdash; &copy; Three.js Authors</td></tr>
+                            <tr><td>STLLoader.js</td><td>MIT &mdash; &copy; Three.js Authors</td></tr>
+                            <tr><td>Font Awesome Free</td><td>CC BY 4.0 / MIT &mdash; &copy; Fonticons, Inc.</td></tr>
+                            <tr><td>Inter Font</td><td>OFL 1.1 &mdash; &copy; Rasmus Andersson</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="about-footer">
+                <button class="about-close-btn" id="about-close">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/lib/pako.min.js"></script>
+    <script src="js/lib/three.min.js"></script>
+    <script src="js/lib/OrbitControls.js"></script>
+    <script src="js/lib/XFileLoader.js?v=20260304a"></script>
+    <script src="js/lib/OBJLoader.js"></script>
+    <script src="js/lib/MTLLoader.js"></script>
+    <script src="js/lib/GLTFLoader.js"></script>
+    <script src="js/lib/GLTFExporter.js"></script>
+    <script src="js/lib/STLLoader.js"></script>
+    <script src="js/hxxLoader.js?v=20260305a"></script>
+    <script src="js/deckUnits.js?v=20260308a"></script>
+    <script src="js/app.js?v=20260310b"></script>
+</body>
+</html>
