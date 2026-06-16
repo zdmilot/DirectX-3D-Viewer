@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ContentDialog
+    x:Class="DirectX3DViewer.App.SettingsDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Settings"
+    CloseButtonText="Close"
+    DefaultButton="Close">
+
+    <ScrollViewer MaxHeight="540" VerticalScrollBarVisibility="Auto">
+        <StackPanel Width="460" Spacing="16" Padding="0,4,0,4">
+
+            <TextBlock FontSize="12" Foreground="{ThemeResource TextSecondaryBrush}" TextWrapping="Wrap"
+                       Text="These apply right now and become the defaults every time the app starts." />
+
+            <Border CornerRadius="8" Padding="14,12"
+                    Background="{ThemeResource CardBackgroundBrush}"
+                    BorderBrush="{ThemeResource ToolbarBorderBrush}" BorderThickness="1">
+                <StackPanel Spacing="14">
+
+                    <!-- Default projection -->
+                    <Grid ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                            <TextBlock Text="Default projection" FontSize="13" FontWeight="SemiBold"
+                                       Foreground="{ThemeResource TextPrimaryBrush}" />
+                            <TextBlock Text="Perspective looks natural; orthographic keeps parallel lines parallel."
+                                       FontSize="11" TextWrapping="Wrap"
+                                       Foreground="{ThemeResource TextMutedBrush}" />
+                        </StackPanel>
+                        <ComboBox x:Name="ProjectionCombo" Grid.Column="1" MinWidth="148"
+                                  VerticalAlignment="Center"
+                                  SelectionChanged="OnProjectionSelectionChanged">
+                            <ComboBoxItem Content="Perspective" />
+                            <ComboBoxItem Content="Orthographic" />
+                        </ComboBox>
+                    </Grid>
+
+                    <!-- Wireframe by default -->
+                    <Grid ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                            <TextBlock Text="Wireframe by default" FontSize="13" FontWeight="SemiBold"
+                                       Foreground="{ThemeResource TextPrimaryBrush}" />
+                            <TextBlock Text="Draw models as edges only instead of solid surfaces."
+                                       FontSize="11" TextWrapping="Wrap"
+                                       Foreground="{ThemeResource TextMutedBrush}" />
+                        </StackPanel>
+                        <ToggleSwitch x:Name="WireframeToggle" Grid.Column="1" MinWidth="0"
+                                      VerticalAlignment="Center" Toggled="OnWireframeToggled" />
+                    </Grid>
+
+                    <!-- Gridlines by default -->
+                    <Grid ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                            <TextBlock Text="Gridlines by default" FontSize="13" FontWeight="SemiBold"
+                                       Foreground="{ThemeResource TextPrimaryBrush}" />
+                            <TextBlock Text="Show the ground reference grid under the model."
+                                       FontSize="11" TextWrapping="Wrap"
+                                       Foreground="{ThemeResource TextMutedBrush}" />
+                        </StackPanel>
+                        <ToggleSwitch x:Name="GridToggle" Grid.Column="1" MinWidth="0"
+                                      VerticalAlignment="Center" Toggled="OnGridToggled" />
+                    </Grid>
+
+                    <!-- Dark theme by default -->
+                    <Grid ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                            <TextBlock Text="Dark theme by default" FontSize="13" FontWeight="SemiBold"
+                                       Foreground="{ThemeResource TextPrimaryBrush}" />
+                            <TextBlock Text="Start with the night color scheme instead of the light one."
+                                       FontSize="11" TextWrapping="Wrap"
+                                       Foreground="{ThemeResource TextMutedBrush}" />
+                        </StackPanel>
+                        <ToggleSwitch x:Name="ThemeToggle" Grid.Column="1" MinWidth="0"
+                                      VerticalAlignment="Center" Toggled="OnThemeToggled" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</ContentDialog>

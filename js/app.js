@@ -33,10 +33,12 @@
         vtSave: $('#vt-save'),
         // Toolbar flyouts / dialogs
         vtAppearance: $('#vt-appearance'),
+        vtShading: $('#vt-shading'),
         vtHelp: $('#vt-help'),
         vtAbout: $('#vt-about'),
         projFlyout: $('#proj-flyout'),
         appearanceFlyout: $('#appearance-flyout'),
+        shadingFlyout: $('#shading-flyout'),
         helpOverlay: $('#help-overlay'),
         // Transform flyout
         vtTransformToggle: $('#vt-transform-toggle'),
@@ -527,6 +529,55 @@
 
         state.lastLoadedUrl = null; // Non-X files don't have a URL for the placer
         setFilenameDisplay();
+
+        // Enable + reset the object-shading tool for the new model.
+        snapshotModelColors();
+        if (dom.vtShading) dom.vtShading.disabled = false;
+        const shadeReset = $('#shading-reset');
+        if (shadeReset) shadeReset.disabled = true;
+    }
+
+    /** Capture each material's original colour so shading can be undone. */
+    function snapshotModelColors() {
+        state.shadeSnapshot = [];
+        const model = scene && scene.getObjectByName('__xmodel__');
+        if (!model) return;
+        model.traverse(function (child) {
+            if (!child.isMesh || !child.material) return;
+            const mats = Array.isArray(child.material) ? child.material : [child.material];
+            mats.forEach(function (m) {
+                if (m && m.color) state.shadeSnapshot.push({ material: m, color: m.color.clone() });
+            });
+        });
+    }
+
+    /** Recolour every mesh material with a single shade (carried into .x/.obj/.glb export). */
+    function applyShadeColor(hex) {
+        if (!hex) return;
+        const model = scene && scene.getObjectByName('__xmodel__');
+        if (!model) return;
+        model.traverse(function (child) {
+            if (!child.isMesh || !child.material) return;
+            const mats = Array.isArray(child.material) ? child.material : [child.material];
+            mats.forEach(function (m) {
+                if (m && m.color) { m.color.set(hex); m.needsUpdate = true; }
+            });
+        });
+        const shadeReset = $('#shading-reset');
+        if (shadeReset) shadeReset.disabled = false;
+    }
+
+    /** Restore the colours captured at load time. */
+    function restoreOriginalColors() {
+        if (!Array.isArray(state.shadeSnapshot)) return;
+        state.shadeSnapshot.forEach(function (entry) {
+            if (entry.material && entry.material.color) {
+                entry.material.color.copy(entry.color);
+                entry.material.needsUpdate = true;
+            }
+        });
+        const shadeReset = $('#shading-reset');
+        if (shadeReset) shadeReset.disabled = true;
     }
 
     function clearModel() {
@@ -547,6 +598,13 @@
         }
         // Clear animation mixers
         animMixers.length = 0;
+        // Disable the object-shading tool until a new model loads.
+        state.shadeSnapshot = null;
+        if (dom.vtShading) {
+            dom.vtShading.disabled = true;
+            dom.vtShading.classList.remove('is-active');
+        }
+        if (dom.shadingFlyout) dom.shadingFlyout.classList.remove('is-open');
     }
 
     function setFilenameDisplay() {
@@ -1958,7 +2016,7 @@
         const model = getViewerModel();
         if (!model) return;
         if (!state.rawXFileContent) {
-            alert('No .x file content available — HXX export requires a loaded .x file.');
+            alert('No .x file content available - HXX export requires a loaded .x file.');
             return;
         }
         if (!window.HXXLoader || !window.HXXLoader.composeHXX) {
@@ -2292,9 +2350,11 @@
         function closeAllToolbarFlyouts() {
             if (dom.projFlyout) dom.projFlyout.classList.remove('is-open');
             if (dom.appearanceFlyout) dom.appearanceFlyout.classList.remove('is-open');
+            if (dom.shadingFlyout) dom.shadingFlyout.classList.remove('is-open');
             if (dom.tfFlyout) dom.tfFlyout.classList.remove('is-open');
             if (dom.vtProjection) dom.vtProjection.classList.remove('is-active');
             if (dom.vtAppearance) dom.vtAppearance.classList.remove('is-active');
+            if (dom.vtShading) dom.vtShading.classList.remove('is-active');
             if (dom.vtTransformToggle) dom.vtTransformToggle.classList.remove('is-active');
         }
 
@@ -2339,6 +2399,26 @@
                     applyLook(parseInt(radio.value, 10));
                 });
             });
+        }
+
+        // Object-shading flyout
+        if (dom.vtShading && dom.shadingFlyout) {
+            dom.vtShading.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (dom.vtShading.disabled) return;
+                const willOpen = !dom.shadingFlyout.classList.contains('is-open');
+                closeAllToolbarFlyouts();
+                if (willOpen) {
+                    positionFlyout(dom.shadingFlyout, dom.vtShading);
+                    dom.vtShading.classList.add('is-active');
+                }
+            });
+            dom.shadingFlyout.addEventListener('click', (e) => e.stopPropagation());
+            dom.shadingFlyout.querySelectorAll('.shade-swatch').forEach(sw => {
+                sw.addEventListener('click', () => applyShadeColor(sw.dataset.color));
+            });
+            const resetBtn = $('#shading-reset');
+            if (resetBtn) resetBtn.addEventListener('click', restoreOriginalColors);
         }
 
         // Help dialog

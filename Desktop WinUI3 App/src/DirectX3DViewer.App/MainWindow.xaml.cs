@@ -6,6 +6,7 @@ using Microsoft.UI;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using Windows.Storage.Pickers;
@@ -26,6 +27,8 @@ public sealed partial class MainWindow : Window
     private bool _dark;
     private Vector3 _bgColor = new(0.106f, 0.157f, 0.220f);
     private bool _bgTransparent;
+    private string? _lastLoadError;
+    private Vector3[]? _originalDiffuse;
 
     public MainWindow()
     {
@@ -43,6 +46,9 @@ public sealed partial class MainWindow : Window
         GridButton.IsChecked = _settings.Settings.GridVisible;
         Viewport.Renderer.GridVisible = _settings.Settings.GridVisible;
         Viewport.Renderer.Camera.Perspective = _settings.Settings.Perspective;
+
+        WireframeButton.IsChecked = _settings.Settings.Wireframe;
+        Viewport.Renderer.Wireframe = _settings.Settings.Wireframe;
 
         // Appearance selector: Day / Night / Transparent radio buttons.
         if (_dark)
@@ -74,6 +80,7 @@ public sealed partial class MainWindow : Window
             _settings.Settings.DarkMode = _dark;
             _settings.Settings.GridVisible = GridButton.IsChecked == true;
             _settings.Settings.Perspective = ProjPerspective.IsChecked == true;
+            _settings.Settings.Wireframe = WireframeButton.IsChecked == true;
             _settings.Save();
         };
     }
@@ -83,8 +90,32 @@ public sealed partial class MainWindow : Window
     /// <summary>Open a file passed via command line or file association.</summary>
     public async void OpenInitialFile(string path)
     {
-        if (!string.IsNullOrWhiteSpace(path) && System.IO.File.Exists(path) && ModelImporter.IsSupported(path))
-            await LoadFileAsync(path);
+        if (string.IsNullOrWhiteSpace(path) || !System.IO.File.Exists(path) || !ModelImporter.IsSupported(path))
+            return;
+
+        // Keep the splash visible (with status) until the startup model is ready.
+        _splashTimer.Stop();
+        SplashFileName.Text = System.IO.Path.GetFileName(path);
+        SplashFileName.Visibility = Visibility.Visible;
+        SetSplashStatus("Loading model\u2026");
+
+        bool ok = await LoadFileAsync(path, isStartup: true);
+        if (!ok)
+        {
+            // The background load failed — retry once serially on the UI thread while
+            // the splash is still up (handles transient/threading load failures).
+            SetSplashStatus("Retrying\u2026");
+            ok = LoadFileSync(path);
+        }
+
+        DismissSplash();
+        if (!ok)
+            await ShowMessageAsync("Could not open file", _lastLoadError ?? "Unknown error.");
+    }
+
+    private void SetSplashStatus(string text)
+    {
+        if (SplashOverlay.Visibility == Visibility.Visible) SplashStatus.Text = text;
     }
 
     // â”€â”€ Theme â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -152,31 +183,125 @@ public sealed partial class MainWindow : Window
         if (file is not null) await LoadFileAsync(file.Path);
     }
 
-    private async System.Threading.Tasks.Task LoadFileAsync(string path)
+    private async System.Threading.Tasks.Task<bool> LoadFileAsync(string path, bool isStartup = false)
     {
-        BusyRing.IsActive = true;
+        // At startup the splash shows the progress; in-app loads use the centered overlay.
+        if (!isStartup)
+        {
+            LoadingFileName.Text = Path.GetFileName(path);
+            LoadingOverlay.Visibility = Visibility.Visible;
+            // Let the overlay (with the file name) paint at least one frame before the
+            // synchronous parts of the load begin, so it is always visible.
+            await System.Threading.Tasks.Task.Yield();
+        }
         try
         {
             var scene = await System.Threading.Tasks.Task.Run(() => ModelImporter.Import(path));
-            _scene = scene;
-            _scenePath = path;
-
-            Viewport.LoadModel(scene);
-            EmptyState.Visibility = Visibility.Collapsed;
-            FilePathText.Text = Path.GetFileName(path);
-            ToolTipService.SetToolTip(FilePathText, path);
-            SaveButton.IsEnabled = ExportButton.IsEnabled = ScreenshotButton.IsEnabled = true;
-
-            _settings.AddRecentFile(path);
+            ApplyLoadedScene(scene, path);
+            return true;
         }
         catch (Exception ex)
         {
-            await ShowMessageAsync("Could not open file", ex.Message);
+            _lastLoadError = ex.Message;
+            if (!isStartup) await ShowMessageAsync("Could not open file", ex.Message);
+            return false;
         }
         finally
         {
-            BusyRing.IsActive = false;
+            LoadingOverlay.Visibility = Visibility.Collapsed;
         }
+    }
+
+    /// <summary>Synchronous (serial) load used as a startup fallback while the splash is up.</summary>
+    private bool LoadFileSync(string path)
+    {
+        try
+        {
+            var scene = ModelImporter.Import(path);
+            ApplyLoadedScene(scene, path);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _lastLoadError = ex.Message;
+            return false;
+        }
+    }
+
+    private void ApplyLoadedScene(SceneModel scene, string path)
+    {
+        _scene = scene;
+        _scenePath = path;
+
+        Viewport.LoadModel(scene);
+        EmptyState.Visibility = Visibility.Collapsed;
+        FilePathText.Text = Path.GetFileName(path);
+        ToolTipService.SetToolTip(FilePathText, path);
+        SaveButton.IsEnabled = ExportButton.IsEnabled = ScreenshotButton.IsEnabled = true;
+
+        // Reset the object-shading tool for the new model.
+        Viewport.Renderer.ObjectColorOverride = null;
+        SnapshotColors();
+        ShadingButton.IsEnabled = true;
+        ResetShadingButton.IsEnabled = false;
+
+        _settings.AddRecentFile(path);
+    }
+
+    // ── Object-shading ──────────────────────────────────────────────
+
+    private void OnShadeColor(object sender, TappedRoutedEventArgs e)
+    {
+        if (_scene is null || sender is not FrameworkElement b || b.Tag is not string hex) return;
+        if (!TryParseHexColor(hex, out var color)) return;
+
+        foreach (var mesh in _scene.Meshes)
+            foreach (var mat in mesh.Materials)
+                mat.Diffuse = color;
+
+        Viewport.Renderer.ObjectColorOverride = color;
+        Viewport.Render();
+        ResetShadingButton.IsEnabled = true;
+    }
+
+    private void OnResetShading(object sender, RoutedEventArgs e)
+    {
+        if (_scene is null) return;
+        RestoreOriginalColors();
+        Viewport.Renderer.ObjectColorOverride = null;
+        Viewport.Render();
+        ResetShadingButton.IsEnabled = false;
+    }
+
+    private void SnapshotColors()
+    {
+        if (_scene is null) { _originalDiffuse = null; return; }
+        var list = new System.Collections.Generic.List<Vector3>();
+        foreach (var mesh in _scene.Meshes)
+            foreach (var mat in mesh.Materials)
+                list.Add(mat.Diffuse);
+        _originalDiffuse = list.ToArray();
+    }
+
+    private void RestoreOriginalColors()
+    {
+        if (_scene is null || _originalDiffuse is null) return;
+        int i = 0;
+        foreach (var mesh in _scene.Meshes)
+            foreach (var mat in mesh.Materials)
+                if (i < _originalDiffuse.Length) mat.Diffuse = _originalDiffuse[i++];
+    }
+
+    private static bool TryParseHexColor(string hex, out Vector3 color)
+    {
+        color = default;
+        hex = hex.TrimStart('#');
+        if (hex.Length != 6) return false;
+        if (!int.TryParse(hex, System.Globalization.NumberStyles.HexNumber,
+                System.Globalization.CultureInfo.InvariantCulture, out int rgb))
+            return false;
+        color = new Vector3(((rgb >> 16) & 0xFF) / 255f, ((rgb >> 8) & 0xFF) / 255f, (rgb & 0xFF) / 255f);
+        return true;
     }
 
     // â”€â”€ Save / export â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -380,6 +505,12 @@ public sealed partial class MainWindow : Window
         await dialog.ShowAsync();
     }
 
+    private async void OnSettings(object sender, RoutedEventArgs e)
+    {
+        var dialog = new SettingsDialog(this) { XamlRoot = RootGrid.XamlRoot };
+        await dialog.ShowAsync();
+    }
+
     private void OnContextMenuAction(object sender, RoutedEventArgs e)
     {
         if (sender is MenuFlyoutItem item)
@@ -393,12 +524,44 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    // ── About ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+    // ── Default preferences (Settings card in the Help dialog) ───────────────────────────────────────────────────────────────────────────────────────────
 
-    private async void OnAbout(object sender, RoutedEventArgs e)
+    // These apply immediately to the live viewport AND persist as the startup default.
+    // Setting the toolbar control's IsChecked fires its own handler, which updates the renderer.
+
+    public bool PrefWireframe => WireframeButton.IsChecked == true;
+    public bool PrefGrid => GridButton.IsChecked == true;
+    public bool PrefPerspective => ProjPerspective.IsChecked == true;
+    public bool PrefDark => _dark;
+
+    public void SetPrefWireframe(bool on)
     {
-        var dialog = new AboutDialog { XamlRoot = RootGrid.XamlRoot };
-        await dialog.ShowAsync();
+        WireframeButton.IsChecked = on;
+        _settings.Settings.Wireframe = on;
+        _settings.Save();
+    }
+
+    public void SetPrefGrid(bool on)
+    {
+        GridButton.IsChecked = on;
+        _settings.Settings.GridVisible = on;
+        _settings.Save();
+    }
+
+    public void SetPrefPerspective(bool perspective)
+    {
+        if (perspective) ProjPerspective.IsChecked = true;
+        else ProjOrthographic.IsChecked = true;
+        _settings.Settings.Perspective = perspective;
+        _settings.Save();
+    }
+
+    public void SetPrefDark(bool dark)
+    {
+        if (dark) LookNight.IsChecked = true;
+        else LookDay.IsChecked = true;
+        _settings.Settings.DarkMode = dark;
+        _settings.Save();
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────

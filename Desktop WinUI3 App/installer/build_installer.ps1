@@ -17,7 +17,11 @@
 [CmdletBinding()]
 param(
     [string]$Configuration = 'Release',
-    [bool]$Sign = $true
+    [bool]$Sign = $true,
+    # Where the finished installer EXE is written. Defaults to the current user's
+    # Desktop so the deliverable does NOT land inside the repository. Override
+    # with -OutputDir to redirect (e.g. a release share).
+    [string]$OutputDir = ([Environment]::GetFolderPath('Desktop'))
 )
 
 $ErrorActionPreference = 'Stop'
@@ -92,15 +96,18 @@ if (Test-Path $publishDir) { Remove-Item $publishDir -Recurse -Force }
 if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed ($LASTEXITCODE)." }
 
 Write-Host '==> Compiling installer' -ForegroundColor Cyan
-& $iscc @isccArgs "/DPublishDir=$publishDir" (Join-Path $here 'DirectX3DViewer.iss')
+if (-not (Test-Path $OutputDir)) { New-Item -ItemType Directory -Path $OutputDir -Force | Out-Null }
+# /O overrides the .iss OutputDir so the finished installer is written straight
+# to $OutputDir (the Desktop by default) and never into the repo.
+& $iscc @isccArgs "/DPublishDir=$publishDir" "/O$OutputDir" (Join-Path $here 'DirectX3DViewer.iss')
 if ($LASTEXITCODE -ne 0) { throw "ISCC failed ($LASTEXITCODE)." }
 
-$out = Join-Path $here 'Output'
+$out = $OutputDir
 Write-Host "==> Done. Installer written to: $out" -ForegroundColor Green
-Get-ChildItem $out -Filter '*.exe' | Select-Object Name, Length, LastWriteTime
+Get-ChildItem $out -Filter 'DirectX3DViewer-*-Setup.exe' | Select-Object Name, Length, LastWriteTime
 
 if ($Sign) {
-    $setupExe = Get-ChildItem $out -Filter '*.exe' | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+    $setupExe = Get-ChildItem $out -Filter 'DirectX3DViewer-*-Setup.exe' | Sort-Object LastWriteTime -Descending | Select-Object -First 1
     if ($setupExe) {
         Write-Host "==> Verifying installer signature: $($setupExe.Name)" -ForegroundColor Cyan
         & (Resolve-SignTool) verify /pa /v $setupExe.FullName

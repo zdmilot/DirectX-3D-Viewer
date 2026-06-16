@@ -6,7 +6,7 @@ namespace DirectX3DViewer.Core.Formats;
 public static class ModelImporter
 {
     public static readonly string[] SupportedExtensions =
-        { ".x", ".hxx", ".obj", ".stl" };
+        { ".x", ".hxx", ".obj", ".stl", ".glb", ".gltf" };
 
     public static bool IsSupported(string path)
     {
@@ -29,6 +29,7 @@ public static class ModelImporter
             ".hxx" => HxxLoader.Parse(data, path),
             ".obj" => ObjLoader.Parse(data, path),
             ".stl" => StlLoader.Parse(data, path),
+            ".glb" or ".gltf" => GltfLoader.Parse(data, path),
             _ => throw new NotSupportedException($"Unsupported file format: {ext}"),
         };
     }

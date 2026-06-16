@@ -42,6 +42,16 @@ public sealed class D3DViewport : SwapChainPanel, IDisposable
         PointerWheelChanged += OnPointerWheel;
         PointerCanceled += (_, _) => { _dragging = _rightDragging = false; };
         PointerCaptureLost += (_, _) => { _dragging = _rightDragging = false; };
+
+        // Re-attach the swap chain to this panel after a device-lost recovery.
+        _renderer.SwapChainRecreated += OnSwapChainRecreated;
+    }
+
+    private void OnSwapChainRecreated()
+    {
+        if (_disposed) return;
+        if (DispatcherQueue.HasThreadAccess) BindSwapChain();
+        else DispatcherQueue.TryEnqueue(BindSwapChain);
     }
 
     private void OnLoaded(object sender, RoutedEventArgs e)

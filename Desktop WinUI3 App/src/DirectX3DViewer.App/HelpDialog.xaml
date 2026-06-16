@@ -3,13 +3,19 @@
     x:Class="DirectX3DViewer.App.HelpDialog"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    Title="Help &amp; CLI Reference"
+    Title="Help &amp; About"
     CloseButtonText="Close"
-    DefaultButton="Close"
-    MaxWidth="640">
+    DefaultButton="Close">
+
+    <ContentDialog.Resources>
+        <!-- The default ContentDialogMaxWidth is 548, which clips the wider CLI cards
+             (cutting off the copy buttons). A larger value lets the box fit its
+             content; centering stays intact because no alignment is overridden. -->
+        <x:Double x:Key="ContentDialogMaxWidth">680</x:Double>
+    </ContentDialog.Resources>
 
     <ScrollViewer MaxHeight="540" VerticalScrollBarVisibility="Auto">
-        <StackPanel Spacing="18" Padding="0,4,12,4">
+        <StackPanel Width="560" Spacing="18" Padding="0,4,0,4">
 
             <!-- ── Keyboard shortcuts ──────────────────────────────── -->
             <TextBlock Text="KEYBOARD &amp; MOUSE" FontSize="10" FontWeight="SemiBold"
@@ -106,31 +112,31 @@
                            Foreground="{ThemeResource AccentBrush}" />
                 <TextBlock Grid.Row="0" Grid.Column="1" FontSize="13"
                            Foreground="{ThemeResource TextSecondaryBrush}"
-                           Text="DirectX .X model  —  read &amp; write (binary or text)" />
+                           Text="DirectX .X model  -  read &amp; write (binary or text), with color" />
 
                 <TextBlock Grid.Row="1" Grid.Column="0" Text=".hxx" FontFamily="Consolas" FontSize="13"
                            Foreground="{ThemeResource AccentBrush}" />
                 <TextBlock Grid.Row="1" Grid.Column="1" FontSize="13"
                            Foreground="{ThemeResource TextSecondaryBrush}"
-                           Text="Half-precision X variant  —  read only" />
+                           Text="Half-precision X variant  -  read only" />
 
                 <TextBlock Grid.Row="2" Grid.Column="0" Text=".obj" FontFamily="Consolas" FontSize="13"
                            Foreground="{ThemeResource AccentBrush}" />
                 <TextBlock Grid.Row="2" Grid.Column="1" FontSize="13"
                            Foreground="{ThemeResource TextSecondaryBrush}"
-                           Text="Wavefront OBJ  —  read &amp; write" />
+                           Text="Wavefront OBJ  -  read &amp; write (loads companion .mtl colors)" />
 
                 <TextBlock Grid.Row="3" Grid.Column="0" Text=".stl" FontFamily="Consolas" FontSize="13"
                            Foreground="{ThemeResource AccentBrush}" />
                 <TextBlock Grid.Row="3" Grid.Column="1" FontSize="13"
                            Foreground="{ThemeResource TextSecondaryBrush}"
-                           Text="Stereolithography  —  read &amp; write" />
+                           Text="Stereolithography  -  read &amp; write (geometry only, no color)" />
 
-                <TextBlock Grid.Row="4" Grid.Column="0" Text=".glb" FontFamily="Consolas" FontSize="13"
+                <TextBlock Grid.Row="4" Grid.Column="0" Text=".glb / .gltf" FontFamily="Consolas" FontSize="13"
                            Foreground="{ThemeResource AccentBrush}" />
                 <TextBlock Grid.Row="4" Grid.Column="1" FontSize="13"
                            Foreground="{ThemeResource TextSecondaryBrush}"
-                           Text="glTF 2.0 binary  —  write only" />
+                           Text="glTF 2.0  -  read (.glb &amp; .gltf, with color) &amp; write (.glb)" />
             </Grid>
 
             <!-- ── CLI Reference ──────────────────────────────────── -->
@@ -138,71 +144,202 @@
                        CharacterSpacing="180" Foreground="{ThemeResource AccentBrush}" />
 
             <TextBlock FontSize="12" Foreground="{ThemeResource TextSecondaryBrush}" TextWrapping="Wrap"
-                       Text="Run DirectX3DViewer.exe from any terminal to convert 3D files without opening the GUI." />
+                       Text="After registration, DirectX3DViewer.exe is on your PATH - run it from any terminal by name, no full path needed. Use the short 'x3d' alias to type less." />
 
-            <!-- syntax block -->
+            <!-- Open file in the viewer -->
             <Border CornerRadius="8" Padding="12,10"
                     Background="{ThemeResource CardBackgroundBrush}"
                     BorderBrush="{ThemeResource ToolbarBorderBrush}" BorderThickness="1">
-                <StackPanel Spacing="4">
-                    <TextBlock FontFamily="Consolas" FontSize="12"
-                               Foreground="{ThemeResource TextMutedBrush}"
-                               Text="# Open file in the viewer" />
-                    <TextBlock FontFamily="Consolas" FontSize="12"
-                               Foreground="{ThemeResource TextPrimaryBrush}"
-                               Text="DirectX3DViewer.exe model.x" />
-                    <TextBlock Margin="0,6,0,0" FontFamily="Consolas" FontSize="12"
-                               Foreground="{ThemeResource TextMutedBrush}"
-                               Text="# Convert between formats" />
-                    <TextBlock FontFamily="Consolas" FontSize="12"
-                               Foreground="{ThemeResource TextPrimaryBrush}"
-                               Text="DirectX3DViewer.exe convert &lt;input&gt; &lt;output&gt; [--format &lt;fmt&gt;]" />
-                    <TextBlock Margin="0,6,0,0" FontFamily="Consolas" FontSize="12"
-                               Foreground="{ThemeResource TextMutedBrush}"
-                               Text="# Show full CLI help" />
-                    <TextBlock FontFamily="Consolas" FontSize="12"
-                               Foreground="{ThemeResource TextPrimaryBrush}"
-                               Text="DirectX3DViewer.exe --help" />
-                </StackPanel>
+                <Grid ColumnSpacing="8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                        <TextBlock FontSize="12" Foreground="{ThemeResource TextMutedBrush}"
+                                   Text="Open file in the viewer" />
+                        <TextBlock FontFamily="Consolas" FontSize="12" IsTextSelectionEnabled="True"
+                                   Foreground="{ThemeResource TextPrimaryBrush}" TextWrapping="Wrap"
+                                   Text="DirectX3DViewer.exe model.x" />
+                    </StackPanel>
+                    <Button Grid.Column="1" VerticalAlignment="Top" Padding="8" MinWidth="0"
+                            Tag="DirectX3DViewer.exe model.x" Click="OnCopyCommand"
+                            ToolTipService.ToolTip="Copy command">
+                        <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xE8C8;" FontSize="14" />
+                    </Button>
+                </Grid>
+            </Border>
+
+            <!-- Short alias -->
+            <Border CornerRadius="8" Padding="12,10"
+                    Background="{ThemeResource CardBackgroundBrush}"
+                    BorderBrush="{ThemeResource ToolbarBorderBrush}" BorderThickness="1">
+                <Grid ColumnSpacing="8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                        <TextBlock FontSize="12" Foreground="{ThemeResource TextMutedBrush}"
+                                   Text="Short alias (same as above)" />
+                        <TextBlock FontFamily="Consolas" FontSize="12" IsTextSelectionEnabled="True"
+                                   Foreground="{ThemeResource TextPrimaryBrush}" TextWrapping="Wrap"
+                                   Text="x3d model.x" />
+                    </StackPanel>
+                    <Button Grid.Column="1" VerticalAlignment="Top" Padding="8" MinWidth="0"
+                            Tag="x3d model.x" Click="OnCopyCommand"
+                            ToolTipService.ToolTip="Copy command">
+                        <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xE8C8;" FontSize="14" />
+                    </Button>
+                </Grid>
+            </Border>
+
+            <!-- Convert between formats -->
+            <Border CornerRadius="8" Padding="12,10"
+                    Background="{ThemeResource CardBackgroundBrush}"
+                    BorderBrush="{ThemeResource ToolbarBorderBrush}" BorderThickness="1">
+                <Grid ColumnSpacing="8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                        <TextBlock FontSize="12" Foreground="{ThemeResource TextMutedBrush}"
+                                   Text="Convert between formats" />
+                        <TextBlock FontFamily="Consolas" FontSize="12" IsTextSelectionEnabled="True"
+                                   Foreground="{ThemeResource TextPrimaryBrush}" TextWrapping="Wrap"
+                                   Text="DirectX3DViewer.exe convert &lt;input&gt; &lt;output&gt; [--format &lt;fmt&gt;]" />
+                    </StackPanel>
+                    <Button Grid.Column="1" VerticalAlignment="Top" Padding="8" MinWidth="0"
+                            Tag="DirectX3DViewer.exe convert &lt;input&gt; &lt;output&gt; [--format &lt;fmt&gt;]" Click="OnCopyCommand"
+                            ToolTipService.ToolTip="Copy command">
+                        <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xE8C8;" FontSize="14" />
+                    </Button>
+                </Grid>
+            </Border>
+
+            <!-- Show full CLI help -->
+            <Border CornerRadius="8" Padding="12,10"
+                    Background="{ThemeResource CardBackgroundBrush}"
+                    BorderBrush="{ThemeResource ToolbarBorderBrush}" BorderThickness="1">
+                <Grid ColumnSpacing="8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                        <TextBlock FontSize="12" Foreground="{ThemeResource TextMutedBrush}"
+                                   Text="Show full CLI help" />
+                        <TextBlock FontFamily="Consolas" FontSize="12" IsTextSelectionEnabled="True"
+                                   Foreground="{ThemeResource TextPrimaryBrush}" TextWrapping="Wrap"
+                                   Text="DirectX3DViewer.exe --help" />
+                    </StackPanel>
+                    <Button Grid.Column="1" VerticalAlignment="Top" Padding="8" MinWidth="0"
+                            Tag="DirectX3DViewer.exe --help" Click="OnCopyCommand"
+                            ToolTipService.ToolTip="Copy command">
+                        <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xE8C8;" FontSize="14" />
+                    </Button>
+                </Grid>
             </Border>
 
             <!-- examples -->
             <TextBlock Text="EXAMPLES" FontSize="10" FontWeight="SemiBold"
                        CharacterSpacing="180" Foreground="{ThemeResource AccentBrush}" />
 
+            <!-- OBJ to .X -->
             <Border CornerRadius="8" Padding="12,10"
                     Background="{ThemeResource CardBackgroundBrush}"
                     BorderBrush="{ThemeResource ToolbarBorderBrush}" BorderThickness="1">
-                <StackPanel Spacing="10">
-                    <StackPanel Spacing="2">
-                        <TextBlock FontFamily="Consolas" FontSize="12"
-                                   Foreground="{ThemeResource TextPrimaryBrush}"
+                <Grid ColumnSpacing="8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                        <TextBlock FontFamily="Consolas" FontSize="12" IsTextSelectionEnabled="True"
+                                   Foreground="{ThemeResource TextPrimaryBrush}" TextWrapping="Wrap"
                                    Text="DirectX3DViewer.exe convert model.obj model.x" />
                         <TextBlock FontSize="12" Foreground="{ThemeResource TextMutedBrush}"
-                                   Text="  Convert OBJ &#x2192; DirectX .X binary" />
+                                   Text="Convert OBJ &#x2192; DirectX .X binary" />
                     </StackPanel>
-                    <StackPanel Spacing="2">
-                        <TextBlock FontFamily="Consolas" FontSize="12"
-                                   Foreground="{ThemeResource TextPrimaryBrush}"
+                    <Button Grid.Column="1" VerticalAlignment="Top" Padding="8" MinWidth="0"
+                            Tag="DirectX3DViewer.exe convert model.obj model.x" Click="OnCopyCommand"
+                            ToolTipService.ToolTip="Copy command">
+                        <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xE8C8;" FontSize="14" />
+                    </Button>
+                </Grid>
+            </Border>
+
+            <!-- STL to GLB -->
+            <Border CornerRadius="8" Padding="12,10"
+                    Background="{ThemeResource CardBackgroundBrush}"
+                    BorderBrush="{ThemeResource ToolbarBorderBrush}" BorderThickness="1">
+                <Grid ColumnSpacing="8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                        <TextBlock FontFamily="Consolas" FontSize="12" IsTextSelectionEnabled="True"
+                                   Foreground="{ThemeResource TextPrimaryBrush}" TextWrapping="Wrap"
                                    Text="DirectX3DViewer.exe convert model.stl output.glb" />
                         <TextBlock FontSize="12" Foreground="{ThemeResource TextMutedBrush}"
-                                   Text="  Convert STL &#x2192; glTF 2.0 binary (.glb)" />
+                                   Text="Convert STL &#x2192; glTF 2.0 binary (.glb)" />
                     </StackPanel>
-                    <StackPanel Spacing="2">
-                        <TextBlock FontFamily="Consolas" FontSize="12"
-                                   Foreground="{ThemeResource TextPrimaryBrush}"
+                    <Button Grid.Column="1" VerticalAlignment="Top" Padding="8" MinWidth="0"
+                            Tag="DirectX3DViewer.exe convert model.stl output.glb" Click="OnCopyCommand"
+                            ToolTipService.ToolTip="Copy command">
+                        <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xE8C8;" FontSize="14" />
+                    </Button>
+                </Grid>
+            </Border>
+
+            <!-- .X to OBJ with format flag -->
+            <Border CornerRadius="8" Padding="12,10"
+                    Background="{ThemeResource CardBackgroundBrush}"
+                    BorderBrush="{ThemeResource ToolbarBorderBrush}" BorderThickness="1">
+                <Grid ColumnSpacing="8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                        <TextBlock FontFamily="Consolas" FontSize="12" IsTextSelectionEnabled="True"
+                                   Foreground="{ThemeResource TextPrimaryBrush}" TextWrapping="Wrap"
                                    Text="DirectX3DViewer.exe convert model.x result --format obj" />
                         <TextBlock FontSize="12" Foreground="{ThemeResource TextMutedBrush}"
-                                   Text="  Convert .X &#x2192; OBJ, format flag overrides extension" />
+                                   Text="Convert .X &#x2192; OBJ, format flag overrides extension" />
                     </StackPanel>
-                    <StackPanel Spacing="2">
-                        <TextBlock FontFamily="Consolas" FontSize="12"
-                                   Foreground="{ThemeResource TextPrimaryBrush}"
-                                   Text="DirectX3DViewer.exe convert *.hxx output.obj" />
+                    <Button Grid.Column="1" VerticalAlignment="Top" Padding="8" MinWidth="0"
+                            Tag="DirectX3DViewer.exe convert model.x result --format obj" Click="OnCopyCommand"
+                            ToolTipService.ToolTip="Copy command">
+                        <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xE8C8;" FontSize="14" />
+                    </Button>
+                </Grid>
+            </Border>
+
+            <!-- .HXX to OBJ -->
+            <Border CornerRadius="8" Padding="12,10"
+                    Background="{ThemeResource CardBackgroundBrush}"
+                    BorderBrush="{ThemeResource ToolbarBorderBrush}" BorderThickness="1">
+                <Grid ColumnSpacing="8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                        <TextBlock FontFamily="Consolas" FontSize="12" IsTextSelectionEnabled="True"
+                                   Foreground="{ThemeResource TextPrimaryBrush}" TextWrapping="Wrap"
+                                   Text="DirectX3DViewer.exe convert sample.hxx output.obj" />
                         <TextBlock FontSize="12" Foreground="{ThemeResource TextMutedBrush}"
-                                   Text="  Convert .HXX half-precision X &#x2192; OBJ" />
+                                   Text="Convert .HXX half-precision X &#x2192; OBJ" />
                     </StackPanel>
-                </StackPanel>
+                    <Button Grid.Column="1" VerticalAlignment="Top" Padding="8" MinWidth="0"
+                            Tag="DirectX3DViewer.exe convert sample.hxx output.obj" Click="OnCopyCommand"
+                            ToolTipService.ToolTip="Copy command">
+                        <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xE8C8;" FontSize="14" />
+                    </Button>
+                </Grid>
             </Border>
 
             <!-- exit codes -->
@@ -231,6 +368,59 @@
                 <TextBlock Grid.Row="2" Grid.Column="1" FontSize="13"
                            Foreground="{ThemeResource TextSecondaryBrush}" Text="Invalid arguments" />
             </Grid>
+
+            <!-- ── About ───────────────────────────────────────────── -->
+            <TextBlock Text="ABOUT" FontSize="10" FontWeight="SemiBold"
+                       CharacterSpacing="180" Foreground="{ThemeResource AccentBrush}" />
+
+            <Border CornerRadius="8" Padding="14,12"
+                    Background="{ThemeResource CardBackgroundBrush}"
+                    BorderBrush="{ThemeResource ToolbarBorderBrush}" BorderThickness="1">
+                <StackPanel Spacing="12">
+                    <StackPanel Orientation="Horizontal" Spacing="14">
+                        <Border Width="48" Height="48" CornerRadius="12"
+                                Background="{StaticResource BrandGradientBrush}" Padding="5">
+                            <Viewbox>
+                                <Path Width="120" Height="120" Stretch="Uniform" Fill="#E6DCE1E6"
+                                      RenderTransformOrigin="0.5,0.5"
+                                      Data="F0 M50.5 32.8L73.8 33.2L79.8 33.9L81.4 34.5L82.0 35.0L82.1 35.7L82.6 36.3L85.0 38.1L87.8 40.9L89.9 44.3L90.8 44.4L95.0 46.5L98.2 49.2L100.0 51.4L101.4 54.3L104.4 64.1L105.6 67.1L107.3 70.0L109.8 72.4L115.4 75.5L104.9 75.2L103.1 74.5L100.9 72.4L100.1 71.2L99.3 69.6L97.4 63.9L95.3 60.6L93.6 59.2L91.5 58.1L89.4 57.7L88.9 58.0L85.2 67.7L81.7 74.9L80.4 75.9L73.9 75.9L70.4 76.6L68.3 76.8L62.3 77.9L59.6 79.1L59.1 79.9L59.1 80.6L62.3 85.0L62.2 85.9L60.9 86.6L56.1 87.0L53.2 86.8L51.3 86.6L50.3 86.1L49.9 85.7L49.9 85.0L50.5 83.9L52.7 81.4L53.2 80.6L53.2 79.9L52.6 79.1L49.9 77.9L38.3 75.9L31.9 75.9L30.6 74.9L28.9 71.6L15.9 71.4L10.9 70.7L7.0 69.3L5.6 68.0L4.7 66.2L4.3 64.7L4.5 61.5L5.4 58.2L6.6 56.0L8.6 53.2L11.1 50.6L17.0 46.4L22.9 43.5L24.5 40.9L26.8 38.6L29.5 36.4L30.1 35.7L30.4 34.9L31.5 34.1L38.6 33.2L50.5 32.8Z M21.6 48.5L21.6 50.9L22.1 54.3L23.0 57.3L24.8 62.7L27.0 67.6L16.4 67.5L13.1 67.0L10.9 66.1L10.2 65.5L9.8 64.8L9.7 62.8L10.3 60.4L12.4 56.1L14.8 53.2L16.2 51.9L19.7 49.3L21.6 48.5Z">
+                                    <Path.RenderTransform>
+                                        <ScaleTransform ScaleX="-1" ScaleY="-1" />
+                                    </Path.RenderTransform>
+                                </Path>
+                            </Viewbox>
+                        </Border>
+                        <StackPanel VerticalAlignment="Center" Spacing="2">
+                            <TextBlock Text="DirectX 3D Viewer" FontSize="16" FontWeight="SemiBold"
+                                       Foreground="{ThemeResource TextPrimaryBrush}" />
+                            <TextBlock Text="DirectX 3D File Viewer &amp; Converter" FontSize="12"
+                                       Foreground="{ThemeResource TextSecondaryBrush}" />
+                        </StackPanel>
+                    </StackPanel>
+
+                    <Grid ColumnSpacing="12" RowSpacing="4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition />
+                            <RowDefinition />
+                        </Grid.RowDefinitions>
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Version"
+                                   Foreground="{ThemeResource TextMutedBrush}" FontSize="13" />
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="1.0.0" FontSize="13"
+                                   Foreground="{ThemeResource TextSecondaryBrush}" />
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Author"
+                                   Foreground="{ThemeResource TextMutedBrush}" FontSize="13" />
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="Zachary Milot" FontSize="13"
+                                   Foreground="{ThemeResource TextSecondaryBrush}" />
+                    </Grid>
+
+                    <TextBlock Text="Native WinUI 3 / Windows App SDK &#x00B7; Direct3D 11 viewport"
+                               FontSize="11" Foreground="{ThemeResource TextMutedBrush}" TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
 
         </StackPanel>
     </ScrollViewer>

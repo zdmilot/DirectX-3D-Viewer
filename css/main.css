@@ -2137,6 +2137,50 @@ body {
     box-shadow: 0 0 0 3px var(--accent-glow);
 }
 
+/* Object-shading swatches */
+.shade-swatch-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    width: 184px;
+}
+
+.shade-swatch {
+    height: 30px;
+    border: 1px solid var(--card-border);
+    border-radius: 6px;
+    cursor: pointer;
+    padding: 0;
+    transition: transform var(--t-fast), box-shadow var(--t-fast);
+}
+
+.shade-swatch:hover {
+    transform: scale(1.08);
+    box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+.vt-flyout-reset {
+    appearance: none;
+    width: 100%;
+    padding: 8px 10px;
+    font-size: 0.8rem;
+    color: var(--text-primary);
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: border-color var(--t-fast), background var(--t-fast);
+}
+
+.vt-flyout-reset:hover:not(:disabled) {
+    border-color: var(--accent);
+}
+
+.vt-flyout-reset:disabled {
+    opacity: 0.45;
+    cursor: default;
+}
+
 /* ============================================================
    Help & Shortcuts Dialog (WinUI3 HelpDialog style)
    ============================================================ */

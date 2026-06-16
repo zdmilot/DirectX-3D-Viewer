@@ -9,6 +9,7 @@ public sealed class AppSettings
     public bool DarkMode { get; set; }
     public bool GridVisible { get; set; } = true;
     public bool Perspective { get; set; } = true;
+    public bool Wireframe { get; set; }
     public List<string> RecentFiles { get; set; } = new();
 
     [JsonIgnore]

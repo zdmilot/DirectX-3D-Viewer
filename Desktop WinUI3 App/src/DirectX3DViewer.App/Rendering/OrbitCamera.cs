@@ -70,7 +70,9 @@ public sealed class OrbitCamera
         if (maxDim <= 0) maxDim = 100f;
         Target = center;
         Distance = maxDim * fitMultiplier;
-        NearPlane = MathF.Max(maxDim * 0.001f, 0.01f);
-        FarPlane = maxDim * 100f;
+        // Keep a moderate near:far ratio (~1:3000) so the float depth buffer stays
+        // precise and large models don't z-fight on coplanar faces.
+        NearPlane = MathF.Max(maxDim * 0.01f, 0.01f);
+        FarPlane = MathF.Max(maxDim * 30f, NearPlane * 1000f);
     }
 }

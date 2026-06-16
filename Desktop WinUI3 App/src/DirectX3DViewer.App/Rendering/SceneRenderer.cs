@@ -27,12 +27,24 @@ internal struct Constants
     public Vector4 BaseColor;  // a = opacity
 }
 
+/// <summary>A draw range (indices) plus its material colour and world-space bounds for culling.</summary>
+internal struct GpuGroup
+{
+    public int Start;
+    public int Count;
+    public Vector3 Color;
+    public float Opacity;
+    public Vector3 BoundsMin;
+    public Vector3 BoundsMax;
+}
+
 internal sealed class GpuMesh : IDisposable
 {
     public ID3D11Buffer VertexBuffer = null!;
     public ID3D11Buffer IndexBuffer = null!;
     public int Stride;
-    public List<(int start, int count, Vector3 color, float opacity)> Groups = new();
+    public Format IndexFormat = Format.R32_UInt;
+    public List<GpuGroup> Groups = new();
 
     public void Dispose()
     {
@@ -63,8 +75,10 @@ public sealed class SceneRenderer : IDisposable
     private ID3D11PixelShader _ps = null!;
     private ID3D11InputLayout _inputLayout = null!;
     private ID3D11Buffer _constantBuffer = null!;
-    private ID3D11RasterizerState _rasterSolid = null!;
-    private ID3D11RasterizerState _rasterWire = null!;
+    private ID3D11RasterizerState _rasterSolid = null!;     // back-face culled
+    private ID3D11RasterizerState _rasterWire = null!;      // back-face culled
+    private ID3D11RasterizerState _rasterSolidNoCull = null!; // double-sided
+    private ID3D11RasterizerState _rasterWireNoCull = null!;  // double-sided
     private ID3D11DepthStencilState _depthOn = null!;
     private ID3D11BlendState _blendOpaque = null!;
     private ID3D11BlendState _blendAlpha = null!;
@@ -72,15 +86,27 @@ public sealed class SceneRenderer : IDisposable
     private GpuMesh? _model;
     private GpuMesh? _grid;
 
+    // Retained so the scene/grid can be rebuilt after a device-lost event.
+    private SceneModel? _currentScene;
+    private bool _hasGrid;
+    private float _gridMaxDim, _gridGroundY;
+
     private int _width = 1, _height = 1;
     private int _sampleCount = 1;
     private bool _resized;
 
     public OrbitCamera Camera { get; } = new();
     public bool Wireframe { get; set; }
+    /// <summary>When true, view-frustum cull off-screen draw ranges (helps large models).</summary>
+    public bool FrustumCulling { get; set; } = true;
     public bool GridVisible { get; set; } = true;
+    /// <summary>When set, overrides every group's diffuse color for display (object-shading tool).</summary>
+    public Vector3? ObjectColorOverride { get; set; }
     public Vector4 BackgroundColor { get; set; } = new(0.94f, 0.94f, 0.94f, 1f);
     public Vector3 GridColor { get; set; } = new(0.8f, 0.8f, 0.8f);
+
+    /// <summary>Raised after the D3D device is recreated following a device-lost event.</summary>
+    public event Action? SwapChainRecreated;
 
     public IntPtr SwapChainPointer => _swapChain?.NativePointer ?? IntPtr.Zero;
 
@@ -205,7 +231,8 @@ float4 PSMain(PSIn i) : SV_TARGET
 
     private void CreateStates()
     {
-        var solid = new RasterizerDescription(CullMode.None, FillMode.Solid)
+        // Back-face culled (default) — halves fill cost on closed meshes.
+        var solid = new RasterizerDescription(CullMode.Back, FillMode.Solid)
         {
             DepthClipEnable = true,
             MultisampleEnable = _sampleCount > 1,
@@ -213,12 +240,28 @@ float4 PSMain(PSIn i) : SV_TARGET
         };
         _rasterSolid = _device.CreateRasterizerState(solid);
 
-        var wire = new RasterizerDescription(CullMode.None, FillMode.Wireframe)
+        var wire = new RasterizerDescription(CullMode.Back, FillMode.Wireframe)
         {
             DepthClipEnable = true,
             MultisampleEnable = _sampleCount > 1,
         };
         _rasterWire = _device.CreateRasterizerState(wire);
+
+        // Double-sided variants (no culling) for open/inverted meshes.
+        var solidNoCull = new RasterizerDescription(CullMode.None, FillMode.Solid)
+        {
+            DepthClipEnable = true,
+            MultisampleEnable = _sampleCount > 1,
+            AntialiasedLineEnable = false,
+        };
+        _rasterSolidNoCull = _device.CreateRasterizerState(solidNoCull);
+
+        var wireNoCull = new RasterizerDescription(CullMode.None, FillMode.Wireframe)
+        {
+            DepthClipEnable = true,
+            MultisampleEnable = _sampleCount > 1,
+        };
+        _rasterWireNoCull = _device.CreateRasterizerState(wireNoCull);
 
         var depth = new DepthStencilDescription(true, DepthWriteMask.All, ComparisonFunction.LessEqual);
         _depthOn = _device.CreateDepthStencilState(depth);
@@ -296,14 +339,20 @@ float4 PSMain(PSIn i) : SV_TARGET
     private void ApplyResize()
     {
         _resized = false;
-        _context.OMSetRenderTargets((ID3D11RenderTargetView?)null, null);
+        _context.OMSetRenderTargets((ID3D11RenderTargetView)null!, (ID3D11DepthStencilView)null!);
         _backBufferRtv?.Dispose(); _backBufferRtv = null;
         _msaaRtv?.Dispose(); _msaaRtv = null;
         _msaaColor?.Dispose(); _msaaColor = null;
         _depthView?.Dispose(); _depthView = null;
         _depthTex?.Dispose(); _depthTex = null;
 
-        _swapChain.ResizeBuffers(2, (uint)_width, (uint)_height, Format.B8G8R8A8_UNorm, SwapChainFlags.None);
+        var result = _swapChain.ResizeBuffers(2, (uint)_width, (uint)_height, Format.B8G8R8A8_UNorm, SwapChainFlags.None);
+        if (result.Failure)
+        {
+            if (result.Code == DXGI_ERROR_DEVICE_REMOVED || result.Code == DXGI_ERROR_DEVICE_RESET)
+                RecreateDevice();
+            return;
+        }
         CreateSizeResources();
     }
 
@@ -311,13 +360,30 @@ float4 PSMain(PSIn i) : SV_TARGET
 
     public void SetModel(SceneModel? scene)
     {
+        _currentScene = scene;
+        UploadModel(scene);
+    }
+
+    private void UploadModel(SceneModel? scene)
+    {
         _model?.Dispose();
         _model = null;
         if (scene is null || scene.Meshes.Count == 0) return;
 
-        _model = new GpuMesh { Stride = Marshal.SizeOf<VertexPN>() };
-        var verts = new List<VertexPN>();
-        var indices = new List<uint>();
+        // Guard against models too large to upload in a single buffer.
+        long totalVerts = 0, totalIndices = 0;
+        foreach (var mesh in scene.Meshes)
+        {
+            totalVerts += mesh.Positions.Count;
+            totalIndices += mesh.Indices.Count;
+        }
+        if (totalVerts > int.MaxValue || totalIndices > int.MaxValue)
+            throw new InvalidOperationException(
+                $"Model is too large to display ({totalVerts:N0} vertices, {totalIndices / 3:N0} triangles).");
+
+        var newModel = new GpuMesh { Stride = Marshal.SizeOf<VertexPN>() };
+        var verts = new List<VertexPN>((int)Math.Min(totalVerts, 1 << 24));
+        var indices = new List<uint>((int)Math.Min(totalIndices, 1 << 24));
 
         foreach (var mesh in scene.Meshes)
         {
@@ -333,26 +399,69 @@ float4 PSMain(PSIn i) : SV_TARGET
             foreach (var g in groups)
             {
                 int start = indices.Count;
+                var bmin = new Vector3(float.MaxValue);
+                var bmax = new Vector3(float.MinValue);
                 for (int k = 0; k < g.Count; k++)
-                    indices.Add((uint)(baseVertex + mesh.Indices[g.Start + k]));
+                {
+                    int local = mesh.Indices[g.Start + k];
+                    var p = mesh.Positions[local];
+                    bmin = Vector3.Min(bmin, p);
+                    bmax = Vector3.Max(bmax, p);
+                    indices.Add((uint)(baseVertex + local));
+                }
 
                 var mat = (g.MaterialIndex >= 0 && g.MaterialIndex < mesh.Materials.Count)
                     ? mesh.Materials[g.MaterialIndex]
                     : (mesh.Materials.Count > 0 ? mesh.Materials[0] : new MeshMaterial());
-                _model.Groups.Add((start, g.Count, mat.Diffuse, mat.Opacity));
+                newModel.Groups.Add(new GpuGroup
+                {
+                    Start = start,
+                    Count = g.Count,
+                    Color = mat.Diffuse,
+                    Opacity = mat.Opacity,
+                    BoundsMin = g.Count > 0 ? bmin : Vector3.Zero,
+                    BoundsMax = g.Count > 0 ? bmax : Vector3.Zero,
+                });
             }
         }
 
-        if (verts.Count == 0 || indices.Count == 0) { _model.Dispose(); _model = null; return; }
+        if (verts.Count == 0 || indices.Count == 0) { newModel.Dispose(); return; }
 
-        _model.VertexBuffer = _device.CreateBuffer((ReadOnlySpan<VertexPN>)verts.ToArray(), BindFlags.VertexBuffer);
-        _model.IndexBuffer = _device.CreateBuffer((ReadOnlySpan<uint>)indices.ToArray(), BindFlags.IndexBuffer);
+        try
+        {
+            newModel.VertexBuffer = _device.CreateBuffer((ReadOnlySpan<VertexPN>)verts.ToArray(), BindFlags.VertexBuffer);
+
+            // 16-bit indices halve memory/bandwidth when the whole model fits under 64K vertices.
+            if (verts.Count <= ushort.MaxValue)
+            {
+                var u16 = new ushort[indices.Count];
+                for (int i = 0; i < indices.Count; i++) u16[i] = (ushort)indices[i];
+                newModel.IndexBuffer = _device.CreateBuffer((ReadOnlySpan<ushort>)u16, BindFlags.IndexBuffer);
+                newModel.IndexFormat = Format.R16_UInt;
+            }
+            else
+            {
+                newModel.IndexBuffer = _device.CreateBuffer((ReadOnlySpan<uint>)indices.ToArray(), BindFlags.IndexBuffer);
+                newModel.IndexFormat = Format.R32_UInt;
+            }
+        }
+        catch (Exception ex) when (ex is OutOfMemoryException or SharpGen.Runtime.SharpGenException)
+        {
+            newModel.Dispose();
+            throw new InvalidOperationException(
+                $"Not enough graphics memory to display this model ({verts.Count:N0} vertices, {indices.Count / 3:N0} triangles).", ex);
+        }
+
+        _model = newModel;
     }
 
     public void BuildGrid(float maxDim, float groundY)
     {
         _grid?.Dispose();
         _grid = null;
+        _hasGrid = true;
+        _gridMaxDim = maxDim;
+        _gridGroundY = groundY;
         if (maxDim <= 0) maxDim = 100f;
 
         float extent = MathF.Max(maxDim * 1.5f, 100f);
@@ -376,15 +485,50 @@ float4 PSMain(PSIn i) : SV_TARGET
         for (uint i = 0; i < indices.Length; i++) indices[i] = i;
         _grid.VertexBuffer = _device.CreateBuffer((ReadOnlySpan<VertexPN>)verts.ToArray(), BindFlags.VertexBuffer);
         _grid.IndexBuffer = _device.CreateBuffer((ReadOnlySpan<uint>)indices, BindFlags.IndexBuffer);
-        _grid.Groups.Add((0, verts.Count, GridColor, 1f));
+        _grid.IndexFormat = Format.R32_UInt;
+        _grid.Groups.Add(new GpuGroup { Start = 0, Count = verts.Count, Color = GridColor, Opacity = 1f });
     }
 
     // â”€â”€ Render â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     public void Render()
     {
-        if (DrawFrame())
-            _swapChain.Present(1, PresentFlags.None);
+        if (_device is null || _swapChain is null) return;
+        if (!DrawFrame()) return;
+        var result = _swapChain.Present(1, PresentFlags.None);
+        if (result.Failure) HandlePresentFailure(result);
+    }
+
+    // DXGI_ERROR_DEVICE_REMOVED / _RESET — rebuild the device and re-upload content.
+    private const int DXGI_ERROR_DEVICE_REMOVED = unchecked((int)0x887A0005);
+    private const int DXGI_ERROR_DEVICE_RESET = unchecked((int)0x887A0007);
+
+    private void HandlePresentFailure(SharpGen.Runtime.Result result)
+    {
+        if (result.Code == DXGI_ERROR_DEVICE_REMOVED || result.Code == DXGI_ERROR_DEVICE_RESET)
+            RecreateDevice();
+    }
+
+    /// <summary>Rebuilds the D3D device and all resources after a device-lost event.</summary>
+    private void RecreateDevice()
+    {
+        DisposeDeviceResources();
+        try
+        {
+            CreateDevice();
+            DetectMsaa();
+            CreateSwapChain();
+            CompileShaders();
+            CreateStates();
+            CreateSizeResources();
+            if (_currentScene is not null) UploadModel(_currentScene);
+            if (_hasGrid) BuildGrid(_gridMaxDim, _gridGroundY);
+            SwapChainRecreated?.Invoke();
+        }
+        catch
+        {
+            // Leave the device torn down; the next Render() attempt will retry.
+        }
     }
 
     /// <summary>
@@ -459,37 +603,45 @@ float4 PSMain(PSIn i) : SV_TARGET
             _context.OMSetBlendState(_blendOpaque);
             _context.IASetPrimitiveTopology(PrimitiveTopology.LineList);
             _context.IASetVertexBuffer(0, _grid.VertexBuffer, (uint)_grid.Stride, 0);
-            _context.IASetIndexBuffer(_grid.IndexBuffer, Format.R32_UInt, 0);
+            _context.IASetIndexBuffer(_grid.IndexBuffer, _grid.IndexFormat, 0);
             var g = _grid.Groups[0];
             UpdateConstants(viewProj, Matrix4x4.Identity, new Vector4(GridColor, 1f), new Vector4(0, 0, 0, 1f));
-            _context.DrawIndexed((uint)g.count, (uint)g.start, 0);
+            _context.DrawIndexed((uint)g.Count, (uint)g.Start, 0);
         }
 
-        // Model (lit triangles).
+        // Model (lit triangles). Always double-sided — back-face culling made
+        // many real-world models look hollow / inside-out.
         if (_model is not null)
         {
-            _context.RSSetState(Wireframe ? _rasterWire : _rasterSolid);
+            _context.RSSetState(Wireframe ? _rasterWireNoCull : _rasterSolidNoCull);
             _context.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);
             _context.IASetVertexBuffer(0, _model.VertexBuffer, (uint)_model.Stride, 0);
-            _context.IASetIndexBuffer(_model.IndexBuffer, Format.R32_UInt, 0);
+            _context.IASetIndexBuffer(_model.IndexBuffer, _model.IndexFormat, 0);
+
+            // Build view-frustum planes once for culling off-screen draw ranges.
+            Vector4[]? planes = FrustumCulling && _model.Groups.Count > 1 ? ExtractFrustumPlanes(viewProj) : null;
+
+            Vector3? shade = ObjectColorOverride;
 
             // Opaque first, then transparent.
             foreach (var grp in _model.Groups)
             {
-                if (grp.opacity >= 0.999f)
+                if (grp.Opacity >= 0.999f)
                 {
+                    if (planes is not null && AabbOutsideFrustum(planes, grp.BoundsMin, grp.BoundsMax)) continue;
                     _context.OMSetBlendState(_blendOpaque);
-                    UpdateConstants(viewProj, Matrix4x4.Identity, new Vector4(grp.color, grp.opacity), lightDir);
-                    _context.DrawIndexed((uint)grp.count, (uint)grp.start, 0);
+                    UpdateConstants(viewProj, Matrix4x4.Identity, new Vector4(shade ?? grp.Color, grp.Opacity), lightDir);
+                    _context.DrawIndexed((uint)grp.Count, (uint)grp.Start, 0);
                 }
             }
             foreach (var grp in _model.Groups)
             {
-                if (grp.opacity < 0.999f)
+                if (grp.Opacity < 0.999f)
                 {
+                    if (planes is not null && AabbOutsideFrustum(planes, grp.BoundsMin, grp.BoundsMax)) continue;
                     _context.OMSetBlendState(_blendAlpha);
-                    UpdateConstants(viewProj, Matrix4x4.Identity, new Vector4(grp.color, grp.opacity), lightDir);
-                    _context.DrawIndexed((uint)grp.count, (uint)grp.start, 0);
+                    UpdateConstants(viewProj, Matrix4x4.Identity, new Vector4(shade ?? grp.Color, grp.Opacity), lightDir);
+                    _context.DrawIndexed((uint)grp.Count, (uint)grp.Start, 0);
                 }
             }
             _context.OMSetBlendState(_blendOpaque);
@@ -516,26 +668,78 @@ float4 PSMain(PSIn i) : SV_TARGET
         _context.UpdateSubresource(in c, _constantBuffer);
     }
 
-    public void Dispose()
+    // â”€â”€ Frustum culling â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    /// <summary>
+    /// Extracts the six world-space frustum planes (Gribb&amp;ndash;Hartmann) from a
+    /// row-major view-projection matrix. Each plane is (a,b,c,d) where points with
+    /// a*x+b*y+c*z+d &gt;= 0 are inside.
+    /// </summary>
+    private static Vector4[] ExtractFrustumPlanes(in Matrix4x4 m)
     {
-        _model?.Dispose();
-        _grid?.Dispose();
-        _backBufferRtv?.Dispose();
-        _msaaRtv?.Dispose();
-        _msaaColor?.Dispose();
-        _depthView?.Dispose();
-        _depthTex?.Dispose();
-        _vs?.Dispose();
-        _ps?.Dispose();
-        _inputLayout?.Dispose();
-        _constantBuffer?.Dispose();
-        _rasterSolid?.Dispose();
-        _rasterWire?.Dispose();
-        _depthOn?.Dispose();
-        _blendOpaque?.Dispose();
-        _blendAlpha?.Dispose();
-        _swapChain?.Dispose();
-        _context?.Dispose();
-        _device?.Dispose();
+        // Columns of the row-vector transform (v * m).
+        var c1 = new Vector4(m.M11, m.M21, m.M31, m.M41);
+        var c2 = new Vector4(m.M12, m.M22, m.M32, m.M42);
+        var c3 = new Vector4(m.M13, m.M23, m.M33, m.M43);
+        var c4 = new Vector4(m.M14, m.M24, m.M34, m.M44);
+
+        var planes = new[]
+        {
+            c4 + c1, // left
+            c4 - c1, // right
+            c4 + c2, // bottom
+            c4 - c2, // top
+            c3,      // near (D3D depth range [0,1])
+            c4 - c3, // far
+        };
+        for (int i = 0; i < planes.Length; i++)
+        {
+            float len = new Vector3(planes[i].X, planes[i].Y, planes[i].Z).Length();
+            if (len > 1e-6f) planes[i] /= len;
+        }
+        return planes;
     }
+
+    /// <summary>Returns true when an axis-aligned box lies fully outside the frustum.</summary>
+    private static bool AabbOutsideFrustum(Vector4[] planes, Vector3 min, Vector3 max)
+    {
+        foreach (var p in planes)
+        {
+            // Positive vertex (farthest along the plane normal).
+            float px = p.X >= 0 ? max.X : min.X;
+            float py = p.Y >= 0 ? max.Y : min.Y;
+            float pz = p.Z >= 0 ? max.Z : min.Z;
+            if (p.X * px + p.Y * py + p.Z * pz + p.W < 0)
+                return true; // outside this plane => outside frustum
+        }
+        return false;
+    }
+
+    /// <summary>Disposes all GPU/device resources (used for shutdown and device-lost recovery).</summary>
+    private void DisposeDeviceResources()
+    {
+        _model?.Dispose(); _model = null;
+        _grid?.Dispose(); _grid = null;
+        _backBufferRtv?.Dispose(); _backBufferRtv = null;
+        _msaaRtv?.Dispose(); _msaaRtv = null;
+        _msaaColor?.Dispose(); _msaaColor = null;
+        _depthView?.Dispose(); _depthView = null;
+        _depthTex?.Dispose(); _depthTex = null;
+        _vs?.Dispose(); _vs = null!;
+        _ps?.Dispose(); _ps = null!;
+        _inputLayout?.Dispose(); _inputLayout = null!;
+        _constantBuffer?.Dispose(); _constantBuffer = null!;
+        _rasterSolid?.Dispose(); _rasterSolid = null!;
+        _rasterWire?.Dispose(); _rasterWire = null!;
+        _rasterSolidNoCull?.Dispose(); _rasterSolidNoCull = null!;
+        _rasterWireNoCull?.Dispose(); _rasterWireNoCull = null!;
+        _depthOn?.Dispose(); _depthOn = null!;
+        _blendOpaque?.Dispose(); _blendOpaque = null!;
+        _blendAlpha?.Dispose(); _blendAlpha = null!;
+        _swapChain?.Dispose(); _swapChain = null!;
+        _context?.Dispose(); _context = null!;
+        _device?.Dispose(); _device = null!;
+    }
+
+    public void Dispose() => DisposeDeviceResources();
 }

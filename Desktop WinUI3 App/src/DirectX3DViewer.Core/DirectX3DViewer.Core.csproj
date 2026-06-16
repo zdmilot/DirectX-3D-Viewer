@@ -9,4 +9,8 @@
     <AssemblyName>DirectX3DViewer.Core</AssemblyName>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="SharpGLTF.Core" Version="1.0.6" />
+  </ItemGroup>
+
 </Project>

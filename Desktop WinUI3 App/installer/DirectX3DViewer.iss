@@ -14,7 +14,7 @@
 ; ============================================================================
 
 #define AppName "DirectX 3D Viewer"
-#define AppVersion "1.0.0"
+#define AppVersion "1.1.0"
 #define AppPublisher "Zachary Milot"
 #define AppExeName "DirectX3DViewer.exe"
 #define AppId "{{8F3C5A21-7B4E-4D6A-9C2F-1E0B7A9D4C58}"
@@ -219,4 +219,65 @@ begin
     if not WizardIsTaskSelected('assoc_obj') then RemoveAssociation('.obj', 'DirectX3DViewer.obj');
     if not WizardIsTaskSelected('assoc_stl') then RemoveAssociation('.stl', 'DirectX3DViewer.stl');
   end;
+end;
+
+{ ---------------------------------------------------------------------------
+  Clean-upgrade support.
+
+  This installer shares a fixed AppId across releases, so Windows already lists
+  a single "DirectX 3D Viewer" entry. When an older version is detected we run
+  its uninstaller silently BEFORE laying down the new files, so an upgrade fully
+  replaces the previous version instead of layering 1.1.0 on top of 1.0.0.
+
+  UninstallKey is the AppId GUID with Inno Setup's "_is1" suffix appended. The
+  GUID is written here as a plain Pascal string literal (no preprocessor token,
+  so nothing inside this comment can prematurely close it).
+  --------------------------------------------------------------------------- }
+
+const
+  UninstallKey = 'Software\Microsoft\Windows\CurrentVersion\Uninstall\{8F3C5A21-7B4E-4D6A-9C2F-1E0B7A9D4C58}_is1';
+
+function GetUninstallString(): String;
+var
+  S: String;
+begin
+  S := '';
+  { An admin install writes the uninstall entry under HKLM; a per-user install
+    writes it under HKCU. Check both so we catch either prior install mode. }
+  if not RegQueryStringValue(HKLM, UninstallKey, 'UninstallString', S) then
+    RegQueryStringValue(HKCU, UninstallKey, 'UninstallString', S);
+  Result := S;
+end;
+
+procedure UnInstallOldVersion();
+var
+  UninstStr: String;
+  ResultCode: Integer;
+  Tries: Integer;
+begin
+  UninstStr := RemoveQuotes(GetUninstallString());
+  if UninstStr = '' then
+    Exit;
+
+  { Remove the previous version with no UI. The first uninstaller process
+    relaunches itself from %TEMP% and returns immediately, so after it exits we
+    poll the registry until the old install's uninstall entry disappears (up to
+    ~30s) to be sure the removal finished before the new files are copied. }
+  Exec(UninstStr, '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART', '', SW_HIDE,
+       ewWaitUntilTerminated, ResultCode);
+
+  Tries := 0;
+  while (GetUninstallString() <> '') and (Tries < 60) do
+  begin
+    Sleep(500);
+    Tries := Tries + 1;
+  end;
+end;
+
+function PrepareToInstall(var NeedsRestart: Boolean): String;
+begin
+  Result := '';
+  { Detect an existing (older) install and uninstall it first. }
+  if GetUninstallString() <> '' then
+    UnInstallOldVersion();
 end;

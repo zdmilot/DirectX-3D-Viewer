@@ -128,6 +128,9 @@
                         <div class="vt-separator"></div>
 
                         <button class="vt-btn" id="vt-appearance" title="Appearance">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="vt-btn" id="vt-shading" title="Object shading" disabled>
                             <i class="fas fa-palette"></i>
                         </button>
                         <button class="vt-btn" id="vt-help" title="Help &amp; Shortcuts">
@@ -199,7 +202,29 @@
                         <span class="vt-radio-dot"></span>
                         <span class="vt-radio-text">Transparent</span>
                     </label>
-                    <p class="vt-flyout-note">Transparent removes the backdrop &mdash; ideal for PNG screenshots.</p>
+                    <p class="vt-flyout-note">Transparent removes the backdrop - ideal for PNG screenshots.</p>
+                </div>
+
+                <!-- Object Shading Flyout Panel -->
+                <div class="vt-flyout" id="shading-flyout">
+                    <div class="vt-flyout-title">Object Shading</div>
+                    <p class="vt-flyout-note">Recolor the whole model with a single shade.</p>
+                    <div class="shade-swatch-grid">
+                        <button class="shade-swatch" data-color="#C0392B" title="Brick red" style="background:#C0392B"></button>
+                        <button class="shade-swatch" data-color="#E67E22" title="Orange" style="background:#E67E22"></button>
+                        <button class="shade-swatch" data-color="#F1C40F" title="Amber" style="background:#F1C40F"></button>
+                        <button class="shade-swatch" data-color="#2ECC71" title="Green" style="background:#2ECC71"></button>
+                        <button class="shade-swatch" data-color="#1ABC9C" title="Teal" style="background:#1ABC9C"></button>
+                        <button class="shade-swatch" data-color="#3498DB" title="Blue" style="background:#3498DB"></button>
+                        <button class="shade-swatch" data-color="#5B6BBF" title="Indigo" style="background:#5B6BBF"></button>
+                        <button class="shade-swatch" data-color="#9B59B6" title="Purple" style="background:#9B59B6"></button>
+                        <button class="shade-swatch" data-color="#E84393" title="Pink" style="background:#E84393"></button>
+                        <button class="shade-swatch" data-color="#ECF0F1" title="Off-white" style="background:#ECF0F1"></button>
+                        <button class="shade-swatch" data-color="#95A5A6" title="Grey" style="background:#95A5A6"></button>
+                        <button class="shade-swatch" data-color="#2C3E50" title="Slate" style="background:#2C3E50"></button>
+                    </div>
+                    <button class="vt-flyout-reset" id="shading-reset" disabled>Restore original colors</button>
+                    <p class="vt-flyout-note">Color is saved when exporting to .X, .OBJ or .GLB. .STL stores geometry only (no color).</p>
                 </div>
 
                 <!-- Bottom Controls Bar -->
@@ -314,12 +339,12 @@
 
                 <div class="help-section-title">Supported Formats</div>
                 <div class="help-fmt-grid">
-                    <code class="help-fmt">.x</code><span>DirectX .X model &mdash; read &amp; write (text)</span>
-                    <code class="help-fmt">.hxx</code><span>Hamilton 3D archive &mdash; read &amp; write</span>
-                    <code class="help-fmt">.obj</code><span>Wavefront OBJ &mdash; read &amp; write</span>
-                    <code class="help-fmt">.stl</code><span>Stereolithography &mdash; read &amp; write</span>
-                    <code class="help-fmt">.glb</code><span>glTF 2.0 binary &mdash; read &amp; write</span>
-                    <code class="help-fmt">.gltf</code><span>glTF 2.0 &mdash; read</span>
+                    <code class="help-fmt">.x</code><span>DirectX .X model - read &amp; write (text)</span>
+                    <code class="help-fmt">.hxx</code><span>Hamilton 3D archive - read &amp; write</span>
+                    <code class="help-fmt">.obj</code><span>Wavefront OBJ - read &amp; write</span>
+                    <code class="help-fmt">.stl</code><span>Stereolithography - read &amp; write</span>
+                    <code class="help-fmt">.glb</code><span>glTF 2.0 binary - read &amp; write</span>
+                    <code class="help-fmt">.gltf</code><span>glTF 2.0 - read</span>
                 </div>
             </div>
             <div class="help-footer">
@@ -349,14 +374,14 @@
                     <table class="about-license-table">
                         <thead><tr><th>Component</th><th>License</th></tr></thead>
                         <tbody>
-                            <tr><td>Three.js r152</td><td>MIT &mdash; &copy; 2010-2024 Three.js Authors</td></tr>
-                            <tr><td>OrbitControls.js</td><td>MIT &mdash; &copy; Three.js Authors</td></tr>
-                            <tr><td>OBJLoader.js</td><td>MIT &mdash; &copy; Three.js Authors</td></tr>
-                            <tr><td>MTLLoader.js</td><td>MIT &mdash; &copy; Three.js Authors</td></tr>
-                            <tr><td>GLTFLoader.js</td><td>MIT &mdash; &copy; Three.js Authors</td></tr>
-                            <tr><td>STLLoader.js</td><td>MIT &mdash; &copy; Three.js Authors</td></tr>
-                            <tr><td>Font Awesome Free</td><td>CC BY 4.0 / MIT &mdash; &copy; Fonticons, Inc.</td></tr>
-                            <tr><td>Inter Font</td><td>OFL 1.1 &mdash; &copy; Rasmus Andersson</td></tr>
+                            <tr><td>Three.js r152</td><td>MIT - &copy; 2010-2024 Three.js Authors</td></tr>
+                            <tr><td>OrbitControls.js</td><td>MIT - &copy; Three.js Authors</td></tr>
+                            <tr><td>OBJLoader.js</td><td>MIT - &copy; Three.js Authors</td></tr>
+                            <tr><td>MTLLoader.js</td><td>MIT - &copy; Three.js Authors</td></tr>
+                            <tr><td>GLTFLoader.js</td><td>MIT - &copy; Three.js Authors</td></tr>
+                            <tr><td>STLLoader.js</td><td>MIT - &copy; Three.js Authors</td></tr>
+                            <tr><td>Font Awesome Free</td><td>CC BY 4.0 / MIT - &copy; Fonticons, Inc.</td></tr>
+                            <tr><td>Inter Font</td><td>OFL 1.1 - &copy; Rasmus Andersson</td></tr>
                         </tbody>
                     </table>
                 </div>

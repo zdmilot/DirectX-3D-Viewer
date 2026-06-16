@@ -133,7 +133,7 @@
                     </Button>
                     <ToggleButton x:Name="WireframeButton" Style="{StaticResource ToolToggleStyle}"
                                   Click="OnWireframe" ToolTipService.ToolTip="Wireframe">
-                        <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xE8A9;" FontSize="15" />
+                        <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xF158;" FontSize="15" />
                     </ToggleButton>
                     <Button x:Name="ProjectionButton" Style="{StaticResource ToolButtonStyle}"
                             ToolTipService.ToolTip="Projection mode">
@@ -229,7 +229,7 @@
 
                     <Button x:Name="AppearanceButton" Style="{StaticResource ToolButtonStyle}"
                             ToolTipService.ToolTip="Appearance">
-                        <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xE771;" FontSize="15" />
+                        <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xE7B3;" FontSize="15" />
                         <Button.Flyout>
                             <Flyout Placement="Left">
                                 <StackPanel Width="244" Spacing="10">
@@ -245,7 +245,87 @@
                                     <RadioButton x:Name="LookTransparent" Content="Transparent"
                                                  GroupName="LookGroup" Tag="2"
                                                  Checked="OnLookOptionChecked" />
-                                    <TextBlock Text="Transparent removes the backdrop — ideal for PNG screenshots."
+                                    <TextBlock Text="Transparent removes the backdrop - ideal for PNG screenshots."
+                                               FontSize="11" TextWrapping="Wrap"
+                                               Foreground="{ThemeResource TextMutedBrush}" />
+                                </StackPanel>
+                            </Flyout>
+                        </Button.Flyout>
+                    </Button>
+                    <Button x:Name="ShadingButton" Style="{StaticResource ToolButtonStyle}"
+                            IsEnabled="False" ToolTipService.ToolTip="Object shading">
+                        <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xE771;" FontSize="15" />
+                        <Button.Flyout>
+                            <Flyout Placement="Left">
+                                <StackPanel Width="244" Spacing="10">
+                                    <TextBlock Text="Object shading" FontWeight="SemiBold" FontSize="14" />
+                                    <TextBlock Text="Recolor the whole model with a single shade."
+                                               FontSize="11" TextWrapping="Wrap"
+                                               Foreground="{ThemeResource TextMutedBrush}" />
+                                    <Grid x:Name="ShadeSwatchGrid" RowSpacing="6" ColumnSpacing="6">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+                                        <Border Grid.Row="0" Grid.Column="0" Height="34" CornerRadius="6"
+                                                Background="#C0392B" Tag="#C0392B" Tapped="OnShadeColor"
+                                                BorderBrush="#22000000" BorderThickness="1"
+                                                ToolTipService.ToolTip="Brick red" />
+                                        <Border Grid.Row="0" Grid.Column="1" Height="34" CornerRadius="6"
+                                                Background="#E67E22" Tag="#E67E22" Tapped="OnShadeColor"
+                                                BorderBrush="#22000000" BorderThickness="1"
+                                                ToolTipService.ToolTip="Orange" />
+                                        <Border Grid.Row="0" Grid.Column="2" Height="34" CornerRadius="6"
+                                                Background="#F1C40F" Tag="#F1C40F" Tapped="OnShadeColor"
+                                                BorderBrush="#22000000" BorderThickness="1"
+                                                ToolTipService.ToolTip="Amber" />
+                                        <Border Grid.Row="0" Grid.Column="3" Height="34" CornerRadius="6"
+                                                Background="#2ECC71" Tag="#2ECC71" Tapped="OnShadeColor"
+                                                BorderBrush="#22000000" BorderThickness="1"
+                                                ToolTipService.ToolTip="Green" />
+                                        <Border Grid.Row="1" Grid.Column="0" Height="34" CornerRadius="6"
+                                                Background="#1ABC9C" Tag="#1ABC9C" Tapped="OnShadeColor"
+                                                BorderBrush="#22000000" BorderThickness="1"
+                                                ToolTipService.ToolTip="Teal" />
+                                        <Border Grid.Row="1" Grid.Column="1" Height="34" CornerRadius="6"
+                                                Background="#3498DB" Tag="#3498DB" Tapped="OnShadeColor"
+                                                BorderBrush="#22000000" BorderThickness="1"
+                                                ToolTipService.ToolTip="Blue" />
+                                        <Border Grid.Row="1" Grid.Column="2" Height="34" CornerRadius="6"
+                                                Background="#5B6BBF" Tag="#5B6BBF" Tapped="OnShadeColor"
+                                                BorderBrush="#22000000" BorderThickness="1"
+                                                ToolTipService.ToolTip="Indigo" />
+                                        <Border Grid.Row="1" Grid.Column="3" Height="34" CornerRadius="6"
+                                                Background="#9B59B6" Tag="#9B59B6" Tapped="OnShadeColor"
+                                                BorderBrush="#22000000" BorderThickness="1"
+                                                ToolTipService.ToolTip="Purple" />
+                                        <Border Grid.Row="2" Grid.Column="0" Height="34" CornerRadius="6"
+                                                Background="#E84393" Tag="#E84393" Tapped="OnShadeColor"
+                                                BorderBrush="#22000000" BorderThickness="1"
+                                                ToolTipService.ToolTip="Pink" />
+                                        <Border Grid.Row="2" Grid.Column="1" Height="34" CornerRadius="6"
+                                                Background="#ECF0F1" Tag="#ECF0F1" Tapped="OnShadeColor"
+                                                BorderBrush="#22000000" BorderThickness="1"
+                                                ToolTipService.ToolTip="Off-white" />
+                                        <Border Grid.Row="2" Grid.Column="2" Height="34" CornerRadius="6"
+                                                Background="#95A5A6" Tag="#95A5A6" Tapped="OnShadeColor"
+                                                BorderBrush="#22000000" BorderThickness="1"
+                                                ToolTipService.ToolTip="Grey" />
+                                        <Border Grid.Row="2" Grid.Column="3" Height="34" CornerRadius="6"
+                                                Background="#2C3E50" Tag="#2C3E50" Tapped="OnShadeColor"
+                                                BorderBrush="#22000000" BorderThickness="1"
+                                                ToolTipService.ToolTip="Slate" />
+                                    </Grid>
+                                    <Button x:Name="ResetShadingButton" HorizontalAlignment="Stretch"
+                                            Content="Restore original colors" Click="OnResetShading" IsEnabled="False" />
+                                    <TextBlock Text="Color is saved when exporting to .X, .OBJ or .GLB. .STL stores geometry only (no color)."
                                                FontSize="11" TextWrapping="Wrap"
                                                Foreground="{ThemeResource TextMutedBrush}" />
                                 </StackPanel>
@@ -253,14 +333,14 @@
                         </Button.Flyout>
                     </Button>
                     <Button Style="{StaticResource ToolButtonStyle}" Click="OnHelp"
-                            ToolTipService.ToolTip="Help &amp; CLI Reference">
+                            ToolTipService.ToolTip="Help &amp; About">
                         <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}"
                                   Glyph="&#xE9CE;" FontSize="15" />
                     </Button>
-                    <Button x:Name="AboutButton" Style="{StaticResource ToolButtonStyle}"
-                            Click="OnAbout" ToolTipService.ToolTip="About">
+                    <Button Style="{StaticResource ToolButtonStyle}" Click="OnSettings"
+                            ToolTipService.ToolTip="Settings">
                         <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}"
-                                  Glyph="&#xE946;" FontSize="15" />
+                                  Glyph="&#xE713;" FontSize="15" />
                     </Button>
                 </StackPanel>
             </Border>
@@ -347,6 +427,26 @@
                           HorizontalAlignment="Center" VerticalAlignment="Center" />
         </Grid>
 
+        <!-- ============ In-app loading overlay ============ -->
+        <Grid x:Name="LoadingOverlay" Grid.Row="0" Grid.RowSpan="3"
+              Visibility="Collapsed" Background="#66000000" Canvas.ZIndex="98">
+            <Border HorizontalAlignment="Center" VerticalAlignment="Center" MinWidth="280"
+                    Background="{ThemeResource CardBackgroundBrush}" CornerRadius="14"
+                    BorderBrush="{ThemeResource ToolbarBorderBrush}" BorderThickness="1"
+                    Padding="32,26">
+                <StackPanel Spacing="14" HorizontalAlignment="Center">
+                    <TextBlock Text="Loading model" FontWeight="SemiBold" FontSize="15"
+                               HorizontalAlignment="Center" Foreground="{ThemeResource TextPrimaryBrush}" />
+                    <ProgressBar IsIndeterminate="True" Width="220" Height="3"
+                                 Foreground="#FF00BCD7" Background="#22000000" />
+                    <TextBlock x:Name="LoadingFileName" Text="" FontSize="12.5"
+                               HorizontalAlignment="Center" TextAlignment="Center"
+                               TextTrimming="CharacterEllipsis" MaxWidth="320"
+                               Foreground="{ThemeResource TextMutedBrush}" />
+                </StackPanel>
+            </Border>
+        </Grid>
+
         <!-- ============ Full-window splash overlay ============ -->
         <Grid x:Name="SplashOverlay" Grid.Row="0" Grid.RowSpan="3"
               Background="{StaticResource BrandGradientBrush}" Canvas.ZIndex="99">
@@ -366,6 +466,12 @@
                            HorizontalAlignment="Center" Margin="0,0,0,20" />
                 <ProgressBar IsIndeterminate="True" Width="170" Height="3"
                              Foreground="#FF00BCD7" Background="#22FFFFFF" />
+                <TextBlock x:Name="SplashFileName" Text="" FontSize="13" FontWeight="SemiBold"
+                           Foreground="White" HorizontalAlignment="Center" TextAlignment="Center"
+                           TextTrimming="CharacterEllipsis" MaxWidth="320"
+                           Visibility="Collapsed" Margin="0,10,0,0" />
+                <TextBlock x:Name="SplashStatus" Text="Starting&#x2026;" FontSize="11"
+                           Foreground="#99FFFFFF" HorizontalAlignment="Center" Margin="0,8,0,0" />
             </StackPanel>
         </Grid>
     </Grid>

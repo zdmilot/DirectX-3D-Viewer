@@ -11,7 +11,7 @@
     <AssemblyTitle>DirectX 3D Viewer</AssemblyTitle>
     <Description>DirectX 3D file viewer and converter for .x, .hxx, .obj, and .stl models.</Description>
     <Authors>Zachary Milot</Authors>
-    <Version>1.0.0</Version>
+    <Version>1.1.0</Version>
     <Platforms>x86;x64;arm64</Platforms>
     <RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>
     <UseWinUI>true</UseWinUI>
