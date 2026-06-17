@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Numerics;
+using System.Runtime.InteropServices.WindowsRuntime;
 using Microsoft.UI;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
@@ -9,6 +10,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
+using Microsoft.UI.Xaml.Media.Imaging;
 using Windows.Storage.Pickers;
 using DirectX3DViewer.Core.Conversion;
 using DirectX3DViewer.Core.Formats;
@@ -29,6 +31,8 @@ public sealed partial class MainWindow : Window
     private bool _bgTransparent;
     private string? _lastLoadError;
     private Vector3[]? _originalDiffuse;
+    private float[]? _originalOpacity;
+    private bool _suppressShadeSync;
 
     public MainWindow()
     {
@@ -241,6 +245,7 @@ public sealed partial class MainWindow : Window
 
         // Reset the object-shading tool for the new model.
         Viewport.Renderer.ObjectColorOverride = null;
+        Viewport.Renderer.ObjectOpacityOverride = null;
         SnapshotColors();
         ShadingButton.IsEnabled = true;
         ResetShadingButton.IsEnabled = false;
@@ -254,7 +259,47 @@ public sealed partial class MainWindow : Window
     {
         if (_scene is null || sender is not FrameworkElement b || b.Tag is not string hex) return;
         if (!TryParseHexColor(hex, out var color)) return;
+        ApplyShadeColor(color);
+        SyncShadeInputs(color);
+    }
 
+    private void OnPickerColorChanged(ColorPicker sender, ColorChangedEventArgs args)
+    {
+        if (_suppressShadeSync || _scene is null) return;
+        var c = args.NewColor;
+        var color = new Vector3(c.R / 255f, c.G / 255f, c.B / 255f);
+        ApplyShadeColor(color);
+        SyncShadeInputs(color, updatePicker: false);
+    }
+
+    private void OnHexColorChanged(object sender, TextChangedEventArgs e)
+    {
+        if (_suppressShadeSync || _scene is null) return;
+        if (!TryParseHexColor(HexColorInput.Text, out var color)) return;
+        ApplyShadeColor(color);
+        SyncShadeInputs(color, updateHex: false);
+    }
+
+    private void OnOpacityChanged(object sender, Microsoft.UI.Xaml.Controls.Primitives.RangeBaseValueChangedEventArgs e)
+    {
+        if (OpacityValueText is not null)
+            OpacityValueText.Text = (int)Math.Round(e.NewValue) + "%";
+        if (_suppressShadeSync || _scene is null) return;
+
+        float opacity = (float)(e.NewValue / 100.0);
+        foreach (var mesh in _scene.Meshes)
+            foreach (var mat in mesh.Materials)
+                mat.Opacity = opacity;
+
+        Viewport.Renderer.ObjectOpacityOverride = opacity;
+        Viewport.Render();
+        ResetShadingButton.IsEnabled = true;
+    }
+
+    /// <summary>Apply a single diffuse colour to every material and refresh the view.</summary>
+    private void ApplyShadeColor(Vector3 color)
+    {
+        if (_scene is null) return;
         foreach (var mesh in _scene.Meshes)
             foreach (var mat in mesh.Materials)
                 mat.Diffuse = color;
@@ -264,23 +309,59 @@ public sealed partial class MainWindow : Window
         ResetShadingButton.IsEnabled = true;
     }
 
+    /// <summary>Keep the preview swatch, hex field and picker in sync with a chosen colour.</summary>
+    private void SyncShadeInputs(Vector3 color, bool updateHex = true, bool updatePicker = true)
+    {
+        byte r = (byte)Math.Clamp((int)Math.Round(color.X * 255f), 0, 255);
+        byte g = (byte)Math.Clamp((int)Math.Round(color.Y * 255f), 0, 255);
+        byte bch = (byte)Math.Clamp((int)Math.Round(color.Z * 255f), 0, 255);
+
+        _suppressShadeSync = true;
+        try
+        {
+            var winColor = Windows.UI.Color.FromArgb(255, r, g, bch);
+            if (CustomColorPreview is not null)
+                CustomColorPreview.Background = new SolidColorBrush(winColor);
+            if (updateHex && HexColorInput is not null)
+                HexColorInput.Text = $"#{r:X2}{g:X2}{bch:X2}";
+            if (updatePicker && ModelColorPicker is not null)
+                ModelColorPicker.Color = winColor;
+        }
+        finally { _suppressShadeSync = false; }
+    }
+
     private void OnResetShading(object sender, RoutedEventArgs e)
     {
         if (_scene is null) return;
         RestoreOriginalColors();
         Viewport.Renderer.ObjectColorOverride = null;
+        Viewport.Renderer.ObjectOpacityOverride = null;
         Viewport.Render();
         ResetShadingButton.IsEnabled = false;
     }
 
     private void SnapshotColors()
     {
-        if (_scene is null) { _originalDiffuse = null; return; }
-        var list = new System.Collections.Generic.List<Vector3>();
+        if (_scene is null) { _originalDiffuse = null; _originalOpacity = null; return; }
+        var colors = new List<Vector3>();
+        var opacities = new List<float>();
         foreach (var mesh in _scene.Meshes)
             foreach (var mat in mesh.Materials)
-                list.Add(mat.Diffuse);
-        _originalDiffuse = list.ToArray();
+            {
+                colors.Add(mat.Diffuse);
+                opacities.Add(mat.Opacity);
+            }
+        _originalDiffuse = colors.ToArray();
+        _originalOpacity = opacities.ToArray();
+
+        // Reset the opacity slider to fully opaque for the freshly loaded model.
+        _suppressShadeSync = true;
+        try
+        {
+            if (OpacitySlider is not null) OpacitySlider.Value = 100;
+            if (OpacityValueText is not null) OpacityValueText.Text = "100%";
+        }
+        finally { _suppressShadeSync = false; }
     }
 
     private void RestoreOriginalColors()
@@ -289,13 +370,29 @@ public sealed partial class MainWindow : Window
         int i = 0;
         foreach (var mesh in _scene.Meshes)
             foreach (var mat in mesh.Materials)
-                if (i < _originalDiffuse.Length) mat.Diffuse = _originalDiffuse[i++];
+            {
+                if (i < _originalDiffuse.Length) mat.Diffuse = _originalDiffuse[i];
+                if (_originalOpacity is not null && i < _originalOpacity.Length) mat.Opacity = _originalOpacity[i];
+                i++;
+            }
+
+        _suppressShadeSync = true;
+        try
+        {
+            if (OpacitySlider is not null) OpacitySlider.Value = 100;
+            if (OpacityValueText is not null) OpacityValueText.Text = "100%";
+        }
+        finally { _suppressShadeSync = false; }
     }
 
     private static bool TryParseHexColor(string hex, out Vector3 color)
     {
         color = default;
-        hex = hex.TrimStart('#');
+        if (string.IsNullOrWhiteSpace(hex)) return false;
+        hex = hex.Trim().TrimStart('#');
+        // Allow shorthand #RGB.
+        if (hex.Length == 3)
+            hex = string.Concat(hex[0], hex[0], hex[1], hex[1], hex[2], hex[2]);
         if (hex.Length != 6) return false;
         if (!int.TryParse(hex, System.Globalization.NumberStyles.HexNumber,
                 System.Globalization.CultureInfo.InvariantCulture, out int rgb))
@@ -354,9 +451,19 @@ public sealed partial class MainWindow : Window
     {
         if (_scene is null) return;
 
+        // Show the preview dialog (gradient header, live preview, grid/background
+        // toggles, PNG/JPG save) modelled on the web app's screenshot modal.
+        var dlg = new ScreenshotDialog(RenderScreenshotPreview) { XamlRoot = RootGrid.XamlRoot };
+        await dlg.ShowAsync();
+        if (dlg.ChosenFormat is null) return;
+
+        bool grid = dlg.ShowGrid;
+        bool bg = dlg.ShowBackground;
+        bool png = dlg.ChosenFormat == "png";
+
         var picker = new FileSavePicker { SuggestedStartLocation = PickerLocationId.PicturesLibrary };
-        picker.FileTypeChoices.Add("PNG image", new List<string> { ".png" });
-        picker.FileTypeChoices.Add("JPEG image", new List<string> { ".jpg" });
+        if (png) picker.FileTypeChoices.Add("PNG image", new List<string> { ".png" });
+        else picker.FileTypeChoices.Add("JPEG image", new List<string> { ".jpg" });
         picker.SuggestedFileName =
             (string.IsNullOrEmpty(_scenePath) ? "model" : System.IO.Path.GetFileNameWithoutExtension(_scenePath)) + "_view";
         WinRT.Interop.InitializeWithWindow.Initialize(picker, Hwnd);
@@ -366,7 +473,7 @@ public sealed partial class MainWindow : Window
 
         try
         {
-            byte[]? pixels = Viewport.Renderer.CaptureFrame(out int w, out int h);
+            byte[]? pixels = CaptureWithOptions(grid, bg, out int w, out int h);
             if (pixels is null || w <= 0 || h <= 0)
             {
                 await ShowMessageAsync("Screenshot failed", "The viewport could not be captured.");
@@ -374,12 +481,11 @@ public sealed partial class MainWindow : Window
             }
 
             using var stream = await file.OpenAsync(Windows.Storage.FileAccessMode.ReadWrite);
-            bool png = !file.FileType.Equals(".jpg", StringComparison.OrdinalIgnoreCase);
             var encoderId = png
                 ? Windows.Graphics.Imaging.BitmapEncoder.PngEncoderId
                 : Windows.Graphics.Imaging.BitmapEncoder.JpegEncoderId;
-            // Keep transparency only for PNG output with a transparent background.
-            var alphaMode = (png && _bgTransparent)
+            // Keep transparency only for a PNG with the background toggled off.
+            var alphaMode = (png && !bg)
                 ? Windows.Graphics.Imaging.BitmapAlphaMode.Premultiplied
                 : Windows.Graphics.Imaging.BitmapAlphaMode.Ignore;
             var encoder = await Windows.Graphics.Imaging.BitmapEncoder.CreateAsync(encoderId, stream);
@@ -394,6 +500,70 @@ public sealed partial class MainWindow : Window
             await ShowMessageAsync("Screenshot failed", ex.Message);
         }
     }
+
+    /// <summary>
+    /// Captures the viewport with the grid and background temporarily forced to
+    /// the requested states, then restores the live settings. Background off
+    /// produces a transparent (alpha 0) image.
+    /// </summary>
+    private byte[]? CaptureWithOptions(bool grid, bool bg, out int w, out int h)
+    {
+        w = 0; h = 0;
+        var r = Viewport.Renderer;
+        if (r is null) return null;
+
+        bool prevGrid = r.GridVisible;
+        Vector4 prevBg = r.BackgroundColor;
+        r.GridVisible = grid;
+        if (!bg) r.BackgroundColor = new Vector4(prevBg.X, prevBg.Y, prevBg.Z, 0f);
+        try
+        {
+            return r.CaptureFrame(out w, out h);
+        }
+        finally
+        {
+            r.GridVisible = prevGrid;
+            r.BackgroundColor = prevBg;
+        }
+    }
+
+    /// <summary>Renders a preview bitmap for the screenshot dialog.</summary>
+    private WriteableBitmap? RenderScreenshotPreview(bool grid, bool bg)
+    {
+        byte[]? px = CaptureWithOptions(grid, bg, out int w, out int h);
+        if (px is null || w <= 0 || h <= 0) return null;
+
+        // Composite transparent areas over a checkerboard so "Show Background"
+        // off reads as transparency, exactly like the web preview.
+        if (!bg) CompositeChecker(px, w, h);
+
+        var wb = new WriteableBitmap(w, h);
+        using (var s = wb.PixelBuffer.AsStream())
+            s.Write(px, 0, px.Length);
+        return wb;
+    }
+
+    /// <summary>Blends a BGRA8 buffer over a light/dark checkerboard in place.</summary>
+    private static void CompositeChecker(byte[] bgra, int w, int h)
+    {
+        for (int y = 0; y < h; y++)
+        {
+            for (int x = 0; x < w; x++)
+            {
+                int i = (y * w + x) * 4;
+                float a = bgra[i + 3] / 255f;
+                if (a >= 0.999f) continue;
+                bool even = ((((x >> 3) + (y >> 3)) & 1) == 0);
+                byte c = even ? (byte)0xFF : (byte)0xCF;
+                float inv = 1f - a;
+                bgra[i + 0] = (byte)(bgra[i + 0] * a + c * inv);
+                bgra[i + 1] = (byte)(bgra[i + 1] * a + c * inv);
+                bgra[i + 2] = (byte)(bgra[i + 2] * a + c * inv);
+                bgra[i + 3] = 255;
+            }
+        }
+    }
+
 
     /// <summary>Fades out the full-window splash overlay.</summary>
     private void DismissSplash()
@@ -584,6 +754,7 @@ public sealed partial class MainWindow : Window
             CloseButtonText = "OK",
             XamlRoot = RootGrid.XamlRoot,
         };
+        dialog.EnableLightDismiss();
         await dialog.ShowAsync();
     }
 }

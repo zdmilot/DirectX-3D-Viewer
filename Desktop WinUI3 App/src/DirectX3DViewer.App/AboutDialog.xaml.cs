@@ -7,5 +7,6 @@ public sealed partial class AboutDialog : ContentDialog
     public AboutDialog()
     {
         InitializeComponent();
+        this.EnableLightDismiss();
     }
 }

@@ -323,6 +323,55 @@
                                                 BorderBrush="#22000000" BorderThickness="1"
                                                 ToolTipService.ToolTip="Slate" />
                                     </Grid>
+                                    <TextBlock Text="CUSTOM COLOR" FontSize="10" FontWeight="SemiBold"
+                                               CharacterSpacing="160" Foreground="{ThemeResource TextMutedBrush}" />
+                                    <Grid ColumnSpacing="6">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <Border x:Name="CustomColorPreview" Grid.Column="0" Width="34" Height="32"
+                                                CornerRadius="6" Background="#3498DB"
+                                                BorderBrush="#22000000" BorderThickness="1" />
+                                        <TextBox x:Name="HexColorInput" Grid.Column="1" Text="#3498DB"
+                                                 MaxLength="7" VerticalAlignment="Center"
+                                                 PlaceholderText="#RRGGBB"
+                                                 TextChanged="OnHexColorChanged"
+                                                 ToolTipService.ToolTip="Hex colour value" />
+                                        <Button x:Name="CustomColorButton" Grid.Column="2" Content="Pick&#x2026;"
+                                                VerticalAlignment="Center"
+                                                ToolTipService.ToolTip="Open the colour picker">
+                                            <Button.Flyout>
+                                                <Flyout>
+                                                    <ColorPicker x:Name="ModelColorPicker"
+                                                                 ColorSpectrumShape="Box"
+                                                                 IsMoreButtonVisible="True"
+                                                                 IsColorSliderVisible="True"
+                                                                 IsColorChannelTextInputVisible="True"
+                                                                 IsHexInputVisible="True"
+                                                                 IsAlphaEnabled="False"
+                                                                 Color="#3498DB"
+                                                                 ColorChanged="OnPickerColorChanged" />
+                                                </Flyout>
+                                            </Button.Flyout>
+                                        </Button>
+                                    </Grid>
+                                    <Grid ColumnSpacing="8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="Opacity" VerticalAlignment="Center"
+                                                   FontSize="12" Foreground="{ThemeResource TextMutedBrush}" />
+                                        <Slider x:Name="OpacitySlider" Grid.Column="1" Minimum="0" Maximum="100"
+                                                Value="100" StepFrequency="1" VerticalAlignment="Center"
+                                                ValueChanged="OnOpacityChanged" />
+                                        <TextBlock x:Name="OpacityValueText" Grid.Column="2" Text="100%"
+                                                   VerticalAlignment="Center" MinWidth="38"
+                                                   TextAlignment="Right" FontSize="12" />
+                                    </Grid>
                                     <Button x:Name="ResetShadingButton" HorizontalAlignment="Stretch"
                                             Content="Restore original colors" Click="OnResetShading" IsEnabled="False" />
                                     <TextBlock Text="Color is saved when exporting to .X, .OBJ or .GLB. .STL stores geometry only (no color)."

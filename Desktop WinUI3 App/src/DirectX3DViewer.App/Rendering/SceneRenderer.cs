@@ -102,6 +102,8 @@ public sealed class SceneRenderer : IDisposable
     public bool GridVisible { get; set; } = true;
     /// <summary>When set, overrides every group's diffuse color for display (object-shading tool).</summary>
     public Vector3? ObjectColorOverride { get; set; }
+    /// <summary>When set, overrides every group's opacity for display (object-shading tool).</summary>
+    public float? ObjectOpacityOverride { get; set; }
     public Vector4 BackgroundColor { get; set; } = new(0.94f, 0.94f, 0.94f, 1f);
     public Vector3 GridColor { get; set; } = new(0.8f, 0.8f, 0.8f);
 
@@ -626,21 +628,23 @@ float4 PSMain(PSIn i) : SV_TARGET
             // Opaque first, then transparent.
             foreach (var grp in _model.Groups)
             {
-                if (grp.Opacity >= 0.999f)
+                float opacity = ObjectOpacityOverride ?? grp.Opacity;
+                if (opacity >= 0.999f)
                 {
                     if (planes is not null && AabbOutsideFrustum(planes, grp.BoundsMin, grp.BoundsMax)) continue;
                     _context.OMSetBlendState(_blendOpaque);
-                    UpdateConstants(viewProj, Matrix4x4.Identity, new Vector4(shade ?? grp.Color, grp.Opacity), lightDir);
+                    UpdateConstants(viewProj, Matrix4x4.Identity, new Vector4(shade ?? grp.Color, opacity), lightDir);
                     _context.DrawIndexed((uint)grp.Count, (uint)grp.Start, 0);
                 }
             }
             foreach (var grp in _model.Groups)
             {
-                if (grp.Opacity < 0.999f)
+                float opacity = ObjectOpacityOverride ?? grp.Opacity;
+                if (opacity < 0.999f)
                 {
                     if (planes is not null && AabbOutsideFrustum(planes, grp.BoundsMin, grp.BoundsMax)) continue;
                     _context.OMSetBlendState(_blendAlpha);
-                    UpdateConstants(viewProj, Matrix4x4.Identity, new Vector4(shade ?? grp.Color, grp.Opacity), lightDir);
+                    UpdateConstants(viewProj, Matrix4x4.Identity, new Vector4(shade ?? grp.Color, opacity), lightDir);
                     _context.DrawIndexed((uint)grp.Count, (uint)grp.Start, 0);
                 }
             }

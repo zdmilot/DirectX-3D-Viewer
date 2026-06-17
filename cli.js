@@ -21,6 +21,8 @@
        --mirror-x         mirror on X axis
        --mirror-y         mirror on Y axis
        --mirror-z         mirror on Z axis
+       --color <c>        recolour model (#RRGGBB, r,g,b or name)
+       --opacity <0-1>    set material opacity
 
    node cli.js export-x <in.x|hxx> <out> [--format obj|stl|glb]
                                            export .x/.hxx → OBJ/STL/GLB
@@ -68,6 +70,7 @@
        Options (append to command):
          --rotate-x <deg>  --rotate-y <deg>  --rotate-z <deg>
          --mirror-x  --mirror-y  --mirror-z
+         --color <c>  --opacity <0-1>
      generate <xml> [out.x]    generate .x from labware XML
      generate-default [out.x]  generate .x with default/SBS plate
        (interactive prompts for parameters)
@@ -2318,7 +2321,7 @@ async function cmdConvert(args) {
     const outputFile = positional[1];
 
     if (!inputFile) {
-        console.log(colorize(C.red, '  Usage: convert <input> <output.x> [--rotate-x <deg>] [--rotate-y <deg>] [--rotate-z <deg>] [--mirror-x] [--mirror-y] [--mirror-z]'));
+        console.log(colorize(C.red, '  Usage: convert <input> <output.x> [--rotate-x <deg>] [--rotate-y <deg>] [--rotate-z <deg>] [--mirror-x] [--mirror-y] [--mirror-z] [--color <c>] [--opacity <0-1>]'));
         return;
     }
 
@@ -2361,6 +2364,12 @@ async function cmdConvert(args) {
         applyMeshTransforms(meshes, { rotX, rotY, rotZ, mirrorX, mirrorY, mirrorZ });
     }
 
+    const recolor = parseRecolorArgs(args);
+    if (recolor) {
+        console.log('  Recolouring model: ' + describeRecolor(recolor));
+        recolorMeshes(meshes, recolor);
+    }
+
     console.log('  Generating .x file…');
     const xText = meshesToXFile(meshes);
     fs.writeFileSync(outFile, xText, 'utf-8');
@@ -2388,7 +2397,7 @@ function parseArgValue(args, flag) {
 async function cmdExportX(args) {
     // Usage: export-x <output> [format]  (or pass inline as args after interactive command)
     // Can also be called on the currently loaded file.
-    const positional = args.filter(a => !a.startsWith('--'));
+    const positional = positionalArgs(args);
     let inputFile = null;
     let outputFile = positional[0];
     let format = positional[1] || 'obj';
@@ -2451,6 +2460,12 @@ async function cmdExportX(args) {
     if (!meshes || meshes.length === 0) { console.log(colorize(C.red, '  No geometry found.')); return; }
     console.log('  ' + meshes.length + ' mesh(es) loaded');
 
+    const recolor = parseRecolorArgs(args);
+    if (recolor) {
+        console.log('  Recolouring model: ' + describeRecolor(recolor));
+        recolorMeshes(meshes, recolor);
+    }
+
     const elapsed = Date.now() - startTime;
 
     if (format === 'obj') {
@@ -2475,7 +2490,7 @@ async function cmdExportX(args) {
 // ── Generate command: XML labware definition → .x ─────────────
 
 function cmdGenerate(args) {
-    const positional = args.filter(a => !a.startsWith('--'));
+    const positional = positionalArgs(args);
     const xmlFile = positional[0];
     const outputFile = positional[1];
     const snapSBS = args.includes('--sbs');
@@ -2506,6 +2521,7 @@ function cmdGenerate(args) {
         if (def.wellCount === 384) { def.rowGap = SBS.wellSpacing384;  def.colGap = SBS.wellSpacing384;  }
     }
 
+    def.recolor = parseRecolorArgs(args);
     renderLabwareDef(def, outputFile, xmlResolved);
 }
 
@@ -2524,7 +2540,7 @@ function cmdGenerateDefault(args) {
     const firstX = parseFloat(parseArgValueStr(args, '--first-x')) || SBS.a1OffsetX;
     const firstY = parseFloat(parseArgValueStr(args, '--first-y')) || SBS.a1OffsetY;
     const snapSBS = args.includes('--sbs');
-    const positional = args.filter(a => !a.startsWith('--'));
+    const positional = positionalArgs(args);
     const outputFile = positional[0];
 
     let def = {
@@ -2545,6 +2561,7 @@ function cmdGenerateDefault(args) {
         if (def.wellCount === 384) { def.rowGap = SBS.wellSpacing384; def.colGap = SBS.wellSpacing384; }
     }
 
+    def.recolor = parseRecolorArgs(args);
     renderLabwareDef(def, outputFile, null);
 }
 
@@ -2552,6 +2569,128 @@ function parseArgValueStr(args, flag) {
     const idx = args.indexOf(flag);
     if (idx < 0 || idx >= args.length - 1) return null;
     return args[idx + 1];
+}
+
+// Flags that consume the following token as their value. Used so positional
+// arguments (file paths) aren't confused with flag values like --color red.
+const VALUE_TAKING_FLAGS = [
+    '--rotate-x', '--rotate-y', '--rotate-z', '--color', '--opacity', '--format',
+    '--rows', '--cols', '--name', '--well-shape', '--bottom-shape', '--height',
+    '--well-depth', '--well-size', '--row-gap', '--col-gap', '--first-x', '--first-y',
+];
+
+/** Return positional args, excluding flags and the values they consume. */
+function positionalArgs(args) {
+    return args.filter((a, i) => {
+        if (a.startsWith('--')) return false;
+        if (i > 0 && VALUE_TAKING_FLAGS.includes(args[i - 1])) return false;
+        return true;
+    });
+}
+
+// ── Colour parsing / model recolouring ─────────────────────────
+
+// A small set of CSS/named colours (matches the GUI swatches plus common names).
+const NAMED_COLORS = {
+    black: '#000000', white: '#ffffff', red: '#ff0000', green: '#008000',
+    blue: '#0000ff', yellow: '#ffff00', cyan: '#00ffff', magenta: '#ff00ff',
+    orange: '#e67e22', amber: '#f1c40f', teal: '#1abc9c', indigo: '#5b6bbf',
+    purple: '#9b59b6', pink: '#e84393', grey: '#95a5a6', gray: '#95a5a6',
+    slate: '#2c3e50', brick: '#c0392b', lime: '#2ecc71', silver: '#c0c0c0',
+    navy: '#000080', maroon: '#800000', olive: '#808000', offwhite: '#ecf0f1',
+};
+
+/**
+ * Parse a colour string into normalised {r,g,b} components in 0..1.
+ * Accepts: #RGB, #RRGGBB, RRGGBB, "r,g,b" (0-255), "r g b", or a named colour.
+ * Returns null if the string cannot be parsed.
+ */
+function parseColorString(str) {
+    if (!str || typeof str !== 'string') return null;
+    let s = str.trim().toLowerCase();
+
+    // Named colour lookup
+    if (NAMED_COLORS[s]) s = NAMED_COLORS[s];
+
+    // Comma- or space-separated 0-255 triplet
+    if (/[, ]/.test(s) && s[0] !== '#') {
+        const parts = s.split(/[ ,]+/).map(Number).filter(n => !Number.isNaN(n));
+        if (parts.length === 3) {
+            const norm = parts.map(n => Math.min(1, Math.max(0, n > 1 ? n / 255 : n)));
+            return { r: norm[0], g: norm[1], b: norm[2] };
+        }
+        return null;
+    }
+
+    // Hex (with or without leading #)
+    let hex = s.replace(/^#/, '');
+    if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+    if (hex.length === 6 && /^[0-9a-f]{6}$/.test(hex)) {
+        return {
+            r: parseInt(hex.slice(0, 2), 16) / 255,
+            g: parseInt(hex.slice(2, 4), 16) / 255,
+            b: parseInt(hex.slice(4, 6), 16) / 255,
+        };
+    }
+    return null;
+}
+
+/**
+ * Read --color / --opacity options and return a recolour spec, or null if none.
+ * { r, g, b } come from --color; a (opacity 0..1) is optional from --opacity.
+ */
+function parseRecolorArgs(args) {
+    const colorStr = parseArgValueStr(args, '--color');
+    const opacityStr = parseArgValueStr(args, '--opacity');
+    let spec = null;
+
+    if (colorStr) {
+        const c = parseColorString(colorStr);
+        if (!c) {
+            console.log(colorize(C.yellow, '  ⚠ Unrecognised --color "' + colorStr + '" — ignored. Use #RRGGBB, r,g,b or a name.'));
+        } else {
+            spec = { r: c.r, g: c.g, b: c.b };
+        }
+    }
+
+    if (opacityStr !== null) {
+        let a = parseFloat(opacityStr);
+        if (!Number.isNaN(a)) {
+            if (a > 1) a = a / 100; // allow 0-100 percentage form
+            a = Math.min(1, Math.max(0, a));
+            spec = spec || {};
+            spec.a = a;
+        }
+    }
+
+    return spec;
+}
+
+/**
+ * Apply a colour/opacity spec to every mesh material in place.
+ * Leaves untouched any component not provided in the spec.
+ */
+function recolorMeshes(meshes, spec) {
+    if (!spec || !meshes) return;
+    for (const mesh of meshes) {
+        const mat = mesh.material || (mesh.material = { name: 'Material', r: 0.7, g: 0.7, b: 0.7, a: 1.0, sr: 0, sg: 0, sb: 0, power: 1 });
+        if (spec.r !== undefined) mat.r = spec.r;
+        if (spec.g !== undefined) mat.g = spec.g;
+        if (spec.b !== undefined) mat.b = spec.b;
+        if (spec.a !== undefined) mat.a = spec.a;
+    }
+}
+
+/** Human-readable description of a recolour spec for console output. */
+function describeRecolor(spec) {
+    const bits = [];
+    if (spec.r !== undefined) {
+        const hex = '#' + [spec.r, spec.g, spec.b]
+            .map(v => Math.round(v * 255).toString(16).padStart(2, '0')).join('');
+        bits.push('color=' + hex);
+    }
+    if (spec.a !== undefined) bits.push('opacity=' + spec.a.toFixed(2));
+    return bits.join(' ');
 }
 
 function renderLabwareDef(def, outputFile, sourceFile) {
@@ -2577,6 +2716,10 @@ function renderLabwareDef(def, outputFile, sourceFile) {
 
     const startTime = Date.now();
     const meshes = generatePlateGeometry(def);
+    if (def.recolor) {
+        console.log('  Recolouring model: ' + describeRecolor(def.recolor));
+        recolorMeshes(meshes, def.recolor);
+    }
     const xText = meshesToXFile(meshes);
 
     const safeName = (def.name || 'labware').replace(/[^a-zA-Z0-9_ -]/g, '_');
@@ -2618,6 +2761,7 @@ function cmdHelp() {
                              Export .x/.hxx → OBJ / STL / GLB
                              format: obj (default), stl, glb
                              (uses currently loaded file if no input given)
+                             --color <c>  --opacity <0-1>  recolour on export
 
   ${colorize(C.cyan, 'Conversion  (3D formats → .x)')}
     convert <input> <out.x> [options]
@@ -2629,6 +2773,8 @@ function cmdHelp() {
       --mirror-x             Mirror on X axis
       --mirror-y             Mirror on Y axis
       --mirror-z             Mirror on Z axis
+      --color <c>            Recolour model (#RRGGBB, r,g,b or name)
+      --opacity <0-1>        Set material opacity (0=clear, 1=opaque)
 
   ${colorize(C.cyan, 'Labware Generation  (XML definition → .x)')}
     generate <xml> [out.x] [--sbs]
@@ -2649,6 +2795,8 @@ function cmdHelp() {
       --first-x <mm>         A1 X offset          (default: SBS 14.38)
       --first-y <mm>         A1 Y offset          (default: SBS 11.24)
       --sbs                  Snap to SBS/ANSI standard footprint & spacing
+      --color <c>            Recolour model (#RRGGBB, r,g,b or name)
+      --opacity <0-1>        Set material opacity (0=clear, 1=opaque)
 
   ${colorize(C.cyan, 'Validation')}
     validate [file]          Validate a file can be fully parsed
@@ -2665,7 +2813,7 @@ function cmdHelp() {
 
   ${colorize(C.dim, 'Non-interactive one-shot usage:')}
     ${colorize(C.dim, 'node cli.js <file> [--validate] [--export [out.x]] [--quiet]')}
-    ${colorize(C.dim, 'node cli.js convert <in> <out.x> [--rotate-x 90] [--mirror-x]')}
+    ${colorize(C.dim, 'node cli.js convert <in> <out.x> [--rotate-x 90] [--color #3498db]')}
     ${colorize(C.dim, 'node cli.js export-x <in.x> <out.obj>')}
     ${colorize(C.dim, 'node cli.js generate <xml> [out.x] [--sbs]')}
     ${colorize(C.dim, 'node cli.js generate-default [out.x] --rows 8 --cols 12 --sbs')}

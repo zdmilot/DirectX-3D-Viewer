@@ -1,11 +1,12 @@
 {
   "name": "3d-file-tools",
   "version": "1.0.0",
-  "description": "Universal 3D file viewer",
-  "main": "main.js",
+  "description": "Universal 3D file viewer — static browser web app and command-line tools",
+  "main": "cli.js",
+  "bin": {
+    "x3dviewer": "cli.js"
+  },
   "scripts": {
-    "start": "electron .",
-    "dist": "electron-builder --win portable",
     "test": "echo \"No tests\" && exit 0"
   },
   "repository": {
@@ -16,35 +17,7 @@
   "license": "MIT",
   "devDependencies": {
     "@resvg/resvg-js": "^2.6.2",
-    "electron": "^35.3.0",
-    "electron-builder": "^26.0.12",
     "png-to-ico": "^3.0.1"
-  },
-  "build": {
-    "appId": "com.hamilton.3dfiletools",
-    "productName": "3D File Tools",
-    "win": {
-      "target": ["portable", "dir"],
-      "icon": "build/icon.ico"
-    },
-    "portable": {
-      "artifactName": "3DFileTools.exe"
-    },
-    "files": [
-      "main.js",
-      "preload.js",
-      "index.html",
-      "build/icon.ico",
-      "css/**/*",
-      "fonts/**/*",
-      "webfonts/**/*",
-      "js/app.js",
-      "js/hxxLoader.js",
-      "js/deckUnits.js",
-      "js/lib/**/*"
-    ],
-    "directories": {
-      "output": "dist"
-    }
   }
 }
+

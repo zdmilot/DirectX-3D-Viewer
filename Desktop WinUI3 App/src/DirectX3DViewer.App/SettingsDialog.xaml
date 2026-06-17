@@ -3,12 +3,24 @@
     x:Class="DirectX3DViewer.App.SettingsDialog"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    Title="Settings"
+    Padding="0"
+    Background="{ThemeResource CardBackgroundBrush}"
     CloseButtonText="Close"
     DefaultButton="Close">
 
-    <ScrollViewer MaxHeight="540" VerticalScrollBarVisibility="Auto">
-        <StackPanel Width="460" Spacing="16" Padding="0,4,0,4">
+    <StackPanel Spacing="0">
+        <!-- Gradient header (matches the web app modal) -->
+        <Border Background="{StaticResource BrandGradientBrush}" Padding="20,14">
+            <StackPanel Orientation="Horizontal" Spacing="9" VerticalAlignment="Center">
+                <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xE713;"
+                          FontSize="16" Foreground="White" />
+                <TextBlock Text="Settings" Foreground="White" FontSize="15"
+                           FontWeight="SemiBold" VerticalAlignment="Center" />
+            </StackPanel>
+        </Border>
+
+        <ScrollViewer MaxHeight="540" VerticalScrollBarVisibility="Auto">
+            <StackPanel Width="460" Spacing="16" Padding="20,16,20,18">
 
             <TextBlock FontSize="12" Foreground="{ThemeResource TextSecondaryBrush}" TextWrapping="Wrap"
                        Text="These apply right now and become the defaults every time the app starts." />
@@ -94,4 +106,5 @@
 
         </StackPanel>
     </ScrollViewer>
+</StackPanel>
 </ContentDialog>

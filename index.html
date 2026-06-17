@@ -223,6 +223,17 @@
                         <button class="shade-swatch" data-color="#95A5A6" title="Grey" style="background:#95A5A6"></button>
                         <button class="shade-swatch" data-color="#2C3E50" title="Slate" style="background:#2C3E50"></button>
                     </div>
+                    <div class="shade-custom-row">
+                        <label class="shade-custom-label" for="shade-color-input">Custom</label>
+                        <input type="color" id="shade-color-input" class="shade-color-input" value="#3498db" title="Pick any colour">
+                        <input type="text" id="shade-hex-input" class="shade-hex-input" value="#3498DB" maxlength="7" spellcheck="false" autocomplete="off" title="Hex colour value">
+                        <button class="shade-apply" id="shade-apply" title="Apply custom colour">Apply</button>
+                    </div>
+                    <div class="shade-opacity-row">
+                        <label class="shade-opacity-label" for="shade-opacity">Opacity</label>
+                        <input type="range" id="shade-opacity" class="shade-opacity" min="0" max="100" value="100" title="Material opacity">
+                        <span class="shade-opacity-value" id="shade-opacity-value">100%</span>
+                    </div>
                     <button class="vt-flyout-reset" id="shading-reset" disabled>Restore original colors</button>
                     <p class="vt-flyout-note">Color is saved when exporting to .X, .OBJ or .GLB. .STL stores geometry only (no color).</p>
                 </div>
@@ -333,6 +344,7 @@
                     <code class="help-key">Right / Middle drag</code><span>Pan camera</span>
                     <code class="help-key">Scroll wheel</code><span>Zoom in / out</span>
                     <code class="help-key">Drag &amp; drop</code><span>Drop any supported file onto the viewport to open it</span>
+                    <code class="help-key">S</code><span>Open the screenshot dialog</span>
                     <code class="help-key">Screenshot</code><span>Save viewport as PNG, JPG or SVG (transparent BG supported)</span>
                     <code class="help-key">Export</code><span>Export loaded model as .X .OBJ .STL .GLB or .HXX</span>
                 </div>

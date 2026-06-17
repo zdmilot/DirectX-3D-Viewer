@@ -39,8 +39,12 @@
         projFlyout: $('#proj-flyout'),
         appearanceFlyout: $('#appearance-flyout'),
         shadingFlyout: $('#shading-flyout'),
-        helpOverlay: $('#help-overlay'),
-        // Transform flyout
+        shadeColorInput: $('#shade-color-input'),
+        shadeHexInput: $('#shade-hex-input'),
+        shadeApply: $('#shade-apply'),
+        shadeOpacity: $('#shade-opacity'),
+        shadeOpacityValue: $('#shade-opacity-value'),
+        helpOverlay: $('#help-overlay'),        // Transform flyout
         vtTransformToggle: $('#vt-transform-toggle'),
         tfFlyout: $('#tf-flyout'),
         // Rotation/reflection buttons (inside flyout)
@@ -506,6 +510,11 @@
         // Disable frustum culling on all meshes
         group.traverse(function (child) {
             if (child.isMesh) child.frustumCulled = false;
+            if (!child.isMesh || !child.material) return;
+            // Render both faces so the model never looks "hollow" when
+            // the source mesh is single-sided or has inconsistent winding.
+            var mats = Array.isArray(child.material) ? child.material : [child.material];
+            mats.forEach(function (m) { if (m) m.side = THREE.DoubleSide; });
         });
 
         // Auto-fit: center & scale model to fill view
@@ -546,9 +555,26 @@
             if (!child.isMesh || !child.material) return;
             const mats = Array.isArray(child.material) ? child.material : [child.material];
             mats.forEach(function (m) {
-                if (m && m.color) state.shadeSnapshot.push({ material: m, color: m.color.clone() });
+                if (m && m.color) state.shadeSnapshot.push({
+                    material: m,
+                    color: m.color.clone(),
+                    opacity: m.opacity,
+                    transparent: m.transparent,
+                    depthWrite: m.depthWrite,
+                });
             });
         });
+        // Reset the opacity slider to fully opaque for the freshly loaded model.
+        if (dom.shadeOpacity) dom.shadeOpacity.value = 100;
+        if (dom.shadeOpacityValue) dom.shadeOpacityValue.textContent = '100%';
+    }
+
+    /** Keep the custom colour swatch + hex field in sync with a chosen value. */
+    function syncShadeInputs(hex) {
+        if (!hex) return;
+        const norm = (hex[0] === '#' ? hex : '#' + hex).toUpperCase();
+        if (dom.shadeColorInput) dom.shadeColorInput.value = norm.toLowerCase();
+        if (dom.shadeHexInput) dom.shadeHexInput.value = norm;
     }
 
     /** Recolour every mesh material with a single shade (carried into .x/.obj/.glb export). */
@@ -563,6 +589,28 @@
                 if (m && m.color) { m.color.set(hex); m.needsUpdate = true; }
             });
         });
+        syncShadeInputs(hex);
+        const shadeReset = $('#shading-reset');
+        if (shadeReset) shadeReset.disabled = false;
+    }
+
+    /** Set material opacity (0..1) for the whole model. */
+    function applyShadeOpacity(opacity) {
+        const a = Math.min(1, Math.max(0, opacity));
+        const model = scene && scene.getObjectByName('__xmodel__');
+        if (!model) return;
+        model.traverse(function (child) {
+            if (!child.isMesh || !child.material) return;
+            const mats = Array.isArray(child.material) ? child.material : [child.material];
+            mats.forEach(function (m) {
+                if (!m) return;
+                m.opacity = a;
+                m.transparent = a < 1;
+                m.depthWrite = a >= 1;
+                m.needsUpdate = true;
+            });
+        });
+        if (dom.shadeOpacityValue) dom.shadeOpacityValue.textContent = Math.round(a * 100) + '%';
         const shadeReset = $('#shading-reset');
         if (shadeReset) shadeReset.disabled = false;
     }
@@ -573,9 +621,14 @@
         state.shadeSnapshot.forEach(function (entry) {
             if (entry.material && entry.material.color) {
                 entry.material.color.copy(entry.color);
+                if (entry.opacity !== undefined) entry.material.opacity = entry.opacity;
+                if (entry.transparent !== undefined) entry.material.transparent = entry.transparent;
+                if (entry.depthWrite !== undefined) entry.material.depthWrite = entry.depthWrite;
                 entry.material.needsUpdate = true;
             }
         });
+        if (dom.shadeOpacity) dom.shadeOpacity.value = 100;
+        if (dom.shadeOpacityValue) dom.shadeOpacityValue.textContent = '100%';
         const shadeReset = $('#shading-reset');
         if (shadeReset) shadeReset.disabled = true;
     }
@@ -929,7 +982,13 @@
                 var mats = Array.isArray(child.material) ? child.material : [child.material];
                 var isTransparent = false;
                 mats.forEach(function (m) {
-                    if (!m || !m.color) return;
+                    if (!m) return;
+                    // Render both faces so the model never looks "hollow".
+                    // DirectX .x meshes are frequently single-sided / have
+                    // inconsistent winding, which makes back faces cull and
+                    // expose the interior. DoubleSide matches the desktop app.
+                    m.side = THREE.DoubleSide;
+                    if (!m.color) return;
                     var r = m.color.r, g = m.color.g, b = m.color.b;
                     // Blue-dominant heuristic: blue channel dominates red
                     if (b > r * 1.5 && b > 0.1) {
@@ -937,7 +996,6 @@
                         // Keep file-specified opacity if already < 1, otherwise default 0.4
                         if (m.opacity >= 1.0) m.opacity = 0.4;
                         m.depthWrite = false;
-                        m.side = THREE.DoubleSide;
                         isTransparent = true;
                     }
                 });
@@ -2417,6 +2475,40 @@
             dom.shadingFlyout.querySelectorAll('.shade-swatch').forEach(sw => {
                 sw.addEventListener('click', () => applyShadeColor(sw.dataset.color));
             });
+            // Custom colour picker (native swatch)
+            if (dom.shadeColorInput) {
+                dom.shadeColorInput.addEventListener('input', () => applyShadeColor(dom.shadeColorInput.value));
+            }
+            // Hex text field — apply on Enter or when it loses focus.
+            if (dom.shadeHexInput) {
+                const applyHex = () => {
+                    let v = dom.shadeHexInput.value.trim();
+                    if (v && v[0] !== '#') v = '#' + v;
+                    if (/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(v)) {
+                        applyShadeColor(v);
+                    } else {
+                        // Revert invalid input to the current picker value.
+                        if (dom.shadeColorInput) dom.shadeHexInput.value = dom.shadeColorInput.value.toUpperCase();
+                    }
+                };
+                dom.shadeHexInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') { e.preventDefault(); applyHex(); }
+                });
+                dom.shadeHexInput.addEventListener('blur', applyHex);
+            }
+            if (dom.shadeApply) {
+                dom.shadeApply.addEventListener('click', () => {
+                    let v = (dom.shadeHexInput ? dom.shadeHexInput.value.trim() : '') || (dom.shadeColorInput ? dom.shadeColorInput.value : '');
+                    if (v && v[0] !== '#') v = '#' + v;
+                    if (/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(v)) applyShadeColor(v);
+                });
+            }
+            // Opacity slider
+            if (dom.shadeOpacity) {
+                dom.shadeOpacity.addEventListener('input', () => {
+                    applyShadeOpacity(parseInt(dom.shadeOpacity.value, 10) / 100);
+                });
+            }
             const resetBtn = $('#shading-reset');
             if (resetBtn) resetBtn.addEventListener('click', restoreOriginalColors);
         }
@@ -2474,6 +2566,21 @@
             });
         }
 
+        // Keyboard shortcut: "S" opens the screenshot dialog.
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey || e.metaKey || e.altKey) return;
+            // Ignore when typing in an input, textarea or editable field.
+            const t = e.target;
+            if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+            if (e.key === 's' || e.key === 'S') {
+                // Don't fire if the screenshot modal is already open.
+                const ssOverlay = $('#ss-overlay');
+                if (ssOverlay && ssOverlay.classList.contains('is-open')) return;
+                e.preventDefault();
+                openScreenshotModal('viewer');
+            }
+        });
+
         // Export button & dropdown
         const exBtn = $('#vt-export');
         const exDrop = $('#export-dropdown');
@@ -2505,65 +2612,6 @@
         initScreenshotModal();
         initSplash();
         initDraggablePanels();
-
-        // Electron file association: open file passed from main process
-        if (window.electronAPI && window.electronAPI.onOpenFile) {
-            window.electronAPI.onOpenFile(function (filePath) {
-                const name = filePath.replace(/\\/g, '/').split('/').pop();
-                const ext = name.split('.').pop().toLowerCase();
-                // Skip the splash if a file is being opened directly
-                const splash = document.getElementById('splash-screen');
-                if (splash) splash.style.display = 'none';
-                const appEl = document.getElementById('app');
-                if (appEl) appEl.classList.remove('app-hidden');
-
-                state.loadedFileName = name;
-                state.loadedFilePath = filePath;
-                clearModel();
-                const loading = $('#viewer-loading');
-                const errorEl = $('#viewer-error');
-                if (loading) {
-                    loading.classList.remove('viewer-hidden');
-                    const span = loading.querySelector('span');
-                    if (span) span.textContent = 'Loading ' + name + '\u2026';
-                }
-                if (errorEl) errorEl.classList.add('viewer-hidden');
-
-                const fileUrl = 'file:///' + filePath.replace(/\\/g, '/').replace(/ /g, '%20');
-                switch (ext) {
-                    case 'hxx':
-                        fetch(fileUrl).then(r => r.arrayBuffer()).then(buf => {
-                            HXXLoader.toXFileBlob(buf).then(blob => {
-                                const url = URL.createObjectURL(blob);
-                                state.lastLoadedUrl = url;
-                                setFilenameDisplay();
-                                loadXFile(url, loading, errorEl);
-                            });
-                        }).catch(err => showError(errorEl, 'Failed to load: ' + err.message));
-                        break;
-                    case 'x':
-                        state.lastLoadedUrl = fileUrl;
-                        setFilenameDisplay();
-                        loadXFile(fileUrl, loading, errorEl);
-                        break;
-                    case 'obj':
-                        state.lastLoadedUrl = fileUrl;
-                        setFilenameDisplay();
-                        loadXFile(fileUrl, loading, errorEl);
-                        break;
-                    case 'stl':
-                    case 'glb':
-                    case 'gltf':
-                        state.lastLoadedUrl = fileUrl;
-                        setFilenameDisplay();
-                        loadXFile(fileUrl, loading, errorEl);
-                        break;
-                    default:
-                        if (loading) loading.classList.add('viewer-hidden');
-                        showError(errorEl, 'Unsupported format: .' + ext);
-                }
-            });
-        }
     }
 
     if (document.readyState === 'loading') {

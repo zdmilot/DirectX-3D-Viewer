@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ContentDialog
+    x:Class="DirectX3DViewer.App.ScreenshotDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Padding="0"
+    Background="{ThemeResource CardBackgroundBrush}"
+    BorderThickness="0">
+
+    <ContentDialog.Resources>
+        <x:Double x:Key="ContentDialogMaxWidth">640</x:Double>
+    </ContentDialog.Resources>
+
+    <Grid Width="560">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- ── Gradient header (matches the web app modal) ───────── -->
+        <Border Grid.Row="0" Background="{StaticResource BrandGradientBrush}" Padding="20,14">
+            <Grid>
+                <StackPanel Orientation="Horizontal" Spacing="9" VerticalAlignment="Center">
+                    <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xE722;"
+                              FontSize="16" Foreground="White" />
+                    <TextBlock Text="Screenshot Preview" Foreground="White"
+                               FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center" />
+                </StackPanel>
+                <Button x:Name="HeaderClose" HorizontalAlignment="Right" VerticalAlignment="Center"
+                        Background="Transparent" BorderThickness="0" Padding="6,2" MinWidth="0"
+                        Click="OnCancel" ToolTipService.ToolTip="Close">
+                    <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xE711;"
+                              FontSize="14" Foreground="#CCFFFFFF" />
+                </Button>
+            </Grid>
+        </Border>
+
+        <!-- ── Body: preview + toggles ───────────────────────────── -->
+        <StackPanel Grid.Row="1" Padding="20,16" Spacing="14">
+            <Border CornerRadius="6" BorderThickness="1"
+                    BorderBrush="{ThemeResource ToolbarBorderBrush}"
+                    Background="{ThemeResource AppBackgroundBrush}"
+                    MinHeight="200" MaxHeight="320">
+                <Image x:Name="PreviewImage" Stretch="Uniform" Margin="6" />
+            </Border>
+
+            <StackPanel Orientation="Horizontal" Spacing="28">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <ToggleSwitch x:Name="GridToggle" IsOn="True" MinWidth="0"
+                                  OnContent="" OffContent="" Toggled="OnOptionChanged" />
+                    <TextBlock Text="Show Grid" VerticalAlignment="Center" FontSize="13"
+                               Foreground="{ThemeResource TextPrimaryBrush}" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <ToggleSwitch x:Name="BgToggle" IsOn="True" MinWidth="0"
+                                  OnContent="" OffContent="" Toggled="OnOptionChanged" />
+                    <TextBlock Text="Show Background" VerticalAlignment="Center" FontSize="13"
+                               Foreground="{ThemeResource TextPrimaryBrush}" />
+                </StackPanel>
+            </StackPanel>
+        </StackPanel>
+
+        <!-- ── Footer: save / cancel ─────────────────────────────── -->
+        <Border Grid.Row="2" BorderThickness="0,1,0,0"
+                BorderBrush="{ThemeResource ToolbarBorderBrush}" Padding="20,12">
+            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                <Button Content="Cancel" Click="OnCancel" Height="34" />
+                <Button Click="OnSavePng" Height="34" Style="{StaticResource AccentButtonStyle}">
+                    <StackPanel Orientation="Horizontal" Spacing="7">
+                        <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xEB9F;" FontSize="13" />
+                        <TextBlock Text="Save .PNG" />
+                    </StackPanel>
+                </Button>
+                <Button Click="OnSaveJpg" Height="34" Style="{StaticResource AccentButtonStyle}">
+                    <StackPanel Orientation="Horizontal" Spacing="7">
+                        <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xEB9F;" FontSize="13" />
+                        <TextBlock Text="Save .JPG" />
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+        </Border>
+    </Grid>
+</ContentDialog>
