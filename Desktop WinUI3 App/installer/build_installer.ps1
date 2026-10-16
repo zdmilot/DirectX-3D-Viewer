@@ -44,7 +44,8 @@ $dotnet = Resolve-Tool 'dotnet' @(
 
 $iscc = Resolve-Tool 'iscc' @(
     "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
-    "$env:ProgramFiles\Inno Setup 6\ISCC.exe")
+    "$env:ProgramFiles\Inno Setup 6\ISCC.exe",
+    "$env:LOCALAPPDATA\Programs\Inno Setup 6\ISCC.exe")
 
 # Build the "sslcom" SignTool definition passed to ISCC. $q -> quote and $f ->
 # the file(s) Inno wants signed are Inno Setup tokens, so they must reach ISCC

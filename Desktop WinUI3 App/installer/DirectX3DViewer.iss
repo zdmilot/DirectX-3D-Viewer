@@ -14,7 +14,7 @@
 ; ============================================================================
 
 #define AppName "DirectX 3D Viewer"
-#define AppVersion "1.1.0"
+#define AppVersion "1.1.1"
 #define AppPublisher "Zachary Milot"
 #define AppExeName "DirectX3DViewer.exe"
 #define AppId "{{8F3C5A21-7B4E-4D6A-9C2F-1E0B7A9D4C58}"

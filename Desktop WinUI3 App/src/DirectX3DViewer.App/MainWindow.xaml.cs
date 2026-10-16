@@ -66,21 +66,26 @@ public sealed partial class MainWindow : Window
         else
             ProjOrthographic.IsChecked = true;
 
-        // Periodically refresh the camera read-out.
+        // Periodically refresh the camera read-out. An exception escaping a timer
+        // tick fail-fasts the whole process, so ticks never let one through.
         _camTimer = DispatcherQueue.CreateTimer();
         _camTimer.Interval = TimeSpan.FromMilliseconds(150);
-        _camTimer.Tick += (_, _) => UpdateCamDisplay();
+        _camTimer.Tick += (_, _) => SafeTick(_camTimer, UpdateCamDisplay);
         _camTimer.Start();
 
         // Full-window splash overlay, dismissed shortly after launch (web-app style).
         _splashTimer = DispatcherQueue.CreateTimer();
         _splashTimer.Interval = TimeSpan.FromMilliseconds(1900);
         _splashTimer.IsRepeating = false;
-        _splashTimer.Tick += (_, _) => { _splashTimer.Stop(); DismissSplash(); };
+        _splashTimer.Tick += (_, _) => SafeTick(_splashTimer, () => { _splashTimer.Stop(); DismissSplash(); });
         _splashTimer.Start();
 
         Closed += (_, _) =>
         {
+            // Stop the timers first: a tick that lands after close would touch torn-down XAML.
+            _camTimer.Stop();
+            _splashTimer.Stop();
+
             _settings.Settings.DarkMode = _dark;
             _settings.Settings.GridVisible = GridButton.IsChecked == true;
             _settings.Settings.Perspective = ProjPerspective.IsChecked == true;
@@ -735,6 +740,19 @@ public sealed partial class MainWindow : Window
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+    private static void SafeTick(DispatcherQueueTimer timer, Action action)
+    {
+        try
+        {
+            action();
+        }
+        catch (Exception ex)
+        {
+            timer.Stop();
+            App.Log.Error($"Timer tick failed; timer stopped: {ex}");
+        }
+    }
 
     private void UpdateCamDisplay()
     {

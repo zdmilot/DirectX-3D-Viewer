@@ -18,15 +18,22 @@ internal static class XBinary
     private const int TOKEN_FLOAT_LIST = 7;
     private const int TOKEN_OBRACE = 10;
     private const int TOKEN_CBRACE = 11;
+    private const int TOKEN_OPAREN = 12;   // ( ) [ ] < > . only occur inside template definitions
+    private const int TOKEN_DOT = 18;
     private const int TOKEN_COMMA = 19;
     private const int TOKEN_SEMICOLON = 20;
     private const int TOKEN_TEMPLATE = 31;
+    private const int TOKEN_WORD = 40;     // WORD .. ARRAY: template member type keywords
+    private const int TOKEN_ARRAY = 52;
 
     public static string ToText(byte[] data, int offset, List<string> warnings, int floatBits = 32)
     {
         var sb = new StringBuilder(data.Length * 2);
         int i = offset;
         int n = data.Length;
+        // A template definition is skipped from its TEMPLATE token through the
+        // brace that closes its body; templateDepth counts braces inside it.
+        bool inTemplate = false;
         int templateDepth = 0;
 
         while (i + 2 <= n)
@@ -43,7 +50,7 @@ internal static class XBinary
                     if (i + len > n) return sb.ToString();
                     string name = Encoding.ASCII.GetString(data, i, len);
                     i += len;
-                    if (templateDepth == 0) sb.Append(name).Append(' ');
+                    if (!inTemplate) sb.Append(name).Append(' ');
                     break;
                 }
                 case TOKEN_STRING:
@@ -53,14 +60,14 @@ internal static class XBinary
                     if (i + len > n) return sb.ToString();
                     string str = Encoding.ASCII.GetString(data, i, len);
                     i += len + 2; // trailing separator token
-                    if (templateDepth == 0) sb.Append('"').Append(str).Append("\" ");
+                    if (!inTemplate) sb.Append('"').Append(str).Append("\" ");
                     break;
                 }
                 case TOKEN_INTEGER:
                 {
                     if (i + 4 > n) return sb.ToString();
                     int v = ReadInt32(data, i); i += 4;
-                    if (templateDepth == 0) sb.Append(v.ToString(CultureInfo.InvariantCulture)).Append("; ");
+                    if (!inTemplate) sb.Append(v.ToString(CultureInfo.InvariantCulture)).Append("; ");
                     break;
                 }
                 case TOKEN_GUID:
@@ -73,7 +80,7 @@ internal static class XBinary
                     for (int k = 0; k < count && i + 4 <= n; k++, i += 4)
                     {
                         int v = ReadInt32(data, i);
-                        if (templateDepth == 0) sb.Append(v.ToString(CultureInfo.InvariantCulture)).Append(' ');
+                        if (!inTemplate) sb.Append(v.ToString(CultureInfo.InvariantCulture)).Append(' ');
                     }
                     break;
                 }
@@ -87,28 +94,35 @@ internal static class XBinary
                         double v = floatBits == 64
                             ? BitConverter.ToDouble(data, i)
                             : BitConverter.ToSingle(data, i);
-                        if (templateDepth == 0)
+                        if (!inTemplate)
                             sb.Append(v.ToString("R", CultureInfo.InvariantCulture)).Append(' ');
                     }
                     break;
                 }
                 case TOKEN_OBRACE:
-                    if (templateDepth > 0) templateDepth++;
+                    if (inTemplate) templateDepth++;
                     else sb.Append("{ ");
                     break;
                 case TOKEN_CBRACE:
-                    if (templateDepth > 0) templateDepth--;
+                    if (inTemplate)
+                    {
+                        if (--templateDepth <= 0) { inTemplate = false; templateDepth = 0; }
+                    }
                     else sb.Append("} ");
                     break;
                 case TOKEN_COMMA:
-                    if (templateDepth == 0) sb.Append(' ');
+                    if (!inTemplate) sb.Append(' ');
                     break;
                 case TOKEN_SEMICOLON:
-                    if (templateDepth == 0) sb.Append(' ');
+                    if (!inTemplate) sb.Append(' ');
                     break;
                 case TOKEN_TEMPLATE:
-                    templateDepth = 1; // skip the template definition block entirely
+                    inTemplate = true; // skip the template definition block entirely
+                    templateDepth = 0;
                     break;
+                case >= TOKEN_OPAREN and <= TOKEN_DOT:
+                case >= TOKEN_WORD and <= TOKEN_ARRAY:
+                    break; // template-only punctuation and type keywords carry no data
                 default:
                     // Unknown token id: stop to avoid desync.
                     warnings.Add($"Unrecognised binary .x token {token}; parsing truncated.");

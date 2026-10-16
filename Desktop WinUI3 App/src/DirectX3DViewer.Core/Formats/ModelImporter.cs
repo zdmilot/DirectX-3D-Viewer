@@ -23,7 +23,7 @@ public static class ModelImporter
     public static SceneModel Import(byte[] data, string path)
     {
         string ext = Path.GetExtension(path).ToLowerInvariant();
-        return ext switch
+        var scene = ext switch
         {
             ".x" => XFileParser.Parse(data, path),
             ".hxx" => HxxLoader.Parse(data, path),
@@ -32,5 +32,13 @@ public static class ModelImporter
             ".glb" or ".gltf" => GltfLoader.Parse(data, path),
             _ => throw new NotSupportedException($"Unsupported file format: {ext}"),
         };
+
+        // A parse that yields nothing drawable is a failure, not a blank scene.
+        if (scene.TotalVertices == 0)
+        {
+            string detail = scene.Warnings.Count > 0 ? " " + string.Join(" ", scene.Warnings) : string.Empty;
+            throw new InvalidDataException($"No geometry was found in {Path.GetFileName(path)}.{detail}");
+        }
+        return scene;
     }
 }

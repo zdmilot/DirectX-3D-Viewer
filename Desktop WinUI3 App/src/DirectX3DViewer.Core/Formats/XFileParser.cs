@@ -18,6 +18,8 @@ public static class XFileParser
         var scene = new SceneModel { SourcePath = sourcePath };
 
         string format = DetectFormat(data, out int headerLen);
+        // Header bytes 12-15 give the float width of binary FLOAT_LIST data ("0032" or "0064").
+        int floatBits = headerLen == 16 && Encoding.ASCII.GetString(data, 12, 4) == "0064" ? 64 : 32;
         string text;
         switch (format)
         {
@@ -29,10 +31,10 @@ public static class XFileParser
                 byte[] inflated = MsZip.Decompress(data, headerLen);
                 text = format == "tzip"
                     ? Encoding.Latin1.GetString(inflated)
-                    : XBinary.ToText(inflated, 0, scene.Warnings);
+                    : XBinary.ToText(inflated, 0, scene.Warnings, floatBits);
                 break;
             case "bin":
-                text = XBinary.ToText(data, headerLen, scene.Warnings);
+                text = XBinary.ToText(data, headerLen, scene.Warnings, floatBits);
                 break;
             default:
                 // No recognisable header: assume raw text.
@@ -327,7 +329,20 @@ public static class XFileParser
                     {
                         string? mt = reader.Next();
                         if (mt is null || mt == "}") break;
-                        if (mt == "{") { reader.SkipBlockBody(); continue; }
+                        if (mt == "{")
+                        {
+                            // `{ MaterialName }` references a material declared at file scope.
+                            string? refName = reader.Next();
+                            if (refName is null || refName == "}") continue;
+                            if (refName == "{") { reader.SkipBlockBody(); reader.SkipBlockBody(); continue; }
+                            if (globalMaterials.TryGetValue(refName, out var named))
+                                meshMaterials.Add(named.Clone());
+                            else
+                                warnings.Add($"Material reference '{refName}' in mesh '{name}' is not defined.");
+                            if (reader.Peek() == "}") reader.Next();
+                            else reader.SkipBlockBody();
+                            continue;
+                        }
                         string mName = string.Empty;
                         string mNext = reader.Peek();
                         if (mNext != "{")
@@ -352,12 +367,6 @@ public static class XFileParser
                                 globalMaterials[mName] = m;
                             }
                             meshMaterials.Add(m);
-                        }
-                        else if (mt == "{" && !string.IsNullOrEmpty(mName) &&
-                                 globalMaterials.TryGetValue(mName, out var gref2))
-                        {
-                            meshMaterials.Add(gref2.Clone());
-                            reader.SkipBlockBody();
                         }
                         else
                         {

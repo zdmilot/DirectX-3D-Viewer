@@ -25,7 +25,12 @@ public sealed partial class HelpDialog : Microsoft.UI.Xaml.Controls.ContentDialo
             var timer = DispatcherQueue.CreateTimer();
             timer.Interval = System.TimeSpan.FromMilliseconds(1200);
             timer.IsRepeating = false;
-            timer.Tick += (_, _) => icon.Glyph = "\uE8C8"; // copy
+            timer.Tick += (_, _) =>
+            {
+                // The dialog may be gone by now; a throwing tick would fail-fast the app.
+                try { icon.Glyph = "\uE8C8"; } // copy
+                catch (System.Exception ex) { App.Log.Error($"Copy-glyph reset failed: {ex.Message}"); }
+            };
             timer.Start();
         }
     }

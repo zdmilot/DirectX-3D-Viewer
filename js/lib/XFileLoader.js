@@ -707,7 +707,8 @@
         node.updateExport(_textureName4);
         node.nodeData.lightMap = _textureName4.nodeData;
       } else {
-        throw 'Unexpected token while parsing material: ' + nextToken.nodeData;
+        // ignore unknown child data objects (e.g. P3DMaterial), as DirectX does
+        node.updateExport(unknownNode(fullText, _off + node.valueLength));
       }
     }
     return node;

@@ -3,12 +3,16 @@ using System.IO;
 using System.Runtime.InteropServices;
 using Microsoft.UI.Xaml;
 using DirectX3DViewer.Core.Formats;
+using DirectX3DViewer.Core.Services;
 
 namespace DirectX3DViewer.App;
 
 public partial class App : Application
 {
     private Window? _window;
+
+    /// <summary>Session log in %APPDATA%\DirectX3DViewer\logs.</summary>
+    public static LogService Log { get; } = new();
 
     [DllImport("kernel32.dll")] private static extern bool AllocConsole();
     [DllImport("kernel32.dll")] private static extern bool AttachConsole(int dwProcessId);
@@ -17,6 +21,13 @@ public partial class App : Application
     public App()
     {
         InitializeComponent();
+
+        // Record every unhandled exception so a crash leaves a diagnosable trail.
+        UnhandledException += (_, e) => Log.Error($"Unhandled UI exception: {e.Exception}");
+        AppDomain.CurrentDomain.UnhandledException += (_, e) =>
+            Log.Error($"Unhandled exception: {e.ExceptionObject}");
+        System.Threading.Tasks.TaskScheduler.UnobservedTaskException += (_, e) =>
+            Log.Error($"Unobserved task exception: {e.Exception}");
     }
 
     protected override void OnLaunched(LaunchActivatedEventArgs args)
