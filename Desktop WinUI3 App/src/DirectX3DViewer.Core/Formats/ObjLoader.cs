@@ -30,6 +30,7 @@ public static class ObjLoader
 
         var mesh = new MeshData { Name = "OBJ" };
         var vertexCache = new Dictionary<(int, int, int), int>();
+        var missingNormals = new List<bool>();
         var triMaterial = new List<int>();
 
         // Material library (name -> material) gathered from any mtllib files.
@@ -73,7 +74,7 @@ public static class ObjLoader
                     if (corners < 3) break;
                     var idx = new int[corners];
                     for (int c = 0; c < corners; c++)
-                        idx[c] = GetVertex(parts[c + 1], positions, normals, uvs, mesh, vertexCache);
+                        idx[c] = GetVertex(parts[c + 1], positions, normals, uvs, mesh, vertexCache, missingNormals);
                     for (int k = 1; k + 1 < corners; k++)
                     {
                         mesh.Indices.Add(idx[0]);
@@ -88,6 +89,16 @@ public static class ObjLoader
 
         if (mesh.Normals.Count != mesh.Positions.Count)
             mesh.ComputeNormals();
+        else if (missingNormals.Any(missing => missing))
+        {
+            // Zero placeholders count as entries but are not supplied normals.
+            // Generate topology normals only for those vertices; keep every
+            // explicit vector (including an intentional zero) unchanged.
+            var suppliedNormals = mesh.Normals.ToArray();
+            mesh.ComputeNormals();
+            for (int i = 0; i < missingNormals.Count; i++)
+                if (!missingNormals[i]) mesh.Normals[i] = suppliedNormals[i];
+        }
 
         BuildGroups(mesh, triMaterial);
         if (mesh.VertexCount > 0) scene.Meshes.Add(mesh);
@@ -206,7 +217,7 @@ public static class ObjLoader
 
     private static int GetVertex(
         string token, List<Vector3> positions, List<Vector3> normals, List<Vector2> uvs,
-        MeshData mesh, Dictionary<(int, int, int), int> cache)
+        MeshData mesh, Dictionary<(int, int, int), int> cache, List<bool> missingNormals)
     {
         var f = token.Split('/');
         int vi = ParseRef(f, 0, positions.Count);
@@ -220,6 +231,7 @@ public static class ObjLoader
         mesh.Positions.Add(vi >= 0 && vi < positions.Count ? positions[vi] : Vector3.Zero);
         if (ni >= 0 && ni < normals.Count) mesh.Normals.Add(normals[ni]);
         else mesh.Normals.Add(Vector3.Zero);
+        missingNormals.Add(ni < 0 || ni >= normals.Count);
         mesh.TexCoords.Add(ti >= 0 && ti < uvs.Count ? uvs[ti] : Vector2.Zero);
 
         cache[key] = index;
